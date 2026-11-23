@@ -1,0 +1,833 @@
+
+ RUN  v5.0.5 /workspace/work/ocelle-phase3-final-red
+
+ ❯ |tokens| packages/tokens/test/source-table.test.ts (13 tests | 5 failed) 315ms
+   ❯ the stylesheet from the real source (6)
+     × declares exactly the tokens of Appendix A on :root, and none of A.6 86ms
+     × declares each token's light value (or its one value) in the unconditioned :root block 34ms
+   ❯ the JSON export from the real source (2)
+     × has version 1 and exactly the tokens of Appendix A, none of A.6 8ms
+     × gives each token its group, its resolved value per theme (or its one value) and its references 117ms
+   ❯ 009's five tokens (FR-033) (3)
+     × pins the source at 136 tokens 1ms
+ ❯ |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts (11 tests | 11 failed) 14979ms
+   ❯ ocelle-app-shell navigation (11)
+     × renders the mission layout in all three tiers 1900ms
+     × renders the project layout in all three tiers 1365ms
+     × renders the personal layout in all three tiers 1290ms
+     × gives bare content one localized landmark and preserves a supplied native landmark name 551ms
+     × defaults invalid layout and blank labels while an empty supplied landmark remains absent 1464ms
+     × keeps the empty top-bar action region hidden and projects added actions 1531ms
+     × compacts grouped nav and restores the same nodes, headings and host preference 1398ms
+     × keeps the receiving shell's presentation when a destination moves between shells 1461ms
+     × moves focus from collapsing sidebar chrome to the first sequential destination, then main when none survives 1262ms
+     × recovers focus when a same-width layout swap removes the rail and when narrow removes navigation 1348ms
+     × uses chrome foreground on unselected rail links in light mode 1405ms
+ ❯ |elements (chromium)| packages/elements/test/app-shell-layout.test.ts (10 tests | 10 failed) 12331ms
+   ❯ ocelle-app-shell layout (10)
+     × uses exclusive default boundaries on its own logical border box with a fixed viewport 1617ms
+     × treats the vertical writing-mode inline axis as the measured axis 1577ms
+     × resolves explicit px, root rem, host em and unitless zero ahead of computed tokens 1243ms
+     × falls through invalid and non-finite candidates, and resets inverted pairs to both defaults 1373ms
+     × coalesces same-width remeasurement and emits one composed event per effective transition 1407ms
+     × reports no initial transition and waits until a hidden frame is rendered again 1306ms
+     × remeasures a host-em threshold after a style-only font change 1377ms
+     × keeps the same main node and constrains layout growth from intrinsic content 1609ms
+     × opts each logical end out independently in ltr 303ms
+     × opts each logical end out independently in rtl 516ms
+stderr | packages/elements/test/exports.test.ts > @ocelle/elements root exports > exports exactly the public element classes in code-point order
+Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+ ❯ |elements (chromium)| packages/elements/test/exports.test.ts (1 test | 1 failed) 983ms
+   ❯ @ocelle/elements root exports (1)
+     × exports exactly the public element classes in code-point order 983ms
+ ❯ |elements (chromium)| packages/elements/test/entry-app-shell.test.ts (1 test | 1 failed) 457ms
+   × registers the shell and its top bar from the standalone module 457ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 28 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |tokens| packages/tokens/test/source-table.test.ts > the stylesheet from the real source > declares exactly the tokens of Appendix A on :root, and none of A.6
+AssertionError: expected [ '--ocelle-bar-block-narrow', …(133) ] to deeply equal [ …(136) ]
+
+- Expected
++ Received
+
+@@ -1,8 +1,6 @@
+  [
+-   "--ocelle-app-shell-collapse-below",
+-   "--ocelle-app-shell-narrow-below",
+    "--ocelle-bar-block-narrow",
+    "--ocelle-bar-width",
+    "--ocelle-border-width",
+    "--ocelle-color-accent",
+    "--ocelle-color-accent-hover",
+
+ ❯ packages/tokens/test/source-table.test.ts:35:43
+     33|
+     34|   it("declares exactly the tokens of Appendix A on :root, and none of …
+     35|     expect([...sheet.root.keys()].sort()).toEqual(expectedTokens.map((…
+       |                                           ^
+     36|     expect(excludedNames.map(full).filter((name) => sheet.root.has(nam…
+     37|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/28]⎯
+
+ FAIL  |tokens| packages/tokens/test/source-table.test.ts > the stylesheet from the real source > declares each token's light value (or its one value) in the unconditioned :root block
+AssertionError: expected { 'color-canvas': '#f1eee8', …(135) } to deeply equal { 'color-canvas': '#f1eee8', …(135) }
+
+- Expected
++ Received
+
+@@ -1,8 +1,8 @@
+  {
+-   "app-shell-collapse-below": "68.75rem",
+-   "app-shell-narrow-below": "45rem",
++   "app-shell-collapse-below": undefined,
++   "app-shell-narrow-below": undefined,
+    "bar-block-narrow": "calc(2 * var(--ocelle-target-min) + 3 * var(--ocelle-space-2))",
+    "bar-width": "3px",
+    "border-width": "1px",
+    "color-accent": "#c68a1e",
+    "color-accent-hover": "#d9a23f",
+
+ ❯ packages/tokens/test/source-table.test.ts:42:22
+     40|     const declared = Object.fromEntries(expectedTokens.map((token) => …
+     41|     const expected = Object.fromEntries(expectedTokens.map((token) => …
+     42|     expect(declared).toEqual(expected);
+       |                      ^
+     43|   });
+     44|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/28]⎯
+
+ FAIL  |tokens| packages/tokens/test/source-table.test.ts > the JSON export from the real source > has version 1 and exactly the tokens of Appendix A, none of A.6
+AssertionError: expected [ '--ocelle-bar-block-narrow', …(133) ] to deeply equal [ …(136) ]
+
+- Expected
++ Received
+
+@@ -1,8 +1,6 @@
+  [
+-   "--ocelle-app-shell-collapse-below",
+-   "--ocelle-app-shell-narrow-below",
+    "--ocelle-bar-block-narrow",
+    "--ocelle-bar-width",
+    "--ocelle-border-width",
+    "--ocelle-color-accent",
+    "--ocelle-color-accent-hover",
+
+ ❯ packages/tokens/test/source-table.test.ts:74:63
+     72|   it("has version 1 and exactly the tokens of Appendix A, none of A.6"…
+     73|     expect(exported.version).toBe(1);
+     74|     expect(exported.tokens.map((token) => token.name).sort()).toEqual(…
+       |                                                               ^
+     75|     expect(exported.tokens.filter((token) => excludedNames.map(full).i…
+     76|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/28]⎯
+
+ FAIL  |tokens| packages/tokens/test/source-table.test.ts > the JSON export from the real source > gives each token its group, its resolved value per theme (or its one value) and its references
+AssertionError: expected { 'color-canvas': { …(4) }, …(135) } to deeply equal { 'color-canvas': { …(4) }, …(135) }
+
+- Expected
++ Received
+
+@@ -1,16 +1,8 @@
+  {
+-   "app-shell-collapse-below": {
+-     "group": "shell",
+-     "ref": undefined,
+-     "value": "68.75rem",
+-   },
+-   "app-shell-narrow-below": {
+-     "group": "shell",
+-     "ref": undefined,
+-     "value": "45rem",
+-   },
++   "app-shell-collapse-below": undefined,
++   "app-shell-narrow-below": undefined,
+    "bar-block-narrow": {
+      "group": "shell",
+      "ref": [
+        "--ocelle-target-min",
+        "--ocelle-space-2",
+
+ ❯ packages/tokens/test/source-table.test.ts:97:20
+     95|       }),
+     96|     );
+     97|     expect(actual).toEqual(expected);
+       |                    ^
+     98|   });
+     99| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/28]⎯
+
+ FAIL  |tokens| packages/tokens/test/source-table.test.ts > 009's five tokens (FR-033) > pins the source at 136 tokens
+AssertionError: expected [ 134, 134, 134 ] to deeply equal [ 136, 136, 136 ]
+
+- Expected
++ Received
+
+  [
+-   136,
+-   136,
+-   136,
++   134,
++   134,
++   134,
+  ]
+
+ ❯ packages/tokens/test/source-table.test.ts:117:70
+    115|
+    116|   it("pins the source at 136 tokens", () => {
+    117|     expect([source.length, exported.tokens.length, sheet.root.size]).t…
+       |                                                                      ^
+    118|   });
+    119|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > uses exclusive default boundaries on its own logical border box with a fixed viewport
+AssertionError: expected 'expanded' to be 'narrow' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---uses-exclusive-default-boundaries-on-its-own-logical-border-box-with-a-fixed-viewport.png
+
+Expected: "narrow"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:34:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:34:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > treats the vertical writing-mode inline axis as the measured axis
+AssertionError: expected 'expanded' to be 'narrow' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---treats-the-vertical-writing-mode-inline-axis-as-the-measured-axis.png
+
+Expected: "narrow"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:54:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:54:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > resolves explicit px, root rem, host em and unitless zero ahead of computed tokens
+AssertionError: expected 'expanded' to be 'narrow' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---resolves-explicit-px--root-rem--host-em-and-unitless-zero-ahead-of-computed-tokens.png
+
+Expected: "narrow"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:68:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:68:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > falls through invalid and non-finite candidates, and resets inverted pairs to both defaults
+AssertionError: expected 'expanded' to be 'collapsed' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---falls-through-invalid-and-non-finite-candidates--and-resets-inverted-pairs-to-both-defaults.png
+
+Expected: "collapsed"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:89:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:89:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > coalesces same-width remeasurement and emits one composed event per effective transition
+AssertionError: expected 'expanded' to be 'collapsed' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---coalesces-same-width-remeasurement-and-emits-one-composed-event-per-effective-transition.png
+
+Expected: "collapsed"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:114:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:114:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > reports no initial transition and waits until a hidden frame is rendered again
+AssertionError: expected 'expanded' to be 'collapsed' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---reports-no-initial-transition-and-waits-until-a-hidden-frame-is-rendered-again.png
+
+Expected: "collapsed"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:141:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:141:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > remeasures a host-em threshold after a style-only font change
+AssertionError: expected 'expanded' to be 'collapsed' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---remeasures-a-host-em-threshold-after-a-style-only-font-change.png
+
+Expected: "collapsed"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:157:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:157:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > keeps the same main node and constrains layout growth from intrinsic content
+AssertionError: expected 'expanded' to be 'collapsed' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---keeps-the-same-main-node-and-constrains-layout-growth-from-intrinsic-content.png
+
+Expected: "collapsed"
+Received: "expanded"
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:39
+     21|
+     22| async function tier(shell: HTMLElementTagNameMap["ocelle-app-shell"], …
+     23|   await expect.poll(() => shell.tier).toBe(expected);
+       |                                       ^
+     24|   await shell.updateComplete;
+     25| }
+ ❯ packages/elements/test/app-shell-layout.test.ts:170:11
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ tier packages/elements/test/app-shell-layout.test.ts:23:3
+ ❯ packages/elements/test/app-shell-layout.test.ts:170:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > opts each logical end out independently in ltr
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-layout.test.ts > ocelle-app-shell layout > opts each logical end out independently in rtl
+AssertionError: expected undefined to be 'main' // Object.is equality
+
+Failure screenshots:
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---opts-each-logical-end-out-independently-in-ltr.png
+  - .vitest/attachments/failure-screenshots/app-shell-layout.test.ts/ocelle-app-shell-layout---opts-each-logical-end-out-independently-in-rtl.png
+
+- Expected:
+"main"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/app-shell-layout.test.ts:187:40
+    185|     await tier(shell, "expanded");
+    186|     const main = shell.contentTarget;
+    187|     expect(main?.getAttribute("part")).toBe("main");
+       |                                        ^
+    188|     const read = (): readonly string[] => {
+    189|       const css = getComputedStyle(required(main));
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > renders the mission layout in all three tiers
+AssertionError: expected [] to deeply equal [ 'Persönlich', 'Projekte' ]
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---renders-the-mission-layout-in-all-three-tiers.png
+
+- Expected
++ Received
+
+- [
+-   "Persönlich",
+-   "Projekte",
+- ]
++ []
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:53:34
+     51|     const shell = await mount(rail + grouped, `layout="${layout}" menu…
+     52|     size(1150);
+     53|     await expect.poll(landmarks).toEqual(wide);
+       |                                  ^
+     54|     expect(shown(document.getElementById("rail"))).toBe(railVisible);
+     55|     expect(shown(menu(shell))).toBe(false);
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:53:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > renders the project layout in all three tiers
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > renders the personal layout in all three tiers
+AssertionError: expected [] to deeply equal [ 'Projekte' ]
+
+Failure screenshots:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---renders-the-project-layout-in-all-three-tiers.png
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---renders-the-personal-layout-in-all-three-tiers.png
+
+- Expected
++ Received
+
+- [
+-   "Projekte",
+- ]
++ []
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:53:34
+     51|     const shell = await mount(rail + grouped, `layout="${layout}" menu…
+     52|     size(1150);
+     53|     await expect.poll(landmarks).toEqual(wide);
+       |                                  ^
+     54|     expect(shown(document.getElementById("rail"))).toBe(railVisible);
+     55|     expect(shown(menu(shell))).toBe(false);
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:53:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > gives bare content one localized landmark and preserves a supplied native landmark name
+AssertionError: expected [] to deeply equal [ 'Konto', 'Workspace destinations' ]
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---gives-bare-content-one-localized-landmark-and-preserves-a-supplied-native-landmark-name.png
+
+- Expected
++ Received
+
+- [
+-   "Konto",
+-   "Workspace destinations",
+- ]
++ []
+
+ ❯ packages/elements/test/app-shell-navigation.test.ts:72:31
+
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > defaults invalid layout and blank labels while an empty supplied landmark remains absent
+AssertionError: expected [] to deeply equal [ 'Account' ]
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---defaults-invalid-layout-and-blank-labels-while-an-empty-supplied-landmark-remains-absent.png
+
+- Expected
++ Received
+
+- [
+-   "Account",
+- ]
++ []
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:85:34
+     83|   it("defaults invalid layout and blank labels while an empty supplied…
+     84|     const shell = await mount('<a slot="rail" href="#account">Account<…
+     85|     await expect.poll(landmarks).toEqual(["Account"]);
+       |                                  ^
+     86|     const sidebar = required(shell.querySelector("ocelle-context-sideb…
+     87|     const link = document.createElement("a");
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:85:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > keeps the empty top-bar action region hidden and projects added actions
+AssertionError: expected undefined to be true // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---keeps-the-empty-top-bar-action-region-hidden-and-projects-added-actions.png
+
+- Expected:
+true
+
++ Received:
+undefined
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:99:48
+     97|     const shell = await mount("");
+     98|     const actions = (): HTMLElement | null | undefined => top(shell)?.…
+     99|     await expect.poll(() => actions()?.hidden).toBe(true);
+       |                                                ^
+    100|     const action = document.createElement("button");
+    101|     action.slot = "actions";
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:99:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > compacts grouped nav and restores the same nodes, headings and host preference
+AssertionError: expected true to be false // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---compacts-grouped-nav-and-restores-the-same-nodes--headings-and-host-preference.png
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:116:46
+    114|     const link = (): HTMLAnchorElement | null | undefined => item.shad…
+    115|     const label = (): HTMLElement | null | undefined => item.shadowRoo…
+    116|     await expect.poll(() => label()?.hidden).toBe(false);
+       |                                              ^
+    117|     const original = required(link());
+    118|     original.focus();
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:116:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > keeps the receiving shell's presentation when a destination moves between shells
+AssertionError: expected true to be false // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---keeps-the-receiving-shell-s-presentation-when-a-destination-moves-between-shells.png
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:159:31
+    157|     receiver.remeasure();
+    158|     sidebar.append(item);
+    159|     await expect.poll(hidden).toBe(false);
+       |                               ^
+    160|     expect(item.compact).toBe(true);
+    161|     item.remove();
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:159:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > moves focus from collapsing sidebar chrome to the first sequential destination, then main when none survives
+AssertionError: expected null to be <a part="link" …(4)>…(2)</a> // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---moves-focus-from-collapsing-sidebar-chrome-to-the-first-sequential-destination--then-main-when-none-survives.png
+
+- Expected:
+<a
+  aria-current="page"
+  aria-label="Übersicht"
+  class="destination compact"
+  href="#one"
+  part="link"
+>
+  <!--?lit$948388368$-->
+
+
+  <span
+    aria-hidden="true"
+    class="icon"
+  >
+    <slot
+      name="icon"
+    />
+  </span>
+
+
+  <span
+    hidden=""
+    part="label"
+  >
+    <!--?lit$948388368$-->
+    Übersicht
+  </span>
+
+
+</a>
+
++ Received:
+null
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:171:43
+    169|     head.focus();
+    170|     size(850);
+    171|     await expect.poll(() => deepActive()).toBe(shell.querySelector("oc…
+       |                                           ^
+    172|     size(1150);
+    173|     await expect.poll(() => shown(head)).toBe(true);
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:171:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > recovers focus when a same-width layout swap removes the rail and when narrow removes navigation
+AssertionError: expected false to be true // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---recovers-focus-when-a-same-width-layout-swap-removes-the-rail-and-when-narrow-removes-navigation.png
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:184:46
+    182|     size(1150);
+    183|     const railLink = document.getElementById("rail-item")?.shadowRoot?…
+    184|     await expect.poll(() => shown(railLink)).toBe(true);
+       |                                              ^
+    185|     required(railLink).focus();
+    186|     const received: string[] = [];
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:184:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/app-shell-navigation.test.ts > ocelle-app-shell navigation > uses chrome foreground on unselected rail links in light mode
+AssertionError: expected [] to deeply equal [ 'Persönlich', 'Projekte' ]
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/app-shell-navigation.test.ts/ocelle-app-shell-navigation---uses-chrome-foreground-on-unselected-rail-links-in-light-mode.png
+
+- Expected
++ Received
+
+- [
+-   "Persönlich",
+-   "Projekte",
+- ]
++ []
+
+ ❯ Proxy.__VITEST_POLL_CHAIN__ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5797:47
+ ❯ packages/elements/test/app-shell-navigation.test.ts:201:34
+    199|   it("uses chrome foreground on unselected rail links in light mode", …
+    200|     const shell = await mount(rail + grouped);
+    201|     await expect.poll(landmarks).toEqual(["Persönlich", "Projekte"]);
+       |                                  ^
+    202|     const railHost = required(shell.querySelector("ocelle-personal-rai…
+    203|     const link = required(railHost.querySelector("ocelle-nav-item")?.s…
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ throwWithCause node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5777:34
+ ❯ promise node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/index.aTZaPVhf-Ctyw_rSl.js?v=d6e9498f:5862:7
+ ❯ packages/elements/test/app-shell-navigation.test.ts:201:5
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/entry-app-shell.test.ts > registers the shell and its top bar from the standalone module
+AssertionError: expected undefined to be type of 'function'
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/entry-app-shell.test.ts/registers-the-shell-and-its-top-bar-from-the-standalone-module.png
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ packages/elements/test/entry-app-shell.test.ts:6:48
+      4| it("registers the shell and its top bar from the standalone module", (…
+      5|   expect(customElements.get("ocelle-app-shell")).toBe(OcelleAppShell);
+      6|   expect(customElements.get("ocelle-top-bar")).toBeTypeOf("function");
+       |                                                ^
+      7|   expect(customElements.get("ocelle-nav-pill")).toBeUndefined();
+      8| });
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:4120:35
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:26
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5725:20
+ ❯ runWithCancel node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5720:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5709:20
+ ❯ runWithTimeout node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5673:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:6245:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/28]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/exports.test.ts > @ocelle/elements root exports > exports exactly the public element classes in code-point order
+AssertionError: expected [ 'OcelleActionRow', …(33) ] to deeply equal [ 'OcelleActionRow', …(34) ]
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/exports.test.ts/-ocelle-elements-root-exports---exports-exactly-the-public-element-classes-in-code-point-order.png
+
+- Expected
++ Received
+
+@@ -1,8 +1,7 @@
+  [
+    "OcelleActionRow",
+-   "OcelleAppShell",
+    "OcelleBrandMark",
+    "OcelleButton",
+    "OcelleCard",
+    "OcelleContextSidebar",
+    "OcelleCopyField",
+
+ ❯ packages/elements/test/exports.test.ts:21:33
+
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d6e9498f:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/28]⎯
+
+
+ Test Files  5 failed (5)
+      Tests  28 failed | 8 passed (36)
+   Start at  22:03:45
+   Duration  36.30s (worker 74%, tests 26%, import 1%)

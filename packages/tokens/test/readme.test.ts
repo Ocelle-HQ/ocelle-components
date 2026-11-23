@@ -63,6 +63,8 @@ const fragments = [
   // 012 (research.md R-08 item 2, R-12; tasks.md T052): the inside focus ring offset and the description ink's grounds
   "`--ocelle-focus-offset-inset` is the negative offset that draws a focus ring inside a box: `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px",
   "`--ocelle-color-ink-soft` is also declared on the state grounds (`color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`, `color-neutral-bg`), where an action row's description and tags sit",
+  "`--ocelle-app-shell-narrow-below` defaults to `45rem` and `--ocelle-app-shell-collapse-below` defaults to `68.75rem`.",
+  "A valid `narrow-below` or `collapse-below` setting wins, followed by a valid token override and then its published default.",
 ];
 
 describe("packages/tokens/README.md", () => {

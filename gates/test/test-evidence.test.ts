@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   classifyStoryEvidence,
   decodeCachedEvidence,
+  decodeWorkerResult,
   planTestShards,
   storyEvidenceKey,
+  validTestPlan,
   verifyTestShards,
 } from "../lib/test-evidence.ts";
 import type { Failure, ShardResult, StoryEvidenceInput, TestCaseResult, TestFileResult, UnitTestPlan } from "../lib/test-evidence.ts";
@@ -58,7 +60,7 @@ describe("phase evidence", () => {
 
   it("rejects setup errors even when a selected test fails an assertion", () => {
     const run = { files: [file(input, [assertionError], "failed")], errors: [{ name: "Error", message: "global setup failed" }] };
-    expect(classifyStoryEvidence(story(run.files, { run }))).toMatchObject({ status: "invalid", problem: /run error/i });
+    expect(classifyStoryEvidence(story(run.files, { run }))).toEqual({ status: "invalid", assertions: [], problem: "run error: global setup failed" });
   });
 
   it("rejects an absent result for a selected file", () => {
@@ -76,6 +78,22 @@ describe("phase evidence", () => {
     expect(classifyStoryEvidence({ ...run, allowMissingModule: false })).toMatchObject({ status: "invalid", problem: /file error/i });
     expect(classifyStoryEvidence({ ...run, missingModules: ["packages/elements/src/ocelle-button.ts"] }))
       .toMatchObject({ status: "invalid", problem: /file error/i });
+  });
+
+  it("exempts an unquoted scaffold-only missing module while still checking other expected assertions", () => {
+    const missingPath = "packages/elements/src/ocelle-form-textarea.ts";
+    const missing = {
+      ...file(input, [], "failed"),
+      errors: [{ name: "Error", message: "Failed to load url ../src/ocelle-form-textarea.ts from the test file" }],
+      tests: [],
+    };
+    const otherProof = { ...other, test: assertion.test };
+    const replay = story([missing, file(other, [assertionError], "failed")], {
+      selected: [input, other], changedTests: [input.file, other.file], expected: [assertion, otherProof],
+      allowMissingModule: true,
+    });
+    expect(classifyStoryEvidence({ ...replay, missingModules: [missingPath] })).toEqual({ status: "missing-module", assertions: [otherProof] });
+    expect(classifyStoryEvidence(replay)).toMatchObject({ status: "invalid", problem: /file error/i });
   });
 
   it("reuses matching completed work and rejects stale or malformed records", () => {
@@ -102,6 +120,12 @@ const results = [
 ] satisfies readonly ShardResult[];
 
 describe("full-suite shards", () => {
+  it.each([".", ".."])("rejects a test inventory naming repository directory %s", (path) => {
+    const directory = { ...input, file: path };
+    expect(validTestPlan({ revision, inventory: [directory], shards: [[directory]] }, revision)).toBe(false);
+    expect(() => planTestShards(revision, [directory], 1)).toThrow(new Error("invalid revision, shard count, or test inventory"));
+  });
+
   it("partitions every project and file pair exactly once in deterministic order", () => {
     const inventory = [input, other, sameFileOtherProject];
     const planned = planTestShards(revision, inventory, 2);
@@ -215,4 +239,138 @@ it("records a shared scenario assertion only through the changed caller and repl
   expect(classifyStoryEvidence({ ...story([shared(2)]), ...inputs })).toMatchObject({ status: "red", assertions: [evidence] });
   expect(classifyStoryEvidence({ ...story([shared(1)]), ...inputs, expected: [evidence] }))
     .toMatchObject({ status: "invalid", problem: /expected assertion/i });
+});
+
+describe("expected assertion replay", () => {
+  const direct = "it('keeps the submitted paragraphs', () => expect(value).toBe(answer));";
+  const recorded = { ...assertion, source: { text: direct, occurrence: 1, line: 1 } };
+  const sources = { [input.file]: [direct] };
+  const changedLines = { [input.file]: [{ start: 1, end: 1 }] };
+  const expectedProblem = "expected assertion test or source missing or ambiguous in the replay";
+  const completed = { name: assertion.test, state: "passed" as const, startLine: 1, errors: [] };
+
+  it("accepts a changed assertion on the same line as the test declaration", () => {
+    const replay = story([{
+      ...file(input, [], "failed"),
+      tests: [{ ...completed, state: "failed", errors: [{ ...assertionError, line: 1 }] }],
+    }], { sources, changedLines, expected: [recorded] });
+    expect(classifyStoryEvidence(replay)).toEqual({
+      status: "red", assertions: [{ ...recorded, diagnostic: assertionError.message }],
+    });
+    expect(classifyStoryEvidence({ ...replay, sources: {} })).toMatchObject({ status: "invalid", problem: /unlocated source/i });
+  });
+
+  it("matches one test by name when a differently named test shares its file", () => {
+    const replay = story([{ ...file(input), tests: [completed, { ...completed, startLine: 3, name: "other assertion" }] }], {
+      sources, changedLines, expected: [recorded],
+    });
+    expect(classifyStoryEvidence(replay)).toEqual({ status: "green", assertions: [] });
+  });
+
+  it.each([
+    { label: "absent file", expected: [{ ...recorded, ...other }], tests: [completed], sources },
+    { label: "missing title", expected: [{ ...recorded, test: "never ran" }], tests: [completed], sources },
+    { label: "duplicate titles", expected: [recorded], tests: [completed, { ...completed, startLine: 3 }], sources },
+    { label: "missing start line", expected: [recorded], tests: file(input).tests, sources },
+    { label: "missing source", expected: [recorded], tests: [completed], sources: {} },
+  ])("rejects $label even when every executed test passed", ({ expected, tests, sources }) => {
+    const replay = story([{ ...file(input), tests }], { expected, sources });
+    expect(classifyStoryEvidence(replay)).toEqual({ status: "invalid", assertions: [], problem: expectedProblem });
+  });
+
+  it("accepts a known test without a source constraint when no source proof was requested", () => {
+    const replay = story([file(input)], { expected: [assertion] });
+    expect(classifyStoryEvidence(replay)).toEqual({ status: "green", assertions: [] });
+  });
+
+  it("requires each recorded helper occurrence and accepts indented matching source", () => {
+    const helperFile = "packages/elements/test/scenarios/multiline.ts";
+    const helperText = "expect(result).toBe(answer);";
+    const expected = [{ ...recorded, helper: { file: helperFile, text: helperText, occurrence: 2, line: 2 } }];
+    const replay = story([{ ...file(input), tests: [completed] }], { expected });
+    expect(classifyStoryEvidence({ ...replay, sources })).toMatchObject({ status: "invalid", problem: expectedProblem });
+    expect(classifyStoryEvidence({ ...replay, sources: { ...sources, [helperFile]: [helperText, "unrelated code"] } }))
+      .toMatchObject({ status: "invalid", problem: expectedProblem });
+    expect(classifyStoryEvidence({ ...replay, sources: { ...sources, [helperFile]: [`  ${helperText}`, `    ${helperText}`] } }))
+      .toEqual({ status: "green", assertions: [] });
+  });
+
+  it("rejects partially reproduced red evidence and equal-length replay with one wrong assertion", () => {
+    const expectedText = "expect(nextValue).toBe(answer);";
+    const differentText = "expect(dialog.open).toBe(true);";
+    const expected = [recorded, { ...assertion, test: "second test", source: { text: expectedText, occurrence: 1, line: 4 } }];
+    const actualFirst = { ...completed, state: "failed" as const, errors: [{ ...assertionError, line: 1 }] };
+    const actualSecond = { ...completed, name: "second test", startLine: 3 };
+    const replay = {
+      expected,
+      sources: { [input.file]: [direct, "", "it('second test', () => {", expectedText, differentText, "});"] },
+      changedLines: { [input.file]: [{ start: 1, end: 5 }] },
+    };
+    const partial = { ...file(input, [], "failed"), tests: [actualFirst, actualSecond] };
+    const wrong = { ...partial, tests: [actualFirst, { ...actualSecond, state: "failed" as const, errors: [{ ...assertionError, line: 5 }] }] };
+    const outcome = { status: "invalid", assertions: [], problem: "expected assertion failures did not match replayed failures" };
+    expect(classifyStoryEvidence(story([partial], replay))).toEqual(outcome);
+    expect(classifyStoryEvidence(story([wrong], replay))).toEqual(outcome);
+  });
+});
+
+describe("worker and cache result decoding", () => {
+  const proof = { ...assertion, source: { text: "expect(answer).toBe(value);", occurrence: 1, line: 1 }, diagnostic: assertionError.message };
+  const red = { status: "red", assertions: [proof] };
+  const green = { status: "green", assertions: [] };
+  const missing = { status: "missing-module", assertions: [] };
+  const invalid = { status: "invalid", assertions: [], problem: "worker could not discover the file" };
+  const key = storyEvidenceKey({ revision });
+
+  it.each([
+    { label: "red on line one", evidence: red, selected: [input] },
+    { label: "green", evidence: green, selected: [input] },
+    { label: "missing module", evidence: missing, selected: [input] },
+    { label: "invalid with a reason", evidence: invalid, selected: [] },
+  ])("accepts well-formed $label evidence", ({ evidence, selected }) => {
+    expect(decodeWorkerResult({ evidence, selected })).toEqual({ evidence, selected });
+  });
+
+  it.each([
+    { label: "missing invalid reason", evidence: { status: "invalid", assertions: [] }, selected: [] },
+    { label: "invalid evidence carrying assertions", evidence: { ...invalid, assertions: [proof] }, selected: [input] },
+    { label: "empty green selection", evidence: green, selected: [] },
+    { label: "green evidence carrying an invalid reason", evidence: { ...green, problem: invalid.problem }, selected: [input] },
+    { label: "green evidence carrying assertions", evidence: { ...green, assertions: [proof] }, selected: [input] },
+    { label: "unknown evidence status", evidence: { ...green, status: "ready" }, selected: [input] },
+  ])("rejects $label", ({ evidence, selected }) => {
+    expect(decodeWorkerResult({ evidence, selected })).toBeUndefined();
+  });
+
+  it.each([
+    { evidence: missing, mode: "base", accepted: missing },
+    { evidence: missing, mode: "scaffold", accepted: undefined },
+    { evidence: green, mode: "red", accepted: undefined },
+    { evidence: green, mode: "base", accepted: undefined },
+    { evidence: red, mode: "head", accepted: undefined },
+    { evidence: green, mode: "head", accepted: green },
+  ])("only resumes $evidence.status evidence for an allowed mode ($mode)", ({ evidence, mode, accepted }) => {
+    const selected = [input];
+    const header = { input: key, mode, selected, evidence, seconds: 1, revision };
+    const cache = { key, evidence, selected, log: JSON.stringify(header) };
+    expect(decodeCachedEvidence(cache, key)).toEqual(accepted);
+  });
+
+  it("ignores malformed headers and reads valid headers before the first log newline", () => {
+    const selected = [input];
+    const header = { input: key, mode: "red", selected, evidence: red, seconds: 1, revision };
+    const cache = { key, evidence: red, selected };
+    expect(decodeCachedEvidence({ ...cache, log: "{" }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...cache, log: undefined }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...cache, log: `${JSON.stringify(header)}\nworker output` }, key)).toEqual(red);
+  });
+
+  it("requires an exact record key and plain text log even when the header matches", () => {
+    const selected = [input];
+    const header = { input: key, mode: "red", selected, evidence: red, seconds: 1, revision };
+    const cache = { key, evidence: red, selected, log: JSON.stringify(header) };
+    const wrapped = { indexOf: () => -1, toString: () => cache.log };
+    expect(decodeCachedEvidence({ ...cache, key: "another record" }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...cache, log: wrapped }, key)).toBeUndefined();
+  });
 });

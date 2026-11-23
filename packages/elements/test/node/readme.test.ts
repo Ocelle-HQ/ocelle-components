@@ -460,10 +460,10 @@ const fragments = [
   "The rail changes orientation only when `orientation` changes: it has no viewport or container query of its own, and changing it keeps focus, the document and tab order and the landmark.",
   "this one sets it from a viewport media query whose bound is exclusive, `matchMedia(\"(width < Npx)\")` (never `max-width: N`, which also matches at N), vertical while the viewport is at least 720 px wide and horizontal below:",
   'const narrow = matchMedia("(width < 720px)");',
-  "For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail.",
-  "The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px)",
-  // stricter at the phase 5 review R2-01 (landing L1-05; FR-027): the old statement up to its full stop, and that no release ships ocelle-nav-item yet
-  "A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no release of this package ships `ocelle-nav-item` yet.",
+  "Set the rail's `orientation` to `horizontal` or `vertical` when an application changes its layout.",
+  "The rail leaves destination sizing to its items.",
+  "In a standalone rail, give plain links `color: inherit` and a target of at least 24 px.",
+  "Inside an `ocelle-app-shell` rail region, the shell applies chrome colors to `ocelle-nav-item`, which uses `--ocelle-size-rail-item` (40 px).",
   "`ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and `--ocelle-space-2`.",
   "An empty slot of the rail takes no space: no gap and no divider, so a rail without bottom items has no divider, and one with only bottom items has them at its block end (vertical) or inline end (horizontal). A slot is empty when no element is assigned to it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so remove an element from the slot rather than hide it.",
   "A vertical rail fills its container's block size when its content is shorter, with the free space between the divider and the bottom group, and grows with its content when it is taller, the bottom group following the primary items; scrolling is the container's. This holds in a block, flex-row or grid container alike, because the host is `align-self: start`. A page rule on the host's `align-self` wins, so a page that sets it to `stretch` in a flex row or grid of definite block size keeps the rail at the container's size.",
@@ -773,6 +773,16 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-link.js` | `dist/ocelle-link.js` | `ocelle-link` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-nav-item.js` | `dist/ocelle-nav-item.js` | `ocelle-nav-item` and its compact label tooltip; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-top-bar.js` | `dist/ocelle-top-bar.js` | `ocelle-top-bar`, its brand mark and its menu icon; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-app-shell.js` | `dist/ocelle-app-shell.js` | `ocelle-app-shell` and its frame dependencies; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-nav-pill.js` | `dist/ocelle-nav-pill.js` | `ocelle-nav-pill` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-breadcrumbs.js` | `dist/ocelle-breadcrumbs.js` | `ocelle-breadcrumbs` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-skip-link.js` | `dist/ocelle-skip-link.js` | `ocelle-skip-link` only; for hosts with a bundler |",
+  // 020 phase 1 (T007, T011): the disclosure's entry point.
+  "| `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |",
+  // 020 phase 2 (T027, T031): the code block's entry point.
+  "| `@ocelle/elements/ocelle-code-block.js` | `dist/ocelle-code-block.js` | `ocelle-code-block` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -931,6 +941,14 @@ describe("packages/elements/README.md", () => {
       "./ocelle-segment.js",
       "./ocelle-copy-field.js",
       "./ocelle-link.js",
+      "./ocelle-nav-item.js",
+      "./ocelle-top-bar.js",
+      "./ocelle-app-shell.js",
+      "./ocelle-nav-pill.js",
+      "./ocelle-breadcrumbs.js",
+      "./ocelle-skip-link.js",
+      "./ocelle-disclosure.js",
+      "./ocelle-code-block.js",
       "./browser.js",
       "./custom-elements.json",
     ]);
@@ -941,7 +959,7 @@ describe("packages/elements/README.md", () => {
   });
 
   it("keeps the rail's item-size sentence and the next one on one line of the README as written, with no line break between them (phase 5 review R2-01, landing L1-05)", () => {
-    expect(read("README.md")).toContain("`ocelle-nav-item` is expected to have. The rail sets only the gap");
+    expect(read("README.md")).toContain("The rail leaves destination sizing to its items. It provides the gap");
   });
 
   // Plan decision 28 (SC-006; tasks.md T033): the `ocelle-button` section gives the markup of #12's breadcrumb item,
@@ -1182,6 +1200,80 @@ describe("packages/elements/README.md: ocelle-tooltip (008)", () => {
   });
 });
 
+/**
+ * The `ocelle-disclosure` section (020 contracts/elements.md § `ocelle-disclosure`, README statements; tasks.md T007,
+ * T011): each statement by phrase, whitespace normalised.
+ */
+const disclosureFragments = [
+  "`ocelle-disclosure` is a disclosure: a summary that opens and closes a panel inline, on native `details` and `summary` semantics",
+  "The open state is the `open` attribute: render it from the server. A morph that keeps it keeps the disclosure open; a morph that drops it closes the disclosure and fires `ocelle-disclosure-toggle`",
+  "Listen to `ocelle-disclosure-toggle` (its `detail.open` is the new state), not to `toggle`: the inner `details`' native `toggle` does not leave the element",
+  "Do not count events to count changes: changes made before the inner `details`' native `toggle` runs are coalesced into one event with the final state, and none fires when the state ends where the last event left it",
+  "A host `aria-expanded` is mapped onto `open` and removed from the host: `\"true\"` opens, `\"false\"` closes, any other value changes nothing. Prefer `open`",
+  "Two departures from the control conventions' rule 1, both because the host holds the panel's content: no host click guard, so clicks on the panel's content reach the page's listeners; and no `delegatesFocus`, so a click on the panel's content moves no focus. `focus()` is overridden to focus the summary",
+  "When a script or a morph closes the disclosure while focus is in its panel, also inside the shadow root of a control in the panel, focus moves to the summary",
+  "With no host `aria-labelledby` or `aria-label`, the `summary` slot's text alone names the summary: a slotted icon adds nothing to the name. An empty summary has no name",
+  "Put no interactive content in the summary: a link or a button there is a control inside a control",
+  "Nested disclosures work independently: an inner disclosure's event bubbles through the outer one, so tell them apart by `event.target`",
+  "The browser's find in page opens a closed disclosure whose panel holds the text it finds (Chromium), as a user toggle does",
+  "Before the element is defined, the summary and the panel show as plain content",
+  "The disclosure does not animate: it opens and closes at once, with or without reduced motion",
+  "`ocelle-disclosure` reads the tokens `--ocelle-font-size-md`, `--ocelle-font-weight-medium`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-2`, `--ocelle-icon-size`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`",
+];
+
+describe("packages/elements/README.md: ocelle-disclosure (020)", () => {
+  const readme = flat(read("README.md"));
+
+  it.each(disclosureFragments)("states: %s", (fragment) => {
+    expect(readme).toContain(flat(fragment));
+  });
+});
+
+/**
+ * The `ocelle-code-block` section (020 contracts/elements.md § `ocelle-code-block`, README statements; tasks.md T027,
+ * T031) and the § Element conventions "Digests" paragraph (contracts/elements.md § README § Element conventions: the
+ * digest rule, FR-033), verbatim: each statement by phrase, whitespace normalised. Since phase 3 (T040, T042; review
+ * round 1, R1-01): the late-font caveat of § Direction and the code block's sentence in § Engines' WebKit paragraph.
+ */
+const codeBlockFragments = [
+  "`ocelle-code-block` is a preformatted block for code, commands, logs and digests, in the library's sans with tabular figures, never monospace",
+  "The code is the element's light-DOM text content, read as a copy: start the text on the opening tag's line, because a newline directly after the tag is shown as an empty first line",
+  "Markup inside the element is not rendered: child elements add no markup or style, their text is shown, and markup-like text stays text",
+  "Each line of code is shown left to right, also in an `rtl` page, while the block keeps the page direction",
+  "An `rtl` scroll block opens at the line starts: the element scrolls it there, instantly, when it first appears and when its text changes, so the start of every line is in view and the fade is at the right, where the line ends are hidden",
+  "A block that only starts to overflow after a resize keeps the platform's scroll position",
+  // since 020 phase 3 (T042; operator decision reviews/phase-2/operator-late-font.md, FR-021): the late-font caveat,
+  // asserted at phase 3 review round 1 (R1-01)
+  "That holds once the block has laid out in its font: the one write uses the widths of the first layout, and a font swap does not repeat it",
+  "On a page where the sans face (`--ocelle-font-sans`) arrives after the first layout, the lines widen after the write and their starts can end up out of view (the content stays reachable with the arrow keys), so preload the sans face for `rtl` scroll blocks",
+  // since 020 phase 3 (T040; research.md R-06 § WebKit): the code block's scroll mode is not measured in WebKit,
+  // asserted at phase 3 review round 1 (R1-01)
+  "Nor is `ocelle-code-block`'s scroll mode, on the same module: its tab stop while it overflows, its arrow keys, its focus handover when overflow ends, the focus move on a switch to wrap and the `rtl` opening write are untested in WebKit",
+  "A switch from `scroll` to wrap while focus is in the scroll block moves focus to the block, which shows the library's focus ring",
+  "Always give a scroll block a `label`: without one, an overflowing scroll block is a tab stop with no role and no name",
+  "Do not set a host `aria-label` in wrap mode: the host has no role, so the label names nothing; use `label`",
+  "In a shrink-to-fit host (a default flex item, a dialog, a table cell) a scroll block takes its content's size and does not overflow: give it a definite or maximum inline size there",
+  "In scroll mode the `ocelle-scroller` statements on keyboard, focus, fades, scrollbar, motion and sizing hold for the code block",
+  "Print shows what is laid out: a wrap block prints wrapped, and a scroll block's text off-screen is not printed",
+  "The element has no copy control and no syntax highlighting",
+  "`ocelle-code-block` reads the tokens `--ocelle-color-inset`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-font-size-md`, `--ocelle-line-height-relaxed`, `--ocelle-measure-reading`, `--ocelle-space-1`, `--ocelle-space-3`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset` and `--ocelle-color-focus`, and through the overflow-region module the same focus tokens, `--ocelle-scroller-fade-size` and `--ocelle-color-ink` (mask only)",
+  // § Element conventions, the digest rule, verbatim from contracts/elements.md
+  "**Digests.** An element that shows a digest (a hash, with or without an algorithm prefix) groups it the same way: the prefix is everything up to and including the last colon and is shown as written; the rest is split into groups of four code points from the start, the last group holding the remainder. Units are inline boxes separated by a `<wbr>`, with a `--ocelle-space-1` gap after every unit but the last, so a line never starts with a gap; no character is added, so a copy and the screen-reader reading give the digest as written. Groups do not wrap inside (`white-space: nowrap`, as `-` and `/` in base64 and base64url are break opportunities), so lines break only between units; a prefix that with its gap is wider than the line breaks inside (WCAG 1.4.10). Text holding whitespace is not a digest and is shown ungrouped. `ocelle-code-block`'s `digest` is the first use; `ocelle-facts` values are the consumer's text and are not grouped.",
+];
+
+describe("packages/elements/README.md: ocelle-code-block (020)", () => {
+  const readme = flat(read("README.md"));
+
+  it.each(codeBlockFragments)("states: %s", (fragment) => {
+    expect(readme).toContain(flat(fragment));
+  });
+
+  it("puts the Digests rule under § Element conventions", () => {
+    const conventions = /^## Element conventions\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "";
+    expect(flat(conventions)).toContain("**Digests.** An element that shows a digest");
+  });
+});
+
 describe("packages/elements/CHANGELOG.md", () => {
   const changelog = read("CHANGELOG.md");
   const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
@@ -1344,6 +1436,16 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-link`",
     "`ocelle-link-activate`",
     "`@ocelle/elements/ocelle-link.js`",
+    // since 020 phase 1 (T007, T011)
+    "`ocelle-disclosure`",
+    "`@ocelle/elements/ocelle-disclosure.js`",
+    "`ocelle-disclosure-toggle`",
+    "`:state(open)`",
+    // since 020 phase 2 (T027, T031)
+    "`ocelle-code-block`",
+    "`@ocelle/elements/ocelle-code-block.js`",
+    "`overflow`",
+    "`digest`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
@@ -1360,6 +1462,7 @@ describe("packages/elements/CHANGELOG.md", () => {
 const selectionElements = ["ocelle-listbox", "ocelle-option", "ocelle-tabs", "ocelle-tab", "ocelle-tab-panel", "ocelle-segmented-choice", "ocelle-segment", "ocelle-copy-field", "ocelle-link"];
 /** The elements 008 to 013 added on main before 014 merged it (landing operator decisions 1 and 4). */
 const mainElements = ["ocelle-notice", "ocelle-form-input", "ocelle-form-select", "ocelle-button", "ocelle-action-row", "ocelle-scroller", "ocelle-workflow-board", "ocelle-workflow-lane", "ocelle-list-detail", "ocelle-dialog", "ocelle-drawer", "ocelle-tooltip", "ocelle-section-header", "ocelle-card", "ocelle-page-header", "ocelle-context-sidebar", "ocelle-personal-rail", "ocelle-facts", "ocelle-fact", "ocelle-empty-state", "ocelle-progress"];
+const frameElements = ["ocelle-app-shell", "ocelle-top-bar", "ocelle-nav-item", "ocelle-nav-pill", "ocelle-breadcrumbs", "ocelle-skip-link"];
 const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "ocelle-tabs-change", "ocelle-segmented-choice-change", "ocelle-copy-field-request", "ocelle-link-activate"];
 
 /**
@@ -1371,11 +1474,11 @@ const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "oc
 describe("packages/elements/README.md overview (014 T110)", () => {
   const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
 
-  // The merges of main (landing operator decisions 1 and 4) bring 008's, 009's, 010's, 011's, 012's and 013's
-  // twenty-one elements beside the icon, the mark and the nine of this feature, plus the multiline textarea.
-  it("counts and names the thirty-three elements, including the textarea", () => {
-    expect(overview).toContain("thirty-three elements");
-    for (const tag of ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, "ocelle-form-textarea"]) expect(overview).toContain(`\`${tag}\``);
+  it("counts and names all forty-one released elements", () => {
+    expect(overview).toContain("forty-one elements");
+    const tags = ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, ...frameElements,
+      "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea"];
+    for (const tag of tags) expect(overview).toContain(`\`${tag}\``);
   });
 
   // The second merge of main (landing operator decision 4): 012 raised the floor to Chromium 135 after 014's 125.
@@ -1389,6 +1492,18 @@ describe("packages/elements/README.md overview (014 T110)", () => {
 
   it("points to the examples of each use", () => {
     expect(overview).toContain("Examples shows each selection and input element built into a screen");
+  });
+});
+
+describe("the app-frame integration documentation", () => {
+  const frame = read("README.md").split("## App frame and navigation")[1]?.split("## Examples")[0] ?? "";
+
+  it("shows the named shell regions, CSS breakpoints, and cross-root skip target", () => {
+    expect(frame).toContain('sidebar-label="Project sections"');
+    expect(frame).toContain('<ocelle-personal-rail slot="rail" label="Workspace destinations">');
+    expect(frame).toContain("await shell.updateComplete;\nskip.target = shell.contentTarget;");
+    expect(frame).toContain("--ocelle-app-shell-narrow-below: 42rem;");
+    expect(frame).toContain("--ocelle-app-shell-collapse-below: 65rem;");
   });
 });
 

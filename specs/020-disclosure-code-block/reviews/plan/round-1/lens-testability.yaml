@@ -1,0 +1,171 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+# Probes: Playwright 1.63 with Chromium 157.0.8103.78 headless (the build research.md measured on), throwaway pages
+# outside the repository, scripts in the session scratchpad. Repository read at the branch as checked out.
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The ariaSnapshot oracle of US2-11 / FR-032 reads the unslotted light-DOM digest and passes on a broken layout"
+    evidence:
+      - artifact: "spec.md US2 scenario 11 and FR-032: \"Playwright's `ariaSnapshot` of the block holds the trimmed digest as one unbroken text run\"; contracts/checks.md § Oracles line 40: \"Playwright `ariaSnapshot` (one text run) in the fixture harness\"; research.md R-07 table, column `ariaSnapshot`"
+      - code: "Probe: host `<x-host>sha256:9f86d081</x-host>` with a slot-less shadow `<pre><span>sha256:</span><wbr><span>9f86</span><wbr><span>d081</span></pre>` (the R-07 design). `locator('#h').ariaSnapshot()` = `- text: sha256:9f86d081 sha256:9f86d081`; with light text `LIGHTTEXT` it is `- text: LIGHTTEXT sha256:9f86d081`. Playwright's snapshot includes the host's unrendered, unslotted light-DOM text."
+      - code: "Probe: the same host with a deliberately broken shadow `<pre><span>sha256:</span> <span>9f86</span> <span>d081</span></pre>` (literal spaces): host snapshot `\"sha256:9f86d081 sha256: 9f86 d081\"` still contains the unbroken digest; `locator('#h pre').ariaSnapshot()` gives `\"sha256: 9f86 d081\"` (correctly broken) and for the R-07 design `sha256:9f86d081`."
+      - code: "Probe: CDP `Accessibility.getFullAXTree` on the same page has StaticText `sha256:`, `9f86`, `d081` and no node for the light-DOM text, so the CDP half of the measure is sound."
+    claim: |
+      Under the copy model (FR-020) the host always holds the unbroken digest as light-DOM text, and Playwright's
+      ariaSnapshot of the host includes that text. An assertion that the host's snapshot "holds" the digest therefore
+      passes whatever the shadow root renders, including spaces between groups: it cannot fail for the behaviour it
+      claims to prove (Principle VIII, "assertions that can fail"). An equality assertion on the host snapshot instead
+      always fails (the digest appears twice), which invites loosening the test in green. R-07's table does not say
+      which node was snapshotted, so its "one text run" row does not carry over to the element. ariaSnapshot also is not
+      an Accessibility-tree read: it is Playwright's own DOM walk and mis-models unslotted children here.
+    remedies:
+      - "Scope the snapshot to the shadow `pre` (`part=\"code\"`, e.g. `#id pre` or `::part(code)`) and assert equality with `- text: <trimmed digest>`; record in research R-07 that the host snapshot includes the unslotted light text and is not used; amend US2-11 and FR-032 to name the node."
+      - "Drop ariaSnapshot from US2-11, FR-032 and SC-004 and keep only the CDP StaticText concatenation (which the probe shows is sound), plus a body asserting the CDP tree holds no StaticText for the light-DOM text."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Every user-like whole-block copy adds a trailing newline, so US2-10 / FR-031 / SC-004 \"exactly the trimmed content\" is unmeetable or met only by an unstated selection"
+    evidence:
+      - artifact: "spec.md US2 scenario 10: \"When the user selects the whole block and copies it ... the copied plain text is exactly the trimmed content\"; SC-004 \"0 added characters\"; contracts/checks.md line 42 \"Copy: Ctrl+C with clipboard permissions and navigator.clipboard.readText()\"; research.md R-07 \"Copied text ... unbroken, as written\" with no selection method"
+      - code: "Probe on the R-07 structure (`div.block > pre.code.digest > span + wbr + span ...`), Ctrl+C then clipboard read: `range.selectNodeContents(host)` -> `\"sha256:9f86d081\\n\"`; triple click on the pre -> `\"sha256:9f86d081\\n\"`; mouse drag across the pre -> `\"sha256:9f86d081\\n\"`; only `setBaseAndExtent(pre, 0, pre, pre.childNodes.length)` inside the shadow root -> `\"sha256:9f86d081\"`."
+      - code: "packages/elements/test/in-process.ts:621 and test/browser/driver.ts:556: the existing `driver.clipboardCopy(id)` selects `selectNodeContents(element(id))` and pastes into a textarea, which is the first case above (trailing `\\n`)."
+    claim: |
+      The block is a `pre` in a block box, so Chromium terminates a whole-block selection with a newline. With the
+      spec's exact-equality oracle, the body fails for a reason that is not the grouping (red/green for the wrong
+      reason), and the natural green-time fix is to trim the clipboard text or switch to the one programmatic range
+      that passes, which changes the test's meaning after red. The plan also names a new copy driver (clipboard
+      permissions and `readText`) although the repository already has `clipboardCopy` with a different selection and
+      read path, so the oracle's selection and expected value are undefined.
+    remedies:
+      - "Name the oracle in contracts/checks.md as the existing `driver.clipboardCopy(id)` and state the expected value as the trimmed digest followed by the one `\\n` the platform adds for a block selection (record the probe in R-07); add a second assertion on a run of groups selected inside the pre (FR-031 \"any run of groups\"), which must equal those characters exactly; amend US2-10 and SC-004 to match."
+      - "Add a driver method that selects the contents of a shadow node (`#id` + inner selector) and copies; assert exact equality on that; and state in the spec that a whole-block user selection adds the platform's block newline, which is not an element character."
+
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "US1-7a and US1-7b (and the zero-event half of other bodies) pass on the phase-1 scaffold, so they are not red"
+    evidence:
+      - artifact: "spec.md US1 scenario 7 (a) \"closed ... set to true then false, it is closed and exactly 0 events\" and (b) \"open ... set to false then true, it is open and exactly 0\"; contracts/checks.md § Scenario bodies: the scaffold has \"declared properties and an empty `render()`\"; § Bodies the platform alone could pass lists neither"
+      - artifact: "SC-001: every acceptance scenario has at least one test that fails before its phase; .claude/skills/speckit-story-implement/SKILL.md step 5: \"Each test asserts something that is false today\""
+      - code: "On the scaffold (open declared `{ type: Boolean, reflect: true }`, empty render, no event code): 7a ends closed with no attribute and 0 events; 7b ends with `open` reflected and 0 events. The closed-state readings the spec offers (panel not shown, not in tab order, no AX node) also hold on an empty shadow root. Same for US1-9's \"no event at upgrade\" and US1-6's \"set again, no event\" if split into their own bodies."
+    claim: |
+      Bodies whose only outcomes are a state the reflected property gives by itself plus a zero count pass before any
+      behaviour exists. Principle VIII requires each red body to fail for the missing behaviour, and the automatic
+      red/green check is per body, so these either break the check or are quietly merged into bodies with other
+      assertions. The checks contract's "platform alone could pass" table is the place this should be caught, and it
+      omits them.
+    remedies:
+      - "Add US1-7a/7b (and any body asserting only 'no event') to the table in contracts/checks.md with an element-only assertion in the same body: the summary control exists in the AX tree with `expanded` false (7a) or true with the panel link visible and in the tab order (7b), and a final positive toggle in the same body that yields exactly one event, so the counter is shown live."
+
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "The event-count wait \"setTimeout(0) and updateComplete\" can read before the native toggle task, so zero-count assertions can pass vacuously"
+    evidence:
+      - artifact: "contracts/checks.md line 22: \"Event counts are read after the next task (`setTimeout(0)`) and `updateComplete` (R-02)\"; research.md R-02: the native `toggle` is queued as a task when Lit's microtask render sets `details.open`, and the handler then awaits `updateComplete` before dispatching"
+      - code: "Probe (plain `details`): a `setTimeout(0)` queued before `d.open` changes in a later microtask fires before the `toggle` event (`timerB toggle`); queued after the change it fires after (`toggle timerA`). A body that sets `open` and then awaits `setTimeout(0)` before Lit's update has run reads the count before the event exists."
+      - code: "packages/elements/test/in-process.ts:70 `settle()`: two animation frames then every `ocelle-*` `updateComplete`; `setProperty` (line 261) settles after each single set, so it cannot express US1-7's several sets in one task."
+    claim: |
+      The ordering of the stated wait is ambiguous and, in the order a body most naturally writes it, misses the event:
+      a body expecting 1 fails spuriously and a body expecting 0 passes whether or not the element would fire. US1-7's
+      definition ("after a later task has run and updateComplete has resolved") needs a wait that is guaranteed to
+      follow the toggle task and the handler's own `await updateComplete`.
+    remedies:
+      - "State the wait as: await the element's `updateComplete`, then the driver's `settle()` (two frames, then updates), then read; and require every zero-count body to end with a positive control (one more change that is counted as 1 under the same wait)."
+
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The plan needs driver additions it does not list, so bodies written once cannot run in both harnesses"
+    evidence:
+      - artifact: "contracts/checks.md § Oracles: \"Find in page: navigation to `#:~:text=`\", \"Playwright `ariaSnapshot` ... in the fixture harness; in process, the driver's AX helper\"; spec FR-052 bodies \"written once in test/scenarios/ and run ... in process and on the built browser build\"; checks.md has no § Driver additions (013's checks.md:406 has one, added by PLAN-TESTABILITY-1-013)"
+      - code: "packages/elements/test/scenarios/driver.ts: the Driver interface (lines 303-558) has no fragment navigation, no ariaSnapshot and no way to set a property several times in one task (`setProperty` settles per call, in-process.ts:261); `module(code)` imports a blob URL, which the strict-CSP fixture pages would refuse."
+      - code: "Probe: in a same-origin iframe (the in-process harness runs in Vitest's iframe), a same-document navigation to `#:~:text=retention` opens a closed shadow `details` with slotted text (open = true); so the driver is feasible in both harnesses but must be added."
+    claim: |
+      Without these methods the bodies for US1-7 (several sets in one task), US1-10 (find in page) and US2-11 (snapshot)
+      either branch per harness (conditional assertions, forbidden by Principle VIII) or run in one harness only. The
+      fixture-only path is not mutated, so mutants in the toggle handler reached only through find in page would go
+      unchecked. The additions also need their own driver tests and red step, which the phase task lists do not have.
+    remedies:
+      - "Add a § Driver additions to contracts/checks.md naming each method for both drivers and its driver test: `findText(word)` (a same-document navigation to a fresh `#:~:text=` per call), `setProperties(id, name, values[])` (all in one task, then no settle), and, if kept after PLAN-TESTABILITY-1-001, `ariaSnapshot(id, inner)`; put them in phase 1's red step before the element bodies."
+
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "Element CSS plants are routed to `gates/plants/` and `gate:plants`, which do not run element behaviour plants"
+    evidence:
+      - artifact: "plan.md:129 `gates/plants/  # plants of contracts/checks.md`; contracts/checks.md:64 \"Plants run locally with `pnpm run gate:plants -- --affected <base>` (op 016); CI runs the full set.\""
+      - code: "gates/README.md § plants gate: `gate:plants` judges `gates/plants/<gate>/<case>/` trees against a gate's expected verdict (e.g. gates/plants/unit-tests/fail-elements-chromium/plant.json with `expect` and `findings`); none of them edits an element source and runs its scenario bodies."
+      - code: "specs/013-data-display/reviews/phase-1/plants.md: element plants are \"run once ... against the green source: the source edited as named, the guarding bodies run in process ... then the file restored ... no plant is committed\", recorded in reviews/phase-N/plants.md."
+    claim: |
+      The plan's plants for CSS-only behaviour (marker, chevron box, hover, monospace, pre-wrap, cap, gap, forced-colours
+      border) are the only proof those bodies can fail, since Stryker does not mutate the styles. Routed to the gate plant
+      tree they either never run or become full repository trees with invented gate verdicts; the repository's practice
+      is the per-phase plant run recorded in reviews/phase-N/plants.md.
+    remedies:
+      - "Replace plan.md's `gates/plants/` line and checks.md:64 with the 013 practice: each plant applied to the green source, its guarding body run in process (and in the fixture harness where it is fixture-only), restored, and the result recorded in `reviews/phase-N/plants.md` before review."
+
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "The no-motion oracle (FR-015, US1-14, US2-18, SC-006) has no plant and passes on the scaffold"
+    evidence:
+      - artifact: "contracts/checks.md § Oracles, Motion: \"no running `getAnimations()` ... after a toggle ... no `transition-duration` other than `0s` on the summary, panel and chevron\"; § Plants lists no motion plant"
+      - code: "`transition-duration` initial value is `0s` and an empty shadow root has no animations, so both readings hold on the scaffold and on any implementation; specs/013-data-display/contracts/checks.md:179 used \"Plant: a 200 ms ...\" for the same kind of oracle."
+    claim: |
+      A body that only asserts absence cannot be shown to fail unless a plant introduces the forbidden motion. Without
+      one, the motion readers could be wired to the wrong nodes (a `getAnimations()` on the host that does not include
+      shadow subtrees, or a reading taken before a transition starts) and still pass.
+    remedies:
+      - "Add plants: `transition: background-color 200ms` on the summary hover, and a 200 ms transition on the chevron; US1-14 must fail under each. Pair each motion body with the toggle's positive outcome (state and one event), and take the reading within the transition's duration (immediately after the toggle settles one frame)."
+
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "US2-16 drives only childList changes; the observer's `characterData` and `subtree` options have no body"
+    evidence:
+      - artifact: "spec.md FR-020 \"a mutation observer on the host (child nodes and character data, at any depth)\"; US2-16 \"an htmx swap of its content, or `textContent` set by a script\" (both direct childList changes on the host); data-model.md: `MutationObserver` (child list, character data, subtree); contracts/checks.md has no body for a text-node data change"
+      - code: "packages/elements/test/scenarios/driver.ts: `text(id, value)` sets the data of the first text node child (a characterData change); `textData(id, index, data)` exists too. specs/013-data-display/reviews/phase-1/plants.md: \"`characterData` removed from the observer | US1-12 value text | bites\" for the same pattern."
+    claim: |
+      Removing `characterData` or `subtree` from the observer options leaves every planned body green, so the mutation
+      gate would report survivors in phase 2 (FR-057) or, if the option object is not mutated, the requirement is not
+      tested at all. The plan should name the body up front rather than discover it at mutation time.
+    remedies:
+      - "Add to US2-16 (or an FR-020 body) a characterData change on a light-DOM text node through `driver.text`, and a change of a text node inside a child element (`<b>`), each asserting the shown copy and, for a digest, the groups follow."
+
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "FR-029's code-point rule has no body; every planned digest input is ASCII"
+    evidence:
+      - artifact: "spec.md FR-029 \"A character here is a Unicode code point\"; data-model.md step 3 `Array.from(trimmed)`; contracts/checks.md lists prefix-only and several-colons bodies but none with a non-BMP character; US2-9 and US2-14 inputs are ASCII"
+    claim: |
+      An implementation that slices UTF-16 code units (`slice(i, i + 4)`) passes every planned body, so the rule is
+      untested and a later refactor can break it silently. A requirement with no test that can fail is outside
+      Principle VIII.
+    remedies:
+      - "Add an FR-029 body with an astral code point (e.g. `x:` followed by `ab😀cdef`) asserting groups `ab😀c`, `def` and no lone surrogate in any group's text."
+      - "Drop the code-point sentence from FR-029 and state that digest mode defines groups for ASCII only."
+
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "US2-19 (empty block one line high) has no planned rule and no plant; an empty shadow `pre` is 0 px high"
+    evidence:
+      - artifact: "spec.md US2 scenario 19 \"its block size is one line's height of the block's type (plus its padding)\"; research.md R-06 rules for `.block` and `.code` have no minimum block size; contracts/checks.md lists \"the empty block\" body with no oracle and no plant"
+      - code: "Probe: `<div style=\"padding:12px\"><pre style=\"margin:0;white-space:pre-wrap;line-height:1.7\"></pre></div>` with an empty text node: pre height 0, box 24 (padding only); the same in a scroll wrapper with `white-space: pre`: 0 and 24."
+    claim: |
+      The planned styles give an empty block the padding only, so the body will fail at green with no planned rule to
+      make it pass, and the rule that is then added in green (e.g. `min-block-size: 1lh`, which style-lint admits only as
+      the whole value) has no plant proving the body bites.
+    remedies:
+      - "Add to R-06 `.code { min-block-size: 1lh }` (or the chosen rule), name the oracle (block size equals one computed line height of `.code` plus the `.block` padding and border, in both modes), and add a plant (the rule removed; US2-19 must fail)."
+
+  - id: PLAN-TESTABILITY-1-011
+    severity: 1
+    title: "Oracles for forced colours, RTL mirroring and first-line icon alignment of the disclosure are not named"
+    evidence:
+      - artifact: "spec.md US1-15 \"visible in system colours\", US1-11 \"mirrored (points to the inline end, to the left)\", US1-16 \"the icon stays centred on its first line\"; contracts/checks.md § Oracles names none of the three, while it names oracles for AX, copy, find, breaks, monospace, motion and reflow"
+      - code: "packages/elements/test/scenarios/driver.ts offers `forcedColors`, `computed`, `resolveColour`, `paints`, `pixels`, `lines`, `box`; the slot convention tests in test/scenarios/slot.ts already measure first-line centring."
+    claim: |
+      "Visible" and "mirrored" can be asserted in ways that pass on the platform alone (a computed `color` that is
+      `CanvasText` by default in forced colours, an icon element that exists). Naming the readings up front keeps the
+      bodies non-vacuous.
+    remedies:
+      - "Add to § Oracles: forced colours as computed `color` of the summary label = `CanvasText`, the chevron's painted pixels in that colour, and the focus ring's outline colour = `Highlight` (resolved through `resolveColour`); RTL as the chevron's painted x-extent (or computed `scale`/transform) mirrored against LTR and its box at the summary's inline start; first-line alignment as the slot convention's existing measure; and a plant for the chevron mirror where it is CSS."

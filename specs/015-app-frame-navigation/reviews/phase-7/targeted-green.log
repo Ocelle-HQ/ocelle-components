@@ -1,0 +1,16 @@
+Built strict-CSP app shell fixture
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Duration  3.17s (tests 75%, import 23%, transform 2%)
+Elements and tokens documentation
+ Test Files  2 passed (2)
+      Tests  1013 passed (1013)
+   Duration  582ms (transform 40%, tests 39%, import 19%, worker 1%)
+$ node gates/bin/test-lint.ts
+test-lint: 450 files checked, no finding
+$ node gates/bin/typecheck.ts
+typecheck: no type error in the files of tsconfig.json
+$ node gates/bin/pins.ts
+pins: 5 manifests checked, no finding
+$ node gates/bin/config-copies.ts
+config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical

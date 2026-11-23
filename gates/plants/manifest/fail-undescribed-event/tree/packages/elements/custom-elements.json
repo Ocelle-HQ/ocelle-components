@@ -382,6 +382,321 @@
         {
           "attributes": [
             {
+              "description": "Mission, project or personal. Mission is the default for missing or unsupported values.",
+              "fieldName": "layout",
+              "name": "layout",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "Product name passed to the top bar.",
+              "fieldName": "productName",
+              "name": "product-name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Open navigation\"",
+              "description": "Accessible name of the top bar menu.",
+              "fieldName": "menuLabel",
+              "name": "menu-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Navigation\"",
+              "description": "Localized name of the navigation drawer.",
+              "fieldName": "drawerLabel",
+              "name": "drawer-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Close navigation\"",
+              "description": "Localized name of the drawer close control.",
+              "fieldName": "closeLabel",
+              "name": "close-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Account\"",
+              "description": "Localized landmark name for bare rail destinations.",
+              "fieldName": "railLabel",
+              "name": "rail-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Workspace\"",
+              "description": "Localized landmark name for bare sidebar destinations.",
+              "fieldName": "sidebarLabel",
+              "name": "sidebar-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Explicit lower bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-narrow-below` token.",
+              "fieldName": "narrowBelow",
+              "name": "narrow-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "description": "Explicit upper bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-collapse-below` token.",
+              "fieldName": "collapseBelow",
+              "name": "collapse-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Omits block-end content padding.",
+              "fieldName": "flushBlockEnd",
+              "name": "flush-block-end",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Omits inline-end content padding.",
+              "fieldName": "flushInlineEnd",
+              "name": "flush-inline-end",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The main content destination and its padding.",
+              "name": "main"
+            },
+            {
+              "description": "A visible rail or sidebar wrapper.",
+              "name": "navigation"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "App frame with top bar, mission rail, context or personal sidebar, and one stable content destination.",
+          "events": [
+            {
+              "description": "Dispatched after the navigation changes tier. Bubbles and is composed.",
+              "name": "ocelle-app-shell-tier-change",
+              "type": {
+                "text": "CustomEvent<{ tier: AppShellTier; previousTier: AppShellTier }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "layout",
+              "description": "Mission, project or personal. Mission is the default for missing or unsupported values.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "product-name",
+              "default": "\"\"",
+              "description": "Product name passed to the top bar.",
+              "kind": "field",
+              "name": "productName",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "menu-label",
+              "default": "\"Open navigation\"",
+              "description": "Accessible name of the top bar menu.",
+              "kind": "field",
+              "name": "menuLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "drawer-label",
+              "default": "\"Navigation\"",
+              "description": "Localized name of the navigation drawer.",
+              "kind": "field",
+              "name": "drawerLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "close-label",
+              "default": "\"Close navigation\"",
+              "description": "Localized name of the drawer close control.",
+              "kind": "field",
+              "name": "closeLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "rail-label",
+              "default": "\"Account\"",
+              "description": "Localized landmark name for bare rail destinations.",
+              "kind": "field",
+              "name": "railLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "sidebar-label",
+              "default": "\"Workspace\"",
+              "description": "Localized landmark name for bare sidebar destinations.",
+              "kind": "field",
+              "name": "sidebarLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "narrow-below",
+              "description": "Explicit lower bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-narrow-below` token.",
+              "kind": "field",
+              "name": "narrowBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "collapse-below",
+              "description": "Explicit upper bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-collapse-below` token.",
+              "kind": "field",
+              "name": "collapseBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "flush-block-end",
+              "default": "false",
+              "description": "Omits block-end content padding.",
+              "kind": "field",
+              "name": "flushBlockEnd",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "flush-inline-end",
+              "default": "false",
+              "description": "Omits inline-end content padding.",
+              "kind": "field",
+              "name": "flushInlineEnd",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Current measured layout tier.",
+              "kind": "field",
+              "name": "tier",
+              "readonly": true,
+              "type": {
+                "text": "AppShellTier"
+              }
+            },
+            {
+              "description": "The stable programmatically focusable main content, available after rendering.",
+              "kind": "field",
+              "name": "contentTarget",
+              "readonly": true,
+              "type": {
+                "text": "HTMLElement | null"
+              }
+            },
+            {
+              "description": "Rereads CSS thresholds and the current logical inline size.",
+              "kind": "method",
+              "name": "remeasure",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleAppShell",
+          "slots": [
+            {
+              "description": "Optional keyboard shortcut to the main content.",
+              "name": "skip-link"
+            },
+            {
+              "description": "The top bar's host-owned actions.",
+              "name": "actions"
+            },
+            {
+              "description": "Mission destinations.",
+              "name": "rail"
+            },
+            {
+              "description": "Context, project or personal destinations.",
+              "name": "sidebar"
+            },
+            {
+              "description": "Main content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-app-shell"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-app-shell.ts",
+            "name": "OcelleAppShell"
+          },
+          "kind": "js",
+          "name": "OcelleAppShell"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-app-shell.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
               "fieldName": "ground",
@@ -473,6 +788,88 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-brand-mark.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"Breadcrumb\"",
+              "description": "Localized name for the breadcrumb landmark.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered breadcrumb list.",
+              "name": "list"
+            },
+            {
+              "description": "A breadcrumb list item.",
+              "name": "item"
+            },
+            {
+              "description": "An ancestor's native link.",
+              "name": "link"
+            },
+            {
+              "description": "The current page's text.",
+              "name": "current"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A named breadcrumb trail with a text current page.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "\"Breadcrumb\"",
+              "description": "Localized name for the breadcrumb landmark.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Ancestors in order followed by the current page.",
+              "kind": "field",
+              "name": "items",
+              "privacy": "public",
+              "type": {
+                "text": "readonly BreadcrumbItem[]"
+              }
+            }
+          ],
+          "name": "OcelleBreadcrumbs",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-breadcrumbs"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-breadcrumbs.ts",
+            "name": "OcelleBreadcrumbs"
+          },
+          "kind": "js",
+          "name": "OcelleBreadcrumbs"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-breadcrumbs.ts"
     },
     {
       "declarations": [
@@ -1003,6 +1400,112 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "fieldName": "overflow",
+              "name": "overflow",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "fieldName": "digest",
+              "name": "digest",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inset box.",
+              "name": "block"
+            },
+            {
+              "description": "The `pre` that holds the text.",
+              "name": "code"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A preformatted block for code, commands, logs and digests, in the library's sans with tabular figures. The text is\nthe element's light-DOM text content, read as a copy: child elements add no markup or style.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "overflow",
+              "default": "undefined",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "kind": "field",
+              "name": "overflow",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "digest",
+              "default": "undefined",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "kind": "field",
+              "name": "digest",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "name": "OcelleCodeBlock",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-code-block"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-code-block.ts",
+            "name": "OcelleCodeBlock"
+          },
+          "kind": "js",
+          "name": "OcelleCodeBlock"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-code-block.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
               "fieldName": "label",
               "name": "label",
@@ -1346,6 +1849,194 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-dialog.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "Moved onto the summary: its accessible name, over the `summary` slot's text (while no host `aria-labelledby` names it); an empty or whitespace-only value clears it.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the summary: the ids, space-separated, of the elements that name it, resolved in the host's own tree and related by element reference, over `aria-label` and the `summary` slot's text; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the summary: the ids, space-separated, of the elements that describe it, resolved in the host's own tree and related by element reference; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the summary: its advisory title; an empty value clears it.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Mapped onto `open` and removed from the host: `\"true\"` opens, `\"false\"` closes, any other value changes nothing. No mirror: `open` is the persisted state. Read after `open` at upgrade.",
+              "name": "aria-expanded",
+              "type": {
+                "text": "\"true\" | \"false\""
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Whether the panel is shown. Reflected: a user toggle, find in page and a script set the attribute alike, so server\nmarkup and htmx morphs keep it.",
+              "fieldName": "open",
+              "name": "open",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inner `details`.",
+              "name": "details"
+            },
+            {
+              "description": "The summary control.",
+              "name": "summary"
+            },
+            {
+              "description": "The panel wrapper.",
+              "name": "panel"
+            }
+          ],
+          "cssProperties": [],
+          "cssStates": [
+            {
+              "description": "While the disclosure is open.",
+              "name": "open"
+            }
+          ],
+          "customElement": true,
+          "description": "A disclosure: a summary that opens and closes a panel inline, on native `details` and `summary` semantics.",
+          "events": [
+            {
+              "description": "After each change of the open state, whatever caused it, in a later task after the attribute is reflected, with the new state. Changes made before the inner `details`' native `toggle` runs are coalesced (always those of one task): at most one event per native `toggle`, with the final state; none at upgrade or when the state ends where the last event left it. Bubbles, composed, not cancelable.",
+              "name": "ocelle-disclosure-toggle",
+              "type": {
+                "text": "CustomEvent<{ open: boolean }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "open",
+              "default": "undefined",
+              "description": "Whether the panel is shown. Reflected: a user toggle, find in page and a script set the attribute alike, so server\nmarkup and htmx morphs keep it.",
+              "kind": "field",
+              "name": "open",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "description": "Clicks the summary, so it toggles once.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "description": "Focuses the summary (the shadow root has no `delegatesFocus`); before the first render it does nothing.",
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleDisclosure",
+          "slots": [
+            {
+              "description": "The summary's content; with no host `aria-labelledby` or `aria-label`, its text alone names the control (the summary is labelled by the slot's wrapper, so a slotted icon adds nothing); empty, the control has no name. No interactive content.",
+              "name": "summary"
+            },
+            {
+              "description": "An icon (`ocelle-icon` or a bare `svg`) that replaces the chevron (`chevron-end` closed, `chevron-down` open) in both states; decorative, never labelled: its wrapper is hidden from assistive technology.",
+              "name": "icon"
+            },
+            {
+              "description": "The panel's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-disclosure"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-disclosure.ts",
+            "name": "OcelleDisclosure"
+          },
+          "kind": "js",
+          "name": "OcelleDisclosure"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-disclosure.ts"
     },
     {
       "declarations": [
@@ -3641,6 +4332,209 @@
         {
           "attributes": [
             {
+              "description": "The native destination. An absent or unusable destination renders text.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The visible and accessible destination name.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "`page` or `true` marks the link current. Other values omit the state.",
+              "fieldName": "current",
+              "name": "current",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Standalone preference for icon-only presentation.",
+              "fieldName": "compact",
+              "name": "compact",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native link, when a destination is supplied.",
+              "name": "link"
+            },
+            {
+              "description": "The visible label, hidden while the link is compact.",
+              "name": "label"
+            },
+            {
+              "description": "The compact label bubble.",
+              "name": "bubble"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A vertical destination link. Compact mode keeps the accessible label and provides a visual label bubble.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "href",
+              "description": "The native destination. An absent or unusable destination renders text.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The visible and accessible destination name.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "current",
+              "description": "`page` or `true` marks the link current. Other values omit the state.",
+              "kind": "field",
+              "name": "current",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "compact",
+              "default": "false",
+              "description": "Standalone preference for icon-only presentation.",
+              "kind": "field",
+              "name": "compact",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleNavItem",
+          "slots": [
+            {
+              "description": "A decorative destination icon.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-nav-item"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-nav-item.ts",
+            "name": "OcelleNavItem"
+          },
+          "kind": "js",
+          "name": "OcelleNavItem"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-nav-item.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"Navigation\"",
+              "description": "Localized name for the navigation landmark.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered list of destination links.",
+              "name": "list"
+            },
+            {
+              "description": "A destination's native link.",
+              "name": "link"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A named, wrapping group of native destination links.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "\"Navigation\"",
+              "description": "Localized name for the navigation landmark.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Destinations in host-supplied order. The first valid current destination owns the current-page state.",
+              "kind": "field",
+              "name": "items",
+              "privacy": "public",
+              "type": {
+                "text": "readonly NavPillItem[]"
+              }
+            }
+          ],
+          "name": "OcelleNavPill",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-nav-pill"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-nav-pill.ts",
+            "name": "OcelleNavPill"
+          },
+          "kind": "js",
+          "name": "OcelleNavPill"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-nav-pill.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "\"info\"",
               "description": "The tone: `info`, `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property\nreads `\"info\"`, while the attribute keeps the value as written. Reflected.",
               "fieldName": "tone",
@@ -4579,6 +5473,81 @@
     {
       "declarations": [
         {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "fieldName": "targetSelector",
+              "name": "target-selector",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native keyboard control.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A keyboard shortcut to programmatically focus the start of the page content.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "default": "null",
+              "description": "Explicit target, which takes precedence even when it cannot receive focus.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "type": {
+                "text": "HTMLElement | null"
+              }
+            },
+            {
+              "attribute": "target-selector",
+              "default": "\"\"",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "kind": "field",
+              "name": "targetSelector",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleSkipLink",
+          "slots": [
+            {
+              "description": "The localized shortcut label.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-skip-link"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-skip-link.ts",
+            "name": "OcelleSkipLink"
+          },
+          "kind": "js",
+          "name": "OcelleSkipLink"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-skip-link.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [],
           "cssParts": [],
           "cssProperties": [],
@@ -4928,6 +5897,151 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-tooltip.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The product name displayed beside the mark.",
+              "fieldName": "productName",
+              "name": "product-name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether to expose the menu trigger.",
+              "fieldName": "showMenu",
+              "name": "show-menu",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "\"Open navigation\"",
+              "description": "Localized accessible name for the menu trigger.",
+              "fieldName": "menuLabel",
+              "name": "menu-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the host has expanded navigation.",
+              "fieldName": "menuExpanded",
+              "name": "menu-expanded",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chrome container.",
+              "name": "bar"
+            },
+            {
+              "description": "The decorative rosette and product name.",
+              "name": "brand"
+            },
+            {
+              "description": "The host actions region, hidden while empty.",
+              "name": "actions"
+            },
+            {
+              "description": "The native menu trigger.",
+              "name": "menu-button"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "The application's brand, product name, host actions and optional navigation menu trigger.",
+          "events": [
+            {
+              "description": "Requests the next menu state. Bubbles and is composed. The host applies the resulting state with `menuExpanded`.",
+              "name": "ocelle-top-bar-menu-request",
+              "type": {
+                "text": "CustomEvent<{ expanded: boolean }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "product-name",
+              "default": "\"\"",
+              "description": "The product name displayed beside the mark.",
+              "kind": "field",
+              "name": "productName",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "show-menu",
+              "default": "false",
+              "description": "Whether to expose the menu trigger.",
+              "kind": "field",
+              "name": "showMenu",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "menu-label",
+              "default": "\"Open navigation\"",
+              "description": "Localized accessible name for the menu trigger.",
+              "kind": "field",
+              "name": "menuLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "menu-expanded",
+              "default": "false",
+              "description": "Whether the host has expanded navigation.",
+              "kind": "field",
+              "name": "menuExpanded",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleTopBar",
+          "slots": [
+            {
+              "description": "Host-owned controls, shown after the product name.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-top-bar"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-top-bar.ts",
+            "name": "OcelleTopBar"
+          },
+          "kind": "js",
+          "name": "OcelleTopBar"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-top-bar.ts"
     },
     {
       "declarations": [

@@ -162,6 +162,15 @@ change without a list triggers the full suite for that sub-check. Completed, mat
 local `reports/story-evidence/` directory. The check logs say which project and files ran, which inputs were tested, and
 whether evidence was reused. Remove that local directory for a fresh execution.
 
+Use `ci-only <repository-relative path>` in the same file to run a changed collateral integration test in required
+CI. The eligible suites are `gates/test/integration/visual.test.ts` and `gates/test/integration/axe.test.ts`, each
+discovered in `gates-integration`. Use this for maintenance of existing assertions such as exact story or baseline
+counts. A suite with a recorded red assertion or helper, a build or browser behavior proof, or a suite also listed
+as a local consumer must stay local. At least one changed runnable test must remain in the focused head run.
+The phase report lists the deferred project/file identities in `tdd-check.json` under `deferred_ci`. The reviewer verifies each against
+the successful required `Unit tests` inventory and shard results for the same candidate and checks the corresponding
+required visual or accessibility job before approval.
+
 The required GitHub `Unit tests` check verifies the complete discovered inventory across isolated runners, with timing-sensitive
 projects retaining their Vitest settings. The local `pnpm test` command still runs the complete suite. To compare both paths
 on a same-repository PR, include `<!-- verify-unit-test-parity -->` in its description before opening or pushing to the PR.

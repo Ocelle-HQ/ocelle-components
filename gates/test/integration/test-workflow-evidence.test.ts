@@ -1,14 +1,16 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { expect, it } from "vitest";
-import type { Assertion } from "../../lib/test-evidence.ts";
+import type { Assertion, ShardResult } from "../../lib/test-evidence.ts";
 
 const repository = resolve(import.meta.dirname, "../../..");
 const storyFiles = [
   "gates/bin/story-evidence.ts",
+  "gates/lib/story-cache.ts",
   "gates/lib/test-evidence.ts",
+  "gates/lib/story-selection.ts",
   "gates/lib/vitest-run.ts",
   "gates/lib/spawn.ts",
   ".specify/extensions/story/story-config.yml",
@@ -117,8 +119,10 @@ it("runs real clean-worktree red, base and green checks and refuses malformed ca
   const root = fixture();
   try {
     for (const file of storyFiles) {
+      const source = join(repository, file);
+      if (file === "gates/lib/story-cache.ts" && !existsSync(source)) continue;
       mkdirSync(dirname(join(root, file)), { recursive: true });
-      copyFileSync(join(repository, file), join(root, file));
+      copyFileSync(source, join(root, file));
     }
     write(root, "answer.ts", 'export const answer = "old";\n');
     write(root, "test/scenario.ts", 'import { expect } from "vitest";\nexport function inspectAnswer(value: string): void {\n  expect(value).toBe("corrected");\n}\n');
@@ -176,7 +180,183 @@ it("runs real clean-worktree red, base and green checks and refuses malformed ca
     const checked = check();
     expect({ status: checked.status, stderr: checked.stderr }).toMatchObject({ status: 0 });
     expect(JSON.parse(checked.stdout) as PhaseResult).toMatchObject({ status: "pass", focused: { base: { resumed: true }, head: { resumed: false } } });
+
+    for (const [filename, content] of [
+      ["pnpm-lock.yaml", "lockfileVersion: '9.0'\n"],
+      ["vitest.config.mjs", 'export default { test: {name:"fixture", include:["test/**/*.test.ts"], testTimeout: 6000} };\n'],
+    ] as const) {
+      write(root, filename, content);
+      commit(root, `update ${filename}`);
+      const fresh = check();
+      expect({ status: fresh.status, stderr: fresh.stderr }).toMatchObject({ status: 0 });
+      expect(JSON.parse(fresh.stdout) as PhaseResult).toMatchObject({
+        status: "pass",
+        focused: { base: { resumed: true }, head: { resumed: false } },
+      });
+    }
   } finally {
     rmSync(root, { force: true, recursive: true });
   }
 }, 80_000);
+
+it.each([
+  { label: "surplus fields", records: (sha: string) => `phase ${sha} unexpected\n` },
+  { label: "a repeated label", records: (sha: string) => `phase ${sha}\nphase ${sha}\n` },
+])("fails closed on red history with $label", ({ records }) => {
+  const root = fixture();
+  try {
+    for (const file of storyFiles) {
+      const source = join(repository, file);
+      if (file === "gates/lib/story-cache.ts" && !existsSync(source)) continue;
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      copyFileSync(source, join(root, file));
+    }
+    const feature = "specs/002-records";
+    const reviews = `${feature}/reviews/phase-1`;
+    write(root, "answer.ts", 'export const answer = "old";\n');
+    write(root, `${reviews}/base.sha`, `${commit(root, "base")}\n`);
+    write(root, "test/answer.test.ts", [
+      'import { expect, it } from "vitest";',
+      'import { answer } from "../answer.ts";',
+      'it("keeps the corrected answer", () => {',
+      '  expect(answer).toBe("corrected");',
+      '});',
+    ].join("\n"));
+    write(root, `${reviews}/red-commits`, records(commit(root, "red")));
+    write(root, "answer.ts", 'export const answer = "corrected";\n');
+    const head = commit(root, "green");
+    const result = node(root, join(root, "gates/bin/story-evidence.ts"), "check", feature, "1",
+      `ln -s "${join(repository, "node_modules")}" node_modules`, ":(glob)**/*.test.ts");
+    expect({ status: result.status, stderr: result.stderr }).toMatchObject({ status: 0 });
+    expect(JSON.parse(result.stdout) as PhaseResult).toMatchObject({
+      status: "fail", head, problems: ["invalid red-commits entry"],
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it("rejects empty green evidence from a worker that exited successfully", () => {
+  const root = fixture();
+  try {
+    for (const file of storyFiles) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      copyFileSync(join(repository, file), join(root, file));
+    }
+    const runner = "gates/bin/story-evidence.ts";
+    const source = readFileSync(join(root, runner), "utf8");
+    const emptyHead = source.replace("  writeJson(outputPath, result);",
+      '  writeJson(outputPath, input.mode === "head" ? { evidence: { status: "green", assertions: [] }, selected: [] } : result);');
+    expect(emptyHead).not.toBe(source);
+    write(root, runner, emptyHead);
+    const feature = "specs/003-empty-report";
+    const reviews = `${feature}/reviews/phase-1`;
+    write(root, "answer.ts", 'export const answer = "old";\n');
+    write(root, `${reviews}/base.sha`, `${commit(root, "base")}\n`);
+    write(root, "test/answer.test.ts", [
+      'import { expect, it } from "vitest";',
+      'import { answer } from "../answer.ts";',
+      'it("keeps the corrected answer", () => {',
+      '  expect(answer).toBe("corrected");',
+      '});',
+    ].join("\n"));
+    write(root, `${reviews}/red-commits`, `phase ${commit(root, "red")}\n`);
+    write(root, "answer.ts", 'export const answer = "corrected";\n');
+    commit(root, "green");
+    const result = node(root, join(root, runner), "check", feature, "1",
+      `ln -s "${join(repository, "node_modules")}" node_modules`, ":(glob)**/*.test.ts");
+    expect({ status: result.status, stderr: result.stderr }).toMatchObject({ status: 0 });
+    expect(JSON.parse(result.stdout) as PhaseResult).toMatchObject({
+      status: "fail", problems: ["final tests on HEAD: focused Vitest worker returned incomplete evidence"],
+      focused: { head: { evidence: { status: "invalid" } } },
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it("keeps a changed collateral integration test in CI inventory and runs only the focused proof at head", () => {
+  const root = fixture();
+  try {
+    for (const file of storyFiles) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      copyFileSync(join(repository, file), join(root, file));
+    }
+    const runner = join(root, "gates/bin/story-evidence.ts");
+    const feature = "specs/004-ci-collateral";
+    const reviews = feature + "/reviews/phase-1";
+    const visual = "gates/test/integration/visual.test.ts";
+    const suite = join(repository, "gates/bin/test-shards.ts");
+    const ciInventory = join(root, "inventory.json");
+    write(root, "vitest.config.mjs", "export default { test: { projects: [" +
+      '{ test: { name: "fixture", include: ["test/**/*.test.ts"] } }, ' +
+      '{ test: { name: "gates-integration", include: ["gates/test/integration/*.test.ts"] } }' +
+      "] } };\n");
+    write(root, "answer.ts", 'export const answer = "old";\n');
+    write(root, visual, 'import { expect, it } from "vitest"; it("checks aggregate baseline count", () => expect(1).toBe(1));\n');
+    write(root, reviews + "/base.sha", commit(root, "base") + "\n");
+    write(root, "test/answer.test.ts", [
+      'import { expect, it } from "vitest";',
+      'import { answer } from "../answer.ts";',
+      'it("keeps the corrected answer", () => {',
+      '  expect(answer).toBe("corrected");',
+      '});',
+    ].join("\n"));
+    write(root, reviews + "/red-commits", "phase " + commit(root, "red proof") + "\n");
+    write(root, "answer.ts", 'export const answer = "corrected";\n');
+    write(root, visual, 'import { expect, it } from "vitest"; it("checks aggregate baseline count", () => expect(1).toBe(2));\n');
+    const head = commit(root, "green implementation and collateral maintenance");
+    write(root, reviews + "/test-scope.txt", "ci-only " + visual + "\n");
+    const result = node(root, runner, "check", feature, "1",
+      'ln -s "' + join(repository, "node_modules") + '" node_modules', ":(glob)**/*.test.ts");
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({
+      status: "pass", head, deferred_ci: [{ project: "gates-integration", file: visual }],
+      focused: { head: { evidence: { status: "green" }, selected: [{ project: "fixture", file: "test/answer.test.ts" }] } },
+    });
+    const planned = node(root, suite, "plan", ciInventory, "1");
+    expect({ status: planned.status, stderr: planned.stderr }).toMatchObject({ status: 0 });
+    expect(json(ciInventory)).toMatchObject({
+      revision: head, inventory: [
+        { project: "fixture", file: "test/answer.test.ts" },
+        { project: "gates-integration", file: visual },
+      ],
+    });
+    const results = join(root, "results");
+    const resultPath = join(results, "0", "result.json");
+    mkdirSync(dirname(resultPath), { recursive: true });
+    const ci = node(root, suite, "run", ciInventory, "0", resultPath);
+    expect(ci.status).toBe(1);
+    const ciReport = json(resultPath) as ShardResult;
+    expect(ciReport.revision).toBe(head);
+    expect(ciReport.files.find(({ file }) => file === visual)).toMatchObject({
+      project: "gates-integration", file: visual, state: "failed", errors: [],
+      tests: [{ name: "checks aggregate baseline count", state: "failed", errors: [{ name: "AssertionError" }] }],
+    });
+    const aggregate = node(root, suite, "verify", ciInventory, results);
+    expect(aggregate.status).toBe(1);
+    expect(aggregate.stderr).toContain(visual);
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it("prints invalid red labels and sends invalid worker commands to stderr with exit 2", () => {
+  const root = fixture();
+  try {
+    commit(root, "fixture");
+    const script = join(repository, "gates/bin/story-evidence.ts");
+    const captured = node(root, script, "red", "specs/005-cli", "7", "true", ":(glob)**/*.test.ts", "invalid");
+    expect(captured.status).toBe(0);
+    expect(captured.stderr).toBe("");
+    expect(JSON.parse(captured.stdout) as unknown).toEqual({
+      phase: "7", status: "fail", red: false, recorded: false, problem: "invalid red label",
+    });
+    const bad = node(root, script, "worker", "missing-selection.json");
+    expect(bad.status).toBe(2);
+    expect(bad.stderr).toBe("invalid focused story evidence arguments\n");
+    expect(bad.stdout).toBe("");
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});

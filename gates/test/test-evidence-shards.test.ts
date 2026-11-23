@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
+import { estimateTestSeconds, planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
 
 const revision = "a".repeat(40);
 const alpha = { project: "gates", file: "gates/test/alpha.test.ts" };
@@ -11,6 +11,17 @@ const alphaResult = { ...alpha, state: "passed", errors: [], durationMs: 0, test
 const betaResult = { ...beta, state: "passed", errors: [], durationMs: 1, tests: [passed] };
 const firstShard = { revision, index: 0, errors: [], files: [alphaResult] };
 const secondShard = { revision, index: 1, errors: [], files: [betaResult] };
+const measuredFiles = [
+  { project: "gates-integration", file: "gates/test/integration/visual.test.ts", seconds: 2095 },
+  { project: "gates-integration", file: "gates/test/integration/axe.test.ts", seconds: 530 },
+  { project: "elements-browser", file: "packages/elements/test/browser/drawer.test.ts", seconds: 349 },
+  { project: "elements (chromium)", file: "packages/elements/test/drawer.test.ts", seconds: 332 },
+  { project: "elements-browser", file: "packages/elements/test/browser/dialog.test.ts", seconds: 309 },
+  { project: "elements (chromium)", file: "packages/elements/test/dialog.test.ts", seconds: 293 },
+  { project: "elements-browser", file: "packages/elements/test/browser/notice.test.ts", seconds: 193 },
+  { project: "storybook-integration", file: "storybook/test/integration/elements-stories.test.ts", seconds: 192 },
+  { project: "elements-browser", file: "packages/elements/test/browser/button.test.ts", seconds: 155 },
+];
 
 describe("unit test shard plans", () => {
   it.each([
@@ -20,6 +31,10 @@ describe("unit test shard plans", () => {
     const result = planTestShards(sha, [alpha, beta], 2);
     expect(result).toEqual({ ...manifest, revision: sha });
     expect(validTestPlan(result, sha)).toBe(true);
+  });
+
+  it("accepts a single shard for a nonempty suite", () => {
+    expect(planTestShards(revision, [alpha, beta], 1)).toEqual({ ...manifest, shards: [[alpha, beta]] });
   });
 
   it.each([
@@ -42,6 +57,12 @@ describe("unit test shard plans", () => {
 
   it("rejects duplicate planned test identities", () => {
     expect(() => planTestShards(revision, [alpha, alpha], 2))
+      .toThrow(new Error("invalid revision, shard count, or test inventory"));
+  });
+
+  it("rejects a mixed inventory even when only one path leaves the workspace", () => {
+    const outside = { ...beta, file: "../out-of-tree.test.ts" };
+    expect(() => planTestShards(revision, [alpha, outside], 1))
       .toThrow(new Error("invalid revision, shard count, or test inventory"));
   });
 
@@ -87,6 +108,39 @@ describe("unit test shard plans", () => {
     const node = { project: "elements-node", file: "packages/elements/test/node/manifest.test.ts" };
     const plan = planTestShards(revision, [alpha, stories, integration, browser, node, build], 2);
     expect(plan.shards).toEqual([[build, browser], [stories, integration, node, alpha]]);
+  });
+
+  it.each(measuredFiles)("uses rollout timing for $project/$file", ({ project, file, seconds }) => {
+    expect(estimateTestSeconds({ project, file })).toBe(seconds);
+  });
+
+  it.each([
+    { project: "elements-build", seconds: 15 },
+    { project: "storybook-integration", seconds: 15 },
+    { project: "elements-browser", seconds: 10 },
+    { project: "elements (chromium)", seconds: 10 },
+    { project: "gates-integration", seconds: 5 },
+    { project: "tokens-browser", seconds: 5 },
+    { project: "elements-node", seconds: 1 },
+    { project: "gates", seconds: 1 },
+  ])("retains the default estimate for new files in $project", ({ project, seconds }) => {
+    expect(estimateTestSeconds({ project, file: "test/new.test.ts" })).toBe(seconds);
+  });
+
+  it("distinguishes a measured project and file pair from the same file in another project", () => {
+    expect(estimateTestSeconds({ project: "elements (chromium)", file: "packages/elements/test/browser/drawer.test.ts" })).toBe(10);
+  });
+
+  it("isolates the long visual integration test without losing inventory", () => {
+    const measured = measuredFiles.map(({ project, file }) => ({ project, file }));
+    const visual = { project: "gates-integration", file: "gates/test/integration/visual.test.ts" };
+    const inventory = [...measured, alpha, beta];
+    const planned = planTestShards(revision, inventory, 6);
+
+    expect(planned.shards.find((shard) => shard.some(({ file }) => file === visual.file))).toEqual([visual]);
+    expect(planned.shards.flat()).toEqual(expect.arrayContaining(inventory));
+    expect(planned.shards.flat()).toHaveLength(inventory.length);
+    expect(planTestShards(revision, [...inventory].reverse(), 6)).toEqual(planned);
   });
 });
 

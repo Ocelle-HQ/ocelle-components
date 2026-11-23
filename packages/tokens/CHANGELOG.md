@@ -22,6 +22,11 @@ literal `ms` value. The seven tokens are additions to the token names: a minor c
 
 ### Added
 
+- **Configurable app-shell thresholds are a minor addition (mission 015, #12).**
+  `--ocelle-app-shell-narrow-below` (45rem) and `--ocelle-app-shell-collapse-below` (68.75rem) let hosts tune
+  when a frame switches between narrow drawer, collapsed navigation, and expanded navigation. The defaults are
+  published in both themes, and a valid explicit shell setting takes priority over the corresponding token.
+
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
   by `@font-face` in `tokens.css` with a relative URL; see the README for the CSP the host needs.
 - `tokens.css`: every token as an `--ocelle-*` custom property, light by default and with no system preference,

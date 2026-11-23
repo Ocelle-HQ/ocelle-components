@@ -3,7 +3,7 @@ import "../src/ocelle-icon.ts";
 import { FirstLoadBase, OcelleTestProbe, OcelleTestRegion } from "./fixtures/live-regions.ts";
 import { inProcessDriver, timing } from "./in-process.ts";
 import type { InsertHow } from "./scenarios/driver.ts";
-import { defineDriverHelpers, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
+import { codeBlockDriverScenarios, defineCodeHelper, defineDetailsHelper, defineDriverHelpers, disclosureDriverScenarios, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
 
 // The driver steps in process (specs/010-feedback-forms T001b; contracts/testing.md § Driver steps, § Forms): each
 // step on test-only elements of test/fixtures/live-regions.ts and plain controls, so each test fails without its step.
@@ -23,6 +23,8 @@ const driver = inProcessDriver();
 // The helper elements of the driver additions of 013 phase 1 (scenarios/driver-additions.ts), defined in this file's
 // frame for the shared bodies at the end of this file.
 defineDriverHelpers();
+defineDetailsHelper();
+defineCodeHelper();
 
 function byId(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -653,6 +655,24 @@ describe("the in-process driver", () => {
 
 describe("the driver additions, in process (013 T003)", () => {
   it.each(driverAdditionScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// The driver additions of 020 phase 1 in process (contracts/checks.md § Driver additions; tasks.md T003): `findText`,
+// `setProperties` and the two readers `visible` and `reflected`, on plain `details` and the `ocelle-test-details` helper
+// defined above. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
+describe("the driver additions of 020, in process (T003)", () => {
+  it.each(disclosureDriverScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// The driver additions of 020 phase 2 in process (contracts/checks.md § Driver additions; tasks.md T023): `copyShadow`,
+// `copyShadowRun`, `ariaSnapshot` and the two readers `clientRects` and `characters`, on the `ocelle-test-code` helper
+// defined above. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
+describe("the driver additions of 020 phase 2, in process (T023)", () => {
+  it.each(codeBlockDriverScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
   });
 });

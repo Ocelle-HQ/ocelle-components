@@ -1,11 +1,12 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has thirty-three elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-one elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
-`ocelle-form-select`, a labelled native select for closed choices, `ocelle-form-textarea`, a labelled multiline field, `ocelle-scroller`, a
-horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-board` with its
+`ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
+a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab stop only while it overflows,
+`ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
@@ -14,7 +15,9 @@ and `ocelle-personal-rail`, two controls that follow the control conventions bel
 `ocelle-action-row`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an
 empty or loading panel, `ocelle-progress`, a progress bar, `ocelle-listbox` with its `ocelle-option` children,
 `ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children, `ocelle-segmented-choice` with its
-`ocelle-segment` children, `ocelle-copy-field` and `ocelle-link`.
+`ocelle-segment` children, `ocelle-copy-field`, `ocelle-link`, `ocelle-disclosure`, `ocelle-code-block`, and the
+app-frame elements `ocelle-app-shell`,
+`ocelle-top-bar`, `ocelle-nav-item`, `ocelle-nav-pill`, `ocelle-breadcrumbs` and `ocelle-skip-link`.
 
 The elements need Chromium 135 or WebKit 17.4 and later (see Engines). Each element has its own entry point. A parent
 element's entry point also defines the elements it owns as children, and the copy field's defines `ocelle-icon`.
@@ -59,6 +62,14 @@ of the host's own.
 | `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |
 | `@ocelle/elements/ocelle-link.js` | `dist/ocelle-link.js` | `ocelle-link` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-nav-item.js` | `dist/ocelle-nav-item.js` | `ocelle-nav-item` and its compact label tooltip; for hosts with a bundler |
+| `@ocelle/elements/ocelle-top-bar.js` | `dist/ocelle-top-bar.js` | `ocelle-top-bar`, its brand mark and its menu icon; for hosts with a bundler |
+| `@ocelle/elements/ocelle-app-shell.js` | `dist/ocelle-app-shell.js` | `ocelle-app-shell` and its frame dependencies; for hosts with a bundler |
+| `@ocelle/elements/ocelle-nav-pill.js` | `dist/ocelle-nav-pill.js` | `ocelle-nav-pill` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-breadcrumbs.js` | `dist/ocelle-breadcrumbs.js` | `ocelle-breadcrumbs` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-skip-link.js` | `dist/ocelle-skip-link.js` | `ocelle-skip-link` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-code-block.js` | `dist/ocelle-code-block.js` | `ocelle-code-block` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -437,6 +448,7 @@ error are drawn as for `ocelle-form-input`; the select leaves room for the indic
 Before the definition has loaded, a select's `<option>` children may show as text, as the browser draws an unknown
 element's content; the rule above for undefined elements hides them. Not measured for `ocelle-form-select`: that
 Alt+Down or Space opens the list, and how the browser draws the open list.
+
 ## `ocelle-form-textarea`
 
 ```html
@@ -1005,16 +1017,13 @@ orient();
 narrow.addEventListener("change", orient);
 ```
 
-For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail. A
-shell that wants the rail horizontal inside its drawer and vertical in its column sets `orientation` from its own
-tier, with an exclusive bound in its own query; the rail does not care where the value comes from. It emits no event.
-The container-tier convention (Element conventions) describes the tiers of an element that chooses its own.
+Set the rail's `orientation` to `horizontal` or `vertical` when an application changes its layout.
+The rail exposes a navigation landmark named with `label` and emits no event.
 
-The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px), the size #12's
-`ocelle-nav-item` is expected to have. The rail sets only the gap, the items' centring and the chrome ink as its
-colour, which an item takes when it inherits colour. A plain `<a>` does not: give `<a>` items `color: inherit` and a
-target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no release of this package ships
-`ocelle-nav-item` yet.
+The rail leaves destination sizing to its items. It provides the gap, centers items and sets the chrome ink.
+In a standalone rail, give plain links `color: inherit` and a target of at least 24 px. Inside an
+`ocelle-app-shell` rail region, the shell applies chrome colors to `ocelle-nav-item`, which uses
+`--ocelle-size-rail-item` (40 px).
 
 `ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
 `--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and
@@ -1886,6 +1895,225 @@ tokens, and on one line or on three lines axe reports nothing.
 `ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`,
 `--ocelle-focus-width` and `--ocelle-focus-offset`.
 
+## App frame and navigation
+
+Use `ocelle-app-shell` with `layout="mission"` for an optional rail and a sidebar, `layout="project"` for a project
+sidebar or `layout="personal"` for personal destinations. Supply primary content in its default slot, a skip
+control in `skip-link`, and application actions in `actions`. The shell owns its top bar and narrow navigation.
+The `main` part marks its content region, and `navigation` marks each rendered navigation wrapper. Set
+`flush-block-end` and `flush-inline-end` independently to remove the corresponding main padding.
+
+### Named regions and keyboard navigation
+
+A region with its own navigation landmark, such as a labelled `ocelle-personal-rail` or `ocelle-context-sidebar`,
+keeps that landmark and its name. The shell names bare navigation lists with `rail-label` or `sidebar-label`.
+Give the regions distinct names. Empty regions expose no landmark.
+
+```html
+<ocelle-app-shell id="project-shell" layout="mission" product-name="Projects"
+  sidebar-label="Project sections" menu-label="Show navigation"
+  drawer-label="Project navigation" close-label="Close navigation">
+  <ocelle-skip-link id="project-skip" slot="skip-link">Skip to project content</ocelle-skip-link>
+  <ocelle-personal-rail slot="rail" label="Workspace destinations">
+    <ocelle-nav-item href="/inbox" label="Inbox">
+      <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+    </ocelle-nav-item>
+  </ocelle-personal-rail>
+  <ocelle-nav-item slot="sidebar" href="/projects/plan" label="Plan" current="page">
+    <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  </ocelle-nav-item>
+  <button slot="actions" type="button">Create project</button>
+  <h1>Project plan</h1>
+  <button type="button">Review plan</button>
+</ocelle-app-shell>
+<script type="module" src="/project-frame.js"></script>
+```
+
+Wire the skip control to the shell's internal main from the external module after registering the elements.
+This bundled example imports the package root. A page using the browser build loads that module before wiring
+the reference. `contentTarget` is available after the shell renders.
+
+```js
+import "@ocelle/elements";
+
+const shell = document.querySelector("#project-shell");
+const skip = document.querySelector("#project-skip");
+await shell.updateComplete;
+skip.target = shell.contentTarget;
+```
+
+At narrow widths, the shell presents the same destinations in a modal drawer with the supplied dialog and close
+labels. Opening moves focus to the first sequential destination when there is one. Escape closes the drawer and
+restores focus to the menu control. If a compact label bubble owns the first Escape, the next Escape closes the
+drawer. When no destinations are present, the shell omits the menu control.
+
+### Frame thresholds
+
+The shell measures its own border-box inline size. The default narrow and collapse thresholds are 45rem and
+68.75rem. Sizes below the narrow threshold select `narrow`; sizes from there up to the collapse threshold select
+`collapsed`; sizes at or above the collapse threshold select `expanded`. Equal thresholds skip the collapsed tier.
+
+Set `narrow-below` and `collapse-below` or use the corresponding camel-case properties. Bounds accept nonnegative
+`px`, `rem` or `em` values, including unitless `0`. Set threshold tokens in an external CSS file when the surrounding
+layout owns the breakpoints.
+
+```css
+#project-shell {
+  --ocelle-app-shell-narrow-below: 42rem;
+  --ocelle-app-shell-collapse-below: 65rem;
+}
+```
+
+Each threshold resolves independently in this order: a valid explicit setting, a valid token override, then the
+published default. If the resulting narrow threshold exceeds the collapse threshold, the shell uses both
+defaults. Call `shell.remeasure()` after changing only the threshold styles without resizing the shell.
+Read `shell.tier` for the current tier. After a transition, the bubbling, composed
+`ocelle-app-shell-tier-change` event supplies `{ tier, previousTier }` after navigation settles.
+
+### Navigation controls
+
+- `ocelle-top-bar` shows a rosette and `product-name`, plus controls in `actions`. With `show-menu`, its
+  native button uses `menu-label` and reports `menu-expanded`. In standalone use, set `menuExpanded` from
+  the bubbling, composed `ocelle-top-bar-menu-request` event's `detail.expanded` when handling the request.
+  The shell handles this request from its own top bar.
+- `ocelle-nav-item` takes `href`, `label`, `current` and `compact`, with a decorative `icon` slot.
+  `current="page"` or `current="true"` marks the native link as current. Compact mode keeps the link's accessible
+  name and shows its label on hover or keyboard focus. The shell controls compact presentation for its
+  mission and project sidebar items and restores their full labels in the drawer.
+- `ocelle-nav-pill` takes a localized `label` and a readonly `items` property of `{ label, href, current? }`.
+  Its native links wrap in input order, and the first destination with `current: true` marks the current page.
+  Set actions separately in the top bar's `actions` slot.
+- `ocelle-breadcrumbs` takes a localized `label` and a readonly `items` property of `{ label, href? }`.
+  It links ancestors with URLs and presents the last item as current text. Place it alongside the page title at
+  the logical inline start. An empty pill or breadcrumb trail exposes no navigation landmark.
+- `ocelle-skip-link` uses a native button that becomes visible on keyboard focus. Its default slot supplies a
+  localized label, with “Skip to main content” as the fallback. Set its property-only `target` for direct focus
+  or use `target-selector` for the first match in the same document or shadow root. A direct reference takes
+  precedence even when it cannot receive focus. An unsuccessful activation leaves focus on the skip control,
+  where Tab can continue normally.
+
+## `ocelle-disclosure`
+
+```html
+<ocelle-disclosure>
+  <span slot="summary">Advanced settings</span>
+  <p>Artifacts are kept for thirty days after a mission ends.</p>
+</ocelle-disclosure>
+<ocelle-disclosure open>
+  <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  <span slot="summary">Mission artifacts</span>
+  <p>…</p>
+</ocelle-disclosure>
+```
+
+`ocelle-disclosure` is a disclosure: a summary that opens and closes a panel inline, on native `details` and `summary`
+semantics. The summary is the one control: Tab reaches it, Enter, Space and a click toggle it, and assistive technology
+reads it with its expanded state. The panel is laid out directly below the summary, in the element's own box, and
+pushes the content after it down. The chevron points to the inline end while closed (`chevron-end`, mirrored under
+`dir="rtl"`) and down while open (`chevron-down`); an icon slotted into `icon` replaces it in both states.
+
+**State.** The open state is the `open` attribute: render it from the server. A morph that keeps it keeps the
+disclosure open; a morph that drops it closes the disclosure and fires `ocelle-disclosure-toggle`. A user toggle, find
+in page and a script set the attribute alike. The browser's find in page opens a closed disclosure whose panel holds
+the text it finds (Chromium), as a user toggle does. The element exposes `:state(open)` while open, so a page can style
+an open disclosure without a selector on the attribute.
+
+**Event.** Listen to `ocelle-disclosure-toggle` (its `detail.open` is the new state), not to `toggle`: the inner
+`details`' native `toggle` does not leave the element. The event is dispatched after the change, in a later task, once
+the attribute is reflected; it bubbles, is composed and cannot be cancelled. Do not count events to count changes:
+changes made before the inner `details`' native `toggle` runs are coalesced into one event with the final state, and
+none fires when the state ends where the last event left it. The initial state at upgrade fires no event. Nested
+disclosures work independently: an inner disclosure's event bubbles through the outer one, so tell them apart by
+`event.target`.
+
+**Host ARIA.** The host's `aria-label`, `aria-labelledby`, `aria-describedby` and `title` are moved onto the summary,
+as the control conventions' rule 4 says (with their `data-ocelle-moved-*` mirrors). A host `aria-expanded` is mapped
+onto `open` and removed from the host: `"true"` opens, `"false"` closes, any other value changes nothing. Prefer
+`open`. At upgrade the mapped attribute is read after `open`, so `<ocelle-disclosure open aria-expanded="false">`
+upgrades closed. With no host `aria-labelledby` or `aria-label`, the `summary` slot's text alone names the summary: a
+slotted icon adds nothing to the name. An empty summary has no name, which is the host's mistake: give every
+disclosure a summary. Put no interactive content in the summary: a link or a button there is a control inside a
+control.
+
+**Focus and clicks.** Two departures from the control conventions' rule 1, both because the host holds the panel's
+content: no host click guard, so clicks on the panel's content reach the page's listeners; and no `delegatesFocus`, so
+a click on the panel's content moves no focus. `focus()` is overridden to focus the summary, and `click()` clicks it,
+so it toggles once; a `click` dispatched on the host itself toggles nothing. When a script or a morph closes the
+disclosure while focus is in its panel, also inside the shadow root of a control in the panel, focus moves to the
+summary.
+
+**Look.** The summary takes the library's focus ring, a hover ground and a pointer cursor, and is at least 24 × 24 CSS
+px. In forced colours the summary is `CanvasText` on `Canvas`, the chevron follows it and the focus ring is
+`Highlight`. The disclosure does not animate: it opens and closes at once, with or without reduced motion. Before the
+element is defined, the summary and the panel show as plain content.
+
+**Tokens.** `ocelle-disclosure` reads the tokens `--ocelle-font-size-md`, `--ocelle-font-weight-medium`,
+`--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-space-1`, `--ocelle-space-2`,
+`--ocelle-radius-2`, `--ocelle-icon-size`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`.
+
+## `ocelle-code-block`
+
+```html
+<ocelle-code-block>git push origin main</ocelle-code-block>
+<ocelle-code-block overflow="scroll" label="Build log">2026-11-21T09:14:03Z build 17 started</ocelle-code-block>
+<ocelle-code-block digest>sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08</ocelle-code-block>
+```
+
+`ocelle-code-block` is a preformatted block for code, commands, logs and digests, in the library's sans with tabular
+figures, never monospace. It sits on the inset ground (`--ocelle-color-inset`) at the relaxed line height, with the
+prose `pre`'s padding and radius, and is never wider than the reading measure (`--ocelle-measure-reading`).
+
+- `overflow` (attribute and property, reflected): `scroll` (trimmed, any ASCII case) keeps long lines on one line and
+  scrolls the block sideways; anything else, or none, wraps lines inside the block (`pre-wrap` and
+  `overflow-wrap: anywhere`), so a wrap block never scrolls sideways at 320 px and is never a tab stop.
+- `label` (attribute and property, not reflected): the scroll box's name while it overflows, trimmed; empty or
+  whitespace-only counts as none, and a non-blank host `aria-label` wins. No effect in wrap mode.
+- `digest` (boolean attribute and property, reflected): shows the text as a digest, by the digest rule of the element
+  conventions below.
+- Parts `block` (the inset box) and `code` (the `pre` that holds the text). No slot, no event, no CSS custom property.
+
+**Content.** The code is the element's light-DOM text content, read as a copy: start the text on the opening tag's
+line, because a newline directly after the tag is shown as an empty first line. Markup inside the element is not
+rendered: child elements add no markup or style, their text is shown, and markup-like text stays text. A change of the
+text (a swap of the content, `textContent` set by a script, a text node's data) is followed. Before the element is
+defined its text shows as an inline run.
+
+**Direction.** Each line of code is shown left to right, also in an `rtl` page, while the block keeps the page
+direction, so the fade of a scroll block is on the side where text is hidden. An `rtl` scroll block opens at the line
+starts: the element scrolls it there, instantly, when it first appears and when its text changes, so the start of
+every line is in view and the fade is at the right, where the line ends are hidden. That holds once the block has laid
+out in its font: the one write uses the widths of the first layout, and a font swap does not repeat it. On a page where
+the sans face (`--ocelle-font-sans`) arrives after the first layout, the lines widen after the write and their starts
+can end up out of view (the content stays reachable with the arrow keys), so preload the sans face for `rtl` scroll
+blocks. A block that only starts to overflow after a resize keeps the platform's scroll position.
+
+**Scroll mode.** While it overflows, a scroll block is a tab stop and, with a name, a `group` named by its `label`;
+while its text fits it is neither. In scroll mode the `ocelle-scroller` statements on keyboard, focus, fades,
+scrollbar, motion and sizing hold for the code block (see `ocelle-scroller`): the arrow keys scroll it 40 px with no
+animation, and when it stops overflowing while focused, focus moves to the block's frame and stays in the element. A
+switch from `scroll` to wrap while focus is in the scroll block moves focus to the block, which shows the library's
+focus ring.
+
+**Naming.** Always give a scroll block a `label`: without one, an overflowing scroll block is a tab stop with no role
+and no name. Do not set a host `aria-label` in wrap mode: the host has no role, so the label names nothing; use
+`label`.
+
+**Sizing.** In a shrink-to-fit host (a default flex item, a dialog, a table cell) a scroll block takes its content's
+size and does not overflow: give it a definite or maximum inline size there.
+
+**Print.** Print shows what is laid out: a wrap block prints wrapped, and a scroll block's text off-screen is not
+printed, as for `ocelle-scroller`.
+
+**Scope.** The element has no copy control and no syntax highlighting: a copy is the browser's own, and the block reads
+and writes no clipboard. In forced colours the text is `CanvasText` and the block shows a `CanvasText` edge; a scroll
+block keeps the overflow region's edge lines.
+
+**Tokens.** `ocelle-code-block` reads the tokens `--ocelle-color-inset`, `--ocelle-font-sans`, `--ocelle-figures`,
+`--ocelle-font-size-md`, `--ocelle-line-height-relaxed`, `--ocelle-measure-reading`, `--ocelle-space-1`,
+`--ocelle-space-3`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset` and
+`--ocelle-color-focus`, and through the overflow-region module the same focus tokens, `--ocelle-scroller-fade-size`
+and `--ocelle-color-ink` (mask only).
+
 ## Examples
 
 Each example below is one screen of a host with a bundler, such as kitty-mission-ui, built from the elements'
@@ -2360,7 +2588,9 @@ Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not: its
 mirroring are an open limitation.
 WebKit is not measured for the layout elements either: the tab stop of `ocelle-scroller` and `ocelle-workflow-board`
 while they overflow, their arrow keys, their focus handover when overflow ends and `ocelle-list-detail`'s focus moves
-are untested there.
+are untested there. Nor is `ocelle-code-block`'s scroll mode, on the same module: its tab stop while it overflows, its
+arrow keys, its focus handover when overflow ends, the focus move on a switch to wrap and the `rtl` opening write are
+untested in WebKit.
 
 ## Layout elements: screens, print and states
 
@@ -2430,6 +2660,16 @@ item element. Other children are not shown. `ocelle-facts` and `ocelle-fact` are
 
 **Identifier wrap.** An element whose values can hold machine identifiers takes a `wrap` property with the one value
 `anywhere`, which sets `overflow-wrap: anywhere` on the value only, never on a label.
+
+**Digests.** An element that shows a digest (a hash, with or without an algorithm prefix) groups it the same way: the
+prefix is everything up to and including the last colon and is shown as written; the rest is split into groups of
+four code points from the start, the last group holding the remainder. Units are inline boxes separated by a
+`<wbr>`, with a `--ocelle-space-1` gap after every unit but the last, so a line never starts with a gap; no character
+is added, so a copy and the screen-reader reading give the digest as written. Groups do not wrap inside
+(`white-space: nowrap`, as `-` and `/` in base64 and base64url are break opportunities), so lines break only between
+units; a prefix that with its gap is wider than the line breaks inside (WCAG 1.4.10). Text holding whitespace is not a
+digest and is shown ungrouped. `ocelle-code-block`'s `digest` is the first use; `ocelle-facts` values are the
+consumer's text and are not grouped.
 
 **Stories.** Every element has a story per variant and per state in `storybook/stories/<element>.stories.ts`, in light
 and dark, and its stories pass the `csp` and `prefix` gates' Storybook checks.
