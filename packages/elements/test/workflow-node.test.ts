@@ -39,6 +39,51 @@ describe("ocelle-workflow-node selection in process", () => {
     expect(readWorkflowNodes()).toEqual(workflowNodePresentation);
   });
 
+  it("reads and clears label and kind markup and keeps property updates local", async () => {
+    const node = document.createElement("ocelle-workflow-node");
+    expect([node.label, node.kind, node.hasAttribute("label"), node.hasAttribute("kind")]).toEqual(["", "", false, false]);
+
+    node.setAttribute("label", "Security review");
+    node.setAttribute("kind", "Approval");
+    document.body.append(node);
+    await node.updateComplete;
+    const rendered = () => [node.shadowRoot?.querySelector("button")?.textContent.trim(), node.shadowRoot?.querySelector("dd")?.textContent.trim()];
+    expect(rendered()).toEqual(["Security review", "Approval"]);
+
+    node.label = "Plan rollout";
+    node.kind = "Planning";
+    await node.updateComplete;
+    expect(rendered()).toEqual(["Plan rollout", "Planning"]);
+    expect([node.getAttribute("label"), node.getAttribute("kind")]).toEqual(["Security review", "Approval"]);
+
+    node.removeAttribute("label");
+    node.removeAttribute("kind");
+    await node.updateComplete;
+    expect(rendered()).toEqual(["", ""]);
+  });
+
+  it("keeps outcome labels property-only before render and after markup edits", async () => {
+    const node = document.createElement("ocelle-workflow-node");
+    const outcomes = Object.freeze(["Approved", "Escalate"]);
+    expect(node.outcomes).toEqual([]);
+
+    node.setAttribute("outcomes", '["Ignored initial markup"]');
+    expect(node.outcomes).toEqual([]);
+    node.outcomes = outcomes;
+    node.setAttribute("outcomes", '["Ignored replacement markup"]');
+    expect(node.outcomes).toBe(outcomes);
+    node.removeAttribute("outcomes");
+    expect(node.outcomes).toBe(outcomes);
+
+    node.setAttribute("outcomes", '["Ignored rendered markup"]');
+    expect(node.outcomes).toBe(outcomes);
+    document.body.append(node);
+    await node.updateComplete;
+    const rendered = [...(node.shadowRoot?.querySelectorAll("li") ?? [])].map((item) => item.textContent);
+    expect(rendered).toEqual(outcomes);
+    expect(node.getAttribute("outcomes")).toBe('["Ignored rendered markup"]');
+  });
+
   it.each([
     { mode: "plain", name: "Security review", contexts: [], description: "Kind Approval Role Reviewer Outcomes Approved Rejected", descriptionContexts: [], current: null },
     { mode: "literal", name: "Security review Release approvals", contexts: ["Release approvals"], description: "Kind Approval Role Reviewer Outcomes Approved Rejected Review the security findings Policy applies", descriptionContexts: ["Review the security findings", "Policy applies"], current: "step" },
