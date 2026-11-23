@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect as vitestExpect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/index.ts";
 import { inProcessDriver } from "./in-process.ts";
@@ -24,6 +24,7 @@ import {
 
 const driver = inProcessDriver();
 const inner = { inner: "button" };
+const expect: ((value: unknown) => ReturnType<typeof vitestExpect>) & { any(type: NumberConstructor): unknown } = vitestExpect;
 
 afterEach(async () => {
   document.body.replaceChildren();
@@ -111,7 +112,6 @@ describe("ocelle-workflow-node selection in process", () => {
     document.getElementById("before")?.focus();
     await commands.press("Tab");
     const paint = workflowPaint();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Vitest's asymmetric matcher is valid in this assertion.
     expect(paint).toMatchObject({ min: expect.any(Number), outline: "solid" });
     expect(paint.min).toBeGreaterThan(0);
     expect(Math.min(...paint.size)).toBeGreaterThanOrEqual(paint.min);

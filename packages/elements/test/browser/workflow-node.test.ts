@@ -1,5 +1,5 @@
 import type { Browser } from "playwright";
-import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { afterAll, beforeAll, describe, expect as vitestExpect, inject, it } from "vitest";
 import { pointer } from "../commands.ts";
 import {
   mountWorkflowNodes,
@@ -47,6 +47,7 @@ async function workflow(mode: "references" | "literal" | "plain" = "plain") {
 }
 
 const inner = { inner: "button" };
+const expect: ((value: unknown) => ReturnType<typeof vitestExpect>) & { any(type: NumberConstructor): unknown } = vitestExpect;
 
 describe("ocelle-workflow-node selection on built output under strict CSP", () => {
   it("renders the two sets of exact step text and just one native action per step", async () => {
@@ -132,7 +133,6 @@ describe("ocelle-workflow-node selection on built output under strict CSP", () =
     await page.locator("#before").focus();
     await page.keyboard.press("Tab");
     const paint = await page.evaluate(workflowPaint);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Vitest's asymmetric matcher is valid in this assertion.
     expect(paint).toMatchObject({ min: expect.any(Number), outline: "solid" });
     expect(paint.min).toBeGreaterThan(0);
     expect(Math.min(...paint.size)).toBeGreaterThanOrEqual(paint.min);
