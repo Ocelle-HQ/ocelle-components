@@ -6177,6 +6177,269 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-workflow-lane.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "Additional name context if no host naming references resolve.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Space-separated IDs in the host tree supplying additional name context.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Space-separated IDs in the host tree supplying additional description.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "An optional current-step state on the action.",
+              "name": "aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The host's stable step identifier. An empty identifier does not request selection.",
+              "fieldName": "nodeId",
+              "name": "node-id",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The step's visible title and first part of its accessible name.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The displayed workflow step kind.",
+              "fieldName": "kind",
+              "name": "kind",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The displayed accountable role.",
+              "fieldName": "accountableRole",
+              "name": "accountable-role",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the host has selected this step.",
+              "fieldName": "selected",
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the step is waiting for a run to continue.",
+              "fieldName": "waiting",
+              "name": "waiting",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the host identifies a validation problem with the step.",
+              "fieldName": "invalid",
+              "name": "invalid",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native selection button.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A workflow step with one native selection action and descriptive kind, role and outcomes.",
+          "events": [
+            {
+              "description": "A noncancelable, bubbling and composed request from the node during native activation.",
+              "name": "ocelle-workflow-node-select",
+              "type": {
+                "text": "CustomEvent<{nodeId: string}>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "node-id",
+              "default": "\"\"",
+              "description": "The host's stable step identifier. An empty identifier does not request selection.",
+              "kind": "field",
+              "name": "nodeId",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The step's visible title and first part of its accessible name.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "kind",
+              "default": "\"\"",
+              "description": "The displayed workflow step kind.",
+              "kind": "field",
+              "name": "kind",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "accountable-role",
+              "default": "\"\"",
+              "description": "The displayed accountable role.",
+              "kind": "field",
+              "name": "accountableRole",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Descriptive outcome labels, in the order supplied by the host.",
+              "kind": "field",
+              "name": "outcomes",
+              "privacy": "public",
+              "type": {
+                "text": "readonly string[]"
+              }
+            },
+            {
+              "attribute": "selected",
+              "default": "false",
+              "description": "Whether the host has selected this step.",
+              "kind": "field",
+              "name": "selected",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "waiting",
+              "default": "false",
+              "description": "Whether the step is waiting for a run to continue.",
+              "kind": "field",
+              "name": "waiting",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "invalid",
+              "default": "false",
+              "description": "Whether the host identifies a validation problem with the step.",
+              "kind": "field",
+              "name": "invalid",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "0",
+              "description": "Set to -1 to exclude the native action from Tab navigation while keeping direct focus.",
+              "kind": "field",
+              "name": "selectionTabIndex",
+              "privacy": "public",
+              "type": {
+                "text": "0 | -1"
+              }
+            },
+            {
+              "description": "Forwards focus to the selection action after render.",
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleWorkflowNode",
+          "slots": [
+            {
+              "description": "Optional noninteractive status shown with the step details and included in the action's description.",
+              "name": "status"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-workflow-node"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-workflow-node.ts",
+            "name": "OcelleWorkflowNode"
+          },
+          "kind": "js",
+          "name": "OcelleWorkflowNode"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-workflow-node.ts"
     }
   ],
   "readme": "",

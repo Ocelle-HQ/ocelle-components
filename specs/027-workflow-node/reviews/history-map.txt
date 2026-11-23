@@ -1,0 +1,5 @@
+# History fold phase-1 of scratch/027-workflow-node-phase-1-fold: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/scratch/027-workflow-node-phase-1-fold, 04be71880ee0ad4d5bb6f81cbc08d1e9dd5b4996).
+d8c041a765ff818340c8bcc79e8ee41450a6e804 f44e5b076de5603f773f615acbb715975f3bf7fb
+a5ffb1ca6f954b39c5effe848f3a1ea03a85e51a f9f8fae55323396a19d95db94b53b37cb8bd6bca
+e26f53d1a10073398fddd0fe5a73ff71a8cbd780 bf0da3d9bec7acf0c2ea0ab8d5b3507f5e17efa3
+04be71880ee0ad4d5bb6f81cbc08d1e9dd5b4996 2a8c2a4e35e5130eba2d5748f6045f5f053c2281

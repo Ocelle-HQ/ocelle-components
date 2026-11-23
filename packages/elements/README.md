@@ -1,13 +1,14 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-one elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-two elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
 a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab stop only while it overflows,
 `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
+`ocelle-workflow-node`, a selectable workflow step with descriptive outcomes,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
@@ -38,6 +39,7 @@ of the host's own.
 | `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-workflow-node.js` | `dist/ocelle-workflow-node.js` | `ocelle-workflow-node` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |
@@ -2463,6 +2465,48 @@ default slot, the lane's content, such as cards.
 - **Title.** A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not
   widen for it, and the count stays visible.
 - `ocelle-workflow-lane` has no event, CSS part or CSS custom property.
+
+## `ocelle-workflow-node`
+
+The workflow node shows the supplied step title (`label`), `kind`, `accountable-role` (property
+`accountableRole`) and ordered labels in the `outcomes` array property. Set `node-id`
+(`nodeId`) to the step's stable identifier. The host owns the step data and `selected` state.
+
+The native button has one Tab stop and supports pointer, Enter and Space activation. Its `control` part has a
+token focus ring. Calling `focus(options)` on the host focuses that same button after render. A host that
+coordinates Tab navigation sets the `selectionTabIndex` property to `-1` to skip the button and `0` to restore it.
+The button can still receive direct focus and keyboard activation at `-1`. The property has no corresponding
+markup attribute.
+
+The Boolean attributes and properties `selected`, `waiting` and `invalid` default to false and can coexist.
+Their text cues remain readable when forced colors change the palette. The button exposes selection with
+`aria-pressed`, and its description contains the step metadata and active state text. Titles, roles and
+outcomes wrap in a narrow layout, with their full text available to assistive technology.
+
+The full visible title comes first in the button's accessible name. Resolved `aria-labelledby` references in
+the host's document or shadow root append naming context in reference order. A nonblank `aria-label` adds
+context when no naming references resolve. Host `aria-describedby` references add to the built-in description,
+and `aria-current` reaches the button independently of selection. Updates to these host attributes refresh
+the button's associations.
+
+Edits to a referenced element's text are read from that same element. To replace an element under an existing
+ID, insert the replacement, remove the corresponding reference attribute from the workflow node, and await
+`node.updateComplete`. Then reapply the reference attribute using the desired ID. The button retains its
+title and built-in description throughout the refresh.
+
+For read-only run inspection, pass readable, noninteractive content as a child with `slot="status"`. It appears
+outside the selection button and adds its text to the button's accessible description. Host edits and replacements
+update that text, and an empty slot adds no status text. The reviewer uses the same button and selection request
+to inspect the step. Outcome labels remain descriptive, and the host retains ownership of the step data.
+
+An activation dispatches one `ocelle-workflow-node-select` request from the element with detail
+`{ nodeId: string }`. The request bubbles, crosses shadow boundaries and is noncancelable. It reaches ancestor
+listeners before the native click bubbles to them. The host handles the request and applies selection as needed.
+A node with an empty ID still has its native button and emits no selection request.
+
+Keep one mounted node per step ID. For example, use the ID as the key in a rendered collection. Renaming a step
+updates the same node, and displaying a different ID mounts a distinct node. A pointer press interrupted by
+replacement cannot request selection for the new step.
 
 ## `ocelle-list-detail`
 
