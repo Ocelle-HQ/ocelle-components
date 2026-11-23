@@ -106,10 +106,6 @@ export class OcelleTopBar extends LitElement {
     }
 
     @media (forced-colors: active) {
-      [part="bar"] {
-        border-color: CanvasText;
-      }
-
       [part="menu-button"] {
         border-color: ButtonText;
         color: ButtonText;
