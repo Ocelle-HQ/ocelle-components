@@ -1,7 +1,14 @@
 import { contrastRatio } from "../../../../gates/lib/wcag.ts";
 
-type Step = { readonly id: string; readonly title: string; readonly kind: string; readonly role: string; readonly outcomes: readonly string[] };
+interface Step {
+  readonly id: string;
+  readonly title: string;
+  readonly kind: string;
+  readonly role: string;
+  readonly outcomes: readonly string[];
+}
 type NodeFixture = HTMLElement & { step?: Step; activity?: unknown[] };
+type WorkflowNode = HTMLElementTagNameMap["ocelle-workflow-node"];
 
 export const workflowNodeText = [
   { label: "Security review", kind: "Approval", role: "Reviewer", outcomes: ["Approved", "Rejected"] },
@@ -23,13 +30,15 @@ export async function mountWorkflowNodes(mode: "references" | "literal" | "plain
     <span id="hint">Review the security findings</span>
     <span id="policy">Policy applies</span>
   `;
-  const review = fixture.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review")!;
-  const planning = fixture.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#planning")!;
+  const review = fixture.querySelector<WorkflowNode>("#review");
+  const planning = fixture.querySelector<WorkflowNode>("#planning");
+  if (review === null || planning === null) throw new Error("both workflow nodes must be mounted");
   const step = Object.freeze({ id: "review-12", title: "Security review", kind: "Approval", role: "Reviewer", outcomes: Object.freeze(["Approved", "Rejected"]) });
   fixture.step = step;
   review.outcomes = step.outcomes;
   planning.outcomes = ["Plan ready"];
-  if (mode !== "plain") {
+  if (mode === "plain") review.setAttribute("aria-label", "  ");
+  else {
     review.setAttribute("aria-label", "  Release approvals  ");
     review.setAttribute("aria-current", "step");
     review.setAttribute("aria-describedby", "hint unknown policy");
@@ -77,9 +86,9 @@ export function readWorkflowNodes(): unknown {
       type: action?.type ?? null,
       tabIndex: action?.tabIndex ?? null,
       text: {
-        label: action?.textContent?.trim() ?? null,
-        kind: root?.querySelector("dd")?.textContent?.trim() ?? null,
-        role: root?.querySelectorAll("dd")[1]?.textContent?.trim() ?? null,
+        label: action?.textContent.trim() ?? null,
+        kind: root?.querySelector("dd")?.textContent.trim() ?? null,
+        role: root?.querySelectorAll("dd")[1]?.textContent.trim() ?? null,
         outcomes: [...(root?.querySelectorAll("li") ?? [])].map((outcome) => outcome.textContent.trim()),
       },
     };
@@ -100,7 +109,8 @@ export function selectionActivity(target: string, nodeId: string): unknown[] {
 }
 
 export async function updateWorkflowNode(change: "rename" | "select" | "deselect" | "blank"): Promise<void> {
-  const node = document.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review")!;
+  const node = document.querySelector<WorkflowNode>("#review");
+  if (node === null) throw new Error("the review node must be mounted");
   if (change === "rename") node.label = "Final security review";
   if (change === "select") node.selected = true;
   if (change === "deselect") node.selected = false;
@@ -109,13 +119,13 @@ export async function updateWorkflowNode(change: "rename" | "select" | "deselect
 }
 
 export function workflowSelectionState(): unknown {
-  const node = document.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review")!;
+  const node = document.querySelector<WorkflowNode>("#review");
   const fixture = document.querySelector("main") as NodeFixture;
   return {
-    pressed: node.shadowRoot?.querySelector("button")?.getAttribute("aria-pressed") ?? null,
-    selected: node.selected,
-    reflected: node.hasAttribute("selected"),
-    sameOutcomes: node.outcomes === fixture.step?.outcomes,
+    pressed: node?.shadowRoot?.querySelector("button")?.getAttribute("aria-pressed") ?? null,
+    selected: node?.selected,
+    reflected: node?.hasAttribute("selected"),
+    sameOutcomes: node?.outcomes === fixture.step?.outcomes,
     data: fixture.step,
   };
 }
@@ -123,7 +133,8 @@ export function workflowSelectionState(): unknown {
 export const originalWorkflowStep = { id: "review-12", title: "Security review", kind: "Approval", role: "Reviewer", outcomes: ["Approved", "Rejected"] };
 
 export async function replacePressedWorkflowNode(): Promise<void> {
-  const before = document.querySelector("#review")!;
+  const before = document.querySelector("#review");
+  if (before === null) throw new Error("the replaced node must be mounted");
   const after = document.createElement("ocelle-workflow-node");
   after.id = "replacement";
   after.nodeId = "replacement-42";
@@ -137,21 +148,34 @@ export async function replacePressedWorkflowNode(): Promise<void> {
 
 /** A detached node leaves the sentinel active. On connection, focus goes to its one native action. */
 export async function workflowFocusLifecycle(): Promise<unknown> {
-  const before = document.getElementById("before")!;
+  const before = document.getElementById("before") as HTMLButtonElement;
   before.focus();
   const fresh = document.createElement("ocelle-workflow-node");
+  const defaults = { nodeId: fresh.nodeId, label: fresh.label, kind: fresh.kind, role: fresh.accountableRole, outcomes: fresh.outcomes, selected: fresh.selected };
   fresh.label = "Fresh step";
   fresh.focus({ preventScroll: true });
   const detached = { focused: document.activeElement?.id, rendered: fresh.shadowRoot !== null };
-  document.querySelector("main")!.append(fresh);
+  document.body.append(fresh);
   await fresh.updateComplete;
   fresh.focus({ preventScroll: true });
-  const rendered = { host: document.activeElement === fresh, control: fresh.shadowRoot?.activeElement?.localName ?? null };
+  let requests = 0;
+  fresh.addEventListener("ocelle-workflow-node-select", () => { requests += 1; });
+  fresh.shadowRoot?.querySelector("button")?.click();
+  const rendered = {
+    host: document.activeElement === fresh,
+    control: fresh.shadowRoot?.activeElement?.localName ?? null,
+    outcomes: fresh.shadowRoot?.querySelectorAll("ul").length ?? 0,
+  };
   fresh.remove();
-  return { detached, rendered };
+  return { defaults, detached, rendered, requests };
 }
 
-export const workflowFocusExpected = { detached: { focused: "before", rendered: false }, rendered: { host: true, control: "button" } };
+export const workflowFocusExpected = {
+  defaults: { nodeId: "", label: "", kind: "", role: "", outcomes: [], selected: false },
+  detached: { focused: "before", rendered: false },
+  rendered: { host: true, control: "button", outcomes: 0 },
+  requests: 0,
+};
 
 export function readWorkflowFocus(): string {
   const active = document.activeElement;
@@ -181,9 +205,10 @@ export function workflowPaint(): {
   readonly outline: string;
   readonly outlineWidth: number;
 } {
-  const host = document.querySelector("ocelle-workflow-node")!;
-  const action = host.shadowRoot?.querySelector("button");
-  if (action === undefined || action === null) return { min: -1, size: [0, 0], colors: [], outline: "none", outlineWidth: 0 };
+  const host = document.querySelector("ocelle-workflow-node");
+  const action = host?.shadowRoot?.querySelector("button");
+  const metadata = host?.shadowRoot?.querySelector("dd");
+  if (!host || !action || !metadata) return { min: -1, size: [0, 0], colors: [], outline: "none", outlineWidth: 0 };
   const swatch = document.createElement("span");
   document.body.append(swatch);
   swatch.style.inlineSize = "var(--ocelle-target-min)";
@@ -193,11 +218,10 @@ export function workflowPaint(): {
   const { width, height } = action.getBoundingClientRect();
   const style = getComputedStyle(action);
   const ground = getComputedStyle(host).backgroundColor;
-  const metadata = getComputedStyle(host.shadowRoot!.querySelector("dd")!);
   return {
     min,
     size: [width, height],
-    colors: [[style.color, style.backgroundColor], [style.borderTopColor, ground], [style.borderTopColor, style.backgroundColor], [style.outlineColor, ground], [metadata.color, ground]],
+    colors: [[style.color, style.backgroundColor], [style.borderTopColor, ground], [style.borderTopColor, style.backgroundColor], [style.outlineColor, ground], [getComputedStyle(metadata).color, ground]],
     outline: style.outlineStyle,
     outlineWidth: parseFloat(style.outlineWidth),
   };
