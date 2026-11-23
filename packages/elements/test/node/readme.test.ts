@@ -638,6 +638,8 @@ const dataTableMapping: readonly (readonly [string, string])[] = [
   ["data table forced colours", "built in: system colours for text and rules, and the row band for the stripe and the hover"],
   ["data table overflowing", "built in: the region's tab stop, role and name while the table overflows"],
   ["data table tone", "none: the data table carries no tone"],
+  // 019 phase 4 review round 1 (G-1 (b), R1-01): #470's light-mode state, as the timeline and the chain have it.
+  ["data table light mode", "built in: the light and dark themes"],
 ];
 
 /**
