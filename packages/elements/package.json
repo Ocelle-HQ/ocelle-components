@@ -10,6 +10,7 @@
     "./ocelle-notice.js": "./dist/ocelle-notice.js",
     "./ocelle-form-input.js": "./dist/ocelle-form-input.js",
     "./ocelle-form-select.js": "./dist/ocelle-form-select.js",
+    "./ocelle-form-textarea.js": "./dist/ocelle-form-textarea.js",
     "./ocelle-scroller.js": "./dist/ocelle-scroller.js",
     "./ocelle-workflow-board.js": "./dist/ocelle-workflow-board.js",
     "./ocelle-workflow-lane.js": "./dist/ocelle-workflow-lane.js",

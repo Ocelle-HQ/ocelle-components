@@ -79,11 +79,11 @@ const listboxExcepted: readonly string[] = (["light", "dark"] as const).flatMap(
 
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 644 story-themes and exits 0, the Prose document's ten, the overflowing code-block stories' thirty-six and the scrolling listbox story's twelve color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029; 014 FR-051)",
+    "audits the repository's 652 story-themes and exits 0, the Prose document's ten, the overflowing code-block stories' thirty-six and the scrolling listbox story's twelve color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029; 014 FR-051)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 644 story-theme runs, 0 serious or critical; 58 notes (0 incomplete, 58 excepted)"], stderr: [...excepted, ...listboxExcepted] });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 652 story-theme runs, 0 serious or critical; 58 notes (0 incomplete, 58 excepted)"], stderr: [...excepted, ...listboxExcepted] });
     },
     timeout,
   );
@@ -95,7 +95,7 @@ describe("axe gate (gates/bin/axe.ts)", () => {
       const ran = await gate(at);
       expect(ran).toEqual({
         code: 1,
-        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 646 story-theme runs"],
+        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 654 story-theme runs"],
         stderr: [...excepted, ...listboxExcepted],
       });
     },
