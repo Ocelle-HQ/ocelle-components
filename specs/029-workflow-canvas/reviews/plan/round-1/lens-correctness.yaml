@@ -1,0 +1,56 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: Read-only mode needs a named outcome-to-destination path
+    evidence:
+      - artifact: "spec.md US4 and SC-004 require the reviewer to follow named outcomes and discover their destinations. plan.md § Rendering and input boundaries hides the decorative SVG edge group and describes a named node reveal and authoring editor. contracts/workflow-canvas.md § Element and inputs removes the edit controls in read-only mode."
+      - code: "packages/elements/src/ocelle-workflow-node.ts:213–218 renders the supplied outcome labels as plain list entries. The landed node receives neither outcome identifiers nor destinations."
+    claim: |
+      An implementation can satisfy the named node navigator and still give a keyboard or assistive technology reviewer no way to determine which destination belongs to a particular source outcome. A list containing both Publish and Revise cannot tell the reviewer whether Approved leads to Publish. The model has the exact relationship, but the plan has no surviving non-geometric surface that presents it after the edit controls disappear.
+    remedies:
+      - "Specify a canvas-owned, named source/outcome-to-destination inspection path driven by authoritative connections, available in read-only mode after the editor is removed. Route any reveal through the existing viewport request and prove specific Approved and Rejected destinations, including a clipped target, with real keyboard or accessibility-tree evidence and zero edit requests."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: In-bounds node actions can still be covered at valid zoom levels
+    evidence:
+      - artifact: "plan.md § Rendering and input boundaries keeps HTML extents fixed as projected origins converge and defines focus eligibility from action bounds and an inset inside the viewport. spec.md US1 scenarios 3–5 and FR-004 require visible traversal, reveal and focus recovery."
+      - code: "Pinned Chromium 156.0.8078.4 geometry probe used two 170×44 HTML buttons inside SVG foreignObjects at x=0 and x=50 in a 320×200 surface. The first button's rectangle was wholly in bounds, but elementFromPoint at its center returned the second button. A valid host layout can create this overlap even at the identity viewport."
+    claim: |
+      Bounds alone admit a covered action as the sole sequential entry, arrow target or reveal destination, including after a Fit request that brings both rectangles in bounds. This can focus a covered button or leave the apparently revealed destination untargetable. Two steps with the same origin are allowed inputs, so viewport translation or further zoom cannot resolve every collision.
+    remedies:
+      - "Specify the treatment of covered actions for sequential focus and named reveal. Keep the named navigator usable and define a way to expose the requested target or keep focus on a visible control when the target is still covered. Preserve the authoritative layout and usable control extents. Include an overlapping fixture at a valid viewport and verify actual focus visibility and pointer targeting."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: Keyed identity alone does not preserve focus during host reorder
+    evidence:
+      - artifact: "spec.md § Edge Cases says incoming graph updates retain visible focus for unchanged identifiers. plan.md § Rendering and input boundaries preserves keyed instances and records recovery for removal, clipping or a graph replacement. data-model.md § Local interaction state only spells out successor recovery when the action is affected."
+      - code: "Installed Lit 3.3.3's lit-html/directive-helpers.js insertPart moves an existing part with insertBefore. In pinned Chromium, insertBefore moving a focused foreignObject to a new sibling index preserved the exact descendant button object but changed document.activeElement from that button to BODY. The landed workflow node exposes public focus forwarding at packages/elements/src/ocelle-workflow-node.ts:193–195."
+    claim: |
+      Updating host order while the focused node survives visibly can drop focus to the document or invoke the removal fallback even though the node ID and element instance are unchanged. Stable keyed rendering prevents replacement by a different step but does not prevent the browser from clearing native focus during a move.
+    remedies:
+      - "Make retention of the currently focused visible ID a first-class render case before successor fallback. Preserve focus natively where possible or restore the same node action after reordering and child render only if focus was lost to the render and the user has not moved elsewhere. Add a real browser assertion for reordered surviving nodes with an empty request stream."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: Authoring requests need the mode guard in their own phases
+    evidence:
+      - artifact: "plan.md § Sequential delivery and file ownership introduces position requests in Phase 2 and connection requests in Phase 3, then explicitly assigns read-only edit suppression and mode-change focus to Phase 4. contracts/workflow-canvas.md § Element and inputs sets the public default to read-only, while FR-010 requires zero position and connection requests in that mode."
+      - code: "The planned position and connection dispatchers are introduced in separate reviewable phases. The spec's switch-before-completion scenario covers the interval after updated host properties and before the Lit DOM redraw."
+    claim: |
+      The architectural section says to honor current mode at completion, but the per-phase acceptance rows do not require the behavior when the request types first ship. Phase 2 or Phase 3 could therefore pass its stated authoring checks while still emitting an edit in the default read-only mode, including from already-mounted affordances after a host switches modes. The next phase would need to fix an already approved contract violation.
+    remedies:
+      - "Require and prove current-mode gating at the first position and connection dispatch sites in Phases 2 and 3. Each must lock out its own requests and cancel an in-flight operation immediately on mode changes with the corresponding focus rule. Keep the Phase 4 combined read-only fixture and regression coverage."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: Phase 1 has an unassigned prerequisite for viewport positioning and reveal
+    evidence:
+      - artifact: "plan.md § Project structure assigns graph-to-viewport geometry and pan/zoom proposals to workflow-canvas-viewport.ts. § Sequential delivery and file ownership puts that file in the Phase 2 owner's writes but requires Phase 1 to position a branching graph and implement an offscreen reveal. The Phase 1 parallel writes only cover graph projection and visible navigation/recovery."
+      - code: "spec.md US1 scenarios 1 and 4 need both actual projected node bounds and a viewport request that reveals the named target before Phase 1 verification. data-model.md § Authoritative inputs specifies the graph-to-view mapping used by those operations."
+    claim: |
+      The first integrated browser slice needs basic projection and the reveal's viewport proposal before its green checkpoint. Current ownership either makes it depend on a Phase 2 file or invites an unstated interim geometry implementation in the shared element. This matters for assigning independently writable Phase 1 tasks on a common pin.
+    remedies:
+      - "Assign the minimum projection and reveal-pose functionality to an explicit serial Phase 1 owner on exact files and mark its prerequisites. Keep the two parallel helpers independent of unfinished geometry, and limit Phase 2 to the new pan, zoom, fit and drag calculations or extensions to that same established module."
