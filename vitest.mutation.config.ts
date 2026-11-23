@@ -4,7 +4,8 @@
 // contracts/gates.md § Mutation), and, since 005 (research.md R-11, R-12), elements, which
 // stryker.elements.config.json mutates on its own, elements-build, whose tests start tsc, Vite and pnpm pack, and
 // elements-browser, whose tests start Chromium; since 008 (research.md R-14) also elements-touch, which
-// stryker.elements.config.json mutates with elements. Stryker runs only in-process tests for each mutant, so a mutant that
+// stryker.elements.config.json mutates with elements; and, since 014 (research.md R-09), elements-browser-file, whose
+// test starts Chromium on a file: fixture. Stryker runs only in-process tests for each mutant, so a mutant that
 // only an excluded project's test covers is reported as NoCoverage, and a shard's time follows its line bound.
 //
 // The start order (007 research.md R-05, lever 1, operator decision PLAN-FRESH-3-001 (a), narrowed on 2026-11-11).
@@ -35,6 +36,7 @@ const excluded = new Set([
   "elements-touch",
   "elements-build",
   "elements-browser",
+  "elements-browser-file",
 ]);
 
 /** The token test that starts every Stryker run. */

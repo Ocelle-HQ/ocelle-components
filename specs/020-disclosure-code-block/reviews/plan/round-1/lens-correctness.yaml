@@ -1,0 +1,157 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/elements.md, contracts/checks.md, quickstart.md,
+# triage record, constitution 1.3.1, reviews/spec/operator-gate.md; against the repository at e17fd0e (base 4911fd0):
+# src/control.ts, src/icon-slot.ts, src/focusable.ts, src/overflow-region.ts, src/ocelle-list-detail.ts,
+# src/ocelle-button.ts, src/ocelle-scroller.ts, src/icons.ts, packages/tokens/src/source.ts, packages/styles/src/base.css,
+# specs/009-workflow-layouts/contracts/overflow-region.md, README § Control conventions / Slot convention / Host ARIA /
+# Engines, gates/plants, specs/013-data-display/reviews/phase-1/plants.md. Probes ran in headless Chrome 153
+# (/usr/bin/google-chrome) on throwaway pages in the session scratchpad, driven by CDP where input was needed.
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 4
+    title: "delegatesFocus makes every click on non-focusable panel content focus the summary and scroll the page back to it"
+    evidence:
+      - artifact: "spec.md FR-003 'in an open shadow root attached with `delegatesFocus`'; research.md R-01 'The shadow root (open, `delegatesFocus`) renders: <details>…<div class=\"panel\"><slot></slot></div>'; plan.md Summary 'in an open shadow root with `delegatesFocus`'"
+      - code: "Probe (scratchpad probe/g.html + cdp2.mjs): a custom element with attachShadow({delegatesFocus: true}) rendering <details open><summary><slot name=summary></summary><div class=panel><slot></slot></div></details>, a 2000 px tall panel, the page scrolled to a <p> inside the panel (scrollY 1833). A real CDP mouse click on that paragraph text: document.activeElement became the host, shadowRoot.activeElement SUMMARY, and scrollY went to 0. Same result without scrolling (probe/f.html: focus moves from BODY to SUMMARY)."
+      - code: "packages/elements/src/ocelle-button.ts and ocelle-action-row.ts are the only delegatesFocus users today; their hosts hold only the inner control (README § Control conventions rule 1), so the rule never met slotted, non-focusable content before."
+    claim: |
+      With delegatesFocus, a click on any non-focusable flat-tree descendant of the host delegates focus to the first
+      focusable element in the shadow root. The panel's slotted light-DOM content is such a descendant, so clicking
+      text in an open panel (US1's own case: "a mission's raw event payload behind a disclosure") moves focus to the
+      summary and scrolls the page back to the summary. In a tall panel this throws the user to the top on every click,
+      and the keyboard user's Tab position jumps to the summary. The control conventions' delegatesFocus rule assumes
+      the host holds only the inner control; the disclosure is the first element that also holds content. Nothing in
+      the plan's bodies (US1-4, US1-5, US1-19) clicks panel text and reads focus or scroll, so the defect would pass.
+    remedies:
+      - "Drop `delegatesFocus` for the disclosure: the native summary is focusable and in the tab order inside the shadow root without it; override `focus(options)` to call the summary's `focus(options)` (as `click()` is already overridden), keep the host without role and tabindex, and amend FR-003 and US1-4's wording (document.activeElement is still the host by retargeting). Add a body: a click on panel text in a scrolled, tall open panel leaves focus where it was and scrollY unchanged; plant: delegatesFocus restored."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "FR-013's focus rescue uses deepActive() with a host containment test, which misses any focus inside a shadow-hosted control in the panel"
+    evidence:
+      - artifact: "research.md R-02 'In `willUpdate`, when `open` goes from true to false, the element notes whether the deep active element (`focusable.ts`'s `deepActive()`) is inside the host but not in the summary; in `updated` it then focuses the summary.'"
+      - code: "packages/elements/src/focusable.ts:182-186: deepActive() descends through every open shadowRoot.activeElement, so with focus on an ocelle-button in the panel it returns the <button> inside ocelle-button's shadow root; Node.contains() does not cross shadow boundaries, so disclosureHost.contains(thatButton) is false and no rescue happens. The same holds for a nested ocelle-disclosure's summary (spec Edge Cases 'Nested disclosures')."
+      - code: "packages/elements/src/ocelle-list-detail.ts:356-360 solves the same question correctly: it reads `(this.getRootNode()).activeElement` (retargeted to the light-DOM child) and tests `this.contains(active)`."
+    claim: |
+      The panel's most likely focusable content is the library's own controls (ocelle-button, an inner disclosure),
+      whose focus lives in their shadow roots. For them the planned test is false, so a script or morph close with
+      focus in the panel leaves focus on hidden content, which the browser then drops to the body: FR-013 and US1-19
+      fail exactly where consumers will hit them, while US1-19's body (a plain light-DOM link) passes.
+    remedies:
+      - "Define the test in R-02 as: the active element of the host's root (`(this.getRootNode() as Document | ShadowRoot).activeElement`, retargeted) is a light-DOM descendant of the host (`this.contains(active) && active !== this`), as ocelle-list-detail does; add bodies for focus on an `ocelle-button` in the panel and on a nested disclosure's summary, each closed by `open = false`, asserting the outer summary is focused."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "'Coalescing follows from the platform' merges changes across tasks, not per task as FR-012 defines"
+    evidence:
+      - artifact: "spec.md FR-012 'Changes within one task are coalesced by this rule, which is the definition …: at most one event per task, carrying the final state, and none when the final state equals the state before the task.'"
+      - artifact: "research.md R-02 'Coalescing follows from the platform: … the native `toggle` is queued as a task and merged by the platform's toggle task tracker. A native `toggle` whose final state equals the reported state … fires no `ocelle-disclosure-toggle`'"
+      - code: "Probe (scratchpad probe/t.html): details.open = true in a microtask (as Lit renders), details.open = false in a setTimeout(0) task queued earlier: one native toggle 'closed>closed', i.e. under R-02 zero ocelle-disclosure-toggle events for two state changes in two tasks. With a MessageChannel task instead, two toggles fire ('closed>open', 'open>closed'). The count depends on task-source ordering."
+    claim: |
+      The platform's toggle task tracker coalesces every change made before its queued task runs, which can span
+      several tasks (timers, message events, htmx swap callbacks). FR-012 promises one event per task whose final state
+      differs; the plan delivers zero or two depending on which task source runs first. US1-7 only probes one task, so
+      the mismatch would pass the tests and leave the README's event contract wrong.
+    remedies:
+      - "Change FR-012's definition to the platform's (changes made before the event is dispatched are coalesced; at most one event per native toggle, with the final state) and state it in the contract and README."
+      - "Keep FR-012 and implement it: record the state at the start of each task in which a change happens and schedule the element's own dispatch task per changed task (e.g. a MessageChannel post from the change), independent of the native toggle; add a two-task body (open in one task, close in the next before the native toggle runs) expecting two events."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 2
+    title: "Digest groups break inside at '-' and '/' (base64url and base64 digests), against FR-033"
+    evidence:
+      - artifact: "research.md R-07 'Break positions. `<wbr>` is the only break opportunity between groups (hex has none of its own). … a group (four characters) never breaks at any width the block can have'"
+      - artifact: "spec.md FR-029 accepts any trimmed text without whitespace as a digest; FR-033 'never inside the prefix or inside a group'; Edge Cases name `ni:sha-256:` (RFC 6920 ni URIs carry base64url values, which contain '-' and '_')"
+      - code: "Probe (scratchpad probe/q.html): R-07's layout (pre-wrap, overflow-wrap: anywhere, inline spans joined by <wbr>, margin gap) with groups such as 'Sx-j', 'c-de', 'a/b+', widths 60 to 300 px: a group had more than one client rect at 58 of 241 widths (e.g. 64 px: 'Sx-j','c-de'). With `white-space: nowrap` on the group spans (probe/r.html): 0 of 241."
+    claim: |
+      Hyphen and solidus are UAX #14 break opportunities, so the browser breaks inside a group that holds them
+      whenever that fits better than the preceding <wbr>. The mechanism meets FR-033 only for hex, while the spec and
+      the README digest rule (contracts/elements.md) apply it to every whitespace-free text, and the rule is to be reused
+      by #14. US2-12's hex-only digest cannot catch it.
+    remedies:
+      - "Put `white-space: nowrap` on the group spans (four code points never exceed a line), keep the prefix's current wrapping for 1.4.10, say so in R-07 and the README digest rule, and add a US2-12 body with a base64url digest (hyphen inside a group) swept over widths; plant: the nowrap removed."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "An empty code block renders 0 px of content, not the one line US2-19 and Edge Cases require"
+    evidence:
+      - artifact: "spec.md US2-19 'its block size is one line's height of the block's type (plus its padding)'; Edge Cases 'An empty code block … renders an empty inset box of one line's height'"
+      - artifact: "research.md R-05/R-06 and data-model.md 'the empty string gives no units (an empty block)': no rule gives the empty `pre` a line"
+      - code: "Probe (scratchpad probe/e.html): a shadow <pre> with pre-wrap, 16px/1.55, holding a Lit-style comment marker and an empty text node: height 0; the same <pre> holding 'x': 24.8 px."
+    claim: |
+      An empty pre has no line box, so the block collapses to its padding in wrap mode and to the module's ring room in
+      scroll mode. The plan names no rule that produces the line, so US2-19's green would need an unplanned rule.
+    remedies:
+      - "Add `.code { min-block-size: 1lh }` (style-lint allows `1lh`) to R-06, name it in the Empty story and in contracts/checks.md's plants (plant: rule removed, US2-19 fails)."
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The disclosure host's display is never stated; a custom element defaults to inline"
+    evidence:
+      - artifact: "research.md R-01 and R-04 set rules on the summary, row, chevron and panel only; the only `:host { display: … }` in the design artifacts is the code block's (research.md line 136)"
+      - artifact: "spec.md FR-008 'laid out inline, directly after the summary in the element's own box'; contracts/checks.md US1-5 'the link is laid out below the summary inside the host'"
+    claim: |
+      Without a host display the element is an inline box holding a block `details` (block-in-inline): the host has
+      no single box of its own, its rects split around the anonymous block, and measures of 'inside the host' and
+      'in the element's own box' (FR-008, US1-5, US1-16) read an inline host's fragments. The plan must say what the
+      host is.
+    remedies:
+      - "State `:host { display: block }` (and `:host([hidden]) { display: none }`, FR-001) for the disclosure in R-04 and the contract, with a body asserting the host's computed display and that the panel's content rect is inside the host's border box."
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "Element CSS plants are placed in gates/plants and run by the plants gate in CI, unlike the repository's practice"
+    evidence:
+      - artifact: "plan.md Project Structure 'gates/plants/                      # plants of contracts/checks.md'; contracts/checks.md § Plants 'Plants run locally with `pnpm run gate:plants -- --affected <base>` (op 016); CI runs the full set.'"
+      - code: "gates/plants/<gate>/<plant>/plant.json + tree/ are planted defects of a gate (e.g. gates/plants/unit-tests/fail-elements-chromium/plant.json), each registered for a CI job (gates/bin/plants.ts checkRegistry); no element-behaviour plant exists there. Element plants are run once and recorded in specs/NNN/reviews/phase-N/plants.md: specs/013-data-display/reviews/phase-1/plants.md 'Scratch runner in the session scratchpad; no plant is committed.' (also 005, 009, 011)."
+    claim: |
+      The table's plants (rule removed, test must fail) are element-test plants, not gate plants. Committing them under
+      gates/plants would need a gate, registry entries and CI jobs the plan says it does not add ('No gate added or
+      changed'); `gate:plants -- --affected` would not run them as element plants. The plan contradicts both the
+      repository's layout and its own no-new-gate claim.
+    remedies:
+      - "Record the plants as earlier missions do: run once per phase against the green source and recorded in `reviews/phase-N/plants.md`; remove `gates/plants/` from the plan's structure and the gate:plants sentence from contracts/checks.md."
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "The aria-expanded exception to non-negotiable Principle III is taken although a compliant design is cheap"
+    evidence:
+      - artifact: "plan.md Complexity Tracking row 'A host `aria-expanded` is not moved to the inner control | III'; sunset 'If a consumer needs to drive the state through `aria-expanded`, it is mapped onto `open` in a later MINOR.'"
+      - artifact: "constitution III (NON-NEGOTIABLE) 'ARIA state set on a host (`aria-expanded`, `aria-current`, an accessible name) reaches the real inner control.'"
+      - code: "src/control.ts:67-126 MovedAttributes already gives the move, mirror and off-value handling; README § Control conventions rule 4's off-value table already documents `aria-expanded=\"false\"` as the clear value."
+    claim: |
+      The plan's own sunset names the compliant design (map a host aria-expanded onto `open`), so the exception is not
+      forced. Leaving a host aria-expanded on a role-less host is also what axe flags (README rule 4: 'it stays on the
+      host and axe flags it').
+    remedies:
+      - "Map it now: a host `aria-expanded` is removed from the host and sets `open` (`\"true\"` opens, the off value `\"false\"` closes, anything else ignored), with no mirror (the `open` attribute is the persisted state); drop the Complexity Tracking row and add a body."
+      - "Keep the exception as written and let the operator approve it at the tasks gate."
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 1
+    title: "The digest gap as margin-inline-start on the unit after <wbr> indents every wrapped line by space-1"
+    evidence:
+      - artifact: "research.md R-07 '`.digest > wbr + span { margin-inline-start: var(--ocelle-space-1) }`'"
+      - code: "Probe (scratchpad probe/p.html, 150 px): the first unit of each continuation line starts 4 px from the pre's inline start (LEFTS 0 … 4 … 4 … 4), the first line at 0."
+    claim: |
+      FR-030 places the gap between units; at a line start there is no preceding unit, yet the margin stays, so the
+      DigestWrapping baseline shows ragged starts. US2-12 does not measure line starts.
+    remedies:
+      - "Record the indent as accepted in R-07 and the README rule, or assert in US2-12 that every line's first unit starts at the pre's content edge and choose a layout that meets it."
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 1
+    title: "Switching overflow from scroll to wrap while the scroll box has focus drops focus to the body"
+    evidence:
+      - artifact: "research.md R-06 'in wrap mode `box()` is null … its `hostUpdated` releases a box that went away … the box node itself is gone with the scroll template'; spec FR-025 'Switching `overflow` … MUST give the other policy's full behaviour'"
+      - code: "src/overflow-region.ts hostUpdated/#release: no handover on release; #handOver runs only from #measure when the followed box stops overflowing."
+    claim: |
+      The focused `.region-box` is removed by the re-render and the module hands over nothing, so focus is lost. No
+      scenario or FR body covers it.
+    remedies:
+      - "Accept focus loss on a run-time policy switch and say so in R-06 and the README section, with a body that records the outcome."
+      - "Hand focus over on the switch: in `willUpdate`, when the policy leaves scroll while the box is focused, note it; in `updated`, give `.block` `tabindex=\"-1\"`, focus it and remove the attribute on its `focusout` (the module's frame rule), with a body asserting `document.activeElement` is the host after the switch."
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "Quickstart's manifest check runs git diff on a path that does not exist from the repository root"
+    evidence:
+      - artifact: "quickstart.md step 2 '`pnpm --filter @ocelle/elements run manifest && git diff --exit-code custom-elements.json`'"
+      - code: "Probe: from /home/user/ocelle-components, `git diff --exit-code custom-elements.json` -> 'fatal: ambiguous argument …', exit 128; the file is packages/elements/custom-elements.json."
+    claim: "The validation step fails for a reason unrelated to the manifest."
+    remedies:
+      - "Use `git diff --exit-code -- packages/elements/custom-elements.json`."

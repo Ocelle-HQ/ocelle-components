@@ -1,0 +1,26 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "Live layout changes can drop focus after removing the active rail"
+    evidence:
+      - artifact: "contracts/elements.md exposes the host's layout property. spec.md § Focus on tier changes and data-model.md § Focus settlement cover width changes and drawer dismissal, but give no outcome when a layout change at the same tier removes the focused region."
+      - code: "packages/elements/src/focusable.ts:182–185 treats document.body as no active control. A shell that waits for the next tier notification to handle focus will not receive one when the host switches from mission to project at a fixed width."
+    claim: |
+      A persistent app frame can change from a mission with a rail to a project or personal layout at the same width. The rail must disappear, including when its destination has focus. The same issue occurs in an open narrow drawer if the selected layout still has other destinations. The plan gives no focus recovery rule for these transitions and does not require them in the browser fixture.
+    remedies:
+      - "Treat a live layout change that hides the active region as a focus transition even when tier is unchanged. Keep a surviving focused destination or choose the first focusable destination in the resulting visible navigation, with main as fallback outside the drawer and drawer close as fallback while modal. Test mission-to-project at a fixed width and inside an open narrow drawer with surviving sidebar destinations."
+  - id: PLAN-FRESH-2-002
+    severity: 2
+    title: "Collapsing the sidebar can hide currently focused chrome"
+    evidence:
+      - artifact: "spec.md now hides sidebar head and footer chrome in collapsed presentation, while Focus on tier changes item 1 unconditionally requires retaining the same control between expanded and collapsed. The shell contract places destinations in the sidebar content region but gives no focus rule for other controls in the head and footer."
+      - code: "packages/elements/src/ocelle-context-sidebar.ts:37–39 documents the head and footer slots without restricting their contents; :159–162 renders ordinary slots that accept consumer controls."
+    claim: |
+      A sidebar head or footer can contain an operable project control that is not a destination. Shrinking while that control has keyboard focus leaves no way to satisfy both the unconditional retention rule and hiding the control. The integrated regression only starts from a surviving link for this boundary.
+    remedies:
+      - "Qualify expanded/collapsed retention to surviving controls. Specify focus fallback on hiding the focused chrome and add an integrated browser check with a non-destination head or footer control that is focused during collapse."

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { define } from "../src/define.ts";
+import { define, registering } from "../src/define.ts";
 import type * as DataTableModule from "../src/ocelle-data-table.ts";
 import type * as TimelineModule from "../src/ocelle-event-timeline.ts";
 import type * as ChainModule from "../src/ocelle-evidence-chain.ts";
@@ -12,6 +12,28 @@ import type * as EventModule from "../src/ocelle-timeline-event.ts";
 class First extends HTMLElement {}
 class Second extends HTMLElement {}
 class Fresh extends HTMLElement {}
+
+// The registration flag (specs/010-feedback-forms research.md R-02, FR-008; T019): `registering()` reads true only
+// while a `define` call's `customElements.define` runs. This describe comes first, so its first reading is taken
+// before any `define` call of the file.
+describe("registering()", () => {
+  it("reads false before any define call, true in a constructor the registration's upgrade runs, false after it and in a later constructor", () => {
+    const before = registering();
+    const seen: boolean[] = [];
+    class Probe extends HTMLElement {
+      constructor() {
+        super();
+        seen.push(registering());
+      }
+    }
+    document.body.insertAdjacentHTML("beforeend", '<ocelle-define-probe id="probe"></ocelle-define-probe>');
+    define("ocelle-define-probe", Probe);
+    const after = registering();
+    document.createElement("ocelle-define-probe");
+    document.getElementById("probe")?.remove();
+    expect({ before, seen, after }).toEqual({ before: false, seen: [true, false], after: false });
+  });
+});
 
 describe("define(tag, constructor)", () => {
   it("defines a free tag with the constructor", () => {

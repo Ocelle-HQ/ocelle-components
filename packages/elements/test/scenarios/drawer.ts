@@ -100,6 +100,7 @@ const inheritedOnly = (rows: readonly DialogScenario[]): DialogScenario[] => row
 const inheritedRows: readonly DialogScenario[] = [
   ...built.initialRows,
   ...built.tabCycleRows,
+  ...built.detailsRows,
   ...built.nonStopRows,
   ...built.bodyStartRows,
   ...built.scrollerRows,
@@ -154,7 +155,7 @@ function page(content: string, options: { readonly attrs?: string; readonly foot
 
 /** Clicks the opener (which focuses it), sets `open` and records the drawer's two events. */
 async function open(driver: Driver): Promise<void> {
-  await driver.click("opener");
+  await driver.inputClick("opener");
   await driver.setAttribute("dlg", "open", "");
   await driver.record("dlg", both);
 }
@@ -392,14 +393,14 @@ const bodyRows = [
         const footer = await inspect(driver, "dlg", '[part="footer"]');
         const body = await inspect(driver, "dlg", '[part="body"]');
         await focusClose(driver);
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         const focused = await driver.focusPath();
         const top = (): Promise<number> => inspect(driver, "dlg", '[part="body"]').then((each) => each.scrollTop);
-        await driver.press("ArrowDown");
+        await driver.inputPress("ArrowDown");
         const down = await eventually(async () => (await top()) > 0);
         await pause(300);
         const afterDown = await top();
-        await driver.press("PageDown");
+        await driver.inputPress("PageDown");
         const paged = await eventually(async () => (await top()) > afterDown);
         const ids = Array.from({ length: 39 }, (_, index) => `p${String(index + 1)}`);
         await act(driver, { op: "seq", ops: ids.map((id) => ({ op: "remove", id }) as const) });
@@ -428,9 +429,9 @@ const bodyRows = [
           const panel = await inspect(driver, "dlg", "dialog");
           const body = await inspect(driver, "dlg", '[part="body"]');
           await focusClose(driver);
-          await driver.press("Tab");
+          await driver.inputPress("Tab");
           const focused = await driver.focusPath();
-          await driver.press("End");
+          await driver.inputPress("End");
           const atEnd = await eventually(async () => {
             const ended = await inspect(driver, "dlg", '[part="body"]');
             return ended.scrollTop + ended.clientHeight >= ended.scrollHeight - 1;
@@ -707,7 +708,7 @@ const motionRows = [
         await open(driver);
         const entry = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         await pause(300);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const exit = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         return { entry, exit, recorded: await events(driver, 2) };
       },
@@ -726,7 +727,7 @@ const motionRows = [
         await driver.mount(page(basic, { attrs: ` side="${side}"` }));
         await open(driver);
         const entry = await driver.ownAnimations("dlg", "dialog");
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const exit = await driver.ownAnimations("dlg", "dialog");
         return { entry, exit, recorded: await driver.recorded() };
       },
@@ -785,9 +786,9 @@ const headingRows = [
       const control = await inspect(driver, "dlg", close);
       // The named nodes: Chromium also exposes an unnamed generic node for the body holding a focusable element.
       const tree = (await driver.ax("dlg")).filter((node) => node.name !== "");
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const tabbed = await driver.focusPath();
-      await driver.press("Enter");
+      await driver.inputPress("Enter");
       const px = (value: string | undefined): number => Number.parseFloat(value ?? "NaN");
       return {
         heading: { width: heading.width, height: heading.height, styles: heading.styles },

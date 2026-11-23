@@ -13,7 +13,7 @@
 // is paired with the positive outcome it guards in the same body (contracts/checks.md § Bodies that the platform alone
 // could pass). The no-hover half of US1-24 is in `dataTableTouchScenarios`, run only by the touch files; the
 // before-upgrade body is `beforeUpgrade`, run on a page where the element is not defined.
-import type { Box, Driver, Palette, Target } from "./driver.ts";
+import type { Box, Driver, Palette, ElementTarget } from "./driver.ts";
 import type { Scenario } from "./icon.ts";
 import { probe, tokenColour, tokenPx, tokensOf } from "./layout.ts";
 import { layers } from "./overflow-block.ts";
@@ -163,7 +163,7 @@ export async function safe<T>(read: () => Promise<T>): Promise<T | string> {
   }
 }
 
-const boxOf = (id: string): Target => ({ id, inner: ".region-box" });
+const boxOf = (id: string): ElementTarget => ({ id, inner: ".region-box" });
 
 /** Whether `a` is within 0.5 px of `b`, inclusive. */
 export const near = (a: number, b: number): boolean => Math.abs(a - b) <= 0.5;
@@ -463,7 +463,7 @@ const us1: DataTableScenario[] = [
         span: await read("a", "ta"),
         attribute: await read("b", "tb"),
         none: await read("n", "tn"),
-        copied: [await driver.copy("ta-s"), await driver.copy("tb-s")],
+        copied: [await driver.copyText("ta-s"), await driver.copyText("tb-s")],
       };
     },
     expected: {
@@ -558,7 +558,7 @@ const us1: DataTableScenario[] = [
       await driver.replace("ta-body", fitting("na"));
       await driver.settle();
       const afterBody = { tabindex: (await boxAttributes(driver, "a")).tabindex, active: await driver.deepActive() };
-      await safe(() => driver.focus(boxOf("b")));
+      await safe(() => driver.focusTarget(boxOf("b")));
       const focusedB = await driver.deepActive();
       await driver.replace("tb", `<table id="nt"><caption>Work packages</caption>${fitting("nb")}</table>`);
       await driver.settle();
@@ -1145,7 +1145,7 @@ async function browserKeys(driver: Driver, id: string, rest: number): Promise<un
   const out: unknown[] = [];
   for (const { key, shift } of keys) {
     const from = await driver.scrollTop(boxOf(id));
-    await driver.press(key, { shift: shift === true });
+    await driver.inputPress(key, { shift: shift === true });
     await driver.frames(30);
     await driver.settle();
     const read = await must(driver, id);
@@ -1209,7 +1209,7 @@ const stickyBodies: DataTableScenario[] = [
         arrows.push({ key, scrollTop: await driver.scrollTop(boxOf("s")), scrollLeft: await driver.scrollLeft(boxOf("s")) });
       }
       await driver.setScrollTop(boxOf("s"), 0);
-      await driver.focus(boxOf("s"));
+      await driver.focusTarget(boxOf("s"));
       const keys = await browserKeys(driver, "s", rest ?? room);
       await driver.chord("ArrowDown");
       const arrowDown = { prevented: await driver.lastKeyPrevented(), scrollTop: await driver.scrollTop(boxOf("s")) };
@@ -1275,7 +1275,7 @@ const stickyBodies: DataTableScenario[] = [
     run: async (driver) => {
       await page(driver, sticky("s", ""));
       const read = await region(driver, "s");
-      const unbounded = read && { scrolls: read.scrollHeight - read.clientHeight > 1, tabindex: read.tabindex, axis: read.axis, overflowY: await safe(() => driver.computed(boxOf("s"), "overflow-y")) };
+      const unbounded = read && { scrolls: read.scrollHeight - read.clientHeight > 1, tabindex: read.tabindex, axis: read.axis, overflowY: await safe(() => driver.computed("s", "overflow-y", ".region-box")) };
       const model = { collapse: await driver.computed("st", "border-collapse"), spacing: await driver.computed("st", "border-spacing"), position: await driver.computed("st-head", "position") };
       await driver.setAttribute("s", "data-bound", "300");
       await driver.settle();
@@ -1283,7 +1283,7 @@ const stickyBodies: DataTableScenario[] = [
       return {
         unbounded,
         model,
-        bounded: after && { axis: after.axis, scrolls: after.scrollHeight - after.clientHeight > 1, overflowY: await safe(() => driver.computed(boxOf("s"), "overflow-y")), gutter: await safe(() => driver.computed(boxOf("s"), "scrollbar-gutter")), tabindex: after.tabindex },
+        bounded: after && { axis: after.axis, scrolls: after.scrollHeight - after.clientHeight > 1, overflowY: await safe(() => driver.computed("s", "overflow-y", ".region-box")), gutter: await safe(() => driver.computed("s", "scrollbar-gutter", ".region-box")), tabindex: after.tabindex },
       };
     },
     expected: {
@@ -1466,15 +1466,15 @@ const stickyBodies: DataTableScenario[] = [
       await page(driver, `${dt("a", "", table("a"))}${dt("b", "striped", table("b"))}`);
       await driver.theme("dark");
       await driver.listen(["a", "b"]);
-      await driver.hover("a0");
+      await driver.inputHover("a0");
       const plain = { hovered: await groundTokens(driver, ["a0", "a0b"], ["color-hover-bg"]), other: await groundTokens(driver, ["a2", "a2b"], ["color-hover-bg"]), cursor: await driver.computed("a0", "cursor") };
-      await driver.hover("b1");
+      await driver.inputHover("b1");
       const stripe = { hovered: await groundTokens(driver, ["b1", "b1b"], ["color-hover-bg", "color-inset"]), other: await groundTokens(driver, ["b3"], ["color-hover-bg", "color-inset"]) };
-      await driver.hover("ah");
+      await driver.inputHover("ah");
       const header = await groundTokens(driver, ["ah", "ah2"], ["color-hover-bg"]);
-      await driver.hover("af");
+      await driver.inputHover("af");
       const footer = await groundTokens(driver, ["af"], ["color-hover-bg"]);
-      await driver.hover(null);
+      await driver.inputHover(null);
       const tabStops = await evaluate(driver, 'return [...document.querySelectorAll("ocelle-data-table td, ocelle-data-table tr, ocelle-data-table th")].filter((each) => each.hasAttribute("tabindex")).length;');
       return { plain, stripe, header, footer, heard: await driver.heard(), tabStops, assigned: (await region(driver, "a"))?.assigned ?? 0 };
     },
@@ -1496,12 +1496,12 @@ const stickyBodies: DataTableScenario[] = [
       await driver.forcedColors("active", "light");
       const colours: Record<string, string> = { [await driver.resolveColour("CanvasText")]: "CanvasText", [await driver.resolveColour("Highlight")]: "Highlight", [await driver.resolveColour("Canvas")]: "Canvas" };
       // The hovered row is a striped even row: its band is Highlight, after the stripe's CanvasText.
-      await driver.hover("t-c3-1");
+      await driver.inputHover("t-c3-1");
       const band: unknown[] = [];
       for (const r of [0, 1, 2, 3]) band.push({ width: Number.parseFloat(await driver.computed(`t-c${String(r)}-0`, "border-left-width")) === bar, colour: colours[await driver.computed(`t-c${String(r)}-0`, "border-left-color")] ?? "other" });
       const header = { ground: (await driver.computed("t-h0", "background-color")) !== transparent, rule: colours[await driver.computed("t-h0", "border-bottom-color")] ?? "other" };
       const text = colours[await driver.computed("t-c0-1", "color")] ?? "other";
-      await driver.hover(null);
+      await driver.inputHover(null);
       await driver.forcedColors("none");
       return { band, header, text };
     },
@@ -1523,10 +1523,10 @@ const stickyBodies: DataTableScenario[] = [
       const read = await region(driver, "s");
       if (read === null) return { region: null };
       const head = await driver.box("st-head");
-      const rest = { blockFade: read.blockFade, layers: (await driver.computed(boxOf("s"), "mask-image")).split("linear-gradient(").length - 1, belowHead: fadeTop(read) >= bottomOf(head) - 0.5 };
+      const rest = { blockFade: read.blockFade, layers: (await driver.computed("s", "mask-image", ".region-box")).split("linear-gradient(").length - 1, belowHead: fadeTop(read) >= bottomOf(head) - 0.5 };
       await driver.setScrollTop(boxOf("s"), 5000);
       const end = field(await region(driver, "s"), "blockFade");
-      await driver.focus(boxOf("s"));
+      await driver.focusTarget(boxOf("s"));
       await driver.chord("ArrowUp");
       const back = field(await region(driver, "s"), "blockFade");
       const small = await region(driver, "r");
@@ -1602,7 +1602,7 @@ const stickyBodies: DataTableScenario[] = [
       const partly = Math.round(linkAtRest + 7);
       await driver.setScrollTop(boxOf("t"), partly);
       const above = box.y - (await driver.box("cl")).y;
-      await driver.focus(boxOf("t"));
+      await driver.focusTarget(boxOf("t"));
       const recorder = await driver.frameRecord(boxOf("t"), { property: "scrollTop" });
       await driver.pressTab();
       await driver.frames(5);
@@ -1619,7 +1619,7 @@ const stickyBodies: DataTableScenario[] = [
         noJumpBack: values.every((value, index) => index === 0 || value <= (values[index - 1] ?? value)),
       };
       await driver.setScrollTop(boxOf("t"), (await driver.box("tt-cap")).height + 2 * room + 40);
-      await driver.focus(boxOf("t"));
+      await driver.focusTarget(boxOf("t"));
       await driver.pressTab();
       const whole = await driver.box("cl");
       const fullyPast = { focused: await driver.focused(), shown: whole.y >= box.y - 0.5 && bottomOf(whole) <= (await driver.box("tt-head")).y + 0.5, hit: await hitAtCentre(driver, "cl") };
@@ -1645,7 +1645,7 @@ const stickyBodies: DataTableScenario[] = [
       if (read === null) return { region: null };
       await driver.setScrollLeft(boxOf("s"), Math.round((read.scrollWidth - read.clientWidth) / 2));
       const middle = await must(driver, "s");
-      const both = { fade: middle.fade, blockFade: middle.blockFade, composite: layers(await driver.computed(boxOf("s"), "mask-composite")) };
+      const both = { fade: middle.fade, blockFade: middle.blockFade, composite: layers(await driver.computed("s", "mask-composite", ".region-box")) };
       let faded = -1;
       for (let r = 0; r < 20; r++) {
         if (bottomOf(await driver.box(`st-a${String(r)}`)) + room > fadeTop(middle)) {
@@ -1671,7 +1671,7 @@ const stickyBodies: DataTableScenario[] = [
       const canvasText = await driver.resolveColour("CanvasText");
       const read = async (): Promise<unknown> =>
         safe(async () => ({
-          mask: await driver.computed(boxOf("s"), "mask-image"),
+          mask: await driver.computed("s", "mask-image", ".region-box"),
           colour: (await driver.shadowComputed("s", ".region-edge.block-end", "border-bottom-color")) === canvasText,
           style: await driver.shadowComputed("s", ".region-edge.block-end", "border-bottom-style"),
           wide: Number.parseFloat(await driver.shadowComputed("s", ".region-edge.block-end", "border-bottom-width")) > 0,
@@ -1702,9 +1702,9 @@ const stickyBodies: DataTableScenario[] = [
       await page(driver, dt("s", 'sticky-header striped label="Work packages" data-bound="300"', usTable("t", { rows: 6, ident: false })));
       const read = async (theme: Palette): Promise<unknown> => {
         await grounds(driver, theme, []);
-        await driver.hover("t-c3-1");
+        await driver.inputHover("t-c3-1");
         const out = { head: await groundTokens(driver, ["t-h0"], ["color-sheet"]), stripe: await groundTokens(driver, ["t-c1-1"], ["color-inset"]), hover: await groundTokens(driver, ["t-c3-1"], ["color-hover-bg"]) };
-        await driver.hover(null);
+        await driver.inputHover(null);
         return out;
       };
       return { light: await read("light"), dark: await read("dark") };
@@ -1914,7 +1914,7 @@ export const dataTableTouchScenarios: readonly Scenario[] = [
       await driver.theme("dark");
       const hover = (await driver.device()).hover;
       await driver.touchTap("t-c1-1");
-      await driver.hover("t-c2-1");
+      await driver.inputHover("t-c2-1");
       const even = await groundTokens(driver, ["t-c1-0", "t-c1-1"], ["color-hover-bg", "color-inset"]);
       const odd = await groundTokens(driver, ["t-c2-0", "t-c2-1"], ["color-hover-bg", "color-inset"]);
       await driver.theme(null);
@@ -1922,7 +1922,7 @@ export const dataTableTouchScenarios: readonly Scenario[] = [
       const colours: Record<string, string> = { [await driver.resolveColour("CanvasText")]: "CanvasText", [await driver.resolveColour("Highlight")]: "Highlight", [await driver.resolveColour("Canvas")]: "Canvas" };
       await driver.touchTap("t-c1-1");
       // The pointer over the tapped row too: on a device that cannot hover nothing paints the hover band, :hover or not.
-      await driver.hover("t-c1-1");
+      await driver.inputHover("t-c1-1");
       const band = colours[await driver.computed("t-c1-0", "border-left-color")] ?? "other";
       const width = Number.parseFloat(await driver.computed("t-c1-0", "border-left-width")) > 0;
       await driver.forcedColors("none");

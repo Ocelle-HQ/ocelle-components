@@ -190,7 +190,7 @@ const rectsOf = [...$(ident).getClientRects()]; const box = content.getBoundingC
 return { lines: new Set(rectsOf.map((r) => Math.round(r.top))).size, inside: rectsOf.length > 0 && rectsOf.every((r) => r.left >= box.left - 0.5 && r.right <= box.right + 0.5), wrap: getComputedStyle(content).overflowWrap }; };
 return { wide: of("t-e1", "ident"), narrow: of("n-e1", "narrow") };`,
       );
-      return { shown, scrollWidth: await driver.scrollWidth(), copied: await driver.copy("ident") };
+      return { shown, scrollWidth: await driver.scrollWidth(), copied: await driver.copyText("ident") };
     },
     expected: { shown: { wide: { lines: 1, inside: true, wrap: "anywhere" }, narrow: { lines: 2, inside: true, wrap: "anywhere" } }, scrollWidth: 320, copied: identifier },
   },

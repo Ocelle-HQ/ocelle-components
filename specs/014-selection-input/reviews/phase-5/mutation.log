@@ -1,0 +1,17 @@
+$ node gates/bin/mutation.ts -- --base 75965e1
+packages/elements/src/ocelle-copy-field.ts:45: mutation: record: ObjectLiteral,BooleanLiteral: equivalent, `{}` and `noAccessor: false` make Lit wrap the class's own accessor, which only adds an update request that renders the same template
+packages/elements/src/ocelle-copy-field.ts:47: mutation: record: ObjectLiteral,BooleanLiteral: equivalent, as for `value`: the wrapped `status` accessor adds an update request and the template does not read `status`
+packages/elements/src/ocelle-copy-field.ts:183: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-copy-field.ts:201: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-copy-field.ts:213: mutation: compile-error: EqualityOperator: replaced by name !== "value"
+packages/elements/src/ocelle-copy-field.ts:213: mutation: compile-error: LogicalOperator: replaced by value && ""
+packages/elements/src/ocelle-copy-field.ts:214: mutation: compile-error: LogicalOperator: replaced by value && ""
+packages/elements/src/ocelle-copy-field.ts:219: mutation: compile-error: OptionalChaining: replaced by this.renderRoot.querySelector(".status").append
+packages/elements/src/ocelle-copy-field.ts:233: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-copy-field.ts:240: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-copy-field.ts:241: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-copy-field.ts:241: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-copy-field.ts:241: mutation: compile-error: EqualityOperator: replaced by typeof value !== "string"
+packages/elements/src/ocelle-copy-field.ts:241: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 83 mutants on the changed lines of 2 files, none survived; 0 timeouts, 12 compile errors, 1 zero-mutant entry; 2 equivalent records

@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import type { Driver, Target } from "../scenarios/driver.ts";
+import type { Driver, ElementTarget } from "../scenarios/driver.ts";
 import { dt, lineBoxes, page as mountTable, region, safe, unmasked, usTable } from "../scenarios/data-table.ts";
 import type { Region } from "../scenarios/data-table.ts";
 import { layers } from "../scenarios/overflow-block.ts";
@@ -40,7 +40,7 @@ function started(): { readonly browser: Browser; readonly origin: string } {
   return { browser, origin: served.origin };
 }
 
-const boxOf = (id: string): Target => ({ id, inner: ".region-box" });
+const boxOf = (id: string): ElementTarget => ({ id, inner: ".region-box" });
 
 /** The precondition of every body: `data-axis="both"` and the block-axis scrollbar's room above 0. */
 const precondition = (read: Region | null): unknown => (read === null ? "no region" : { axis: read.axis, room: read.offsetWidth - read.clientWidth > 0 });
@@ -156,17 +156,17 @@ describe("the block-axis option with classic scrollbars, on the strict-CSP fixtu
       const roomPx = regionRead.offsetWidth - regionRead.clientWidth;
       return {
         precondition: { axis: regionRead.axis, room: roomPx > 0 },
-        size: layers(await driver.computed(boxOf(id), "mask-size")),
+        size: layers(await driver.computed(id, "mask-size", ".region-box")),
         expectedSize: [`${String(roomPx)}px 100%`, `100% ${String(regionRead.offsetHeight - regionRead.clientHeight)}px`, `${String(regionRead.clientWidth)}px ${String(regionRead.clientHeight)}px`, `${String(regionRead.clientWidth)}px ${String(regionRead.clientHeight)}px`],
-        first: layers(await driver.computed(boxOf(id), "mask-position"))[0],
-        composite: layers(await driver.computed(boxOf(id), "mask-composite")),
+        first: layers(await driver.computed(id, "mask-position", ".region-box"))[0],
+        composite: layers(await driver.computed(id, "mask-composite", ".region-box")),
       };
     };
     const ltr = await figure("l");
     const rtl = await figure("r");
     await driver.setAttribute("l", "data-bound", null);
     await driver.settle();
-    const lifted = layers(await driver.computed(boxOf("l"), "mask-size")).length;
+    const lifted = layers(await driver.computed("l", "mask-size", ".region-box")).length;
     const pick = (read: unknown): unknown => {
       if (typeof read !== "object" || read === null) return read;
       const { precondition: pre, size, expectedSize, first, composite } = read as { precondition: unknown; size: string[]; expectedSize: string[]; first: string; composite: string[] };
@@ -183,4 +183,3 @@ describe("the block-axis option with classic scrollbars, on the strict-CSP fixtu
     });
   });
 });
-

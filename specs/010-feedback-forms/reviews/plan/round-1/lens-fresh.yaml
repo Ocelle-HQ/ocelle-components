@@ -1,0 +1,105 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/elements.md, contracts/testing.md, quickstart.md,
+# constitution, reviews/spec/check-3.md; packages/elements/src/define.ts, icons.ts, README engine floor, token names in
+# packages/tokens/src/source.ts. Probes ran in this session with playwright-core against /usr/bin/google-chrome
+# (Chromium 153.0.8010.12); scripts in the session scratchpad (probe/p1.mjs, p2.mjs, p3.mjs), not committed.
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 4
+    title: "The one-frame withholding is undone before the first rendering update, so real assistive technology never sees the empty region; only the paused capture does"
+    evidence:
+      - artifact: "research.md § R-02: 'the content wrapper gets `aria-hidden=\"true\"` for one animation frame, then loses it'; data-model.md § Announcement transitions: 'set `aria-hidden=\"true\"` on the content wrapper, remove it in the next animation frame'; research.md § R-06: 'the same withholding mechanism as the notice'"
+      - artifact: "research.md § R-01: the recorder is a `MutationObserver` whose callback runs `debugger`, and each pause calls `Accessibility.getFullAXTree`, which 'brings layout and the accessibility cache up to date before answering'. The spike result `polite:\"\"`, `polite:\"\"`, `polite:\"Saved\"` was measured by this capture."
+      - code: "probe p2.mjs (Chromium 153): a task inserts an aria-live region whose content has aria-hidden=\"true\" and schedules a rAF that removes it. A ResizeObserver on the region records the attribute at the first layout of the rendering update. Log: [microtask: \"true\"], [rAF: removing, \"true\"], [resizeObserver(first layout): null]. So the attribute is already gone at the first style/layout pass after the insertion."
+      - code: "HTML event loop, 'update the rendering': rAF callbacks run before style and layout in the same rendering update. Chromium serialises the accessibility tree to the platform after the document lifecycle update. That update comes after rAF, so the aria-hidden state is never serialised."
+    claim: |
+      The design announces by making the region's text go from empty to the full text across one accessibility-tree
+      update. It removes `aria-hidden` in the next animation frame, and that callback runs before the browser's first
+      style, layout and accessibility pass after the insertion (probe p2). At every point where Chromium hands the tree
+      to a screen reader, the region already holds its full text, which by the spec's own rule is "a region that first
+      appears already holding text" and makes no announcement. The same holds for a reveal, a politeness change
+      (R-02) and an inserted or revealed control's error (R-06).
+
+      The capture does not catch this. It pauses inside the mutation-observer microtask and forces a full tree read
+      there, so it records an intermediate state that the browser never serialises. The spike's empty-then-text
+      sequence is an artifact of that forced read. Every announcement scenario (US1 8, 9, 12, 15, 17, 19; US2 10, 20,
+      22; US3 7) can then pass while no real user hears anything. That is the vacuous-test pattern Principle VIII
+      forbids, and it hits the feature's main a11y promise (#9's "announces each change once"). The
+      unit tests of `announcements()` and the planted "never withholds" element do not help: the plant fails the
+      capture, but a correct-looking element passes it whether or not real AT ever sees the empty state.
+    remedies:
+      - "Change the capture so it snapshots only at points where Chromium serialises the tree, not at every DOM mutation. For example, take snapshots after each rendering update (a rAF callback that posts a task, or a `setTimeout(0)` after rAF) and drop the per-mutation `debugger` pause. Or require each snapshot to follow a lifecycle update. Re-run the spike against that capture. Then change the withholding to span at least one rendered frame: keep `aria-hidden` through one full rendering update and remove it in a task after the next rAF (double rAF, or rAF plus a posted task). Record in R-01 and R-02 why one rAF is not enough, and add a plant that removes `aria-hidden` in the first rAF; it must turn US1 scenario 8 red."
+      - "If the withholding cannot be made observable at serialisation points, drop withholding: use a separate empty live region that exists one rendered frame before its text is written (the R-02 'visually hidden copy' alternative). Accept and document the double reading, or use aria-hidden on the visible copy. Re-decide at the plan gate."
+  - id: PLAN-FRESH-1-002
+    severity: 4
+    title: "Notices and controls inserted by innerHTML, a template clone, DOMParser or htmx are upgraded already connected, so R-02 classes them as first load and they never announce"
+    evidence:
+      - artifact: "research.md § R-02 First load: 'the constructor records `this.isConnected` (true only when an already-connected element is upgraded); the first `connectedCallback` counts as first load when that was true'"
+      - artifact: "spec.md FR-008 'First load and insertion' (line 543): first load includes a notice 'already connected at the moment its definition upgrades it, whenever that happens'; spec US1 scenario 8: 'When a script or an htmx swap inserts `<ocelle-notice announce tone=\"success\">Saved</ocelle-notice>`, Then \"Saved\" is announced politely, once'; US2 scenario 20 (htmx swap of a form fragment with `error`)"
+      - code: "probe p1.mjs (Chromium 153), element defined before insertion, readyState \"complete\": constructor isConnected = true for host.innerHTML, insertAdjacentHTML, template.content.cloneNode + append, and DOMParser + adoptNode + append; false only for document.createElement and Range.createContextualFragment. Elements parsed into an inert document (fragment parsing, template content, DOMParser) are not custom until they are inserted, and they are upgraded only after they are connected."
+      - code: "packages/elements/src/define.ts:7 — registration is a single customElements.define; nothing records which elements existed before definition"
+    claim: |
+      In practice, every way a host inserts server HTML after load creates the element in an inert document: an htmx
+      swap parses its response with DOMParser or a template, and scripts use innerHTML or insertAdjacentHTML. The
+      element is therefore upgraded already connected. R-02's test (constructor `isConnected`) and the spec's own FR-008
+      definition both class that as first load, and the element stays silent. This breaks the main consumer case of
+      the Ocelle console: htmx swaps a notice or a re-rendered form fragment with `error` into a page whose
+      build loaded long ago. The case is named in US1 scenario 8, US2 scenario 20 and the "Announce once per control"
+      operator decision.
+
+      The spec's FR-008 definition conflicts with its own scenario 8. The plan inherits the conflict and hides it:
+      scenario tests that insert with `document.createElement` pass, and the htmx path is never exercised. The README
+      advice "load the build before any swap" does not help, because the build is loaded and the element still
+      upgrades connected.
+    remedies:
+      - "Define first load as 'present in the document when the definition is registered': in `define` (or the element module), before `customElements.define`, collect the tag's existing elements (`document.querySelectorAll(tag)`, plus the parser-inserted case `document.readyState === \"loading\"`) into a module WeakSet. An element counts as first load only if it is in that set or is connected while the document is loading. Any element upgraded connected after definition counts as an insertion. Fix spec FR-008 'First load and insertion' and FR-027 to match, record the shadow-root limit (elements inside other shadow roots before definition are not found) in the README, and add scenarios that insert by innerHTML and by a DOMParser/template fragment, as htmx does, beside createElement."
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "FR-030 'the host counts as a field that blocks implicit submission' cannot hold for Enter in a native field of the same form; the plan covers only Enter in the ocelle field"
+    evidence:
+      - artifact: "spec.md FR-030: 'The host counts as a field that blocks implicit submission, as a native text input does, so a form with no submit button and two such fields does not submit on Enter'; research.md § R-05 Implicit submission: the element counts 'native inputs of the blocking types and every `ocelle-form-input`' only in its own keydown handler"
+      - code: "probe p3.mjs (Chromium 153): <form> with no submit button, one native <input> and one form-associated custom element; Enter in the native input submits (submit events: 1). The browser does not count the custom element as a blocking field."
+    claim: |
+      In a mixed form (one native text input and one `ocelle-form-input`, no submit button), Enter in the ocelle field
+      does not submit, because the element counts two blocking fields. Enter in the native field does submit, because
+      the browser counts one. The same form then behaves two ways, and neither matches the native twin, which never
+      submits. FR-030 promises the host "counts as" a blocking field, so the console's mixed forms during migration
+      contradict the spec. The native-twin suite (US2 scenario 21) tests only all-ocelle forms, so the gap stays green.
+    remedies:
+      - "Narrow FR-030 to Enter pressed in the element's own field, state in the README that the browser does not count the element when Enter is pressed in a native field of the same form, and add the mixed-form case to the limitations; no listener on the host's form (the element must not reach outside its host)."
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "The engine-floor fork misses a cheaper option: put the effective tone and size on a shadow-internal wrapper, with no :state() and no :not() lists"
+    evidence:
+      - artifact: "research.md § R-03: 'The box is the host'; 'the styles select on a private state (`:host(:state(tone-danger))` …) … custom states raise the README's floor to Chromium 125 and WebKit 17.4'; alternatives offer only `:host([tone=\"danger\"])` with `:not()` lists. plan.md decision 2 says the same and adds `type`."
+      - code: "packages/elements/README.md:206 'Engine floor: Chromium 120+ and WebKit 16.4+'"
+    claim: |
+      The operator is offered two options: raise the floor for the whole library (WebKit 17.4 matters for Kitty Desktop's
+      WebKit webviews, which this repository cannot measure), or write brittle `:not()` selector lists. A third option
+      needs neither. The element renders its box as a wrapper inside its own shadow root, and Lit sets a class from the
+      normalised property (`class="box tone-danger size-compact"`). Host attributes are not rewritten, unknown values
+      read as the default, there is one selector per value, and the floor stays at 120 and 16.4. SC-004's measure moves
+      to the wrapper's content box. For `ocelle-form-input`, the inner `<input>` already carries the effective `type`,
+      so `input[type=…]` inside the shadow root works and `type` needs no host state at all. Raising a library-wide
+      engine floor for a styling convenience is a consumer-facing cost the fork does not show.
+    remedies:
+      - "Add the shadow-wrapper-class option to R-03 and plan decision 2, preferably as the recommendation, keeping the engine floor at Chromium 120 / WebKit 16.4; state that `type` styling, if any, selects on the inner input's own `type`."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "A 'visually hidden' name span is exposed in the accessibility tree, so the name is read twice in browse mode next to the visible label"
+    evidence:
+      - artifact: "research.md § R-05 Naming: 'named by `aria-labelledby` pointing at one visually hidden span in the same shadow root whose text is the computed name … The visible `<label part=\"label\" for=\"control\">` keeps click-to-focus'; § Description: 'a span holding a host `aria-description`'"
+      - artifact: "spec.md 'What \"announced\" means here': a visually hidden (clipped) element is not ignored; only `hidden` and `aria-hidden` subtrees are ignored"
+    claim: |
+      A visually hidden (clipped) span is still a StaticText node in the tree. A screen reader in browse mode, or one
+      reading by line, then meets the visible label "Title", the hidden span "Title" and the textbox "Title". With an
+      external label it meets "Title", then "Title Lane title", then the field. The same applies to the span holding the
+      host `aria-description`. Accessible-name computation follows `aria-labelledby` and `aria-describedby` into
+      `hidden` nodes, so the spans need not be exposed at all. The tests check only the focused node's name and
+      description, so nothing catches the duplication. axe does not flag it either.
+    remedies:
+      - "Make the name span and the aria-description span `hidden` (not visually hidden) and state in R-05 that aria-labelledby/aria-describedby read hidden referenced nodes; add a scenario that the control's shadow tree exposes the label text once (one StaticText for the visible label, none for the name span)."

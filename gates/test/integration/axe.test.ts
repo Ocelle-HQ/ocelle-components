@@ -37,15 +37,45 @@ function gate(at: string, extra: Record<string, string> = {}): Promise<Ran> {
 const wide = "clipped column of the wide table's scroll box (`elmPartiallyObscured`)";
 const linked = "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)";
 
-/** The ten excepted notes of the Prose document (plan.md § Complexity Tracking, axe exceptions under FR-029), in run order. */
-const prose: readonly string[] = (["light", "dark"] as const).flatMap((theme) =>
-  [
-    ["table:nth-child(12) > thead > tr > th:nth-child(12)", wide],
-    ["table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)", wide],
-    ["tr:nth-child(2) > td:nth-child(12)", wide],
-    ["table:nth-child(14) > thead > tr > th:nth-child(12)", linked],
-    ["table:nth-child(14) > tbody > tr > td:nth-child(12)", linked],
-  ].map(([selector, reason]) => `note: base-styles--prose-document/${theme}: color-contrast-incomplete: serious: ${String(selector)} excepted (${String(reason)})`),
+const clippedLine = "clipped line of the code block's scroll box (`elmPartiallyObscured`)";
+
+/**
+ * The 46 excepted notes, in run order (stories in index order, each in light then dark): the Prose document's ten
+ * (plan.md § Complexity Tracking, axe exceptions under FR-029), then since 020 phase 2 (T028; operator decision on T021a,
+ * specs/020-disclosure-code-block/plan.md § Complexity Tracking) one per clipped node of each overflowing scroll code-block
+ * story and theme (36), in the stories file's order.
+ */
+const proseAndCodeBlock: readonly string[] = [
+  ...(["light", "dark"] as const).flatMap((theme) =>
+    [
+      ["table:nth-child(12) > thead > tr > th:nth-child(12)", wide],
+      ["table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)", wide],
+      ["tr:nth-child(2) > td:nth-child(12)", wide],
+      ["table:nth-child(14) > thead > tr > th:nth-child(12)", linked],
+      ["table:nth-child(14) > tbody > tr > td:nth-child(12)", linked],
+    ].map(([selector, reason]) => `note: base-styles--prose-document/${theme}: color-contrast-incomplete: serious: ${String(selector)} excepted (${String(reason)})`),
+  ),
+  ...["scroll-overflowing", "scroll-middle", "scroll-end", "scroll-focused", "digest-scroll", "right-to-left-scroll", "scroll-unlabelled"].flatMap((story) =>
+    (["light", "dark"] as const).flatMap((theme) =>
+      // DigestScroll: one node per digest group the scroll box clips (operator decision,
+      // specs/020-disclosure-code-block/reviews/phase-2/operator-digest-axe-decision.md).
+      (story === "digest-scroll" ? Array.from({ length: 12 }, (_, index) => `.group:nth-child(${String(11 + 2 * index)})`) : [".code"]).map(
+        (selector) => `note: elements-ocelle-code-block--${story}/${theme}: color-contrast-incomplete: serious: ocelle-code-block >>> ${selector} excepted (${clippedLine})`,
+      ),
+    ),
+  ),
+];
+
+/**
+ * The twelve excepted notes of the scrolling listbox story (014 plan.md § Complexity Tracking, FR-051, operator decision
+ * 2026-11-14 option (a)): the options the list part's `overflow: auto` box clips, in run order, after the Prose
+ * document's and the code-block stories' (`excepted`).
+ */
+const clipped = "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)";
+const listboxExcepted: readonly string[] = (["light", "dark"] as const).flatMap((theme) =>
+  ["epsilon", "zeta", "eta", "theta", "iota", "kappa"].map(
+    (value) => `note: elements-ocelle-listbox--scrolling-listbox/${theme}: color-contrast-incomplete: serious: ocelle-option[value="${value}"] >>> .label excepted (${clipped})`,
+  ),
 );
 
 const inlineEnd = "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)";
@@ -72,16 +102,15 @@ const dataTable: readonly string[] = tables.flatMap(([story, rule, reason, selec
   (["light", "dark"] as const).flatMap((theme) => selectors.map((selector) => `note: elements-ocelle-data-table--${story}/${theme}: ${rule}: serious: ${selector} excepted (${reason})`)),
 );
 /** Every excepted note, in run order. */
-const excepted: readonly string[] = [...prose, ...dataTable];
+const excepted: readonly string[] = [...proseAndCodeBlock, ...dataTable, ...listboxExcepted];
 
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 382 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes and the data table's 74 recorded nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
+    "audits the repository's 748 story-themes and exits 0, the Prose document's ten, the overflowing code-block stories' thirty-six the scrolling listbox story's twelve and the data table stories' seventy-four color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029; 014 FR-051)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(dataTable).toHaveLength(74);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 382 story-theme runs, 0 serious or critical; 84 notes (0 incomplete, 84 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 748 story-theme runs, 0 serious or critical; 132 notes (0 incomplete, 132 excepted)"], stderr: excepted });
     },
     timeout,
   );
@@ -93,7 +122,7 @@ describe("axe gate (gates/bin/axe.ts)", () => {
       const ran = await gate(at);
       expect(ran).toEqual({
         code: 1,
-        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 384 story-theme runs"],
+        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 750 story-theme runs"],
         stderr: excepted,
       });
     },

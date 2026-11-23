@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // The repository's pair list packages/tokens/contrast/pairs.json (002 FR-016, FR-017, data-model.md § Contrast
-// pair, spec Appendix A.7 to A.9), read as plain JSON: 169 entries in light and 177 in dark; the figures #5 records
+// pair, spec Appendix A.7 to A.9), read as plain JSON: 207 entries in light and 215 in dark (011 adds 9 per theme,
+// research.md R-12; 012 adds 38 per theme, research.md R-08 items 1, 2, 3, 4a and 5); the figures #5 records
 // (A.7) entered by hand with source "#5", and no other entry claims #5; the excluded pairs exactly those of A.9, each
 // with a reason; the state colours on their own grounds recorded from first computation within #5's range 5.3 to 9.4
 // (FR-017: [5.25, 9.45)). The gate's own check of every figure is gates/test/contrast.test.ts.
@@ -56,15 +57,15 @@ const excluded = [
 ].sort();
 
 describe("packages/tokens/contrast/pairs.json", () => {
-  it("has 169 entries in light and 177 in dark, one entry per line", () => {
+  it("has 207 entries in light and 215 in dark, one entry per line", () => {
     const counts = ["light", "dark"].map((theme) => entries.filter((entry) => entry.theme === theme).length);
-    expect(counts).toEqual([169, 177]);
+    expect(counts).toEqual([207, 215]);
     const lines = text.split("\n");
-    expect(lines.filter((line) => line.trimStart().startsWith("{"))).toHaveLength(346);
+    expect(lines.filter((line) => line.trimStart().startsWith("{"))).toHaveLength(422);
   });
 
   it("names each (theme, fg, bg) once", () => {
-    expect([entries.length, new Set(entries.map(key)).size]).toEqual([346, 346]);
+    expect([entries.length, new Set(entries.map(key)).size]).toEqual([422, 422]);
   });
 
   it("records every A.7 figure as written in #5, with source #5", () => {
@@ -97,5 +98,21 @@ describe("packages/tokens/contrast/pairs.json", () => {
     const rows = ["light", "dark"].flatMap((theme) => states.map((state) => entries.find((e) => key(e) === `${theme} color-${state} on color-${state}-bg`)));
     expect(rows.map((entry) => entry?.source)).toEqual(Array.from({ length: 10 }, () => "computed"));
     expect(rows.every((entry) => entry !== undefined && Number(entry.figure) >= 5.25 && Number(entry.figure) < 9.45)).toBe(true);
+  });
+
+  it("records the 33 control pairs of 012 per theme as checked and computed, with their kind (research.md R-08 items 1, 3, 4a and 5)", () => {
+    const mainGrounds = ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-inset", "color-accent-low", "color-hover-bg"];
+    const control: readonly (readonly [string, string, string])[] = [
+      ...[...stateGrounds, "color-active-bg"].map((bg) => ["color-ink", bg, "text"] as const),
+      ...["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-chrome", "color-chrome-hover"].map((bg) => ["color-accent-strong", bg, "non-text"] as const),
+      ["color-on-accent", "color-accent-hover", "text"],
+      ["color-chrome-ink", "color-chrome-active", "text"],
+      ...["color-chrome", "color-chrome-hover"].map((bg) => ["color-disabled-ink", bg, "text"] as const),
+      ...[...mainGrounds, ...stateGrounds, "color-active-bg"].map((bg) => ["color-hover-border", bg, "non-text"] as const),
+    ];
+    const wanted = ["light", "dark"].flatMap((theme) => control.map(([fg, bg, kind]) => [theme, fg, bg, kind, "checked", "computed"]));
+    const found = wanted.map(([theme = "", fg = "", bg = ""]) => entries.find((entry) => key(entry) === key({ theme, fg, bg })));
+    expect(found.map((entry) => (entry === undefined ? undefined : [entry.theme, entry.fg, entry.bg, entry.kind, entry.status, entry.source]))).toEqual(wanted);
+    expect(wanted).toHaveLength(66);
   });
 });

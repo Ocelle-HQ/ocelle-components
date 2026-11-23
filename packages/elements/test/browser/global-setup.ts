@@ -23,6 +23,9 @@
 //   `<dir>/test-controls/ocelle-test-list-detail.js`;
 // - since 019 (T079): the overflow-region module's block-axis test host, test/fixtures/overflow-host-block.ts bundled
 //   the same way, with its own copy of Lit, into `<dir>/test-controls/ocelle-test-overflow-block.js`.
+// - for the plant rows of test/browser/plants.test.ts (specs/010-feedback-forms contracts/testing.md § Plants; T016):
+//   test/browser/plants-entry.ts, which defines each notice plant under its tag, bundled the same way into
+//   `<dir>/plants/ocelle-plants.js`.
 // The directory, or the reason the builds failed, is provided to the tests, which report it: a failed build is a
 // failing test of its own, and every page then lacks the scripts it loads.
 import { spawnSync } from "node:child_process";
@@ -102,6 +105,22 @@ async function testHost(dir: string): Promise<void> {
   });
 }
 
+/** The plant bundle into `<dir>/plants`, Lit bundled. */
+async function plants(dir: string): Promise<void> {
+  await build({
+    configFile: false,
+    root: elements,
+    logLevel: "error",
+    resolve: { conditions: ["module", "browser", "production"] },
+    build: {
+      outDir: join(dir, "plants"),
+      emptyOutDir: false,
+      minify: false,
+      lib: { entry: join(elements, "test", "browser", "plants-entry.ts"), formats: ["es"], fileName: () => "ocelle-plants.js" },
+    },
+  });
+}
+
 /** The test-only slotted controls' file into `<dir>/test-controls`. */
 async function testControls(dir: string): Promise<void> {
   await build({
@@ -147,6 +166,7 @@ export default async function setup(project: TestProject): Promise<() => void> {
     await browserBuild(dir);
     await moduleBundles(dir);
     await testHost(dir);
+    await plants(dir);
     await testControls(dir);
     project.provide("elementsFixture", { dir });
   } catch (error) {

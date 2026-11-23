@@ -312,29 +312,29 @@ export const harnessScenarios: readonly HarnessScenario[] = [
     },
   },
   {
-    name: "focusPath() and press(): body at mount, Tab into an open shadow root, Tab into an iframe, Shift+Tab back into the shadow root",
+    name: "focusPath() and inputPress(): body at mount, Tab into an open shadow root, Tab into an iframe, Shift+Tab back into the shadow root",
     run: async (driver) => {
       await driver.mount('<ocelle-harness-focus id="fh"></ocelle-harness-focus><iframe id="fr" title="Frame" srcdoc="<button id=&quot;f1&quot;>F1</button>"></iframe>');
       const mounted = await driver.focusPath();
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const shadow = await driver.focusPath();
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const frame = await driver.focusPath();
-      await driver.press("Tab", { shift: true });
+      await driver.inputPress("Tab", { shift: true });
       return { mounted, shadow, frame, back: await driver.focusPath() };
     },
     expected: { mounted: "body", shadow: "fh[in]", frame: "fr[f1]", back: "fh[in]" },
   },
   {
-    name: "focusVisible() and click(): true after Tab (inner shadow button and light button), false after a click on a button that the click focused",
+    name: "focusVisible() and inputClick(): true after Tab (inner shadow button and light button), false after a click on a button that the click focused",
     run: async (driver) => {
       await driver.mount('<ocelle-harness-focus id="fh"></ocelle-harness-focus><button id="b">B</button>');
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const inner = { path: await driver.focusPath(), visible: await driver.focusVisible("fh", "#in") };
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const tabbed = { path: await driver.focusPath(), visible: await driver.focusVisible("b") };
       await driver.mount('<button id="b">B</button>');
-      await driver.click("b");
+      await driver.inputClick("b");
       return { inner, tabbed, clicked: { path: await driver.focusPath(), visible: await driver.focusVisible("b") } };
     },
     expected: {
@@ -385,11 +385,11 @@ export const harnessScenarios: readonly HarnessScenario[] = [
     },
   },
   {
-    name: "pointer() and hover(): hover on one pad, a press there released on the other stops the pointer on it, a stop beyond both hovers neither, hover(null) leaves, a secondary click",
+    name: "pointer() and inputHover(): inputHover on one pad, a press there released on the other stops the pointer on it, a stop beyond both hovers neither, inputHover(null) leaves, a secondary click",
     run: async (driver) => {
       await driver.mount('<ocelle-harness-pad id="left"></ocelle-harness-pad><ocelle-harness-pad id="right"></ocelle-harness-pad>');
       await driver.rules(padRules);
-      await driver.hover("left");
+      await driver.inputHover("left");
       const hover = await hovered(driver, "left", "right");
       const from = await centre(driver, "left");
       const to = await centre(driver, "right");
@@ -397,12 +397,12 @@ export const harnessScenarios: readonly HarnessScenario[] = [
       const dragged = { ...(await hovered(driver, "left", "right")), left: await driver.attribute("left", "data-log"), right: await driver.attribute("right", "data-log") };
       await driver.pointer([{ x: to.x + 300, y: to.y }]);
       const beyond = await hovered(driver, "left", "right");
-      await driver.hover("left");
-      await driver.hover(null);
+      await driver.inputHover("left");
+      await driver.inputHover(null);
       const away = await hovered(driver, "left", "right");
       await driver.mount('<ocelle-harness-pad id="pad"></ocelle-harness-pad>');
       await driver.rules(padRules);
-      await driver.click("pad", undefined, { button: "right" });
+      await driver.inputClick("pad", undefined, { button: "right" });
       return { hover, dragged, beyond, away, secondary: await driver.attribute("pad", "data-log") };
     },
     expected: {

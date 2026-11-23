@@ -1,0 +1,94 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked and found sound (no finding): contrast pairs ink on inset and on hover-bg and focus on inset and on hover-bg,
+# light and dark (packages/tokens/contrast/pairs.json:8,10,79,81,215,217,294,296); the 24 x 24 target (1.45 x 16 px
+# line plus 2 x space-1 summary padding = 31.2 px, src/source.ts:172,186); the forced-colours edge of the code block (a
+# transparent 1 px border computes to rgb(0,0,0) under emulated forced colours, probe); host ID references by element
+# reference only; no network, no clipboard, no new dependency; strict CSP (adopted sheets, no style attribute).
+# Probes: Playwright 1.63 Chromium headless, throwaway pages under the session scratchpad, not in the repository.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "delegatesFocus on a host that holds panel content moves focus to the summary on any click in the panel, so a following Space closes the disclosure"
+    evidence:
+      - artifact: "spec.md FR-003 'in an open shadow root attached with `delegatesFocus`'; research.md R-01 'The shadow root (open, `delegatesFocus`)'; R-03 'clicks on panel content reach the page' (only clicks are considered, not focus)"
+      - code: "probe p1: x-d host with delegatesFocus rendering details/summary/slot, open; page.click on a non-focusable <p> slotted into the panel -> document.activeElement = x-d, shadowRoot.activeElement = summary"
+      - code: "probe p2: same page, click on panel text then keyboard Space -> details.open = false (disclosure closed instead of the page scrolling); without delegatesFocus the same click leaves focus on body and Space keeps it open"
+      - code: "packages/elements/src/ocelle-button.ts:109, ocelle-action-row.ts:116: the only current delegatesFocus users are controls whose host holds only the control; the disclosure would be the first host with arbitrary slotted content"
+    claim: |
+      With delegatesFocus, a mouse click on any non-focusable part of the host's flat tree (here the slotted panel
+      text) runs the focusing steps on the host, which delegates to the first focusable element in the shadow root:
+      the summary. A user who clicks into an open panel to read or select text, then presses Space to scroll the page
+      (or Enter), toggles the disclosure shut and loses their place; a keyboard-plus-pointer user (magnifier, switch,
+      voice control "click") who clicks into the panel and presses Tab resumes from the summary rather than from where
+      they clicked. This is unexpected focus movement on a non-interactive click (WCAG 3.2.1 / 2.4.3 spirit) and a
+      state change the user did not ask for, and none of the planned scenarios (US1-4, US1-5, US1-20) or checks would
+      catch it: every body clicks the summary or focuses by keyboard.
+    remedies:
+      - "Keep delegatesFocus and render the panel wrapper as `<div class=\"panel\" part=\"panel\" tabindex=\"-1\">`, so a click in the panel focuses the panel (the nearest flat-tree focusable ancestor), not the summary; state that it is never a tab stop and draws no ring (no :focus-visible on mouse focus); FR-013's 'focus inside the panel' then covers the panel itself. Add a scenario: click panel text, press Space, the disclosure stays open, no event fires, and the summary is not the shadow root's active element."
+      - "Drop delegatesFocus (amend FR-003) and override focus() to focus the summary, as click() is overridden; the summary stays a tab stop inside the shadow root and `document.activeElement` is still the host. Add the same click-then-Space scenario."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "FR-013's 'deep active element inside the host' test fails for focusable content with its own shadow root, and the native close path can be fixed up to body before willUpdate runs"
+    evidence:
+      - artifact: "research.md R-02 'Focus out of a closing panel (FR-013). In willUpdate ... notes whether the deep active element (focusable.ts's deepActive()) is inside the host but not in the summary ... A user close always starts from the summary, so this only acts on script and morph closes.'"
+      - code: "packages/elements/src/focusable.ts:182-186: deepActive() descends shadowRoot.activeElement to the innermost element"
+      - code: "probe p1: an x-b with delegatesFocus and an inner <button>, slotted into the panel and focused -> deepActive() is the inner button, host.contains(innerButton) === false, host.matches(':focus-within') === true; then closing details by script -> after 100 ms document.activeElement = body"
+      - code: "probe p4: focus a panel link, call summary.click() (the path element.click() takes, FR-004): the native toggle event is delivered after a requestAnimationFrame callback, i.e. after a rendering opportunity in which focus fixup may already have run"
+    claim: |
+      The obvious reading of 'inside the host' is `this.contains(deepActive())`, which is false whenever the focused
+      element is inside a shadow root of panel content: an `ocelle-button`, a nested `ocelle-disclosure`'s summary, an
+      `ocelle-scroller` frame, any library control in the panel. For all of them a script or morph close drops focus
+      to the body, the exact failure FR-013 and US1-19 forbid, and US1-19 (a plain light-DOM link) cannot detect it.
+      Separately, the claim that a user close 'always starts from the summary' is false for `element.click()` from a
+      script while focus is in the panel and for an assistive technology's default action on the summary: both close
+      through the native path, so `this.open` changes only in the native `toggle` handler, a task later, after a
+      rendering opportunity in which the engine may already have moved focus to the body; willUpdate then sees no
+      active element in the panel and restores nothing.
+    remedies:
+      - "Specify the test as composed containment: `this.matches(':focus-within')` and the shadow root's active element is not the summary (or walk `getRootNode().host` up from deepActive()), and take the snapshot when the close starts, not after the native toggle task: listen for the summary's click/keydown that will close, or check `details.open` against `this.open` in a capture-phase `click` on the summary, and restore focus in the same task. Extend US1-19 with bodies for a focused `ocelle-button` in the panel, a focused nested disclosure's summary, and a close by `element.click()` with focus in the panel; each asserts the summary is the shadow root's active element and the host is document.activeElement."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "A slotted bare <svg> icon is exposed as an image and adds its title to the summary's name; nothing in the plan hides the icon wrapper"
+    evidence:
+      - artifact: "spec.md FR-005 'A consumer MAY slot its own icon ... and stays decorative: hidden from assistive technology'; US1-17 'the icon has no node in the accessibility tree'; data-model.md icon row 'an `ocelle-icon` or bare `svg`'; research.md R-01 relies only on 'Unlabelled, `ocelle-icon` is hidden from assistive technology'"
+      - code: "packages/elements/README.md:1324 (slot convention): a slotted icon is 'an `ocelle-icon` or a bare `<svg>`'; src/icon-slot.ts adds no aria-hidden"
+      - code: "probe p3: summary with an icon-slot wrapper and slotted `<svg slot=\"icon\"><title>Folder</title>...</svg>` -> CDP getFullAXTree: DisclosureTriangle name 'Folder Advanced', plus an `image` node 'Folder'; an svg without title still gives an `image` node with empty name"
+    claim: |
+      The plan's decorative guarantee covers only an unlabelled `ocelle-icon`. A bare svg, which the data model and the
+      README convention explicitly allow, keeps a node in the accessibility tree and contributes to the summary's
+      name from content, so US1-17 and FR-005 fail for a supported input and a screen reader hears 'Folder Advanced,
+      collapsed'. The planned US1-17 body will pass vacuously if it slots an `ocelle-icon`.
+    remedies:
+      - "Render the icon wrapper with `aria-hidden=\"true\"` (`<span class=\"icon-slot\" aria-hidden=\"true\">`), which hides the fallback chevron and any slotted icon in the flat tree, and make US1-17 slot a bare `<svg>` with a `<title>` and assert the summary's name is the summary text alone and no image node exists under it. Record in research.md 'Repository-wide notes' that the same gap may exist in `ocelle-button`'s icon slot, for a separate op."
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "In forced colours the summary takes controlStyles' ButtonText on a transparent (Canvas) ground, a pair the system does not guarantee"
+    evidence:
+      - artifact: "research.md R-04 'The focus ring and forced colours come from `controlStyles` (`.control`)'; spec FR-016"
+      - code: "packages/elements/src/control.ts:169-179: forced colours `.control { color: ButtonText }`; only `a.control` sets `background-color: Canvas`, and the comment at control.ts:29 relies on 'Canvas, which a native button's ButtonFace gives it in button mode'"
+      - code: "probe p1: under forced colours a <summary> computes background-color rgba(255,255,255,0) (no ButtonFace), a <button> computes rgb(255,255,255)"
+    claim: |
+      controlStyles was written for a native button (ButtonText on ButtonFace) and a link (LinkText on Canvas). A
+      summary is neither: it gets ButtonText over whatever is behind it, normally Canvas. Contrast themes guarantee
+      ButtonText against ButtonFace and CanvasText against Canvas, not ButtonText against Canvas; in a custom contrast
+      theme where they differ the summary text and chevron can fail 1.4.3/1.4.11. The hover rule `.control:hover {
+      border-color: Highlight }` also gives the summary nothing in forced colours, since it has no border. Constitution
+      III requires AA in forced colours, and the contrast gate checks token pairs only, so no gate would see this.
+    remedies:
+      - "Add a forced-colours rule for the summary that pairs its colours: either `summary.control { color: CanvasText; background-color: Canvas }` or `background-color: ButtonFace` with ButtonText, and state which in R-04; extend US1-15 to assert the summary's computed colour and background are one system pair."
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 1
+    title: "The plan does not bind the code block's copy and digest units to Lit text bindings, nor test that markup-looking text stays text"
+    evidence:
+      - artifact: "research.md R-05 'rendered as one text binding'; R-07 shows the digest output as an HTML string (`<span class=\"prefix\">sha256:</span><wbr>...`) without saying how it is produced; contracts/checks.md has no body for markup-like text"
+      - code: "a textContent such as `<img/src=x/onerror=alert(1)>` (from `&lt;...&gt;` in server markup) holds no whitespace, so digest mode takes the grouping path"
+    claim: |
+      The element turns consumer text into shadow DOM. If the digest units are ever built as a string and assigned via
+      innerHTML or unsafeHTML (the R-07 sample invites it), consumer text becomes markup inside the shadow root.
+      Strict CSP blocks inline handlers but not injected elements, forms or links. One sentence and one test close it.
+    remedies:
+      - "State in R-05 and R-07 that the copy and each unit are Lit text bindings (`${text}` inside the `pre` and each span, units by `map`), never `unsafeHTML`, `innerHTML` or `DOMParser`; add a body in wrap and in digest mode whose text is `<b>x</b>` escaped in the source, asserting the shadow root holds no `b` or `img` element and the shown text equals the escaped characters."

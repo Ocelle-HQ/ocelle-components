@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A delay: true marker on a motion token whose name does not end in -delay (motion-pause) breaks FR-019 (f) as 012 phase 4 round 2 amended it (plan decision 29, operator O2-01): only a -delay motion token is a delay.",
+  "findings": [
+    {
+      "location": "packages/tokens/src/overrides.ts#motion-pause",
+      "rule": "reduced-motion",
+      "message": "motion-pause carries delay: true, which is accepted only on a motion token whose name ends in -delay"
+    }
+  ]
+}

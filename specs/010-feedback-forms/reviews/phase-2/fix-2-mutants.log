@@ -1,0 +1,106 @@
+# Phase 2 review round 2 fixes: mutants of the fixed lines (and the gate's one timeout) applied one at a time in the
+# working tree on 4781f1f plus the fix-2 changes, each reverted after its run, against
+# npx vitest run --project elements packages/elements/test/notice-rules.test.ts (fake clock, shipped timing).
+# Each block: the mutated line, the failing tests, the totals. Unmutated, the file passes 50/50.
+
+== packages/elements/src/live.ts:134 if (this.region.getAttribute("aria-live") === "") this.shown();
+     × counts from aria-live set from off: announce set after a loading render, the next change is written W after it 144ms
+      Tests  1 failed | 49 passed (50)
+== packages/elements/src/live.ts:134 if (this.region.getAttribute("") === "off") this.shown();
+     × counts from aria-live set from off: announce set after a loading render, the next change is written W after it 146ms
+      Tests  1 failed | 49 passed (50)
+== packages/elements/src/ocelle-notice.ts:213 const value = this.getAttribute("");
+     × from alert to note on an announcing notice, the politeness unchanged and the alert baseline taken, does not restart a running wait 121ms
+     × changed while hidden writes nothing, even when the politeness changes 81ms
+     × from status to alert and to note in one task, the tone's politeness differing from the baseline's, writes the text 61ms
+     × changed in the same task to a role that keeps it announcing at the same politeness announces its text as an insertion 63ms
+     × that leaves the text as it is does not restart a running wait 64ms
+      Tests  5 failed | 45 passed (50)
+== packages/elements/src/ocelle-notice.ts:214 return tones.find(() => undefined) ?? "info";
+     × from alert to note on an announcing notice, the politeness unchanged and the alert baseline taken, does not restart a running wait 158ms
+     × changed while hidden writes nothing, even when the politeness changes 78ms
+     × from status to alert and to note in one task, the tone's politeness differing from the baseline's, writes the text 86ms
+     × changed in the same task to a role that keeps it announcing at the same politeness announces its text as an insertion 73ms
+     × that leaves the text as it is does not restart a running wait 89ms
+      Tests  5 failed | 45 passed (50)
+== packages/elements/src/ocelle-notice.ts:214 return tones.find((tone) => tone !== value) ?? "info";
+     × from alert to note on an announcing notice, the politeness unchanged and the alert baseline taken, does not restart a running wait 154ms
+     × changed while hidden writes nothing, even when the politeness changes 82ms
+     × from status to alert and to note in one task, the tone's politeness differing from the baseline's, writes the text 74ms
+     × changed in the same task to a role that keeps it announcing at the same politeness announces its text as an insertion 85ms
+     × that leaves the text as it is does not restart a running wait 75ms
+      Tests  5 failed | 45 passed (50)
+== packages/elements/src/ocelle-notice.ts:214 return tones.find((tone) => true) ?? "info";
+     × from alert to note on an announcing notice, the politeness unchanged and the alert baseline taken, does not restart a running wait 141ms
+     × changed while hidden writes nothing, even when the politeness changes 81ms
+     × from status to alert and to note in one task, the tone's politeness differing from the baseline's, writes the text 76ms
+     × changed in the same task to a role that keeps it announcing at the same politeness announces its text as an insertion 81ms
+     × that leaves the text as it is does not restart a running wait 77ms
+      Tests  5 failed | 45 passed (50)
+== packages/elements/src/ocelle-notice.ts:214 return tones.find((tone) => false) ?? "info";
+     × from alert to note on an announcing notice, the politeness unchanged and the alert baseline taken, does not restart a running wait 131ms
+     × changed while hidden writes nothing, even when the politeness changes 84ms
+     × from status to alert and to note in one task, the tone's politeness differing from the baseline's, writes the text 70ms
+     × changed in the same task to a role that keeps it announcing at the same politeness announces its text as an insertion 80ms
+     × that leaves the text as it is does not restart a running wait 78ms
+      Tests  5 failed | 45 passed (50)
+== packages/elements/src/ocelle-notice.ts:22 const tones: readonly NoticeTone[] = [];
+     × from alert to note on an announcing notice, the politeness unchanged and the alert baseline taken, does not restart a running wait 155ms
+     × changed while hidden writes nothing, even when the politeness changes 80ms
+     × from status to alert and to note in one task, the tone's politeness differing from the baseline's, writes the text 75ms
+     × changed in the same task to a role that keeps it announcing at the same politeness announces its text as an insertion 82ms
+     × that leaves the text as it is does not restart a running wait 81ms
+      Tests  5 failed | 45 passed (50)
+== packages/elements/src/ocelle-notice.ts:257 else if (value === attribute && (attribute !== null || value !== current)) this.setAttribute(name, value);
+     × tone, size and announce set their attributes 152ms
+     × writes no attribute for the default while it is absent or for the value it holds, writes the default over an unknown value, and removes it for null 86ms
+     × that leaves the text as it is does not restart a running wait 73ms
+      Tests  3 failed | 47 passed (50)
+
+# Full output of the live.ts:134 "off" -> "" run:
+# live.ts:134 mutant (StringLiteral "off" -> ""), applied in the working tree and reverted; base 4781f1f plus the fix-2 working changes
+# line 134:     if (this.region.getAttribute("aria-live") === "") this.shown();
+# npx vitest run --project elements packages/elements/test/notice-rules.test.ts
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |elements (chromium)| packages/elements/test/notice-rules.test.ts (50 tests | 1 failed) 207ms
+   ❯ the wait from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a)) (3)
+     × counts from aria-live set from off: announce set after a loading render, the next change is written W after it 143ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/notice-rules.test.ts > the wait from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a)) > counts from aria-live set from off: announce set after a loading render, the next change is written W after it
+AssertionError: expected { live: 'polite', before: '', at: '' } to deeply equal { live: 'polite', before: '', at: 'B' }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/notice-rules.test.ts/the-wait-from-the-empty-state-s-start--R-02-step-2--phase-2-stop-2--decision--a-----counts-from-aria-live-set-from-off--announce-set-after-a-loading-render--the-next-change-is-written-W-after-it.png
+
+- Expected
++ Received
+
+  {
+-   "at": "B",
++   "at": "",
+    "before": "",
+    "live": "polite",
+  }
+
+ ❯ packages/elements/test/notice-rules.test.ts:286:66
+    284|     const before = copy(inserted);
+    285|     vi.advanceTimersByTime(1);
+    286|     expect({ live: live(inserted), before, at: copy(inserted) }).toEqu…
+       |                                                                  ^
+    287|   });
+    288| });
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=d82b2395:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 49 passed (50)
+   Start at  04:03:47
+   Duration  1.21s (tests 49%, worker 45%, import 5%)
+
+exit 1

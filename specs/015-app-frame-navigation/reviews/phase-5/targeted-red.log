@@ -1,0 +1,12 @@
+Initial tests-only replay on the inert controls. One synthetic pointer fixture was corrected before source implementation.
+ FAIL  |elements (chromium)| packages/elements/test/breadcrumbs.test.ts > ocelle-breadcrumbs > exposes an ordered named trail and a text current page even with its own URL
+ FAIL  |elements (chromium)| packages/elements/test/breadcrumbs.test.ts > ocelle-breadcrumbs > aligns at logical inline start and keeps wrapped links usable in ltr
+ FAIL  |elements (chromium)| packages/elements/test/breadcrumbs.test.ts > ocelle-breadcrumbs > aligns at logical inline start and keeps wrapped links usable in rtl
+ FAIL  |elements (chromium)| packages/elements/test/nav-item.test.ts > compact bubble Escape ownership in drawers > honors overlay ownership with a newer modal: true
+ FAIL  |elements (chromium)| packages/elements/test/nav-pill.test.ts > ocelle-nav-pill > exposes a named ordered list, marking only the first current page
+ FAIL  |elements (chromium)| packages/elements/test/nav-pill.test.ts > ocelle-nav-pill > follows native pointer and keyboard links while top-bar actions stay separate
+ FAIL  |elements (chromium)| packages/elements/test/nav-pill.test.ts > ocelle-nav-pill > wraps long labels within its frame and keeps the same focused link
+ Test Files  3 failed | 3 passed (6)
+      Tests  7 failed | 4 passed | 7 skipped (18)
+   Duration  3.97s (worker 80%, tests 19%, import 1%)
+The corrected baseline nested Escape and touch run passed all three selected tests.

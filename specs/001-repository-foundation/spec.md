@@ -330,6 +330,16 @@ in this feature depends on it.
     `packages/elements/src/` entries), Q2 A (measure on a draft PR of 008's branch) and Q3 A (that rule) were made by
     human:jeroennouwsdev on 2026-11-15 (`ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md`).
     Shards without element source are unchanged, and so is mission 007's 480 s step bound for `source.ts` shards.
+  - **Amendment, 2026-11-18 (mission 010, `specs/010-feedback-forms/`, operator rounds 6 and 8):** op 015's
+    amendment above stands as the record of its time, except for the limit of a shard with at least one entry under
+    `packages/elements/src/`: such a shard runs under 75 minutes, not 45. A shard none of whose entries is under
+    `packages/elements/src/` keeps the 10-minute limit. A shard of either kind that exceeds its limit MUST still end
+    as a failure, never as a pass. The reason is the measurement after mission 010's second merge of `main`: on CI
+    run 44354367030 the element shard jobs took 2493–2717 s, and one of them was cancelled at its 45-minute limit;
+    the cancelled shard took 2748 s on the mission's machine. Operator decisions by human:jeroennouwsdev on
+    2026-11-18: "Raise the shard time limit", "75 min" (`specs/010-feedback-forms/reviews/phase-2/round-6.md`,
+    O6-01) and "Revert split, 75-minute limit (Recommended)" (`specs/010-feedback-forms/reviews/phase-2/round-8.md`,
+    O8-01, O8-02). The rest stands.
 
 **Merge gates (Story 3)**
 
@@ -548,6 +558,15 @@ in this feature depends on it.
     was 5 m 31 s for the elements dry run alone (008). Operator decisions Q1 A, Q2 A and Q3 A were made by
     human:jeroennouwsdev on 2026-11-15 (`ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md`).
     Shards without element source are unchanged, and so is mission 007's 480 s bound. The rest stands.
+  - **Amendment, 2026-11-18 (mission 010, `specs/010-feedback-forms/`, operator rounds 6 and 8):** op 015's
+    amendment above stands as the record of its time, except that a shard with a `packages/elements/src/` entry
+    finishes in under 75 minutes on the same runner, not 45, and its 75-minute job limit enforces that (FR-013's
+    amendment of the same date). A shard without such an entry still finishes in under 10 minutes under its
+    10-minute limit, and a shard over its limit still ends as a failure. The figures come from CI run 44354367030:
+    the element shard jobs took 2493–2717 s, one cancelled at 45 minutes, and that shard took 2748 s on the
+    mission's machine. Operator decisions by human:jeroennouwsdev on 2026-11-18
+    (`specs/010-feedback-forms/reviews/phase-2/round-6.md` O6-01, `specs/010-feedback-forms/reviews/phase-2/round-8.md`
+    O8-01, O8-02). The rest stands.
 - **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
   `THIRD_PARTY_NOTICES` exist at the repository root under exactly these names, that `CONTRIBUTING.md` contains the
   sign-off rule (`Signed-off-by`, `git commit -s`), that `CODEOWNERS` exists and names `@MOES-Media` as the only

@@ -1,0 +1,337 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked against the repository at base 3b77ea5 (reviews/plan/round-1/base.sha), #10's design on
+# origin/claude/010-storybook-workbench (specs/006-storybook-workbench) and #16's on origin/claude/016-overlays
+# (specs/008-overlays). Browser claims were probed in the container's Chromium 153.0.8010.12
+# (/opt/pw-browsers/chromium-1243) over CDP with real (Input.dispatchKeyEvent) key input where keys matter; the probe
+# scripts are in the session scratchpad (probe/ro2.js, probe/focus.js, tools/cdp2.mjs) and their outputs are quoted below.
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "Node tests of roving.ts and selection.ts cannot kill their mutants: element source is mutated with the in-process project only"
+    evidence:
+      - artifact: "research.md R-04 'unit-tested over every key and edge ... so each mutant has a killing test (#23's gate)'; R-05 'as pure functions over plain data ... unit-tested in node'; R-13 'Keyboard and selection logic sit in pure functions (R-04, R-05) so each mutant is killed by a fast node test'; plan.md Project Structure 'test/node/roving.test.ts, node/selection.test.ts'"
+      - code: "gates/bin/mutation.ts:59-74: every changed path under packages/elements/src/ is mutated by stryker.elements.config.json"
+      - code: "vitest.mutation.elements.config.ts:7-11: that configuration keeps only the project named 'elements' (in-process browser mode); elements-node (test/node/**) is not in it"
+      - code: "vitest.mutation.config.ts:30-38 and its header: a mutant that only an excluded project's test covers is reported as NoCoverage"
+    claim: |
+      `src/roving.ts` and `src/selection.ts` live under `packages/elements/src/`, so the mutation gate mutates them
+      with the in-process `elements` project only. Tests in `test/node/` run in `elements-node`, which Stryker never
+      runs for element source. The node tests that R-04, R-05 and R-13 rely on to kill every mutant therefore kill none.
+      Every mutant that the in-process scenarios happen not to reach survives (or is NoCoverage), and Principle VIII
+      makes each survivor a blocking finding in every phase review from phase 2 on. The plan's argument for splitting
+      the logic out ("mutated cheaply", "shards short") does not hold in this repository as it is.
+    remedies:
+      - "Put the pure-module tests in the in-process `elements` project (for example `test/roving.test.ts` and `test/selection.test.ts`, which browser mode runs as plain unit tests), and fix R-04, R-05, R-13 and the plan's test tree to say so."
+      - "Keep node tests and change the mutation routing so `packages/elements/src/` mutants also run `elements-node` (a gate change: its own red test, plant and the vitest-config test's exclusion list), recorded as a plan decision."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "The tabs' host-level keydown handler also handles keys pressed inside panel content"
+    evidence:
+      - artifact: "research.md R-04 'listens to `keydown` on the parent host (the child's keydown is composed and bubbles to it), calls `target`, moves focus, calls `preventDefault()` only for handled keys'"
+      - artifact: "contracts/elements.md § ocelle-tabs: panels are light-DOM children of `ocelle-tabs`, slotted into `part=\"panels\"`; spec FR-021a: tabs handle ArrowRight, ArrowLeft, Home, End, Enter and Space"
+    claim: |
+      `ocelle-tab-panel` children are descendants of the `ocelle-tabs` host, so every keydown inside a panel's
+      content (a button, a text field, a nested `ocelle-listbox`) bubbles to the controller R-04 puts on that host.
+      As described it calls `target` for the key and calls `preventDefault()` for Enter, Space, Home, End and the
+      horizontal arrows whatever the event's origin. A button in a panel then no longer activates on Enter or Space,
+      a text field in a panel cannot take a space or Home/End, and Home in a listbox inside a panel also selects the
+      first tab. No scenario covers keys inside a panel, so the defect would pass every planned test. The same
+      origin check is needed for the listbox and segmented choice (nested content in a child), but tabs are where it
+      breaks a consumer.
+    remedies:
+      - "State in R-04 that the controller acts only when the keydown's target is one of the parent's own children of its kind (the tab, option or segment host itself), and add a tabs scenario with its pairing plant: Enter, Space, Home and End on a button and a text field inside the selected panel are not handled by the tabs (defaultPrevented false, no selection change), paired with ArrowRight on a tab; plant: the controller without the origin check."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "Manual slot assignment for tabs gives no slotchange on append and assigns nothing by itself, so R-05's child discovery and the contract's slot list are wrong for tabs"
+    evidence:
+      - artifact: "contracts/elements.md § ocelle-tabs: 'part=\"tablist\" with <slot name=\"tab\"> and part=\"panels\" with the default slot ... assigns each ocelle-tab to the tab slot through manual slot assignment'; slots row '`tab`?, default'"
+      - artifact: "research.md R-05 'the child list (from the default slot's `slotchange` plus a `MutationObserver` on the children's `value` and `disabled` attributes)'; data-model.md Child entry 'node: the parent's assigned elements of its kind'"
+      - code: "probe (probe/focus.js, Chromium 153): shadow root with slotAssignment 'manual', host.append(child with slot=\"tab\") -> manualSlotchangeOnAppend 0, named slot assigned 0, default slot assigned 0, unassigned child width 0"
+    claim: |
+      With `slotAssignment: "manual"` the `name` of a slot and the `slot` attribute of a child are ignored and no child
+      is assigned automatically, the panels included; `slotchange` fires only when the element itself calls
+      `assign()`. Three things in the design break: (1) R-05 discovers children through `slotchange`, which never fires
+      when a host adds, removes or reorders tabs or panels, so FR-011, FR-011a and FR-010a do not run for tabs;
+      (2) the contract's 'default slot' for panels receives nothing unless the element assigns it; (3) a `tab` slot in
+      the manifest is public surface a host cannot use (writing `slot="tab"` does nothing). Data-model's "assigned
+      elements of its kind" is circular for tabs, since the element itself does the assigning.
+    remedies:
+      - "For tabs: take the child list from a `MutationObserver` on the host's `childList` (plus the attribute observer), assign tabs and only the selected tab's panel manually on each batch (which also gives FR-024's 'no box, no node' for unselected panels), state this in R-05 and data-model.md, and list the tabs' slots in the contract as the host sees them (children `ocelle-tab` and `ocelle-tab-panel`, no named slot) so FR-055's manifest does not declare an unusable `tab` slot."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "Focus is lost to the body when a focused child loses tabindex or is moved, which R-03 and R-14 do not handle and data-model does not track"
+    evidence:
+      - artifact: "research.md R-03 'removes `tabindex` from disabled children'; R-14 SPEC-3-02 'a selected listbox option that becomes disabled stays selected and keeps focus until the user moves'; R-14 SPEC-3-03 'the moved child keeps focus and selection (the `MutationObserver` batch sees the same node removed and re-added in one task, R-05, ...)'"
+      - artifact: "data-model.md Selection state: `lastFocused` is listed for the listbox only ('listbox tab stop fallback'); no field records which child had focus when a batch runs, for tabs and segments either (FR-011a 'takes focus if the previous child had focus')"
+      - artifact: "research.md R-05: the MutationObserver watches the children's `value` and `disabled` attributes only, not childList"
+      - code: "probe (probe/focus.js, Chromium 153): focused custom element, removeAttribute('tabindex') -> document.activeElement BODY synchronously, focusout fired; same with tabindex='-1' -> focus stays; parent.append(focusedChild) (a move) -> activeElement BODY, focusout fired; remove() -> BODY, focusout fired"
+    claim: |
+      Chromium blurs a focused element synchronously when it stops being focusable or is removed, a move included.
+      So R-14's "keeps focus" for a disabled selected option contradicts R-03's removal of `tabindex`, and R-14's
+      "the moved child keeps focus" is false unless the element refocuses it. After the blur, `document.activeElement`
+      is the body, so when the batch runs it cannot tell whether the removed, moved or disabled child had focus
+      (FR-011, FR-011a, SPEC-3-02, SPEC-3-03) unless it recorded that earlier; the data model records nothing of the
+      kind for tabs and segments. A move to the same position leaves the slot's assigned nodes identical, so no
+      `slotchange` fires and R-05's attribute-only observer sees no record: the "batch sees the same node removed and
+      re-added" claim has no source.
+    remedies:
+      - "Add to data-model.md and R-05 a focus record per parent (the child that had focus, kept from `focusin`/`focusout` on the parent, a `focusout` whose target is disconnected or no longer focusable counting as 'had focus at the batch'), make the batch restore focus to a moved child and move it per FR-011 otherwise, observe the host's `childList` so a same-position move is seen, and choose one of: disabled children keep `tabindex=\"-1\"` (focusable, skipped by the roving keys), so SPEC-3-02's 'keeps focus' holds; or R-14 states that focus on a newly disabled selected option moves as for a removal (spec US1 scenario 18 amended)."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 3
+    title: "The ResizeObserver callback runs after the test's one requestAnimationFrame, so US3-10's measurement reads stale rounding"
+    evidence:
+      - artifact: "research.md R-06 'The callback runs before paint of the next frame, so the spec's \"await one `requestAnimationFrame`\" measurement holds.'; spec US3-10 'measured by awaiting one `requestAnimationFrame` after the resize, then reading the segments' computed corner radii'; Edge Cases 'rounding follows within one frame after each resize'"
+      - code: "probe (probe/ro2.js, Chromium 153, 5 runs): container width changed from a task, then await one rAF -> order 'resize, after-one-raf, ro1' in every run; the ResizeObserver callback of that frame runs after the rAF promise has resolved"
+    claim: |
+      In the HTML rendering steps, animation-frame callbacks run before resize observations are broadcast. A test
+      that resizes and then awaits one `requestAnimationFrame` resumes in that frame's rAF step, before the element's
+      `ResizeObserver` callback has set the row states, so it reads the previous rounding. The rounding is painted
+      correctly in that frame (the observer loop restyles before paint), but the measurement the spec fixes and the
+      plan endorses cannot see it: US3-10 fails at green for a correct element, or passes only by accident of timing.
+      R-06's claim that it holds is wrong.
+    remedies:
+      - "Change spec US3-10 and the Edge Case to measure after the frame's resize observations are delivered (for example: await one `requestAnimationFrame`, then one task such as `setTimeout(0)`; or two animation frames), keep 'within one frame' as the outcome, and correct R-06."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "Observing only the group's own box misses re-wraps that do not change the group's size"
+    evidence:
+      - artifact: "research.md R-06 '`ocelle-segmented-choice` with `joined` observes its own box with a `ResizeObserver` ... and on each callback groups segments into rows by their `offsetTop`'"
+      - artifact: "spec FR-029 'recomputed by the element itself when it wraps or unwraps'"
+    claim: |
+      Rows can be redistributed without the group's box changing size: a segment's label changes (3 + 1 becomes
+      2 + 2 on two rows), a segment is added or removed at the same row count, a segment gains or loses an icon, or the
+      vendored font finishes loading after first layout and widens the labels. None of these resizes the group, so its
+      observer does not fire and the rounding stays on the old row ends. The plan names no other trigger
+      (`slotchange`, attribute changes, segment size).
+    remedies:
+      - "State in R-06 that the observer also observes every segment (so a segment's size change re-runs the grouping) and that the grouping also runs after each child batch of R-05; add a scenario in which a label change moves a segment between rows at the same group height, with the radii measured as in US3-10."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 3
+    title: "Enter on the link without an allowed href produces no click, so intercepting only the native click misses US5-2 and US5-9"
+    evidence:
+      - artifact: "research.md R-08 'Without `href`, or with a disallowed one, the anchor has no `href`, `role=\"link\"` and `tabindex=\"0\"` ... A plain activation (primary click or Enter, Alt alone allowed) is intercepted on the anchor: the element calls `preventDefault()` on the native click ...'"
+      - artifact: "spec US5-2 'Given that link focused, When Enter is pressed, Then one `ocelle-link-activate` is emitted with detail { \"href\": null }'; US5-9 'activated by Enter and by a plain click'"
+      - code: "probe (tools/cdp2.mjs, Chromium 153, trusted Enter via Input.dispatchKeyEvent): <a role=\"link\" tabindex=\"0\"> without href -> no click event; <a href> -> click; result [\"h\"]"
+    claim: |
+      An `<a>` without `href` has no activation behaviour, so Enter on it dispatches no `click`. In R-08 the only
+      interception point is the native click, so with no `href` (US5-2, US5-13 second half) and with a disallowed
+      `href` rendered as an anchor without one (US5-9, US5-11), Enter emits nothing. The design as written fails
+      these scenarios; the keydown path, and which modifiers it ignores, is not designed.
+    remedies:
+      - "Add to R-08 a keydown handler on the anchor for the no-`href` rendering: Enter with no Ctrl, Meta or Shift (Alt allowed) calls `preventDefault()` and runs the same activation as a plain click; Enter with a modifier does nothing; name the plant (interception on click only) for US5-2's Enter case in contracts/elements.md § Pairings."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "The link resolves its href at render, but US5-11's base URL can only be applied after load, and SPEC-2-05 is not answered"
+    evidence:
+      - artifact: "research.md R-08 'With an allowed `href` ... the anchor gets `href` set to the resolved URL ... if it was not cancelled and the `href` is allowed, calls `location.assign(resolved)`'; data-model.md Link state 'resolved: new URL(href, document.baseURI)' with no time of evaluation"
+      - artifact: "reviews/spec/check-2.md SPEC-2-05: '<base href=\"kitty-app://app/\"> also changes how the fixture's own relative URLs resolve ... the element never loads ... The plan states how the base is applied ... confirms ... by reading document.baseURI'; check-3.md SPEC-3-04 asks the plan to answer each open note; R-14 does not list SPEC-2-05"
+      - artifact: "spec FR-047 'it navigates to the `href` resolved against the document base URL' (at activation)"
+    claim: |
+      If the `<base>` is in the fixture's markup, the module script, the stylesheets and the font resolve against
+      `kitty-app://app/` and the element never loads, so US5-11 would pass with no event at all. The working fixture
+      inserts the base after load. But then an element that resolves and checks `href` when it renders (R-08's
+      'anchor gets href set to the resolved URL') holds an `http:` URL that is allowed, and navigates where FR-047
+      forbids it. The plan states neither how the base is applied nor when the URL is resolved and checked.
+    remedies:
+      - "State in R-08 and data-model.md that `href` is resolved and checked against `document.baseURI` and `location.protocol` at each activation (and the anchor's own `href` refreshed then or written as authored), and in R-11 that US5-11's fixture inserts `<base>` after the element has loaded and asserts `document.baseURI === \"kitty-app://app/\"` and the event before the activation's no-navigation check."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "The link's protocol check and navigation branch are reachable only by the fixture tests, which Stryker does not run"
+    evidence:
+      - artifact: "spec 'The strict-CSP fixture': 'outcomes that need a real navigation run on the fixture only'; research.md R-13 'The element classes' remaining branches are killed by the in-process scenarios'"
+      - code: "vitest.mutation.config.ts:30-38 and vitest.mutation.elements.config.ts: elements-browser (the fixture project) is never run for a mutant"
+    claim: |
+      The allowed-protocol decision of FR-047 is the security-relevant logic of the link. In process, a positive
+      navigation would navigate the test iframe, so no in-process scenario can observe it; a mutant that makes
+      `allowed` always false, or drops the `location.assign` call, survives, and SC-008 makes each such survivor
+      blocking. The plan gives the link no pure, mutation-reachable unit for this logic.
+    remedies:
+      - "Put the resolution and protocol decision (data-model.md Link state) in a pure internal function under `src/` tested in the in-process `elements` project over every scenario-9-to-12 input (written href, base, document protocol -> allowed or not), and have the element call `location.assign` through one small seam that the in-process test observes without navigating; state it in R-08 and R-13."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 3
+    title: "Joined pressed segment and the Copy control's divider draw control-border against excluded grounds (#5 rule 1)"
+    evidence:
+      - artifact: "spec US3-9 / FR-029: every boundary line, 'including the lines on both sides of the pressed `All`', is `--ocelle-border-width` in `--ocelle-color-control-border`, the pressed segment filled `--ocelle-color-accent-low`"
+      - artifact: "research.md R-07 'the line between the text well and the control is the same border, so no control boundary is drawn against `color-inset`'; plan.md Constitution Check II 'no control boundary drawn against `color-inset` (R-07)'"
+      - code: "packages/tokens/contrast/pairs.json:35,195 color-control-border on color-accent-low 2.9 / 2.88 'excluded', reason '#5 rule 1: a control on color-accent-low is bordered with color-accent-strong'; :36 control-border on color-inset 2.80 'excluded' (#5 rule 1 extended)"
+      - code: "specs/002-design-tokens/spec.md:523 'a control drawn on these grounds uses `color-accent-strong` for its border'"
+    claim: |
+      In the joined variant the pressed segment's fill is `accent-low` and the lines around it are `control-border`,
+      the pair #5 rule 1 excludes at 2.9:1; the default variant (US3-8) follows the rule with an `accent-strong`
+      border, so the joined variant contradicts it. R-07's Copy control likewise has its inline-start line,
+      `control-border`, directly against the `inset` well (2.80:1, excluded): the plan says no boundary is drawn
+      against `inset` while drawing exactly that line. The plan's Constitution Check reports Principle II and III as
+      met without addressing either, and no gate would catch it (see PLAN-CORRECTNESS-1-011).
+    remedies:
+      - "Spec and plan: draw the lines that bound the pressed joined segment, and the Copy control's divider, in `color-accent-strong` at `--ocelle-border-width` (colour change only, so 'one line, not widened' still holds), and update US3-9, FR-029, R-07 and the Constitution Check."
+      - "Operator decision recorded in the plan: these lines are judged against their other side (the neighbour's or control's `sheet`-family fill, a checked pair) and #5 rule 1 is read as not applying, with the reasoning written into R-06/R-07 and the Constitution Check."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 2
+    title: "Selected bars in accent-strong on main grounds are unchecked pairs, and nothing checks the elements' paints (SPEC-1-13 unanswered)"
+    evidence:
+      - artifact: "plan.md Constitution Check III 'Text and non-text contrast ...' not addressed; II lists tokens only; contracts/elements.md names the option and tab bar but no fill for a selected option or tab"
+      - code: "packages/tokens/contrast/pairs.json:51-58 and 219-226: color-accent-strong is checked only on accent-low, inset, hover-bg and the five state grounds, not on canvas, sheet, pane, panel, inspector or rail"
+      - code: "gates/bin/contrast.ts:1-6 and gates/README.md:35: the contrast gate checks the token pair list only, not what an element paints"
+      - artifact: "reviews/spec/check-1.md SPEC-1-13 (name the background and bar token and the pair that covers the bar); check-3.md SPEC-3-04 (the plan answers each open note); R-14 does not answer it"
+    claim: |
+      The option's inline-start bar and the tab's block-end bar are `color-accent-strong`; unless the selected option
+      or tab is also filled `accent-low`, they sit on a main ground where `accent-strong` has no checked pair, so
+      their 3:1 is unverified (constitution III requires it to be checked automatically). Mission 005 met the same
+      requirement with an element-level pairs check (test/node/brand-pairs-check.ts); this plan has none, and
+      quickstart's `gate:contrast` does not look at element styles.
+    remedies:
+      - "Give the selected option and tab the `accent-low` fill (accent-strong on accent-low is checked, 4.31 / 6.13), name every element's fill, bar, border and text tokens with their grounds in research, and add a node pairs check over each new element's stylesheet in the style of 005's brand-pairs check, failing on any pair that is not `checked` in pairs.json."
+      - "Keep the bars on main grounds and add `color-accent-strong` (or `color-current`) non-text pairs on the main grounds to `@ocelle/tokens`' pair list and its changelog (a token-package change in this feature), plus the same element pairs check."
+
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 2
+    title: "Lit's batched rendering cannot meet US4-6: the region must be empty during the event and mutate again on the same text"
+    evidence:
+      - artifact: "research.md R-07 'The live region is updated only when the text differs from its current content (FR-041), and emptied before the request event is dispatched (FR-035, FR-042)'"
+      - artifact: "spec US4-6 'a listener reading `field.status` during the event sees \"\", and the region is empty at that moment ... when the listener sets the same text again the region's text goes from empty to that text again (a recorded mutation)'; reviews/spec/check-2.md SPEC-2-12 (unanswered in R-14)"
+    claim: |
+      If the region's text is rendered by the Lit template, setting `status = ""` and dispatching the event in the
+      same handler leaves the region holding the old text during the event (Lit renders in a later microtask), and a
+      listener that sets the same text synchronously makes Lit see no change at all, so no mutation is recorded. Both
+      halves of US4-6 then fail. The plan does not say that the region is written outside Lit's batching, nor answer
+      SPEC-2-12 (whether the clear must reach the accessibility tree before the host's set).
+    remedies:
+      - "State in R-07 that the region's text node is written imperatively and synchronously (cleared before `dispatchEvent`, set by the `status` setter only when the text differs), not through the template, and answer SPEC-2-12: either dispatch after the clear has been rendered (for example after one frame) or record the limitation in the README."
+
+  - id: PLAN-CORRECTNESS-1-013
+    severity: 2
+    title: "The file: test under test/browser/ also runs in elements-browser, and the new project is not excluded from mutation runs"
+    evidence:
+      - artifact: "plan.md Project Structure 'test/browser/file/link-file.test.ts # elements-browser-file (R-09)'; Phase 1 'vitest.config.ts gains elements-browser-file (R-09) with gates/test/vitest-config.test.ts first'; R-09 'its own Vitest browser project whose Playwright launch adds that flag'"
+      - code: "vitest.config.ts:112-121: elements-browser includes packages/elements/test/browser/**/*.test.ts (a node project that launches Chromium itself through test/browser/serve.ts, not a Vitest browser project)"
+      - code: "vitest.mutation.config.ts:30-38 excludes a fixed set of project names; gates/test/vitest-config.test.ts:47-49 pins that set exactly, and :110 pins that test/browser files belong to elements-browser alone"
+    claim: |
+      As placed, `link-file.test.ts` matches elements-browser's include, so it runs there too, without the flag, and
+      fails. The new project is not in vitest.mutation.config.ts's excluded set, so the default Stryker run would
+      start Chromium on the `file:` fixture for each mutant of non-element source, which is what that set exists to
+      prevent. The plan names neither change, and the flag belongs in the test's own Playwright launch, not a
+      'Vitest browser project' launch.
+    remedies:
+      - "Place the file test outside elements-browser's glob (or exclude `test/browser/file/**` there), add `elements-browser-file` to vitest.mutation.config.ts's excluded set, update gates/test/vitest-config.test.ts's pinned lists red first, and say in R-09 that the flag is passed in the test's own `chromium.launch` args."
+
+  - id: PLAN-CORRECTNESS-1-014
+    severity: 2
+    title: "The microtask batch is not 'the same task', and a value set right after an append reads the stale child list"
+    evidence:
+      - artifact: "spec FR-010a 'Children added or enabled in one operation (the same task) are taken together'; research.md R-05 'Updates are batched in one microtask after the last mutation or `slotchange` of a task ... (`slotchange` and mutation records are delivered at the same microtask checkpoint)'"
+      - artifact: "spec FR-010 'Setting it to a value some enabled child has selects the first such child'; FR-010a 'that no enabled child had at the time of the set'"
+    claim: |
+      A microtask checkpoint is not a task: a host that appends tabs across `await`s in one task (for example after
+      `customElements.whenDefined`) gets several batches, and FR-010a's order-independence is lost for it, while the
+      spec promises it per task. Separately, a host that does `listbox.append(option); listbox.value = option.value`
+      synchronously sets the value before the batch has seen the option; if the setter decides from the model's
+      cached list, it treats the value as unknown, `listbox.value` reads `""` right after the set, and the selection
+      happens later through the remembered-value path instead of FR-010's direct path.
+    remedies:
+      - "State that the `value` setter first takes the pending records (`MutationObserver.takeRecords()` and the current assigned or child elements) so it decides on the live child list, and either amend FR-010a to 'in one microtask checkpoint' (spec fix) or batch per task (for example a `setTimeout(0)` flush) and say which in R-05."
+
+  - id: PLAN-CORRECTNESS-1-015
+    severity: 2
+    title: "Per-element entry points and the 'defines that element and no other' convention collide for children and the copy icon"
+    evidence:
+      - code: "packages/elements/README.md § Element conventions 'importing the module defines that element and no other'; § Entry points '@ocelle/elements/ocelle-icon.js ... defines ocelle-icon only'"
+      - artifact: "plan.md quickstart step 1 (one dist module per new element) and Project Structure 'package.json (exports)'; spec FR-033 (Copy control shows `ocelle-icon name=\"copy\"`)"
+    claim: |
+      A host that imports only `@ocelle/elements/ocelle-listbox.js` gets undefined `ocelle-option` children (no role,
+      no value property), and one that imports only `ocelle-copy-field.js` gets an empty icon unless the module also
+      imports `ocelle-icon.js`, which then defines a second element against the README's convention. The plan does
+      not say whether the parent entries define their children or the copy field defines `ocelle-icon`, nor which of
+      the nine modules become public entry points (public surface per the README).
+    remedies:
+      - "Decide and record in the plan: either each parent's module imports its child modules and the copy field imports `ocelle-icon.js` (and the README's convention is amended to 'defines that element and the elements it renders'), or the entry table states that a host imports the children and the icon itself; list the new `exports` entries in contracts/elements.md."
+
+  - id: PLAN-CORRECTNESS-1-016
+    severity: 2
+    title: "Open spec-check notes that SPEC-3-04 sent to the plan are not answered"
+    evidence:
+      - artifact: "reviews/spec/check-3.md SPEC-3-04 'The plan answers each one in its decisions or research'; spec.md header 'Notes SPEC-3-02 to SPEC-3-04 are left for the plan'"
+      - artifact: "research.md R-14 answers SPEC-3-02, SPEC-3-03, SPEC-1-14, SPEC-1-16, SPEC-2-07 (and R-07 SPEC-2-11, R-09 SPEC-2-06, R-12 SPEC-1-23, the contract SPEC-2-10, the Constitution Check SPEC-1-22); nothing answers SPEC-1-13, SPEC-1-15, SPEC-1-19, SPEC-1-25, SPEC-1-27, SPEC-2-05, SPEC-2-08, SPEC-2-09, SPEC-2-12, SPEC-2-13"
+    claim: |
+      Several unanswered notes change what gets built or tested: SPEC-2-09 (whether the parents' `value`, the copy
+      field's `value` and the link's `href` reflect, and that a parent's `value` already holds the new value when a
+      `-change` listener reads it; the contract states reflection for the listbox and link only); SPEC-2-08 (`href=""`
+      reloads the page under FR-047, and `href="#section"` reads as 'does not navigate' under 'Observing
+      navigation'); SPEC-1-15 (long labels, hover paint, the `icon` slot with no scenario or story); SPEC-1-19 (the
+      copy field's tree with no host name); SPEC-1-25 (whether an unpaired tab is drawn or focusable); SPEC-1-27 and
+      SPEC-2-13 (untestable 'no flicker', 'no animation' cases). SPEC-1-13, SPEC-1-20, SPEC-2-05 and SPEC-2-12 are
+      raised separately in this file.
+    remedies:
+      - "Extend R-14 with an answer per listed note (a decision, a scenario added in a phase, or an explicit operator question), and make the contract state reflection for every `value`, `status` and `href` and the order 'value updated, then event dispatched'."
+
+  - id: PLAN-CORRECTNESS-1-017
+    severity: 2
+    title: "The semver statement does not examine FR-044's 'PATCH' swap of the Copy control (SPEC-1-20)"
+    evidence:
+      - artifact: "spec FR-044 'its part name, accessible name and events stay, so the swap is a PATCH'; FR-038 parts are public surface; plan.md Constitution Check VII covers only this feature's MINOR"
+      - artifact: "reviews/spec/check-1.md SPEC-1-20: '::part(copy-control) would then match the ocelle-button host, not the inner <button>' (host :hover, :disabled, :focus-visible, colours and borders apply differently)"
+    claim: |
+      Constitution VII makes a change a consumer can see in the manifest surface (a CSS part's behaviour) more than a
+      PATCH. Today `::part(copy-control)` selects a native `<button>` (with `:disabled`, `:focus-visible` and its
+      border); after the swap it selects an `ocelle-button` host whose box, states and inner border differ. The plan
+      records FR-044 as given and never states what the stable surface of the part is, so the README text that FR-044
+      requires would promise a PATCH this design cannot guarantee.
+    remedies:
+      - "State in the plan (and the README text of FR-044) what `copy-control` guarantees (for example only the box and its name), or amend FR-044 so the later op decides PATCH or MINOR once #7's surface is known."
+
+  - id: PLAN-CORRECTNESS-1-018
+    severity: 2
+    title: "The folder picker's 'confirm' has no signal: Enter on the selected option is handled and emits nothing"
+    evidence:
+      - artifact: "spec Consumer need (Listbox, #527): 'a single-select list the user moves through with the keyboard and confirms'"
+      - artifact: "spec US1-7 'Given delta selected and focused, When Enter or Space is pressed again, Then delta stays selected and no event is emitted'; FR-015 Enter is handled (defaultPrevented true); contracts/elements.md lists one event, `ocelle-listbox-change`"
+      - artifact: "008 spec (origin/claude/016-overlays specs/008-overlays/spec.md:52): the Open project dialog holds the listbox 'and its actions'"
+    claim: |
+      The first consumer confirms a folder. With this interface a keyboard user who presses Enter on the already
+      selected folder gets nothing (no event, and the key's default prevented), and a double-click gives at most one
+      change event, so the dialog cannot open a folder on Enter or double-click without hand-rolled key listeners on
+      the listbox, which is the kind of local wiring SC-009 says the consumer drops. The spec states the need but
+      neither the spec nor the plan says how the host meets it.
+    remedies:
+      - "Record in the plan and README that confirmation is the dialog's action button only (the host's default action), and that hosts must not listen to the listbox's keys; check this with #16's Open project story."
+      - "Raise to the operator an `ocelle-listbox-activate` event (`{ value }`, on Enter on the selected option and on double-click), a MINOR addition to the surface with its own scenarios."
+
+  - id: PLAN-CORRECTNESS-1-019
+    severity: 1
+    title: "box-decoration-break for the link's focus ring is either unnecessary (outline) or an unrecorded engine-floor feature"
+    evidence:
+      - artifact: "research.md R-08 'The focus ring uses `box-decoration-break: clone` so each line fragment is outlined (FR-048)'"
+      - code: "packages/elements/README.md § Engines: 'An element that uses a feature newer than the floor raises the floor in this section ... and records the feature in its own feature's research'"
+    claim: |
+      `box-decoration-break` affects backgrounds, borders, padding and box-shadow, not `outline`, which the engine
+      already draws per line fragment, so if the ring is an outline the property does nothing. If the ring is a
+      box-shadow, the unprefixed property is (to this lens's knowledge, not measured here) Chromium 130 and only
+      prefixed in WebKit, newer than the Chromium 125 / WebKit 17.4 floor the plan states, and not recorded.
+    remedies:
+      - "Draw the link's ring as an outline with the focus tokens and drop `box-decoration-break` from R-08, or record the property and its engine versions in R-06's floor list and the README's Engines section."
+
+  - id: PLAN-CORRECTNESS-1-020
+    severity: 1
+    title: "The contract omits empty part lists and trims child values that the property reflects as written"
+    evidence:
+      - artifact: "contracts/elements.md: no `part` row for `ocelle-option`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segment` or `ocelle-segmented-choice`; spec FR-055 'each list stated even when empty'"
+      - artifact: "data-model.md Child entry 'value: `value` attribute, trimmed'; contracts/elements.md option, tab, segment `value` '(reflected)'; spec FR-009 says nothing about trimming"
+    claim: |
+      The contract says the manifest 'must declare exactly this', but for five elements it does not state the part
+      list. The data model trims a child's value, while the reflected property and FR-009 keep the value as written,
+      so `option.value` (' alpha ') and `listbox.value` / the event payload ('alpha') would disagree.
+    remedies:
+      - "State the part list (or 'none') for every element in the contract, and either drop the trim from data-model.md or add trimming to FR-009 and the child's `value` property."

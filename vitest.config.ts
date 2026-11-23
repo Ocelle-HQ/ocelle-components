@@ -5,6 +5,18 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 // The element tests' browser commands (005 research.md R-11; packages/elements/test/commands.ts), loaded when a command
 // runs: the plant trees of the gates copy this file without the element test code (research.md R-10), so neither
 // loading nor type-checking the configuration may depend on it.
+// Since 014 (research.md R-07, R-11): axStates, axUpdatesStart and axUpdatesStop, whose target is an id or a child of a
+// parent with an id.
+type Target = string | { readonly parent: string; readonly kind: string; readonly index: number };
+// 012 (research.md R-11) adds press, hover, pointer, emulateReducedMotion, axe and axState; their argument types are
+// written here, not imported, for the same reason.
+type Modifier = "Alt" | "Control" | "Meta" | "Shift";
+interface ClickOptions {
+  readonly inner?: string;
+  readonly modifiers?: readonly Modifier[];
+  readonly button?: "left" | "middle" | "right";
+}
+type PointerAction = "hover" | "click" | "down" | "up";
 interface PathStep {
   readonly x: number;
   readonly y: number;
@@ -19,15 +31,45 @@ interface ElementCommands {
   readonly activeElement: (context: BrowserCommandContext) => Promise<unknown>;
   readonly textBoxes: (context: BrowserCommandContext, id: string) => Promise<unknown>;
   readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
+  readonly pressKey: (context: BrowserCommandContext, key: string, modifiers?: readonly Modifier[]) => Promise<void>;
+  readonly hover: (context: BrowserCommandContext, id: string, inner?: string) => Promise<void>;
+  readonly pointerCommand: (context: BrowserCommandContext, action: PointerAction, id: string, options?: ClickOptions) => Promise<void>;
+  readonly axState: (context: BrowserCommandContext, id: string, inner?: string) => Promise<unknown>;
+  readonly axe: (context: BrowserCommandContext, scope?: string) => Promise<unknown>;
   readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
   readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
+  readonly axStates: (context: BrowserCommandContext, target: Target, scope?: "element" | "subtree") => Promise<unknown>;
+  readonly axUpdatesStart: (context: BrowserCommandContext, target: Target) => Promise<void>;
+  readonly axUpdatesStop: (context: BrowserCommandContext) => Promise<unknown>;
+}
+// The live-region capture's commands (specs/010-feedback-forms contracts/testing.md § Live-region capture;
+// packages/elements/test/live.ts), loaded as the element commands are, when a command runs.
+interface LiveDelays {
+  readonly loaded: number;
+  readonly loading: number;
+}
+interface LiveCommands {
+  readonly liveStart: (context: BrowserCommandContext, containerId: string, delays: LiveDelays) => Promise<void>;
+  readonly liveStop: (context: BrowserCommandContext, options?: { readonly atLeast?: number }) => Promise<unknown>;
 }
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
 const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = async (context, id, scope) => (await elementCommands()).axTree(context, id, scope);
+const liveCommandsUrl = new URL("./packages/elements/test/live.ts", import.meta.url).href;
+const liveCommands = async (): Promise<LiveCommands> => (await import(liveCommandsUrl)) as LiveCommands;
+const liveStart: BrowserCommand<[containerId: string, delays: LiveDelays]> = async (context, containerId, delays) => {
+  await (await liveCommands()).liveStart(context, containerId, delays);
+};
+const liveStop: BrowserCommand<[options?: { readonly atLeast?: number }]> = async (context, options) => (await liveCommands()).liveStop(context, options);
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
+const axStates: BrowserCommand<[target: Target, scope?: "element" | "subtree"]> = async (context, target, scope) => (await elementCommands()).axStates(context, target, scope);
+const axUpdatesStart: BrowserCommand<[target: Target]> = async (context, target) => {
+  await (await elementCommands()).axUpdatesStart(context, target);
+};
+const axUpdatesStop: BrowserCommand = async (context) => (await elementCommands()).axUpdatesStop(context);
+
 // The document readers of 011 research.md R-13: the scroll width, the deep active element and the text boxes.
 const scrollWidth: BrowserCommand = async (context) => (await elementCommands()).scrollWidth(context);
 const activeElement: BrowserCommand = async (context) => (await elementCommands()).activeElement(context);
@@ -38,6 +80,17 @@ const textBoxes: BrowserCommand<[id: string]> = async (context, id) => (await el
 const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
   await (await elementCommands()).emulateReducedMotion(context, mode);
 };
+const press: BrowserCommand<[key: string, modifiers?: readonly Modifier[]]> = async (context, key, modifiers) => {
+  await (await elementCommands()).pressKey(context, key, modifiers);
+};
+const hover: BrowserCommand<[id: string, inner?: string]> = async (context, id, inner) => {
+  await (await elementCommands()).hover(context, id, inner);
+};
+const pointer: BrowserCommand<[action: PointerAction, id: string, options?: ClickOptions]> = async (context, action, id, options) => {
+  await (await elementCommands()).pointerCommand(context, action, id, options);
+};
+const axState: BrowserCommand<[id: string, inner?: string]> = async (context, id, inner) => (await elementCommands()).axState(context, id, inner);
+const axe: BrowserCommand<[scope?: string]> = async (context, scope) => (await elementCommands()).axe(context, scope);
 // 008 research.md R-14: real pointer paths and touch taps for the overlay scenarios.
 const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context, steps) => {
   await (await elementCommands()).pointerPath(context, steps);
@@ -45,16 +98,25 @@ const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context
 const touchTap: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
   await (await elementCommands()).touchTap(context, x, y);
 };
-const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, pointerPath, touchTap };
+const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap, liveStart, liveStop, axStates, axUpdatesStart, axUpdatesStop };
 
 // The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
 // device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.
 const elementViewport = { width: 1280, height: 800 };
 
+// The Chromium arguments the elements-browser-file tests launch with (014 research.md R-09): a file: document may load
+// module scripts from file: URLs.
+declare module "vitest" {
+  export interface ProvidedContext {
+    chromiumArgs: string[];
+  }
+}
+
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
 // (FR-028, research.md R-10): every project excludes them.
 const excluded = ["**/node_modules/**", "**/dist/**", "gates/plants/**", "gates/test/fixtures/**"];
-const elementExcluded = [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"];
+// Since 014 (research.md R-09) the file: suite runs in elements-browser-file only.
+const elementExcluded = [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**", "packages/elements/test/browser-file/**"];
 
 // Optional, environment-only Chromium override (research.md R-03, operator decision 2026-11-02): when
 // OCELLE_CHROMIUM_PATH is set and non-empty, the elements project launches that executable; otherwise Playwright's own.
@@ -104,14 +166,24 @@ export default defineConfig({
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
         // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
-        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts).
-        // Each test file keeps its own iframe and custom-element registry (isolate, the default). 008 (R-14): a
-        // 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows (`test/*.touch.test.ts`) run in
-        // elements-touch instead; the commands also drive the real pointer.
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts);
+        // 012's press, hover, pointer, axe and axState drive the keyboard and mouse, read one accessibility node and run
+        // axe (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the
+        // default). Its files run one at a time (specs/010-feedback-forms phase 2 stop 1, operator decision (b),
+        // reviews/phase-2/decision-stop-1.md):
+        // the in-process timing files (the notice suites, the plants file, the capture and timing files) measure gaps
+        // in fractions of the test W = 100 ms, and two pages of this project running at once overshot drive.after by
+        // more than 2W/3. 008 (R-14): a 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows
+        // (`test/*.touch.test.ts`) run in elements-touch instead; the commands also drive the real pointer.
+        // Lit's directives the elements import, bundled before the run, so Vite does not find them during a test file
+        // and reload it (specs/010-feedback-forms phase 3: ocelle-form-input imports class-map and live; 013:
+        // ocelle-facts imports if-defined).
+        optimizeDeps: { include: ["lit/directives/class-map.js", "lit/directives/if-defined.js", "lit/directives/live.js"] },
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
           exclude: [...elementExcluded, "packages/elements/test/*.touch.test.ts"],
+          fileParallelism: false,
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),
@@ -171,6 +243,18 @@ export default defineConfig({
           include: ["packages/elements/test/browser/**/*.test.ts"],
           exclude: excluded,
           globalSetup: ["packages/elements/test/browser/global-setup.ts"],
+        },
+      },
+      {
+        // The element file: suite (014 research.md R-09, PLAN-CORRECTNESS-1-013): User Story 5 scenario 12, a node test
+        // that launches Chromium itself with `--allow-file-access-from-files` (provided here) on a file: copy of the
+        // link fixture whose policy is a <meta> element. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "elements-browser-file",
+          environment: "node",
+          include: ["packages/elements/test/browser-file/**/*.test.ts"],
+          exclude: excluded,
+          provide: { chromiumArgs: ["--allow-file-access-from-files"] },
         },
       },
       {

@@ -1,0 +1,374 @@
+
+ RUN  v5.0.5 /workspace/work/ocelle-phase2-final-red
+
+ ❯ |elements (chromium)| packages/elements/test/nav-item.test.ts (6 tests | 6 failed) 984ms
+   ❯ ocelle-nav-item (6)
+     × keeps its icon decorative and exposes native link activation and current state 309ms
+     × shows an unfocusable label when no href is supplied 127ms
+     × starts expanded with an empty label when the host supplies neither 138ms
+     × preserves host compact preference and the same focused link under an effective override 168ms
+     × shows the visual-only compact label on hover, allows travel to it, and dismisses on Escape 126ms
+     × keeps a long translated label readable and the keyboard ring visible in forced colors and reduced motion 113ms
+ ❯ |elements (chromium)| packages/elements/test/top-bar.test.ts (5 tests | 5 failed) 591ms
+   ❯ ocelle-top-bar (5)
+     × shows a decorative chrome brand mark, product name and supplied actions 179ms
+     × leaves no menu button or action gap when omitted and reveals actions appended later 101ms
+     × requests once per native click, Enter and Space and lets the host set expansion 97ms
+     × reads initial menu expansion from markup and keeps an accessible fallback name 95ms
+     × keeps a named, focused menu at the minimum target size in a 320 px frame 120ms
+stderr | packages/elements/test/exports.test.ts > @ocelle/elements root exports > exports exactly the public element classes in code-point order
+Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+ ❯ |elements (chromium)| packages/elements/test/exports.test.ts (1 test | 1 failed) 231ms
+   ❯ @ocelle/elements root exports (1)
+     × exports exactly the public element classes in code-point order 231ms
+ ❯ |elements (chromium)| packages/elements/test/entry-top-bar.test.ts (1 test | 1 failed) 116ms
+   × registers the top bar and its brand and icon dependencies from the standalone module 116ms
+ ❯ |elements (chromium)| packages/elements/test/entry-nav-item.test.ts (1 test | 1 failed) 135ms
+   × registers the nav item and its tooltip dependency from the standalone module 135ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 14 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/entry-nav-item.test.ts > registers the nav item and its tooltip dependency from the standalone module
+AssertionError: expected undefined to be type of 'function'
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/entry-nav-item.test.ts/registers-the-nav-item-and-its-tooltip-dependency-from-the-standalone-module.png
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ packages/elements/test/entry-nav-item.test.ts:6:48
+      4| it("registers the nav item and its tooltip dependency from the standal…
+      5|   expect(customElements.get("ocelle-nav-item")).toBe(OcelleNavItem);
+      6|   expect(customElements.get("ocelle-tooltip")).toBeTypeOf("function");
+       |                                                ^
+      7|   expect(customElements.get("ocelle-top-bar")).toBeUndefined();
+      8| });
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:4120:35
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:26
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5725:20
+ ❯ runWithCancel node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5720:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5709:20
+ ❯ runWithTimeout node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5673:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:6245:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/entry-top-bar.test.ts > registers the top bar and its brand and icon dependencies from the standalone module
+AssertionError: expected undefined to be type of 'function'
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/entry-top-bar.test.ts/registers-the-top-bar-and-its-brand-and-icon-dependencies-from-the-standalone-module.png
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ packages/elements/test/entry-top-bar.test.ts:6:51
+      4| it("registers the top bar and its brand and icon dependencies from the…
+      5|   expect(customElements.get("ocelle-top-bar")).toBe(OcelleTopBar);
+      6|   expect(customElements.get("ocelle-brand-mark")).toBeTypeOf("function…
+       |                                                   ^
+      7|   expect(customElements.get("ocelle-icon")).toBeTypeOf("function");
+      8|   expect(customElements.get("ocelle-nav-item")).toBeUndefined();
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:4120:35
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:26
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5725:20
+ ❯ runWithCancel node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5720:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5709:20
+ ❯ runWithTimeout node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5673:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:6245:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/exports.test.ts > @ocelle/elements root exports > exports exactly the public element classes in code-point order
+AssertionError: expected [ 'OcelleActionRow', …(22) ] to deeply equal [ 'OcelleActionRow', …(24) ]
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/exports.test.ts/-ocelle-elements-root-exports---exports-exactly-the-public-element-classes-in-code-point-order.png
+
+- Expected
++ Received
+
+@@ -11,17 +11,15 @@
+    "OcelleFacts",
+    "OcelleFormInput",
+    "OcelleFormSelect",
+    "OcelleIcon",
+    "OcelleListDetail",
+-   "OcelleNavItem",
+    "OcelleNotice",
+    "OcellePageHeader",
+    "OcellePersonalRail",
+    "OcelleProgress",
+    "OcelleScroller",
+    "OcelleSectionHeader",
+    "OcelleTooltip",
+-   "OcelleTopBar",
+    "OcelleWorkflowBoard",
+    "OcelleWorkflowLane",
+  ]
+
+ ❯ packages/elements/test/exports.test.ts:20:33
+
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/nav-item.test.ts > ocelle-nav-item > keeps its icon decorative and exposes native link activation and current state
+AssertionError: expected undefined to be '#projects' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/nav-item.test.ts/ocelle-nav-item---keeps-its-icon-decorative-and-exposes-native-link-activation-and-current-state.png
+
+- Expected:
+"#projects"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/nav-item.test.ts:31:40
+     29|     const item = await mount('href="#projects" current="page"');
+     30|     const link = item.shadowRoot?.querySelector("a");
+     31|     expect(link?.getAttribute("href")).toBe("#projects");
+       |                                        ^
+     32|     expect(link?.getAttribute("aria-current")).toBe("page");
+     33|     expect(getComputedStyle(required(link)).display).toBe("flex");
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/nav-item.test.ts > ocelle-nav-item > shows an unfocusable label when no href is supplied
+AssertionError: expected undefined to be 'Projects' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/nav-item.test.ts/ocelle-nav-item---shows-an-unfocusable-label-when-no-href-is-supplied.png
+
+- Expected:
+"Projects"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/nav-item.test.ts:55:32
+     53|     const item = await mount("compact");
+     54|     const label = item.shadowRoot?.querySelector<HTMLElement>('[part="…
+     55|     expect(label?.textContent).toBe("Projects");
+       |                                ^
+     56|     expect(label?.hidden).toBe(false);
+     57|     expect(item.shadowRoot?.querySelector("a")).toBeNull();
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/nav-item.test.ts > ocelle-nav-item > starts expanded with an empty label when the host supplies neither
+AssertionError: expected undefined to be '' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/nav-item.test.ts/ocelle-nav-item---starts-expanded-with-an-empty-label-when-the-host-supplies-neither.png
+
+- Expected:
+""
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/nav-item.test.ts:65:24
+     63|     const item = required(document.querySelector("ocelle-nav-item"));
+     64|     const label = item.shadowRoot?.querySelector<HTMLElement>('[part="…
+     65|     expect(item.label).toBe("");
+       |                        ^
+     66|     expect(item.compact).toBe(false);
+     67|     expect(label?.hidden).toBe(false);
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/nav-item.test.ts > ocelle-nav-item > preserves host compact preference and the same focused link under an effective override
+AssertionError: expected undefined to be true // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/nav-item.test.ts/ocelle-nav-item---preserves-host-compact-preference-and-the-same-focused-link-under-an-effective-override.png
+
+- Expected:
+true
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/nav-item.test.ts:75:27
+     73|     const link = item.shadowRoot?.querySelector("a");
+     74|     const label = item.shadowRoot?.querySelector<HTMLElement>('[part="…
+     75|     expect(label?.hidden).toBe(true);
+       |                           ^
+     76|     expect((await commands.axState("nav", "a")).name).toBe("Projects");
+     77|     link?.focus();
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/nav-item.test.ts > ocelle-nav-item > shows the visual-only compact label on hover, allows travel to it, and dismisses on Escape
+AssertionError: expected undefined to be 'Projects' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/nav-item.test.ts/ocelle-nav-item---shows-the-visual-only-compact-label-on-hover--allows-travel-to-it--and-dismisses-on-Escape.png
+
+- Expected:
+"Projects"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/nav-item.test.ts:99:46
+     97|     const item = await mount('href="#projects" compact');
+     98|     const link = item.shadowRoot?.querySelector("a");
+     99|     expect(link?.getAttribute("aria-label")).toBe("Projects");
+       |                                              ^
+    100|     item.style.setProperty("--ocelle-tooltip-delay", "0ms");
+    101|     await commands.hover("nav", "a");
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/nav-item.test.ts > ocelle-nav-item > keeps a long translated label readable and the keyboard ring visible in forced colors and reduced motion
+AssertionError: expected undefined to be 'Projects' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/nav-item.test.ts/ocelle-nav-item---keeps-a-long-translated-label-readable-and-the-keyboard-ring-visible-in-forced-colors-and-reduced-motion.png
+
+- Expected:
+"Projects"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/nav-item.test.ts:116:46
+    114|     const item = await mount('href="#projects" compact');
+    115|     const link = item.shadowRoot?.querySelector("a");
+    116|     expect(link?.getAttribute("aria-label")).toBe("Projects");
+       |                                              ^
+    117|     item.label = "Projektübersicht mit allen zugeordneten Arbeitsberei…
+    118|     await item.updateComplete;
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/top-bar.test.ts > ocelle-top-bar > shows a decorative chrome brand mark, product name and supplied actions
+AssertionError: expected undefined to be 'Kitty Dashboard' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/top-bar.test.ts/ocelle-top-bar---shows-a-decorative-chrome-brand-mark--product-name-and-supplied-actions.png
+
+- Expected:
+"Kitty Dashboard"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/top-bar.test.ts:22:39
+     20|     const host = await mount("", '<button type="button" slot="actions"…
+     21|     const brand = host.shadowRoot?.querySelector('[part="brand"]');
+     22|     expect(brand?.textContent.trim()).toBe("Kitty Dashboard");
+       |                                       ^
+     23|     expect(brand?.querySelector("ocelle-brand-mark")?.getAttribute("gr…
+     24|     expect(host.shadowRoot?.querySelector<HTMLSlotElement>('slot[name=…
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/top-bar.test.ts > ocelle-top-bar > leaves no menu button or action gap when omitted and reveals actions appended later
+AssertionError: expected undefined to be true // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/top-bar.test.ts/ocelle-top-bar---leaves-no-menu-button-or-action-gap-when-omitted-and-reveals-actions-appended-later.png
+
+- Expected:
+true
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/top-bar.test.ts:30:29
+     28|     const host = await mount("");
+     29|     const actions = host.shadowRoot?.querySelector<HTMLElement>('[part…
+     30|     expect(actions?.hidden).toBe(true);
+       |                             ^
+     31|     expect(host.shadowRoot?.querySelector('[part="menu-button"]')).toB…
+     32|     const action = document.createElement("button");
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/top-bar.test.ts > ocelle-top-bar > requests once per native click, Enter and Space and lets the host set expansion
+AssertionError: expected undefined to be 'button' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/top-bar.test.ts/ocelle-top-bar---requests-once-per-native-click--Enter-and-Space-and-lets-the-host-set-expansion.png
+
+- Expected:
+"button"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/top-bar.test.ts:43:40
+     41|     const host = await mount('show-menu menu-label="Navigation öffnen"…
+     42|     const menu = host.shadowRoot?.querySelector<HTMLButtonElement>("bu…
+     43|     expect(menu?.getAttribute("type")).toBe("button");
+       |                                        ^
+     44|     expect(menu?.getAttribute("aria-label")).toBe("Navigation öffnen");
+     45|     expect(menu?.getAttribute("aria-expanded")).toBe("false");
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/top-bar.test.ts > ocelle-top-bar > reads initial menu expansion from markup and keeps an accessible fallback name
+AssertionError: expected undefined to be '' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/top-bar.test.ts/ocelle-top-bar---reads-initial-menu-expansion-from-markup-and-keeps-an-accessible-fallback-name.png
+
+- Expected:
+""
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/top-bar.test.ts:67:30
+     65|     const host = required(document.querySelector("ocelle-top-bar"));
+     66|     const menu = host.shadowRoot?.querySelector("button");
+     67|     expect(host.productName).toBe("");
+       |                              ^
+     68|     expect(host.menuLabel).toBe("Open navigation");
+     69|     expect(host.menuExpanded).toBe(true);
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/14]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/top-bar.test.ts > ocelle-top-bar > keeps a named, focused menu at the minimum target size in a 320 px frame
+AssertionError: expected undefined to be 'Open navigation' // Object.is equality
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/top-bar.test.ts/ocelle-top-bar---keeps-a-named--focused-menu-at-the-minimum-target-size-in-a-320-px-frame.png
+
+- Expected:
+"Open navigation"
+
++ Received:
+undefined
+
+ ❯ packages/elements/test/top-bar.test.ts:82:46
+     80|     const host = required(document.querySelector("ocelle-top-bar"));
+     81|     const menu = host.shadowRoot?.querySelector<HTMLButtonElement>("bu…
+     82|     expect(menu?.getAttribute("aria-label")).toBe("Open navigation");
+       |                                              ^
+     83|     const measured = document.createElement("div");
+     84|     measured.style.inlineSize = "var(--ocelle-target-min)";
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=e176f924:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/14]⎯
+
+
+ Test Files  5 failed (5)
+      Tests  14 failed (14)
+   Start at  00:40:42
+   Duration  3.66s (worker 84%, tests 15%, import 1%)

@@ -36,7 +36,7 @@ console.error = (...values: unknown[]): void => {
 afterEach(async () => {
   await driver.forcedColors("none");
   await driver.theme(null);
-  await driver.hover(null);
+  await driver.inputHover(null);
 });
 
 describe("ocelle-data-table, in process (US1)", { timeout: 60_000 }, () => {

@@ -1,5 +1,5 @@
 // The shared bodies of the driver additions of 013 phase 1 (contracts/checks.md § Driver additions; tasks.md T003):
-// `viewport`, `scrollWidth`, `layout`, `copy`, `move`, `text` and `open`, with the readers the facts bodies use
+// `viewport`, `scrollWidth`, `layout`, `clipboardCopy`, `move`, `text` and `open`, with the readers the facts bodies use
 // (`boxes`, `styles`, `structure`). They pin the harnesses, not an element: plain elements and the small helper
 // elements of defineDriverHelpers() stand in, defined by each harness before the bodies run (in process by a call, on
 // the fixture through `page.evaluate`, so the function is self-contained). Run in process by test/driver.test.ts and
@@ -7,7 +7,7 @@
 // - `layout` returns on the second frame for a still element, reads a change made in an animation frame that a
 //   `ResizeObserver` callback scheduled (the deferred measure pass's shape, R-02), never the geometry before it, and
 //   rejects after 10 frames for an element that never settles;
-// - `copy` returns the text a user copy put on the clipboard, unchanged (a U+200B in it is kept, so the US1-4 plant
+// - `clipboardCopy` returns the text a user copy put on the clipboard, unchanged (a U+200B in it is kept, so the US1-4 plant
 //   that inserts one is seen);
 // - `text` makes a `characterData` change, not a `childList` one.
 // Phase 2 (tasks.md T023) adds `pressTab` and `focused`: Tab moves focus in the page's sequential order, into a shadow
@@ -17,7 +17,7 @@
 // takes an element out of the page; `frames` waits that many animation frames; `replace` swaps an element for parsed
 // markup in one mutation; `changeAttributes` sets and removes attributes in one task, so an observer sees them in one
 // delivery; `textOf` reads a shadow element's text; `rendered` tells shown light-DOM text from text that is not
-// rendered (an unslotted child of a shadow host); `events` (review round 1) lists the events script dispatches on an
+// rendered (an unslotted child of a shadow host); `dispatched` (review round 1) lists the events script dispatches on an
 // element and in its shadow root during a change, and not those on another element. `reducedMotion` and the AX value
 // properties have their own tests (test/commands.test.ts), and the loading-episode reset of `mount` is a progress body (scenarios/progress.ts), since it needs the element.
 import type { Scenario } from "./icon.ts";
@@ -220,10 +220,10 @@ export const driverAdditionScenarios: readonly Scenario[] = [
     expected: { narrow: 400, wide: 1000, restored: 1280 },
   },
   {
-    name: "copy: a user copy of a paragraph puts its text on the clipboard unchanged, a U+200B in it kept",
+    name: "clipboardCopy: a user copy of a paragraph puts its text on the clipboard unchanged, a U+200B in it kept",
     run: async (driver) => {
       await driver.mount('<p id="plain">abc def</p><p id="spaced">abc​def</p>');
-      return { plain: await driver.copy("plain"), spaced: await driver.copy("spaced") };
+      return { plain: await driver.clipboardCopy("plain"), spaced: await driver.clipboardCopy("spaced") };
     },
     expected: { plain: "abc def", spaced: "abc​def" },
   },
@@ -383,17 +383,214 @@ export const driverAdditionScenarios: readonly Scenario[] = [
     expected: { valueAsNumber: 7, value: "7", missing: undefined },
   },
   {
-    name: "events: the events script dispatches on an element and in its shadow root while a change runs are listed in order, not those on another element, and a change that dispatches none on it gives an empty list",
+    name: "dispatched: the events script dispatches on an element and in its shadow root while a change runs are listed in order, not those on another element, and a change that dispatches none on it gives an empty list",
     run: async (driver) => {
       await driver.mount('<ocelle-test-emitter id="watched"></ocelle-test-emitter><ocelle-test-emitter id="other"></ocelle-test-emitter>');
-      const during = await driver.events("watched", async () => {
+      const during = await driver.dispatched("watched", async () => {
         await driver.setAttribute("watched", "data-ping", "1");
         await driver.setAttribute("other", "data-ping", "1");
       });
-      const quiet = await driver.events("watched", () => driver.setAttribute("other", "data-ping", "2"));
-      const other = await driver.events("other", () => driver.setAttribute("other", "data-ping", "3"));
+      const quiet = await driver.dispatched("watched", () => driver.setAttribute("other", "data-ping", "2"));
+      const other = await driver.dispatched("other", () => driver.setAttribute("other", "data-ping", "3"));
       return { during, quiet, other };
     },
     expected: { during: ["ocelle-test-ping", "inner-ping"], quiet: [], other: ["ocelle-test-ping", "inner-ping"] },
+  },
+];
+
+// The driver additions of 020 phase 1 (contracts/checks.md § Driver additions; tasks.md T003): `findText` opens a closed
+// `details` whose text it finds, in the light DOM and in a shadow root with the text slotted from the light DOM, and
+// finds the same word again after the `details` is closed (a fresh fragment per call); `setProperties` sets a property
+// to each value in one task, so a plain `details` set open and closed again queues one native `toggle` where two
+// `setProperty` calls, each followed by a wait, queue two; `visible` reads `checkVisibility()`, false for the content of
+// a closed `details` and true once it is open; `reflected` names the elements an element-reflection property holds, and
+// is null for an unset one.
+
+/**
+ * Defines `ocelle-test-details` (self-contained, for `page.evaluate`): an open shadow root holding
+ * `<details><summary><span class="label"><slot name="summary"></slot></span></summary><slot></slot></details>`, the
+ * summary labelled by its `.label` span by element reference.
+ */
+export function defineDetailsHelper(): void {
+  if (customElements.get("ocelle-test-details") !== undefined) return;
+  customElements.define(
+    "ocelle-test-details",
+    class extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({ mode: "open" });
+        root.innerHTML = '<details><summary><span class="label"><slot name="summary"></slot></span></summary><slot></slot></details>';
+        const summary = root.querySelector("summary");
+        const label = root.querySelector(".label");
+        if (summary !== null && label !== null) summary.ariaLabelledByElements = [label];
+      }
+    },
+  );
+}
+
+/** Whether the shadow `details` of the element with `id` has the `open` attribute. */
+async function shadowOpen(driver: Parameters<Scenario["run"]>[0], id: string): Promise<boolean> {
+  return (await driver.elements(id)).some((part) => part.name === "details" && "open" in part.attributes);
+}
+
+const retention = "<p>The retention period is thirty days.</p>";
+
+export const disclosureDriverScenarios: readonly Scenario[] = [
+  {
+    name: "findText: a closed light-DOM details whose panel holds the word opens, and after it is closed again the same word opens it again",
+    run: async (driver) => {
+      await driver.mount(`<details id="plain"><summary>More</summary>${retention}</details>`);
+      const before = await driver.property("plain", "open");
+      await driver.findText("retention");
+      const found = await driver.property("plain", "open");
+      await driver.setProperty("plain", "open", false);
+      const closed = await driver.property("plain", "open");
+      await driver.findText("retention");
+      return { before, found, closed, again: await driver.property("plain", "open") };
+    },
+    expected: { before: false, found: true, closed: false, again: true },
+  },
+  {
+    name: "findText: a closed details in a shadow root, the word in light-DOM text slotted into it, opens; a word on the page outside it leaves it closed",
+    run: async (driver) => {
+      await driver.mount(`<p>The archival note.</p><ocelle-test-details id="shadowed"><span slot="summary">More</span>${retention}</ocelle-test-details>`);
+      const before = await shadowOpen(driver, "shadowed");
+      await driver.findText("archival");
+      const elsewhere = await shadowOpen(driver, "shadowed");
+      await driver.findText("retention");
+      return { before, elsewhere, found: await shadowOpen(driver, "shadowed") };
+    },
+    expected: { before: false, elsewhere: false, found: true },
+  },
+  {
+    name: "setProperties: open set to true then false in one task queues one native toggle of a plain details, where two setProperty calls queue two",
+    run: async (driver) => {
+      await driver.mount(`<details id="plain"><summary>More</summary>${retention}</details>`);
+      await driver.listen(["plain"]);
+      await driver.setProperties("plain", "open", [true, false]);
+      await driver.settle();
+      const oneTask = (await driver.heard()).filter((record) => record.endsWith(": toggle"));
+      const open = await driver.property("plain", "open");
+      await driver.listen(["plain"]);
+      await driver.setProperty("plain", "open", true);
+      await driver.setProperty("plain", "open", false);
+      const twoTasks = (await driver.heard()).filter((record) => record.endsWith(": toggle"));
+      return { oneTask, open, twoTasks };
+    },
+    expected: { oneTask: ["plain: toggle"], open: false, twoTasks: ["plain: toggle", "plain: toggle"] },
+  },
+  {
+    name: "visible: the content of a closed details is not visible and the text after it is; once the details is open its content is visible",
+    run: async (driver) => {
+      await driver.mount('<details id="plain"><summary>More</summary><p id="inside">Inside</p></details><p id="outside">Outside</p>');
+      const closed = { inside: await driver.visible("inside"), outside: await driver.visible("outside") };
+      await driver.setProperty("plain", "open", true);
+      return { closed, open: await driver.visible("inside") };
+    },
+    expected: { closed: { inside: false, outside: true }, open: true },
+  },
+  {
+    name: "reflected: a shadow summary's ariaLabelledByElements names its .label span, an unset ariaDescribedByElements is null",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-details id="shadowed"><span slot="summary">More</span></ocelle-test-details>');
+      return { labelledBy: await driver.reflected("shadowed", "summary", "ariaLabelledByElements"), describedBy: await driver.reflected("shadowed", "summary", "ariaDescribedByElements") };
+    },
+    expected: { labelledBy: ["span.label"], describedBy: null },
+  },
+];
+
+// The driver additions of 020 phase 2 (contracts/checks.md § Driver additions; tasks.md T023): `copyShadow`,
+// `copyShadowRun` and `ariaSnapshot`, and the two readers `clientRects` and `characters`, on the `ocelle-test-code`
+// helper below, which stands in for a code block: an open shadow root holding a `pre` of units as R-07 renders them,
+// and light-DOM text of its own that no slot shows.
+
+/**
+ * Defines `ocelle-test-code` (self-contained, for `page.evaluate`): an open shadow root holding
+ * `<pre part="code"><span>…</span><wbr><span>…</span>…</pre>`, one span per space-separated word of its `data-units`
+ * attribute at construction (`sha256: 9f86 d081` when it has none), or the text of its `data-text` attribute alone, with
+ * no slot, so the host's own light-DOM text is not rendered.
+ */
+export function defineCodeHelper(): void {
+  if (customElements.get("ocelle-test-code") !== undefined) return;
+  customElements.define(
+    "ocelle-test-code",
+    class extends HTMLElement {
+      connectedCallback(): void {
+        if (this.shadowRoot !== null) return;
+        const pre = document.createElement("pre");
+        pre.setAttribute("part", "code");
+        const text = this.getAttribute("data-text");
+        if (text !== null) pre.textContent = text;
+        else (this.getAttribute("data-units") ?? "sha256: 9f86 d081").split(" ").forEach((unit, index) => {
+          if (index > 0) pre.append(document.createElement("wbr"));
+          const span = document.createElement("span");
+          span.textContent = unit;
+          pre.append(span);
+        });
+        this.attachShadow({ mode: "open" }).append(pre);
+      }
+    },
+  );
+}
+
+export const codeBlockDriverScenarios: readonly Scenario[] = [
+  {
+    name: "copyShadow: a triple-click copy of a shadow pre gives its text, with the platform's one newline when content follows it; a second copy replaces the first, and neither is the sentinel",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="one">LIGHTTEXT</ocelle-test-code><ocelle-test-code id="two" data-units="sha512: abcd ef">OTHER</ocelle-test-code><p>After.</p>');
+      const one = await driver.copyShadow("one", "pre");
+      const two = await driver.copyShadow("two", "pre");
+      return { one, two };
+    },
+    expected: { one: "sha256:9f86d081\n", two: "sha512:abcdef\n" },
+  },
+  {
+    name: "copyShadow: the block last on the page copies its text with no newline",
+    run: async (driver) => {
+      await driver.mount('<p>Before.</p><ocelle-test-code id="last">LIGHTTEXT</ocelle-test-code>');
+      return await driver.copyShadow("last", "pre");
+    },
+    expected: "sha256:9f86d081",
+  },
+  {
+    name: "copyShadowRun: a run of two spans of a shadow pre copies exactly their characters, and a run from the first span to the last copies the whole text with no newline",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="run" data-units="sha256: 9f86 d081 884c">LIGHTTEXT</ocelle-test-code><p>After.</p>');
+      return { groups: await driver.copyShadowRun("run", "pre", 2, 4), whole: await driver.copyShadowRun("run", "pre", 0, 6) };
+    },
+    expected: { groups: "9f86d081", whole: "sha256:9f86d081884c" },
+  },
+  {
+    name: "ariaSnapshot: the shadow pre reads its units as one text run, where the host, read from a shadow root around it, also reads its unrendered light-DOM text",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="code">LIGHTTEXT</ocelle-test-code><div id="around"></div>');
+      await driver.shadow("around", '<ocelle-test-code id="inner-code">LIGHTTEXT</ocelle-test-code>');
+      return { pre: await driver.ariaSnapshot("code", "pre"), host: await driver.ariaSnapshot("around", "ocelle-test-code") };
+    },
+    expected: { pre: "- text: sha256:9f86d081", host: "- text: LIGHTTEXT sha256:9f86d081" },
+  },
+  {
+    name: "clientRects: each span of a one-line shadow pre has one rect, in tree order from left to right, and an element that is not there gives no list",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="rects">LIGHTTEXT</ocelle-test-code>');
+      const rects = await driver.clientRects("rects", "span");
+      const lefts = rects.map((each) => each[0]?.x ?? 0);
+      return { counts: rects.map((each) => each.length), ordered: lefts.every((x, index) => index === 0 || x > (lefts[index - 1] ?? 0)), none: await driver.clientRects("rects", "b") };
+    },
+    expected: { counts: [1, 1, 1], ordered: true, none: [] },
+  },
+  {
+    name: "characters: each code point of a shadow pre's text with its box; a line's first character is below the first line at the same left edge, and an astral code point is one entry",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="chars" data-text="ab&#10;c😀">LIGHTTEXT</ocelle-test-code>');
+      const chars = await driver.characters("chars", "pre");
+      const [a, b, , c] = chars;
+      return {
+        texts: chars.map((each) => each.text),
+        firstLine: a !== undefined && b !== undefined && b.x > a.x && b.y === a.y,
+        secondLine: a !== undefined && c !== undefined && c.y > a.y && Math.abs(c.x - a.x) < 0.5,
+      };
+    },
+    expected: { texts: ["a", "b", "\n", "c", "😀"], firstLine: true, secondLine: true },
   },
 ];

@@ -14,13 +14,25 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
 `--ocelle-list-detail-inspector-collapse` and `--ocelle-scroller-fade-size`, the five tokens of the workflow layouts of
 `@ocelle/elements`, are additions to the token names: a minor change.
 
+**Controls get their own hover, pressed, inset-focus and spinner tokens (mission 012, #50; part of #7).** Before,
+`ocelle-button` and `ocelle-action-row` had no token for a hovered border, a pressed surface, a focus ring drawn inside
+the row or a busy spinner's turn. Now seven tokens cover them, every motion duration is zeroed under reduced motion
+unless its name ends in `-delay`, and the token build refuses a misplaced delay marker or a duration that is not a
+literal `ms` value. The seven tokens are additions to the token names: a minor change.
+
 ### Added
+
+- **Configurable app-shell thresholds are a minor addition (mission 015, #12).**
+  `--ocelle-app-shell-narrow-below` (45rem) and `--ocelle-app-shell-collapse-below` (68.75rem) let hosts tune
+  when a frame switches between narrow drawer, collapsed navigation, and expanded navigation. The defaults are
+  published in both themes, and a valid explicit shell setting takes priority over the corresponding token.
 
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
   by `@font-face` in `tokens.css` with a relative URL; see the README for the CSP the host needs.
 - `tokens.css`: every token as an `--ocelle-*` custom property, light by default and with no system preference,
   dark under `prefers-color-scheme: dark` unless `data-theme="light"`, and under `data-theme="dark"` on `<html>`;
-  `--ocelle-motion-fast` and `--ocelle-motion-base` at `0ms` under `prefers-reduced-motion: reduce`.
+  every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-motion-spin`) at `0ms` under
+  `prefers-reduced-motion: reduce`.
 - `tokens.json`: the same tokens with their group and resolved light and dark (or one) value.
 - The package entry: `TokenName`, `tokenNames`, `tokens` and `cssName()`.
 - The tokens, by group:
@@ -52,7 +64,8 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-space-7`, 009)
   - shape: `--ocelle-radius-1`, `--ocelle-radius-2`, `--ocelle-radius-row`, `--ocelle-radius-shell`,
     `--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
-    `--ocelle-bar-width`, `--ocelle-ring-step`
+    `--ocelle-bar-width`, `--ocelle-ring-step`, and for the inside focus ring of `ocelle-action-row` (012)
+    `--ocelle-focus-offset-inset` (`calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px)
   - size: `--ocelle-target-min`, `--ocelle-icon-size`, `--ocelle-size-dot`, `--ocelle-size-step`,
     `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`, `--ocelle-tooltip-max-inline`
     (the maximum inline size of the `ocelle-tooltip` bubble; mission 008)
@@ -69,4 +82,17 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, `--ocelle-tooltip-delay` (the
-    hover delay of `ocelle-tooltip`, not zeroed under reduced motion; mission 008)
+    hover delay of `ocelle-tooltip`, not zeroed under reduced motion; mission 008), and for the busy spinner of
+    `ocelle-button` (012) `--ocelle-motion-spin` (one turn, `800ms`) and `--ocelle-motion-turn` (its angle, `1turn`)
+- The token build refuses a misplaced `delay: true` (only a motion token whose name ends in `-delay` may carry it)
+  and a motion duration that is not a literal `ms` value, such as `1s`, `var()` or `calc()` (mission 012).
+- The control tokens of `@ocelle/elements`' `ocelle-button` (mission 012), in the colour group:
+  `--ocelle-color-hover-border` (the border of a hovered or pressed bordered control, `--ocelle-color-ink` unless
+  overridden), `--ocelle-color-accent-hover` (a primary control's hover fill), `--ocelle-color-active-bg` (the pressed
+  surface of a secondary, quiet or flush control) and `--ocelle-color-chrome-active` (the pressed surface on the
+  chrome grounds); their contrast pairs, and `color-accent-strong` declared on every main and chrome ground, join the
+  contrast check. `--ocelle-color-ink-soft` is declared on the five state grounds too, for the description and
+  tags of `ocelle-action-row` (012).
+- `@ocelle/elements`' listbox, tabs and segmented choice (mission 014) draw their selected bars in
+  `color-accent-strong` on the main grounds, which the contrast check covers through the grounds above; no token
+  name, value or pair is added.

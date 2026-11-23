@@ -1,0 +1,88 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: <the pnpm store, path redacted>
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 483ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/integration/vitest-mutation-config.test.ts:85: unit-tests: vitest.mutation.config.ts holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser, storybook-integration, elements, elements-build, elements-browser and elements-browser-file, with tokens split for the start order: AssertionError: expected [ 'tokens', 'tokens-browser', …(10) ] to deeply equal [ 'tokens', 'tokens-browser', …(11) ]
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) press sends the key with its modifiers …: Error: focus: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) click gives one trusted left click by d…: Error: click: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) click presses the button it is given wi…: Error: click: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) a child target is the index-th child of…: Error: child targets: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) activeElement follows focus through nes…: Error: activeElement: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) mutate applies every step in one task (…: Error: mutate: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) afterResizeDelivery resolves after a Re…: Error: resize: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) computedPart reads a shadow part, that …: Error: computedPart: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) scrollOffset is the page's scroll posit…: Error: scrollOffset: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) keydownRecord gives each key and whethe…: Error: focus: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) clipboardCalls records navigator.clipbo…: Error: clipboardCalls: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) clipboardCalls records navigator.clipbo…: page.evaluate: NotAllowedError: Failed to execute 'read' on 'Clipboard': Read permission denied.
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) clipboardCalls records document.execCom…: Error: clipboardCalls: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) clipboardCalls records a copy or cut ev…: Error: clipboardCalls: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) activationRecord orders a deferred requ…: Error: activationRecord: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) activationRecord puts a synchronous req…: Error: activationRecord: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) axUpdates records the region emptied in…: Error: axUpdates: not implemented
+packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) axUpdates records the region emptied an…: Error: axUpdates: not implemented
+gates/test/vitest-config.test.ts:50: unit-tests: vitest.mutation.config.ts excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, elements-browser-file, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens: AssertionError: expected [ 'tokens-browser', …(6) ] to deeply equal [ 'tokens-browser', …(7) ]
+gates/test/vitest-config.test.ts:131: unit-tests: the Vitest projects put an element file: test in elements-browser-file only, a node project on exactly its own directory that provides the file-access flag: AssertionError: expected { owners: [ 'elements' ], …(5) } to deeply equal { …(6) }
+packages/elements/test/ax-states.test.ts:14: unit-tests: axStates(target, scope) gives a native listbox's orientation and, through its subtree, each option's selected and disabled states: TypeError: commands.axStates is not a function
+packages/elements/test/ax-states.test.ts:24: unit-tests: axStates(target, scope) addresses a child of a parent: the second option of the listbox: TypeError: commands.axStates is not a function
+packages/elements/test/ax-states.test.ts:29: unit-tests: axStates(target, scope) gives pressed as true, false or mixed, and disabled, for toggle buttons: TypeError: commands.axStates is not a function
+packages/elements/test/ax-states.test.ts:45: unit-tests: axStates(target, scope) maps aria-controls to the controlled node's role and name, and gives a tablist's orientation and a status's live value: TypeError: commands.axStates is not a function
+packages/elements/test/ax-states.test.ts:56: unit-tests: axStates(target, scope) leaves axTree's nodes exactly { role, name } for the same buttons: TypeError: commands.axStates is not a function
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) press sends the key with its modifiers …: Error: focus: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) click gives one trusted left click by d…: Error: click: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) click presses the button it is given wi…: Error: click: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) a child target is the index-th child of…: Error: child targets: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) activeElement follows focus through nes…: Error: activeElement: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) mutate applies every step in one task (…: Error: mutate: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) resize sets the inline size at once and…: Error: resize: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) afterResizeDelivery resolves after a Re…: Error: resize: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) computedPart reads a shadow part, that …: Error: computedPart: not implemented
+packages/elements/test/driver-commands.test.ts:20: unit-tests: the driver commands, in process (014 R-11) scrollOffset is the page's scroll posit…: Error: scrollOffset: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) keydownRecord gives each key and whethe…: Error: focus: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) clipboardCalls records navigator.clipbo…: Error: clipboardCalls: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) clipboardCalls records navigator.clipbo…: NotAllowedError: Failed to execute 'read' on 'Clipboard': Document is not focused.
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) clipboardCalls records document.execCom…: Error: clipboardCalls: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) clipboardCalls records a copy or cut ev…: Error: clipboardCalls: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) activationRecord orders a deferred requ…: Error: activationRecord: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) activationRecord puts a synchronous req…: Error: activationRecord: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) axUpdates records the region emptied in…: Error: axUpdates: not implemented
+packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) axUpdates records the region emptied an…: Error: axUpdates: not implemented
+unit-tests: 45 of 3156 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

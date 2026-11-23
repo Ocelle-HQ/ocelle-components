@@ -10,7 +10,7 @@
 // rows in a 300 px bound overflow in the block axis by 5 + 27 + 600 + 5 − 300 = 337 px (content 637 px); rows 600 px wide overflow a
 // 320 px host in the inline axis by 600 + 10 − 320 = 290 px. Every "does not" is paired with the positive outcome it
 // guards in the same body.
-import type { Driver, Target } from "./driver.ts";
+import type { Driver, ElementTarget } from "./driver.ts";
 import type { Scenario } from "./icon.ts";
 import { readOnce } from "./scroller.ts";
 
@@ -60,10 +60,10 @@ async function page(driver: Driver, markup: string, width = 1280): Promise<void>
   await driver.rules(rules);
 }
 
-const boxOf = (id: string): Target => ({ id, inner: ".region-box" });
+const boxOf = (id: string): ElementTarget => ({ id, inner: ".region-box" });
 
 /** A DOM property of a target, as a number. */
-async function prop(driver: Driver, target: Target, name: string): Promise<number> {
+async function prop(driver: Driver, target: ElementTarget, name: string): Promise<number> {
   return Number(await readOnce(driver, target, name));
 }
 
@@ -81,7 +81,7 @@ async function state(driver: Driver, id: string): Promise<Record<string, string 
     name: await boxAttribute(driver, id, "aria-label"),
     axis: await boxAttribute(driver, id, "data-axis"),
     blockFade: await boxAttribute(driver, id, "data-block-fade"),
-    overflowY: await driver.computed(boxOf(id), "overflow-y"),
+    overflowY: await driver.computed(id, "overflow-y", ".region-box"),
   };
 }
 
@@ -212,7 +212,7 @@ export const overflowBlockScenarios: readonly Scenario[] = [
       await page(driver, `${host("n", { rows: 3 })}${host("b", { bound: 300 })}${host("i", { rows: 3, wide: true, narrow: true })}${host("w", { bound: 300, wide: true, narrow: true })}`);
       return {
         neither: await state(driver, "n"),
-        block: { ...(await state(driver, "b")), gutter: await driver.computed(boxOf("b"), "scrollbar-gutter"), room: await scrollbarRoom(driver, "b") },
+        block: { ...(await state(driver, "b")), gutter: await driver.computed("b", "scrollbar-gutter", ".region-box"), room: await scrollbarRoom(driver, "b") },
         inline: await state(driver, "i"),
         both: await state(driver, "w"),
       };
@@ -269,7 +269,7 @@ export const overflowBlockScenarios: readonly Scenario[] = [
       const steps: unknown[] = [];
       for (const { key, shift } of keys) {
         const from = await driver.scrollTop(boxOf("b"));
-        await driver.press(key, { shift: shift === true });
+        await driver.inputPress(key, { shift: shift === true });
         await driver.frames(30);
         const to = await driver.scrollTop(boxOf("b"));
         steps.push({
@@ -369,10 +369,10 @@ export const overflowBlockScenarios: readonly Scenario[] = [
       await page(driver, host("i", { wide: true, narrow: true }));
       const read = async (): Promise<unknown> => ({
         axis: await boxAttribute(driver, "i", "data-axis"),
-        overflowY: await driver.computed(boxOf("i"), "overflow-y"),
-        gutter: await driver.computed(boxOf("i"), "scrollbar-gutter"),
+        overflowY: await driver.computed("i", "overflow-y", ".region-box"),
+        gutter: await driver.computed("i", "scrollbar-gutter", ".region-box"),
         room: await scrollbarRoom(driver, "i"),
-        layers: layers(await driver.computed(boxOf("i"), "mask-size")).length,
+        layers: layers(await driver.computed("i", "mask-size", ".region-box")).length,
       });
       const steps = [await read()];
       await driver.setAttribute("i", "data-bound", "300");
@@ -452,14 +452,14 @@ export const overflowBlockScenarios: readonly Scenario[] = [
     run: async (driver) => {
       await page(driver, `${host("l", { wide: true, narrow: true, bound: 300 })}<div dir="rtl">${host("r", { wide: true, narrow: true, bound: 300 })}</div>`);
       const read = async (id: string): Promise<unknown> => ({
-        size: layers(await driver.computed(boxOf(id), "mask-size")),
-        composite: layers(await driver.computed(boxOf(id), "mask-composite")),
-        first: layers(await driver.computed(boxOf(id), "mask-position"))[0],
+        size: layers(await driver.computed(id, "mask-size", ".region-box")),
+        composite: layers(await driver.computed(id, "mask-composite", ".region-box")),
+        first: layers(await driver.computed(id, "mask-position", ".region-box"))[0],
         fades: [await boxAttribute(driver, id, "data-fade"), await boxAttribute(driver, id, "data-block-fade")],
       });
       const bounded = { ltr: await read("l"), rtl: await read("r") };
       await driver.setAttribute("l", "data-bound", null);
-      const lifted = { size: layers(await driver.computed(boxOf("l"), "mask-size")), composite: layers(await driver.computed(boxOf("l"), "mask-composite")) };
+      const lifted = { size: layers(await driver.computed("l", "mask-size", ".region-box")), composite: layers(await driver.computed("l", "mask-composite", ".region-box")) };
       return { bounded, lifted };
     },
     expected: {
@@ -481,7 +481,7 @@ export const overflowBlockScenarios: readonly Scenario[] = [
       const rest = { blockFade: await boxAttribute(driver, "b", "data-block-fade"), belowPin: (await fadeTop(driver, "b")) >= pin.y + pin.height - 0.5, edge: { width: edge.width, height: edge.height } };
       await driver.setScrollTop(boxOf("b"), 1000);
       const end = { blockFade: await boxAttribute(driver, "b", "data-block-fade"), position: await position(driver, "b") };
-      await driver.focus(boxOf("b"));
+      await driver.focusTarget(boxOf("b"));
       await driver.chord("ArrowUp");
       const back = await boxAttribute(driver, "b", "data-block-fade");
       const below = (await prop(driver, boxOf("s"), "scrollHeight")) - (await prop(driver, boxOf("s"), "clientHeight"));
@@ -506,7 +506,7 @@ export const overflowBlockScenarios: readonly Scenario[] = [
         const edge = await driver.box("b", ".region-edge.block-end");
         const frame = await driver.box("b", ".region-frame");
         return {
-          mask: await driver.computed(boxOf("b"), "mask-image"),
+          mask: await driver.computed("b", "mask-image", ".region-box"),
           style: await driver.shadowComputed("b", ".region-edge.block-end", "border-block-end-style"),
           colourIsCanvasText: (await driver.shadowComputed("b", ".region-edge.block-end", "border-block-end-color")) === canvasText,
           widthAboveZero: Number.parseFloat(await driver.shadowComputed("b", ".region-edge.block-end", "border-block-end-width")) > 0,
@@ -595,7 +595,7 @@ export const overflowBlockScenarios: readonly Scenario[] = [
       const partly = Math.round(linkAtRest + 7);
       await driver.setScrollTop(boxOf("t"), partly);
       const above = box.y - (await driver.box("t-cl")).y;
-      await driver.focus(boxOf("t"));
+      await driver.focusTarget(boxOf("t"));
       const jump = await noJumpBack(driver, "t", () => driver.pressTab());
       const ring = await ringOf(driver, "t-cl");
       const pin = await driver.box("t-pin");
@@ -610,7 +610,7 @@ export const overflowBlockScenarios: readonly Scenario[] = [
       };
       const cap = await driver.box("t-cap");
       await driver.setScrollTop(boxOf("t"), cap.height + 2 * room + 40);
-      await driver.focus(boxOf("t"));
+      await driver.focusTarget(boxOf("t"));
       await driver.pressTab();
       const whole = await driver.box("t-cl");
       const pinNow = await driver.box("t-pin");
@@ -728,7 +728,7 @@ export const overflowBlockGuards: readonly Scenario[] = [
     name: "block axis off (guard): the same host without the option does not handle ArrowDown, has no `data-axis` and no `data-block-fade` although its content is taller than its bound, and keeps 009's two-layer `mask-size`; paired with the option on carrying `data-axis=both`",
     run: async (driver) => {
       await page(driver, `${host("o", { wide: true, narrow: true, bound: 300, axis: false })}${host("w", { wide: true, narrow: true, bound: 300 })}`);
-      await driver.focus(boxOf("o"));
+      await driver.focusTarget(boxOf("o"));
       await driver.chord("ArrowDown");
       const arrowDown = { prevented: await driver.lastKeyPrevented(), scrollTop: await driver.scrollTop(boxOf("o")) };
       await driver.chord("ArrowRight");
@@ -739,7 +739,7 @@ export const overflowBlockGuards: readonly Scenario[] = [
           axis: await boxAttribute(driver, "o", "data-axis"),
           blockFade: await boxAttribute(driver, "o", "data-block-fade"),
           taller: (await prop(driver, boxOf("o"), "scrollHeight")) > (await prop(driver, boxOf("o"), "clientHeight")) + 1,
-          size: layers(await driver.computed(boxOf("o"), "mask-size")),
+          size: layers(await driver.computed("o", "mask-size", ".region-box")),
         },
         on: await boxAttribute(driver, "w", "data-axis"),
       };
@@ -756,7 +756,7 @@ export const overflowBlockGuards: readonly Scenario[] = [
     name: "block axis absent (guard): a host built without the option, as 009's are, does not handle ArrowDown and has no `data-axis` or `data-block-fade` although its content is taller than its bound; paired with the block host carrying `data-axis=both`",
     run: async (driver) => {
       await page(driver, `${host("p", { wide: true, narrow: true, bound: 300, axis: false, tag: "ocelle-test-overflow-plain" })}${host("w", { wide: true, narrow: true, bound: 300 })}`);
-      await driver.focus(boxOf("p"));
+      await driver.focusTarget(boxOf("p"));
       await driver.chord("ArrowDown");
       return {
         arrowDown: { prevented: await driver.lastKeyPrevented(), scrollTop: await driver.scrollTop(boxOf("p")) },

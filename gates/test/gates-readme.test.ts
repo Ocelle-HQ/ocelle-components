@@ -36,6 +36,22 @@ describe("gates/README.md (002 FR-022)", () => {
     for (const plant of ["a-monospace", "b-ochre-pair-not-excluded", "g-forced-colours-override", "g-system-colour-mapping", "source-invalid"]) expect(row("brand-rules")?.[4]).toContain(plant);
   });
 
+  // 012 (plan decision 29; operator decision at phase 4, option (a); tasks.md T042a, T045a): the brand-rules row records
+  // that 012 changed 002's rule (f) to every motion duration of the token source at 0ms, and lists its new plant.
+  it("records in the brand-rules row that 012 changed rule (f) to every motion duration at 0ms, and lists f-motion-spin-missing beside f-motion-not-zero", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`brand-rules`");
+    expect(row?.[3]).toContain("reduced motion at 0ms for every motion duration of the token source (012 changed 002's rule (f), which named two)");
+    expect(["f-motion-not-zero", "f-motion-spin-missing"].filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``))).toEqual([]);
+  });
+
+  // 012 phase 4 round 2 (operator round of 2026-11-17, O2-01 and O2-02; plan decision 29 as amended): the brand-rules
+  // row lists the plants of a misplaced delay marker and a motion duration that is not a literal ms value.
+  it("lists f-delay-marker-misplaced and f-motion-not-ms in the brand-rules row, beside f-motion-not-zero and f-motion-spin-missing", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`brand-rules`");
+    const plants = ["f-motion-not-zero", "f-motion-spin-missing", "f-delay-marker-misplaced", "f-motion-not-ms"];
+    expect(plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``))).toEqual([]);
+  });
+
   it("names, in the style-lint row, the classified linear-gradient() arguments and their plants (009 contracts/gates.md § `style-lint`, T022)", () => {
     const gates = rows(section("The gates"));
     const row = gates.find((cells) => cells[0] === "`style-lint`");

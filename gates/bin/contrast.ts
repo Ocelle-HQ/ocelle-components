@@ -113,5 +113,5 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   }
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/token-gates.test.ts "contrast --root <repo> checks 169 pairs in light and 177 in dark, 158 required per theme"
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/token-gates.test.ts "contrast --root <repo> checks 207 pairs in light and 215 in dark, 196 required per theme"
 if (import.meta.main) await main(run);

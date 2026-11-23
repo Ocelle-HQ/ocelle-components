@@ -1,0 +1,4 @@
+# Aggregate verdict plant support. The plant file is excluded from Vitest itself.
+gates/test/plant-runner.test.ts
+gates/test/plants.test.ts
+gates/test/vitest-config.test.ts

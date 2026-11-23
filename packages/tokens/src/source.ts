@@ -1,7 +1,7 @@
 // The token source (FR-008, research.md R-01, data-model.md § Token): every token of spec Appendix A as a record, in
 // the order of its tables. Each record's use (Appendix A's "Use" column) is the comment beside it, not data
 // (PLAN-TESTABILITY-1-003 (a)). A derived token (FR-002) writes its source as var(--ocelle-<name>) and lists it in
-// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 158 required pairs per theme).
+// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 149 required pairs per theme, 158 with 011's, 196 with 012's too).
 // `source` is the records with the overrides of overrides.ts applied; the generator, the build and the gates read it.
 // No type assertion wraps the records or the ground lists (`as const`, `satisfies`): Stryker does not mutate inside
 // one, so the values would go untested (op 004). `tokenRecords` keeps the names literal and checks each record instead.
@@ -40,9 +40,15 @@ export const records = tokenRecords([
   { name: "color-inspector", group: "colour", value: { light: "#F1EEE8", dark: "#15130F" } }, // right inspector, ruled off
   { name: "color-rail", group: "colour", value: { light: "#E9E5DD", dark: "#1C1A15" } }, // context sidebar
   { name: "color-inset", group: "colour", value: { light: "#E2DDD3", dark: "#302B23" } }, // wells, digest backgrounds
-  { name: "color-ink", group: "colour", value: { light: "#15130F", dark: "#EDE9E1" }, contrast: { kind: "text", grounds: main } }, // body text
+  // body text; on the state grounds (010 R-04) and the pressed surface of a control too (012 research.md R-08 item 1)
+  {
+    name: "color-ink",
+    group: "colour",
+    value: { light: "#15130F", dark: "#EDE9E1" },
+    contrast: { kind: "text", grounds: [...main, ...stateGrounds, "color-active-bg"] },
+  },
   // secondary headings
-  { name: "color-ink-soft", group: "colour", value: { light: "#3F3A33", dark: "#CFC9BE" }, contrast: { kind: "text", grounds: main } },
+  { name: "color-ink-soft", group: "colour", value: { light: "#3F3A33", dark: "#CFC9BE" }, contrast: { kind: "text", grounds: [...main, ...stateGrounds] } }, // the action row's description and tags (012)
   // muted text
   { name: "color-ink-muted", group: "colour", value: { light: "#5E584F", dark: "#A39D92" }, contrast: { kind: "text", grounds: main } },
   // eyebrow text, the muted ink (011)
@@ -63,20 +69,36 @@ export const records = tokenRecords([
     contrast: { kind: "non-text", grounds: ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail"] },
   },
   { name: "color-chrome", group: "colour", value: { light: "#15130F", dark: "#0D0C0A" } }, // top bar, icon rail, personal rail
-  { name: "color-chrome-ink", group: "colour", value: { light: "#EDE9E1", dark: "#EDE9E1" }, contrast: { kind: "text", grounds: chrome } }, // on chrome
+  // on chrome, and on the pressed surface of a control there (012 research.md R-08 item 4a)
+  {
+    name: "color-chrome-ink",
+    group: "colour",
+    value: { light: "#EDE9E1", dark: "#EDE9E1" },
+    contrast: { kind: "text", grounds: [...chrome, "color-chrome-active"] },
+  },
   { name: "color-chrome-muted", group: "colour", value: { light: "#A39D92", dark: "#A39D92" }, contrast: { kind: "text", grounds: chrome } }, // on chrome
   // on chrome; light #211D18 replaces #5's #2A261F so the focus ring meets 3:1 on it (research.md R-04, SPEC-2-01)
   { name: "color-chrome-hover", group: "colour", value: { light: "#211D18", dark: "#24211B" } },
+  // the pressed surface of a control on chrome (012 research.md R-08 item 4a, plan decision 20)
+  { name: "color-chrome-active", group: "colour", value: { light: "#3A342B", dark: "#3A342B" } },
   { name: "color-accent", group: "colour", value: { light: "#C68A1E", dark: "#C68A1E" } }, // ochre fill
-  // black on the ochre fill
-  { name: "color-on-accent", group: "colour", value: { light: "#15130F", dark: "#15130F" }, contrast: { kind: "text", grounds: ["color-accent"] } },
+  { name: "color-accent-hover", group: "colour", value: { light: "#D9A23F", dark: "#D9A23F" } }, // the primary control's hover fill (012)
+  // black on the ochre fill and on its hover fill
+  {
+    name: "color-on-accent",
+    group: "colour",
+    value: { light: "#15130F", dark: "#15130F" },
+    contrast: { kind: "text", grounds: ["color-accent", "color-accent-hover"] },
+  },
   { name: "color-accent-low", group: "colour", value: { light: "#F1E1C0", dark: "#3A2B10" } }, // selected rows, current nav
-  // current bar, focus ring; the border of a control on accent-low, inset, hover-bg and the state grounds (#5 rule 1, extended)
+  // current bar, focus ring; the border of a control on accent-low, inset, hover-bg and the state grounds (#5 rule 1,
+  // extended), and the primary control's border on every ground, chrome included (012 research.md R-08 items 4a, 5)
   {
     name: "color-accent-strong",
     group: "colour",
     value: { light: "#8F5E0F", dark: "#E0A23A" },
-    contrast: { kind: "non-text", grounds: ["color-accent-low", "color-inset", "color-hover-bg", ...stateGrounds] },
+    // on the main grounds also the selected bars of the listbox, tabs and segmented choice (014 research.md R-17)
+    contrast: { kind: "non-text", grounds: [...main, ...stateGrounds, ...chrome] },
   },
   // focus ring
   {
@@ -99,12 +121,21 @@ export const records = tokenRecords([
   // links on hover
   { name: "color-link-hover", group: "colour", value: { light: "#15130F", dark: "#F7F4EE" }, contrast: { kind: "text", grounds: main } },
   { name: "color-hover-bg", group: "colour", value: { light: "#E2DDD3", dark: "#2A261F" } }, // hovered rows and controls
+  // the border of a hovered or pressed bordered control, color-ink unless a host overrides it (012 research.md R-08 item 3, #525)
+  {
+    name: "color-hover-border",
+    group: "colour",
+    value: { light: "var(--ocelle-color-ink)", dark: "var(--ocelle-color-ink)" },
+    ref: { light: ["color-ink"], dark: ["color-ink"] },
+    contrast: { kind: "non-text", grounds: [...main, ...stateGrounds, "color-active-bg"] },
+  },
+  { name: "color-active-bg", group: "colour", value: { light: "#D3CCBF", dark: "#3A342B" } }, // pressed secondary, quiet and flush controls (012)
   // disabled text; exempt from the threshold (WCAG 1.4.3, FR-017)
   {
     name: "color-disabled-ink",
     group: "colour",
     value: { light: "#6F685D", dark: "#8C8579" },
-    contrast: { kind: "text", grounds: [...main, "color-disabled-bg"], exempt: true },
+    contrast: { kind: "text", grounds: [...main, "color-disabled-bg", ...chrome], exempt: true },
   },
   { name: "color-disabled-bg", group: "colour", value: { light: "#E6E1D8", dark: "#2A261F" } }, // disabled controls
   { name: "color-overlay", group: "colour", value: { light: "rgb(21 19 15 / 0.5)", dark: "rgb(0 0 0 / 0.65)" } }, // dialog backdrop
@@ -174,6 +205,8 @@ export const records = tokenRecords([
   { name: "border-width", group: "shape", value: "1px" },
   { name: "focus-width", group: "shape", value: "3px" }, // focus ring width
   { name: "focus-offset", group: "shape", value: "2px" }, // focus ring offset
+  // the negative offset that draws a focus ring inside a box, the row's ring (012 research.md R-12)
+  { name: "focus-offset-inset", group: "shape", value: "calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))", ref: ["focus-offset", "focus-width"] },
   { name: "bar-width", group: "shape", value: "3px" }, // current bar width
   { name: "ring-step", group: "shape", value: "1.5px" },
   { name: "target-min", group: "size", value: "2.75rem" }, // 44px minimum target (spec-kitty-design#532)
@@ -194,6 +227,8 @@ export const records = tokenRecords([
   { name: "shell-main-max", group: "shell", value: "48rem" },
   { name: "shell-collapse-inspector", group: "shell", value: "75rem" },
   { name: "shell-collapse-sidebar", group: "shell", value: "45rem" },
+  { name: "app-shell-narrow-below", group: "shell", value: "45rem" },
+  { name: "app-shell-collapse-below", group: "shell", value: "68.75rem" },
   { name: "shell-height", group: "shell", value: "100dvh" },
   { name: "footer-h", group: "shell", value: "4.5rem" },
   { name: "measure-sheet", group: "shell", value: "var(--ocelle-shell-main-max)", ref: ["shell-main-max"] },
@@ -246,9 +281,12 @@ export const records = tokenRecords([
   { name: "elevation-bar", group: "elevation", value: { light: "0 -6px 16px rgb(21 19 15 / 0.05)", dark: "none" } }, // bottom bars
   { name: "motion-fast", group: "motion", value: "120ms" }, // 0ms under reduced motion
   { name: "motion-base", group: "motion", value: "200ms" }, // 0ms under reduced motion
+  { name: "motion-spin", group: "motion", value: "800ms" }, // one turn of the busy spinner (012); 0ms under reduced motion
+  { name: "motion-turn", group: "motion", value: "1turn" }, // the spinner's angle of one turn (012); not a duration
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
   // the tooltip's hover delay; not 0ms under reduced motion, because a delay is not motion (008 research.md R-09)
-  { name: "tooltip-delay", group: "motion", value: "500ms" },
+  // marked as a delay (operator decision C1), so the reduced-motion block leaves it
+  { name: "tooltip-delay", group: "motion", value: "500ms", delay: true },
 ]);
 
 export const source: readonly TokenRecord[] = applyOverrides(records, overrides);

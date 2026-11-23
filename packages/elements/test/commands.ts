@@ -8,12 +8,24 @@
 // `axTree` and `emulateForcedColors` below (registered in vitest.config.ts), the fixture suites through a Playwright
 // CDP session on their page.
 //
+// 012 adds (research.md R-11; contracts/checks.md § Test harness) the Node side of the interaction, state and axe
+// methods, again one function for both harnesses, each acting on a Playwright `Frame` (the test's frame in process, the
+// fixture page's main frame): `press`, `pointer` (hover, click with `force: true`, press and release of the mouse),
+// `axState` (one element's accessibility node), `emulateMotion` and `audit` (axe-core with 006's rule selection,
+// gates/lib/axe-rules.ts). They are the browser commands `press`, `hover`, `pointer`, `emulateReducedMotion`, `axe`
+// and `axState` below. Ending forced colours (`emulate(page, "none")`) leaves reduced motion alone (013 research.md
+// R-08; operator decision A1, 2026-11-16), so a test file's reset ends both.
+//
 // 008 adds (research.md R-14): `axTree` also gives a node's description and its modal flag where Chromium reports
 // them; `pointerPath(steps)`, which drives `page.mouse`, and `touchTap(x, y)`, which drives `page.touchscreen`, both at
 // points of the test's frame with the frame's offset and scale in the runner page added. Reduced motion is 013's
 // `emulateReducedMotion(mode)`, which forced colours leave alone, so each test file's reset helper ends both.
-import type { CDPSession, Frame, Page } from "playwright";
+import { createRequire } from "node:module";
+import type { CDPSession, Frame, Locator, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
+import { ruleMeta, ruleOptions } from "../../../gates/lib/axe-rules.ts";
+import type { AxeRule } from "../../../gates/lib/axe-rules.ts";
+import type { AxeResult, AxState, ClickOptions, Modifier } from "./scenarios/driver.ts";
 
 /**
  * One unignored accessibility node: its role and its computed name, for a heading its level (011 research.md R-13;
@@ -33,6 +45,55 @@ export interface AxNode {
   readonly valuemin?: number;
   readonly valuemax?: number;
   readonly valuetext?: string;
+}
+
+/**
+ * What a driver command acts on (014 research.md R-11): an element's `id`, or the `index`-th element child of tag `kind`
+ * of the element with id `parent` (the parent's own children, not its shadow root's).
+ */
+export type Target = string | { readonly parent: string; readonly kind: string; readonly index: number };
+
+/**
+ * One unignored accessibility node with its states (014 research.md R-11, PLAN-TESTABILITY-1-014): its role and name,
+ * and each of `selected`, `pressed`, `disabled`, `orientation`, `live` and `controls` that Chromium reports for it;
+ * `controls` as the controlled nodes' roles and names. `AxNode` keeps its own fields.
+ */
+export interface AxNodeState {
+  readonly role: string;
+  readonly name: string;
+  readonly selected?: boolean;
+  readonly pressed?: boolean | "mixed";
+  readonly disabled?: boolean;
+  readonly orientation?: string;
+  readonly live?: string;
+  readonly controls?: readonly AxNode[];
+}
+
+/**
+ * One `Accessibility.nodesUpdated` update of a node of a recorded subtree (014 research.md R-07, R-11): its role, its
+ * `live` politeness (empty when it has none) and its text, the names of its static-text descendants joined.
+ */
+export interface AxUpdate {
+  readonly role: string;
+  readonly live: string;
+  readonly text: string;
+}
+
+/**
+ * One unignored accessibility node with its description and the states a form control's node carries
+ * (specs/010-feedback-forms US2: "the focused control's node" reports its name, description and invalid state): `host`
+ * marks the node of the element itself; `invalid` is Chromium's token (`"true"`, `"false"`, or `""` when absent), and
+ * an absent boolean state reads false.
+ */
+export interface AxDetail extends AxNode {
+  readonly host: boolean;
+  readonly description: string;
+  readonly invalid: string;
+  readonly required: boolean;
+  readonly disabled: boolean;
+  readonly readonly: boolean;
+  readonly focused: boolean;
+  readonly focusable: boolean;
 }
 
 /** A box relative to the viewport. */
@@ -74,12 +135,20 @@ export type ForcedColors = "active" | "none";
 export type Palette = "light" | "dark";
 
 interface DomNode {
+  readonly nodeId: number;
   readonly backendNodeId: number;
+  readonly nodeType?: number;
+  readonly localName?: string;
   readonly frameId?: string;
   readonly attributes?: readonly string[];
   readonly children?: readonly DomNode[];
   readonly shadowRoots?: readonly DomNode[];
   readonly contentDocument?: DomNode;
+}
+
+interface RawAxProperty {
+  readonly name: string;
+  readonly value: { readonly value?: unknown; readonly relatedNodes?: readonly { readonly backendDOMNodeId?: number; readonly idref?: string }[] };
 }
 
 interface RawAxNode {
@@ -91,7 +160,7 @@ interface RawAxNode {
   readonly name?: { readonly value?: unknown };
   readonly description?: { readonly value?: unknown };
   readonly value?: { readonly value?: unknown };
-  readonly properties?: readonly { readonly name: string; readonly value?: { readonly value?: unknown } }[];
+  readonly properties?: readonly RawAxProperty[];
 }
 
 interface FrameTree {
@@ -111,7 +180,7 @@ function text(value: unknown): string {
  */
 function reported(node: RawAxNode): AxNode {
   const role = text(node.role?.value);
-  const property = (name: string): unknown => node.properties?.find((each) => each.name === name)?.value?.value;
+  const property = (name: string): unknown => node.properties?.find((each) => each.name === name)?.value.value;
   const level = property("level");
   const named = role === "heading" && typeof level === "number" ? { role, name: text(node.name?.value), level } : { role, name: text(node.name?.value) };
   const description = text(node.description?.value);
@@ -140,6 +209,13 @@ function byId(node: DomNode, id: string): DomNode | undefined {
     if (found !== undefined) return found;
   }
   return undefined;
+}
+
+/** The node a target names: the element with the id, or the index-th element child of tag `kind` of the parent with the id. */
+function byTarget(node: DomNode, target: Target): DomNode | undefined {
+  if (typeof target === "string") return byId(node, target);
+  const parent = byId(node, target.parent);
+  return (parent?.children ?? []).filter((child) => child.nodeType === 1 && child.localName === target.kind)[target.index];
 }
 
 /** The document of the frame `frameId`: the root itself, or the content document of the frame owner that holds it. */
@@ -173,6 +249,40 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
   return nodes
     .filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId))
     .map(reported);
+}
+
+/** The value of the property `name` of `node`, or undefined. */
+function propertyOf(node: RawAxNode, name: string): unknown {
+  return node.properties?.find((property) => property.name === name)?.value.value;
+}
+
+/**
+ * The unignored accessibility nodes of the element with `id` and of its shadow subtree, as `axNodes` reads them, each
+ * with its description and states (`AxDetail`).
+ */
+export async function axDetails(session: CDPSession, id: string, frameId?: string): Promise<AxDetail[]> {
+  const { root } = (await session.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: DomNode };
+  const document = documentOf(root, frameId);
+  const element = document === undefined ? undefined : byId(document, id);
+  if (element === undefined) return [];
+  const ids = new Set<number>([element.backendNodeId]);
+  for (const shadow of element.shadowRoots ?? []) collect(shadow, ids);
+  const params = frameId === undefined ? {} : { frameId };
+  const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
+  return nodes
+    .filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId))
+    .map((node) => ({
+      role: text(node.role?.value),
+      name: text(node.name?.value),
+      host: node.backendDOMNodeId === element.backendNodeId,
+      description: text(node.description?.value),
+      invalid: text(propertyOf(node, "invalid")),
+      required: propertyOf(node, "required") === true,
+      disabled: propertyOf(node, "disabled") === true,
+      readonly: propertyOf(node, "readonly") === true,
+      focused: propertyOf(node, "focused") === true,
+      focusable: propertyOf(node, "focusable") === true,
+    }));
 }
 
 /**
@@ -218,11 +328,134 @@ async function frameIdOf(session: CDPSession, url: string): Promise<string | und
 /**
  * Emulates forced colours (`active` with a light or dark system palette) or ends the emulation (`none`). Ending it also
  * puts the page back in the light colour scheme the fixture contexts start in (browser/serve.ts), so a dark palette
- * never leaks into later tests on the same page (005 phase 4 review R1-01).
+ * never leaks into later tests on the same page (005 phase 4 review R1-01). It leaves reduced motion alone (013
+ * research.md R-08; operator decision A1, 2026-11-16): `emulateMotion` ends that.
  */
 export async function emulate(page: Page, mode: ForcedColors, palette?: Palette): Promise<void> {
-  const scheme = mode === "none" ? "light" : palette;
-  await page.emulateMedia(scheme === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: scheme });
+  if (mode === "none") {
+    await page.emulateMedia({ forcedColors: "none", colorScheme: "light" });
+    return;
+  }
+  await page.emulateMedia(palette === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: palette });
+}
+
+/** The element with `id` in `frame`, or the first element matching `inner` in its shadow root. */
+function locate(frame: Frame, id: string, inner?: string): Locator {
+  const host = frame.locator(`[id="${id}"]`);
+  return inner === undefined ? host : host.locator(inner).first();
+}
+
+/** Presses `key` on `page`'s keyboard (the focused frame gets it) with `modifiers` held, released in reverse order. */
+export async function press(page: Page, key: string, modifiers: readonly Modifier[] = []): Promise<void> {
+  for (const modifier of modifiers) await page.keyboard.down(modifier);
+  await page.keyboard.press(key);
+  for (const modifier of [...modifiers].reverse()) await page.keyboard.up(modifier);
+}
+
+/** A pointer action: move to the element (`hover`), click it, or press (`down`) or release (`up`) the left button there. */
+export type PointerAction = "hover" | "click" | "down" | "up";
+
+/**
+ * Moves `page`'s mouse to the centre of the element with `id` in `frame` (or its shadow element `inner`), Playwright's
+ * actionability checks skipped (`force: true`, 012 research.md R-06), and clicks, presses or releases there; a click
+ * lands at `options.position` from the element's top-left corner when given.
+ */
+export async function pointer(page: Page, frame: Frame, action: PointerAction, id: string, options: ClickOptions = {}): Promise<void> {
+  const target = locate(frame, id, options.inner);
+  if (action === "click") {
+    await target.click({
+      force: true,
+      ...(options.modifiers === undefined ? {} : { modifiers: [...options.modifiers] }),
+      ...(options.button === undefined ? {} : { button: options.button }),
+      ...(options.position === undefined ? {} : { position: { x: options.position.x, y: options.position.y } }),
+    });
+    return;
+  }
+  await target.hover({ force: true });
+  if (action === "down") await page.mouse.down();
+  if (action === "up") await page.mouse.up();
+}
+
+/** A boolean AX property, false when Chromium does not report it (Chromium reports `busy` as the number 1). */
+function flag(node: RawAxNode, name: string): boolean {
+  const value = node.properties?.find((each) => each.name === name)?.value.value;
+  return value === true || value === 1;
+}
+
+/** An AX property's value as text, or null when Chromium does not report it. */
+function token(node: RawAxNode, name: string): string | null {
+  const value = node.properties?.find((each) => each.name === name)?.value.value;
+  if (typeof value === "string") return value;
+  return typeof value === "boolean" || typeof value === "number" ? String(value) : null;
+}
+
+/**
+ * The accessibility node of the element with `id` in the frame `frameId` (the main frame when undefined), or of the
+ * first element matching `inner` in its shadow root, as `AxState` (012 research.md R-11).
+ */
+export async function axStateOf(session: CDPSession, id: string, inner?: string, frameId?: string): Promise<AxState> {
+  const { root } = (await session.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: DomNode };
+  const document = documentOf(root, frameId);
+  const element = document === undefined ? undefined : byId(document, id);
+  if (element === undefined) throw new Error(`axState: no #${id} on the page`);
+  let backendNodeId = element.backendNodeId;
+  if (inner !== undefined) {
+    const shadow = element.shadowRoots?.[0];
+    if (shadow === undefined) throw new Error(`axState: #${id} has no shadow root`);
+    const { nodeId } = await session.send("DOM.querySelector", { nodeId: shadow.nodeId, selector: inner });
+    if (nodeId === 0) throw new Error(`axState: no ${inner} in the shadow root of #${id}`);
+    ({ node: { backendNodeId } } = await session.send("DOM.describeNode", { nodeId }));
+  }
+  const { nodes } = (await session.send("Accessibility.getPartialAXTree", { backendNodeId, fetchRelatives: false })) as { nodes: readonly RawAxNode[] };
+  const node = nodes.find((each) => each.backendDOMNodeId === backendNodeId);
+  if (node === undefined) throw new Error(`axState: no accessibility node for #${id}${inner === undefined ? "" : ` ${inner}`}`);
+  const expanded = node.properties?.find((each) => each.name === "expanded")?.value.value;
+  const controls = node.properties?.find((each) => each.name === "controls")?.value.relatedNodes ?? [];
+  return {
+    role: text(node.role?.value),
+    name: text(node.name?.value),
+    description: text(node.description?.value),
+    disabled: flag(node, "disabled"),
+    expanded: typeof expanded === "boolean" ? expanded : null,
+    pressed: token(node, "pressed"),
+    hasPopup: token(node, "hasPopup"),
+    busy: flag(node, "busy"),
+    focusable: flag(node, "focusable"),
+    controls: controls.map((each) => each.idref ?? ""),
+  };
+}
+
+/** axe-core's script and the `rules` option of 006's selection, from axe-core's own rule objects (as gates/bin/axe.ts). */
+export function axeSetup(): { readonly path: string; readonly rules: Record<string, { readonly enabled: boolean }> } {
+  const require = createRequire(import.meta.url);
+  const core = require("axe-core") as { readonly _audit: { readonly rules: readonly AxeRule[] } };
+  return { path: require.resolve("axe-core/axe.min.js"), rules: ruleOptions(ruleMeta(core._audit.rules)) };
+}
+
+/**
+ * Runs axe-core in `frame` on the whole document, or on the element with `scope`, with `rules`, after `load` has put
+ * `window.axe` there when it is missing; its violations and incomplete results of every impact, so a test sees that a
+ * rule 006 leaves out (a moderate harness-document rule such as `region`) gives nothing.
+ */
+export async function audit(frame: Frame, load: () => Promise<unknown>, rules: Readonly<Record<string, { readonly enabled: boolean }>>, scope?: string): Promise<AxeResult[]> {
+  if (!(await frame.evaluate(() => "axe" in window))) await load();
+  return frame.evaluate(
+    async ({ rules, scope }) => {
+      interface Result {
+        readonly id: string;
+        readonly impact?: string | null;
+        readonly nodes: readonly { readonly target: readonly (string | readonly string[])[] }[];
+      }
+      const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: Result[]; incomplete: Result[] }> } }).axe;
+      const context = scope === undefined ? document : document.getElementById(scope);
+      if (context === null) throw new Error(`axe: no #${scope ?? ""} on the page`);
+      const results = await axe.run(context, { rules, resultTypes: ["violations", "incomplete"] });
+      const listed = (list: readonly Result[], kind: "violation" | "incomplete"): AxeResult[] =>
+        list.map((result) => ({ id: result.id, impact: result.impact ?? "", kind, targets: result.nodes.map((node) => node.target.map((part) => (typeof part === "string" ? part : part.join(" >>> "))).join(" >>frame>> ")) }));
+      return [...listed(results.violations, "violation"), ...listed(results.incomplete, "incomplete")];
+    },
+    { rules, scope },
+  );
 }
 
 /** One step of a pointer path: a point, and a press or release of `button` (`left`) there. */
@@ -273,23 +506,195 @@ export async function emulateMotion(page: Page, mode: ReducedMotion): Promise<vo
   await page.emulateMedia({ reducedMotion: mode });
 }
 
-/** Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree (`axSubtree`). */
-export type AxScope = "element" | "subtree";
+/**
+ * Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree
+ * (`axSubtree`); `"details"` reads the nodes of `axNodes` with their descriptions and states (`axDetails`).
+ */
+export type AxScope = "element" | "subtree" | "details";
+
+/**
+ * Which nodes `axStates` reads (014): as `axTree`'s `"element"` and `"subtree"`, or `"ancestors"` (014 phase 3), the
+ * unignored ancestors of the target's node in the accessibility tree, nearest first, the root included. Kept apart from
+ * `AxScope` since main's `"details"` (the second merge of main).
+ */
+export type AxStatesScope = "element" | "subtree" | "ancestors";
 
 /**
  * The `axTree(id, scope)` browser command (registered in vitest.config.ts): `axNodes`, or with `"subtree"` `axSubtree`,
  * in the frame of the calling test file.
  */
-export async function axTree(context: BrowserCommandContext, id: string, scope: AxScope = "element"): Promise<AxNode[]> {
+export async function axTree(context: BrowserCommandContext, id: string, scope: AxScope = "element"): Promise<AxNode[] | AxDetail[]> {
   const session = await context.page.context().newCDPSession(context.page);
   try {
     const frame = await context.frame();
     const frameId = await frameIdOf(session, frame.url());
     if (frameId === undefined) throw new Error(`axTree: no frame has the test's URL ${frame.url()}`);
-    return await (scope === "subtree" ? axSubtree : axNodes)(session, id, frameId);
+    const read = { element: axNodes, subtree: axSubtree, details: axDetails }[scope];
+    return await read(session, id, frameId);
   } finally {
     await session.detach();
   }
+}
+
+/** A node's role and name. */
+function named(node: RawAxNode): AxNode {
+  return { role: text(node.role?.value), name: text(node.name?.value) };
+}
+
+/** A node's role, name and the states of `AxNodeState` that Chromium reports for it. */
+function withStates(node: RawAxNode, byBackend: ReadonlyMap<number, RawAxNode>): AxNodeState {
+  const state: { -readonly [K in keyof AxNodeState]: AxNodeState[K] } = named(node);
+  for (const property of node.properties ?? []) {
+    const value = property.value.value;
+    if (property.name === "selected" && typeof value === "boolean") state.selected = value;
+    if (property.name === "disabled" && typeof value === "boolean") state.disabled = value;
+    if (property.name === "pressed") state.pressed = value === "mixed" ? "mixed" : value === "true";
+    if (property.name === "orientation") state.orientation = text(value);
+    if (property.name === "live") state.live = text(value);
+    if (property.name === "controls") {
+      const related = (property.value.relatedNodes ?? []).map((each) => (each.backendDOMNodeId === undefined ? undefined : byBackend.get(each.backendDOMNodeId)));
+      state.controls = related.filter((each) => each !== undefined).map(named);
+    }
+  }
+  return state;
+}
+
+/**
+ * The unignored accessibility nodes of `target` with their states (`AxNodeState`), in tree order: with `"element"` its own
+ * node and its shadow subtree's (as `axNodes`), with `"subtree"` its accessibility subtree (as `axSubtree`, inline text
+ * boxes left out).
+ */
+export async function axStatesOf(session: CDPSession, target: Target, scope: AxStatesScope = "element", frameId?: string): Promise<AxNodeState[]> {
+  const { root } = (await session.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: DomNode };
+  const document = documentOf(root, frameId);
+  const element = document === undefined ? undefined : byTarget(document, target);
+  if (element === undefined) return [];
+  const params = frameId === undefined ? {} : { frameId };
+  const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
+  const byBackend = new Map(nodes.filter((node) => !node.ignored && node.backendDOMNodeId !== undefined).map((node) => [node.backendDOMNodeId ?? 0, node]));
+  if (scope === "element") {
+    const ids = new Set<number>([element.backendNodeId]);
+    for (const shadow of element.shadowRoots ?? []) collect(shadow, ids);
+    return nodes.filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId)).map((node) => withStates(node, byBackend));
+  }
+  const byNodeId = new Map(nodes.map((node) => [node.nodeId, node]));
+  const found: AxNodeState[] = [];
+  if (scope === "ancestors") {
+    const parents = new Map<string, RawAxNode>();
+    for (const node of nodes) for (const child of node.childIds ?? []) parents.set(child, node);
+    const own = nodes.find((node) => node.backendDOMNodeId === element.backendNodeId);
+    for (let up = own === undefined ? undefined : parents.get(own.nodeId); up !== undefined; up = parents.get(up.nodeId)) if (!up.ignored) found.push(withStates(up, byBackend));
+    return found;
+  }
+  const walk = (node: RawAxNode): void => {
+    if (!node.ignored && text(node.role?.value) !== "InlineTextBox") found.push(withStates(node, byBackend));
+    for (const child of node.childIds ?? []) {
+      const next = byNodeId.get(child);
+      if (next !== undefined) walk(next);
+    }
+  };
+  const start = nodes.find((node) => node.backendDOMNodeId === element.backendNodeId);
+  if (start !== undefined) walk(start);
+  return found;
+}
+
+/** How long after `Accessibility.enable` Chromium starts sending `nodesUpdated` at once rather than after a delay that merges updates (measured: about 270 ms). */
+const axWarmUp = 500;
+/** How long `stop` waits for updates still on their way. */
+const axSettle = 300;
+
+/**
+ * Starts recording the `Accessibility.nodesUpdated` updates of `target` and its descendants (research.md R-07):
+ * enables the domain, requests the target's node and its descendants (`getPartialAXTree`, then `getChildAXNodes`, the
+ * requests after which Chromium reports a node's updates), and waits until updates are sent as they happen. Each update
+ * of a requested node is recorded as its role, its `live` value and the names of its static-text descendants (fetched
+ * at once, which also requests them). The returned function waits for updates still on their way, stops and returns
+ * them in order.
+ */
+export async function recordAxUpdates(session: CDPSession, target: Target, frameId?: string): Promise<() => Promise<AxUpdate[]>> {
+  await session.send("Accessibility.enable");
+  const { root } = (await session.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: DomNode };
+  const document = documentOf(root, frameId);
+  const element = document === undefined ? undefined : byTarget(document, target);
+  if (element === undefined) throw new Error(`axUpdates: no element for ${JSON.stringify(target)}`);
+  const frame = frameId === undefined ? {} : { frameId };
+  const known = new Set<string>();
+  const children = async (id: string): Promise<RawAxNode[]> => {
+    const { nodes } = (await session.send("Accessibility.getChildAXNodes", { id, ...frame })) as { nodes: readonly RawAxNode[] };
+    for (const node of nodes) known.add(node.nodeId);
+    return [...nodes];
+  };
+  const textOf = async (node: RawAxNode): Promise<string> => {
+    let found = "";
+    for (const child of node.childIds?.length === 0 ? [] : await children(node.nodeId)) {
+      if (text(child.role?.value) === "StaticText") found += text(child.name?.value);
+      else if (text(child.role?.value) !== "InlineTextBox") found += await textOf(child);
+    }
+    return found;
+  };
+  const { nodes: start } = (await session.send("Accessibility.getPartialAXTree", { backendNodeId: element.backendNodeId, fetchRelatives: false })) as { nodes: readonly RawAxNode[] };
+  for (const node of start) {
+    known.add(node.nodeId);
+    await textOf(node);
+  }
+  const updates: AxUpdate[] = [];
+  let queue = Promise.resolve();
+  const listener = ({ nodes }: { nodes: readonly RawAxNode[] }): void => {
+    for (const node of nodes.filter((each) => known.has(each.nodeId))) {
+      queue = queue.then(async () => {
+        const live = (node.properties ?? []).find((property) => property.name === "live")?.value.value;
+        updates.push({ role: text(node.role?.value), live: text(live), text: await textOf(node) });
+      });
+    }
+  };
+  session.on("Accessibility.nodesUpdated", listener);
+  await new Promise((done) => setTimeout(done, axWarmUp));
+  return async () => {
+    await new Promise((done) => setTimeout(done, axSettle));
+    session.off("Accessibility.nodesUpdated", listener);
+    await queue;
+    return updates;
+  };
+}
+
+/** The `axStates(target, scope)` browser command (registered in vitest.config.ts), in the frame of the calling test file. */
+export async function axStates(context: BrowserCommandContext, target: Target, scope: AxStatesScope = "element"): Promise<AxNodeState[]> {
+  const session = await context.page.context().newCDPSession(context.page);
+  try {
+    const frame = await context.frame();
+    const frameId = await frameIdOf(session, frame.url());
+    if (frameId === undefined) throw new Error(`axStates: no frame has the test's URL ${frame.url()}`);
+    return await axStatesOf(session, target, scope, frameId);
+  } finally {
+    await session.detach();
+  }
+}
+
+/** The recordings `axUpdatesStart` started, by browser session. */
+const recordings = new Map<string, () => Promise<AxUpdate[]>>();
+
+/** The `axUpdatesStart(target)` browser command: starts recording the updates of `target` in the calling test's frame. */
+export async function axUpdatesStart(context: BrowserCommandContext, target: Target): Promise<void> {
+  const session = await context.page.context().newCDPSession(context.page);
+  const frame = await context.frame();
+  const frameId = await frameIdOf(session, frame.url());
+  if (frameId === undefined) throw new Error(`axUpdatesStart: no frame has the test's URL ${frame.url()}`);
+  const stop = await recordAxUpdates(session, target, frameId);
+  recordings.set(context.sessionId, async () => {
+    try {
+      return await stop();
+    } finally {
+      await session.detach();
+    }
+  });
+}
+
+/** The `axUpdatesStop()` browser command: stops the recording `axUpdatesStart` started and returns its updates. */
+export async function axUpdatesStop(context: BrowserCommandContext): Promise<AxUpdate[]> {
+  const stop = recordings.get(context.sessionId);
+  if (stop === undefined) throw new Error("axUpdatesStop: no recording was started");
+  recordings.delete(context.sessionId);
+  return stop();
 }
 
 /** The scrolling width of `frame`'s document (`document.scrollingElement.scrollWidth`; 011 research.md R-13). */
@@ -387,9 +792,44 @@ export async function emulateForcedColors(context: BrowserCommandContext, mode: 
   await emulate(context.page, mode, palette);
 }
 
-/** The `emulateReducedMotion(mode)` browser command (registered in vitest.config.ts; 013 phase 3). */
+/** The `emulateReducedMotion(mode)` browser command (registered in vitest.config.ts; 012, 013 phase 3). */
 export async function emulateReducedMotion(context: BrowserCommandContext, mode: ReducedMotion): Promise<void> {
   await emulateMotion(context.page, mode);
+}
+
+/** The `press(key, modifiers)` browser command (registered in vitest.config.ts): the test frame has focus, so it gets the key. */
+export async function pressKey(context: BrowserCommandContext, key: string, modifiers?: readonly Modifier[]): Promise<void> {
+  await press(context.page, key, modifiers);
+}
+
+/** The `hover(id, inner)` browser command (registered in vitest.config.ts), in the test's frame. */
+export async function hover(context: BrowserCommandContext, id: string, inner?: string): Promise<void> {
+  await pointer(context.page, await context.frame(), "hover", id, inner === undefined ? {} : { inner });
+}
+
+/** The `pointer(action, id, options)` browser command (registered in vitest.config.ts), in the test's frame. */
+export async function pointerCommand(context: BrowserCommandContext, action: PointerAction, id: string, options?: ClickOptions): Promise<void> {
+  await pointer(context.page, await context.frame(), action, id, options);
+}
+
+/** The `axState(id, inner)` browser command (registered in vitest.config.ts), in the frame of the calling test file. */
+export async function axState(context: BrowserCommandContext, id: string, inner?: string): Promise<AxState> {
+  const session = await context.page.context().newCDPSession(context.page);
+  try {
+    const frame = await context.frame();
+    const frameId = await frameIdOf(session, frame.url());
+    if (frameId === undefined) throw new Error(`axState: no frame has the test's URL ${frame.url()}`);
+    return await axStateOf(session, id, inner, frameId);
+  } finally {
+    await session.detach();
+  }
+}
+
+/** The `axe(scope)` browser command (registered in vitest.config.ts): axe-core injected into the test's frame from node_modules. */
+export async function axe(context: BrowserCommandContext, scope?: string): Promise<AxeResult[]> {
+  const frame = await context.frame();
+  const { path, rules } = axeSetup();
+  return audit(frame, () => frame.addScriptTag({ path }), rules, scope);
 }
 
 /** The `pointerPath(steps)` browser command (registered in vitest.config.ts): `page.mouse` through points of the test's frame. */
@@ -409,17 +849,33 @@ declare module "vitest/browser" {
      * The unignored accessibility nodes of the element with `id` and of its shadow subtree, or with `"subtree"` of its
      * accessibility subtree.
      */
-    axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
+    axTree: ((id: string, scope?: "element" | "subtree") => Promise<AxNode[]>) & ((id: string, scope: "details") => Promise<AxDetail[]>);
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
+    /** The unignored accessibility nodes of `target` with their states, of its own and shadow subtree or with `"subtree"` its accessibility subtree. */
+    axStates: (target: Target, scope?: AxStatesScope) => Promise<AxNodeState[]>;
+    /** Starts recording the accessibility tree updates of `target` and its descendants. */
+    axUpdatesStart: (target: Target) => Promise<void>;
+    /** Stops the recording and returns its updates. */
+    axUpdatesStop: () => Promise<AxUpdate[]>;
     /** The scrolling width of the test frame's document (`document.scrollingElement.scrollWidth`). */
     scrollWidth: () => Promise<number>;
     /** The focused element of the test frame through open shadow roots. */
     activeElement: () => Promise<ActiveElement>;
     /** Each text node with non-whitespace data under the element with `id`, in flat-tree order. */
     textBoxes: (id: string) => Promise<TextBox[]>;
-    /** Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"` (013 phase 3). */
+    /** Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"` (012, 013 phase 3). */
     emulateReducedMotion: (mode: ReducedMotion) => Promise<void>;
+    /** Presses `key` with `modifiers` held. */
+    press: (key: string, modifiers?: readonly Modifier[]) => Promise<void>;
+    /** Moves the mouse to the element with `id` (or its shadow element `inner`). */
+    hover: (id: string, inner?: string) => Promise<void>;
+    /** Hovers, clicks (forced), presses or releases the mouse at the element with `id`. */
+    pointer: (action: PointerAction, id: string, options?: ClickOptions) => Promise<void>;
+    /** The accessibility node of the element with `id` (or its shadow element `inner`). */
+    axState: (id: string, inner?: string) => Promise<AxState>;
+    /** The axe results of the page, or of the element with `scope`, with 006's selection, every impact. */
+    axe: (scope?: string) => Promise<AxeResult[]>;
     /** Moves the real pointer through points of this frame, pressing and releasing where a step says so. */
     pointerPath: (steps: readonly PathStep[]) => Promise<void>;
     /** A real touch tap at a point of this frame (a context with `hasTouch` only). */

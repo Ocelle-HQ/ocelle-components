@@ -5,6 +5,698 @@
         {
           "attributes": [
             {
+              "description": "Moved onto the inner control (the host keeps no copy): the row's accessible name, over `label` and the title; an empty or whitespace-only value clears it; `removeAttribute` after the move changes nothing.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that name the row, resolved in the host's own tree when set and when the element is connected, over `aria-label`; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that describe the row, resolved in the host's own tree; it replaces the description and tags slots' description; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its native tooltip, and its description when nothing else describes the row; an empty value clears it.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The row's id, carried by its `ocelle-action-row-activate` event as `detail.rowId` (`\"\"` when absent). Reflected as\n`row-id`.",
+              "fieldName": "rowId",
+              "name": "row-id",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of the row, trimmed; empty or whitespace-only counts as none, and the name is then the title.\nNot reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`row` (icon, title and description, then the tags and the trailing icon, on one line; the tags and the trailing\nicon move to a second line together when the line cannot hold them) or `card`; absent or any other value renders\n`row`. Reflected.",
+              "fieldName": "layout",
+              "name": "layout",
+              "type": {
+                "text": "\"row\" | \"card\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`default` (a bordered row on a surface) or `flush` (no border and no surface, the compact navigation density);\nabsent or any other value renders `default`. Reflected.",
+              "fieldName": "presentation",
+              "name": "presentation",
+              "type": {
+                "text": "\"default\" | \"flush\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The ground the row sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a default row an\n`--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or any other\nvalue means the other main grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL makes the row a link (an\ninner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode; with `_blank` and no `rel` the link gets `rel=\"noopener\"`. Reflected.",
+              "fieldName": "target",
+              "name": "target",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode. Reflected.",
+              "fieldName": "rel",
+              "name": "rel",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`page` or `true`: the row is the current item, reported as `aria-current` with that value on the inner control and\ndrawn with the current mark (an `--ocelle-color-accent-low` surface, `--ocelle-color-chrome-hover` on chrome, and\na bar in `--ocelle-color-current` at the inline start, apart from the focus ring), which stays on hover; absent or\nany other value is not current. Reflected.",
+              "fieldName": "current",
+              "name": "current",
+              "type": {
+                "text": "\"page\" | \"true\" | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Unavailable: the row exists but cannot be used right now. Its inner control stays in the tab order, reports\n`aria-disabled=\"true\"`, keeps its name and description and is not activated (no event, no click past the element,\nno navigation: a link row has no `href`); it shows the disabled ink and no hover. Reflected.",
+              "fieldName": "unavailable",
+              "name": "unavailable",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Busy: the row's content is updating; its inner control reports `aria-busy`, and activation still dispatches the\nevent. Reflected.",
+              "fieldName": "busy",
+              "name": "busy",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The row's icon-and-title control: the inner `<button>`, or the inner `<a>` in link mode. It is not the row's surface: the description, tags and trailing content are beside it, and `::part(control)` styles do not reach the row's surface or border.",
+              "name": "control"
+            },
+            {
+              "description": "The title's wrapper, the row's name.",
+              "name": "title"
+            },
+            {
+              "description": "The description slot's wrapper.",
+              "name": "description"
+            },
+            {
+              "description": "The tags slot's wrapper.",
+              "name": "tags"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An activatable row: a leading icon, a title, a description, tags and a trailing icon, activated by pointer or\nkeyboard with one `ocelle-action-row-activate` event that carries the row's id; a row or a card, bordered or flush,\non the ground the host states, a link with `href`, the current item of a list and an unavailable item.",
+          "events": [
+            {
+              "description": "Dispatched from the element on each activation (a pointer click, Enter, Space in button mode, `click()`), before a link's navigation; bubbles, composed and cancelable, `detail` `{ rowId }`, the current `row-id` or `\"\"`; `preventDefault()` cancels a link's navigation. Not dispatched for a Ctrl, Meta, Shift or Alt click or a middle click in link mode, nor while the row is unavailable.",
+              "name": "ocelle-action-row-activate",
+              "type": {
+                "text": "CustomEvent<{ rowId: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "row-id",
+              "default": "undefined",
+              "description": "The row's id, carried by its `ocelle-action-row-activate` event as `detail.rowId` (`\"\"` when absent). Reflected as\n`row-id`.",
+              "kind": "field",
+              "name": "rowId",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of the row, trimmed; empty or whitespace-only counts as none, and the name is then the title.\nNot reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "layout",
+              "default": "undefined",
+              "description": "`row` (icon, title and description, then the tags and the trailing icon, on one line; the tags and the trailing\nicon move to a second line together when the line cannot hold them) or `card`; absent or any other value renders\n`row`. Reflected.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"row\" | \"card\" | undefined"
+              }
+            },
+            {
+              "attribute": "presentation",
+              "default": "undefined",
+              "description": "`default` (a bordered row on a surface) or `flush` (no border and no surface, the compact navigation density);\nabsent or any other value renders `default`. Reflected.",
+              "kind": "field",
+              "name": "presentation",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"flush\" | undefined"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "The ground the row sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a default row an\n`--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or any other\nvalue means the other main grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL makes the row a link (an\ninner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "target",
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode; with `_blank` and no `rel` the link gets `rel=\"noopener\"`. Reflected.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "rel",
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode. Reflected.",
+              "kind": "field",
+              "name": "rel",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "current",
+              "default": "undefined",
+              "description": "`page` or `true`: the row is the current item, reported as `aria-current` with that value on the inner control and\ndrawn with the current mark (an `--ocelle-color-accent-low` surface, `--ocelle-color-chrome-hover` on chrome, and\na bar in `--ocelle-color-current` at the inline start, apart from the focus ring), which stays on hover; absent or\nany other value is not current. Reflected.",
+              "kind": "field",
+              "name": "current",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"page\" | \"true\" | undefined"
+              }
+            },
+            {
+              "attribute": "unavailable",
+              "default": "false",
+              "description": "Unavailable: the row exists but cannot be used right now. Its inner control stays in the tab order, reports\n`aria-disabled=\"true\"`, keeps its name and description and is not activated (no event, no click past the element,\nno navigation: a link row has no `href`); it shows the disabled ink and no hover. Reflected.",
+              "kind": "field",
+              "name": "unavailable",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "busy",
+              "default": "false",
+              "description": "Busy: the row's content is updating; its inner control reports `aria-busy`, and activation still dispatches the\nevent. Reflected.",
+              "kind": "field",
+              "name": "busy",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Clicks the inner control, so the click passes through it and the row is activated as by any other click.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleActionRow",
+          "slots": [
+            {
+              "description": "The title: the row's accessible name; the description, the tags and the trailing content never join it.",
+              "name": ""
+            },
+            {
+              "description": "One icon before the title (the slot convention): `--ocelle-icon-size` square, decorative.",
+              "name": "icon"
+            },
+            {
+              "description": "Elements whose text describes the row, after the title; an element without non-whitespace text contributes nothing, and a slot with no such element takes no space.",
+              "name": "description"
+            },
+            {
+              "description": "Elements whose text describes the row after the description, laid out as one group with the trailing icon; a slot with no element holding text takes no space.",
+              "name": "tags"
+            },
+            {
+              "description": "One icon at the end of the row (the slot convention), for example `arrow-end`.",
+              "name": "trailing"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-action-row"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-action-row.ts",
+            "name": "OcelleActionRow"
+          },
+          "kind": "js",
+          "name": "OcelleActionRow"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-action-row.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "Mission, project or personal. Mission is the default for missing or unsupported values.",
+              "fieldName": "layout",
+              "name": "layout",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "Product name passed to the top bar.",
+              "fieldName": "productName",
+              "name": "product-name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Open navigation\"",
+              "description": "Accessible name of the top bar menu.",
+              "fieldName": "menuLabel",
+              "name": "menu-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Navigation\"",
+              "description": "Localized name of the navigation drawer.",
+              "fieldName": "drawerLabel",
+              "name": "drawer-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Close navigation\"",
+              "description": "Localized name of the drawer close control.",
+              "fieldName": "closeLabel",
+              "name": "close-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Account\"",
+              "description": "Localized landmark name for bare rail destinations.",
+              "fieldName": "railLabel",
+              "name": "rail-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Workspace\"",
+              "description": "Localized landmark name for bare sidebar destinations.",
+              "fieldName": "sidebarLabel",
+              "name": "sidebar-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Explicit lower bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-narrow-below` token.",
+              "fieldName": "narrowBelow",
+              "name": "narrow-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "description": "Explicit upper bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-collapse-below` token.",
+              "fieldName": "collapseBelow",
+              "name": "collapse-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Omits block-end content padding.",
+              "fieldName": "flushBlockEnd",
+              "name": "flush-block-end",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Omits inline-end content padding.",
+              "fieldName": "flushInlineEnd",
+              "name": "flush-inline-end",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The main content destination and its padding.",
+              "name": "main"
+            },
+            {
+              "description": "A visible rail or sidebar wrapper.",
+              "name": "navigation"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "App frame with top bar, mission rail, context or personal sidebar, and one stable content destination.",
+          "events": [
+            {
+              "description": "Dispatched after the navigation changes tier. Bubbles and is composed.",
+              "name": "ocelle-app-shell-tier-change",
+              "type": {
+                "text": "CustomEvent<{ tier: AppShellTier; previousTier: AppShellTier }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "layout",
+              "description": "Mission, project or personal. Mission is the default for missing or unsupported values.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "product-name",
+              "default": "\"\"",
+              "description": "Product name passed to the top bar.",
+              "kind": "field",
+              "name": "productName",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "menu-label",
+              "default": "\"Open navigation\"",
+              "description": "Accessible name of the top bar menu.",
+              "kind": "field",
+              "name": "menuLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "drawer-label",
+              "default": "\"Navigation\"",
+              "description": "Localized name of the navigation drawer.",
+              "kind": "field",
+              "name": "drawerLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "close-label",
+              "default": "\"Close navigation\"",
+              "description": "Localized name of the drawer close control.",
+              "kind": "field",
+              "name": "closeLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "rail-label",
+              "default": "\"Account\"",
+              "description": "Localized landmark name for bare rail destinations.",
+              "kind": "field",
+              "name": "railLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "sidebar-label",
+              "default": "\"Workspace\"",
+              "description": "Localized landmark name for bare sidebar destinations.",
+              "kind": "field",
+              "name": "sidebarLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "narrow-below",
+              "description": "Explicit lower bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-narrow-below` token.",
+              "kind": "field",
+              "name": "narrowBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "collapse-below",
+              "description": "Explicit upper bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-collapse-below` token.",
+              "kind": "field",
+              "name": "collapseBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "flush-block-end",
+              "default": "false",
+              "description": "Omits block-end content padding.",
+              "kind": "field",
+              "name": "flushBlockEnd",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "flush-inline-end",
+              "default": "false",
+              "description": "Omits inline-end content padding.",
+              "kind": "field",
+              "name": "flushInlineEnd",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Current measured layout tier.",
+              "kind": "field",
+              "name": "tier",
+              "readonly": true,
+              "type": {
+                "text": "AppShellTier"
+              }
+            },
+            {
+              "description": "The stable programmatically focusable main content, available after rendering.",
+              "kind": "field",
+              "name": "contentTarget",
+              "readonly": true,
+              "type": {
+                "text": "HTMLElement | null"
+              }
+            },
+            {
+              "description": "Rereads CSS thresholds and the current logical inline size.",
+              "kind": "method",
+              "name": "remeasure",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleAppShell",
+          "slots": [
+            {
+              "description": "Optional keyboard shortcut to the main content.",
+              "name": "skip-link"
+            },
+            {
+              "description": "The top bar's host-owned actions.",
+              "name": "actions"
+            },
+            {
+              "description": "Mission destinations.",
+              "name": "rail"
+            },
+            {
+              "description": "Context, project or personal destinations.",
+              "name": "sidebar"
+            },
+            {
+              "description": "Main content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-app-shell"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-app-shell.ts",
+            "name": "OcelleAppShell"
+          },
+          "kind": "js",
+          "name": "OcelleAppShell"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-app-shell.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
               "fieldName": "ground",
@@ -102,6 +794,525 @@
         {
           "attributes": [
             {
+              "default": "\"Breadcrumb\"",
+              "description": "Localized name for the breadcrumb landmark.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered breadcrumb list.",
+              "name": "list"
+            },
+            {
+              "description": "A breadcrumb list item.",
+              "name": "item"
+            },
+            {
+              "description": "An ancestor's native link.",
+              "name": "link"
+            },
+            {
+              "description": "The current page's text.",
+              "name": "current"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A named breadcrumb trail with a text current page.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "\"Breadcrumb\"",
+              "description": "Localized name for the breadcrumb landmark.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Ancestors in order followed by the current page.",
+              "kind": "field",
+              "name": "items",
+              "privacy": "public",
+              "type": {
+                "text": "readonly BreadcrumbItem[]"
+              }
+            }
+          ],
+          "name": "OcelleBreadcrumbs",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-breadcrumbs"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-breadcrumbs.ts",
+            "name": "OcelleBreadcrumbs"
+          },
+          "kind": "js",
+          "name": "OcelleBreadcrumbs"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-breadcrumbs.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "Moved onto the inner control (the host keeps no copy): `\"true\"` reports expanded, `\"false\"` collapsed, an empty value clears it; `removeAttribute` after the move changes nothing.",
+              "name": "aria-expanded",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements it controls, resolved in the host's own tree when set and when the element is connected; an empty value clears it.",
+              "name": "aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control with any value; `\"false\"` or an empty value clears it. It draws no mark.",
+              "name": "aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the kind of popup it opens; an empty value clears it.",
+              "name": "aria-haspopup",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control in button mode only: `\"true\"` reports pressed, `\"false\"` not pressed, an empty value clears it.",
+              "name": "aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its accessible name, over `label` and the content; an empty or whitespace-only value clears it.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that name it, resolved in the host's own tree, over `aria-label`; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that describe it, resolved in the host's own tree; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its native tooltip and description, or its name when nothing else names it; an empty value clears it.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-expanded`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.",
+              "name": "data-ocelle-moved-aria-expanded",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-controls`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-current`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-haspopup`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-haspopup",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-pressed`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The look: `primary` (filled), `secondary` (bordered on a surface) or `quiet` (bordered, no fill); absent or any\nother value renders `secondary`. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"primary\" | \"secondary\" | \"quiet\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`default` (at least `--ocelle-target-min` in both dimensions) or `compact` (the compact text scale, at least 24 px\nin both dimensions); absent or any other value renders `default`. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"default\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "No inline padding, no border and no fill: a text-like control whose content starts at its inline start, with only\nits hover surface and focus ring. Reflected.",
+              "fieldName": "flush",
+              "name": "flush",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The ground the button sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a bordered\nvariant an `--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or\nany other value means the other main grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of the button, trimmed; empty or whitespace-only counts as none, and the name is then the\ncontent. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
+              "fieldName": "busy",
+              "name": "busy",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "fieldName": "target",
+              "name": "target",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "fieldName": "rel",
+              "name": "rel",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "fieldName": "download",
+              "name": "download",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inner `<button>`, or the inner `<a>` in link mode.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "cssStates": [
+            {
+              "description": "While the moved `aria-expanded` is `\"true\"`.",
+              "name": "expanded"
+            },
+            {
+              "description": "While the moved `aria-pressed` is `\"true\"`, in button mode only: a link has no pressed state.",
+              "name": "pressed"
+            },
+            {
+              "description": "While the moved `aria-current` is set to any value other than `\"false\"`.",
+              "name": "current"
+            }
+          ],
+          "customElement": true,
+          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled and a busy state, an icon slot, link mode with `href`, and host ARIA moved onto\nthe inner control.",
+          "events": [
+            {
+              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled or busy button dispatches neither.",
+              "name": "ocelle-button-activate",
+              "type": {
+                "text": "CustomEvent<Record<string, never>>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "The look: `primary` (filled), `secondary` (bordered on a surface) or `quiet` (bordered, no fill); absent or any\nother value renders `secondary`. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"primary\" | \"secondary\" | \"quiet\" | undefined"
+              }
+            },
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "`default` (at least `--ocelle-target-min` in both dimensions) or `compact` (the compact text scale, at least 24 px\nin both dimensions); absent or any other value renders `default`. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "flush",
+              "default": "false",
+              "description": "No inline padding, no border and no fill: a text-like control whose content starts at its inline start, with only\nits hover surface and focus ring. Reflected.",
+              "kind": "field",
+              "name": "flush",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "The ground the button sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a bordered\nvariant an `--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or\nany other value means the other main grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of the button, trimmed; empty or whitespace-only counts as none, and the name is then the\ncontent. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "busy",
+              "default": "false",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
+              "kind": "field",
+              "name": "busy",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "target",
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "rel",
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "kind": "field",
+              "name": "rel",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "download",
+              "default": "undefined",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "kind": "field",
+              "name": "download",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "description": "Clicks the inner control, so the click passes through it and is guarded like any other: a disabled button ignores\nit.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleButton",
+          "slots": [
+            {
+              "description": "The label.",
+              "name": ""
+            },
+            {
+              "description": "One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative; hidden while busy, the spinner in its place.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-button"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-button.ts",
+            "name": "OcelleButton"
+          },
+          "kind": "js",
+          "name": "OcelleButton"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-button.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
               "fieldName": "density",
@@ -189,6 +1400,112 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "fieldName": "overflow",
+              "name": "overflow",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "fieldName": "digest",
+              "name": "digest",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inset box.",
+              "name": "block"
+            },
+            {
+              "description": "The `pre` that holds the text.",
+              "name": "code"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A preformatted block for code, commands, logs and digests, in the library's sans with tabular figures. The text is\nthe element's light-DOM text content, read as a copy: child elements add no markup or style.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "overflow",
+              "default": "undefined",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "kind": "field",
+              "name": "overflow",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "digest",
+              "default": "undefined",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "kind": "field",
+              "name": "digest",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "name": "OcelleCodeBlock",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-code-block"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-code-block.ts",
+            "name": "OcelleCodeBlock"
+          },
+          "kind": "js",
+          "name": "OcelleCodeBlock"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-code-block.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
               "fieldName": "label",
               "name": "label",
@@ -250,6 +1567,118 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-context-sidebar.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The text shown and requested, as written. A change after first render clears `status`. With an empty value the\nCopy control is disabled and emits nothing. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The host's outcome text, shown as the content of the field's polite live region; blank shows nothing. The field\nclears it (the property then reads `\"\"`) when a request starts and when `value` changes after first render.\nSetting the text the region already holds changes nothing. Not reflected: a `status` attribute stays as written.",
+              "fieldName": "status",
+              "name": "status",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Copy\"",
+              "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
+              "fieldName": "copyLabel",
+              "name": "copy-label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The text, on the inset well. Public surface: it stays when the Copy control becomes `ocelle-button`.",
+              "name": "value"
+            },
+            {
+              "description": "The Copy control. It guarantees its box (its position, its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which element carries it (a native button today, `ocelle-button` later).",
+              "name": "copy-control"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A command or identifier with a flush Copy control that asks the host to copy it; the host reports the outcome in\n`status`, which the field shows in a polite live region.",
+          "events": [
+            {
+              "description": "The user activated the Copy control (a click, Enter or Space): `text` is `value` at the activation. Dispatched after the next rendering update, outside the activation's task, once the cleared `status` has reached the accessibility tree; not cancelable. The field never writes the clipboard: the host does, and reports the outcome in `status`.",
+              "name": "ocelle-copy-field-request",
+              "type": {
+                "text": "CustomEvent<{ text: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "copy-label",
+              "default": "\"Copy\"",
+              "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
+              "kind": "field",
+              "name": "copyLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "\"\"",
+              "description": "The text shown and requested, as written. A change after first render clears `status`. With an empty value the\nCopy control is disabled and emits nothing. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "status",
+              "default": "\"\"",
+              "description": "The host's outcome text, shown as the content of the field's polite live region; blank shows nothing. The field\nclears it (the property then reads `\"\"`) when a request starts and when `value` changes after first render.\nSetting the text the region already holds changes nothing. Not reflected: a `status` attribute stays as written.",
+              "kind": "field",
+              "name": "status",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleCopyField",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-copy-field"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-copy-field.ts",
+            "name": "OcelleCopyField"
+          },
+          "kind": "js",
+          "name": "OcelleCopyField"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-copy-field.ts"
     },
     {
       "declarations": [
@@ -543,6 +1972,194 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-dialog.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "Moved onto the summary: its accessible name, over the `summary` slot's text (while no host `aria-labelledby` names it); an empty or whitespace-only value clears it.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the summary: the ids, space-separated, of the elements that name it, resolved in the host's own tree and related by element reference, over `aria-label` and the `summary` slot's text; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the summary: the ids, space-separated, of the elements that describe it, resolved in the host's own tree and related by element reference; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the summary: its advisory title; an empty value clears it.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Mapped onto `open` and removed from the host: `\"true\"` opens, `\"false\"` closes, any other value changes nothing. No mirror: `open` is the persisted state. Read after `open` at upgrade.",
+              "name": "aria-expanded",
+              "type": {
+                "text": "\"true\" | \"false\""
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Whether the panel is shown. Reflected: a user toggle, find in page and a script set the attribute alike, so server\nmarkup and htmx morphs keep it.",
+              "fieldName": "open",
+              "name": "open",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inner `details`.",
+              "name": "details"
+            },
+            {
+              "description": "The summary control.",
+              "name": "summary"
+            },
+            {
+              "description": "The panel wrapper.",
+              "name": "panel"
+            }
+          ],
+          "cssProperties": [],
+          "cssStates": [
+            {
+              "description": "While the disclosure is open.",
+              "name": "open"
+            }
+          ],
+          "customElement": true,
+          "description": "A disclosure: a summary that opens and closes a panel inline, on native `details` and `summary` semantics.",
+          "events": [
+            {
+              "description": "After each change of the open state, whatever caused it, in a later task after the attribute is reflected, with the new state. Changes made before the inner `details`' native `toggle` runs are coalesced (always those of one task): at most one event per native `toggle`, with the final state; none at upgrade or when the state ends where the last event left it. Bubbles, composed, not cancelable.",
+              "name": "ocelle-disclosure-toggle",
+              "type": {
+                "text": "CustomEvent<{ open: boolean }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "open",
+              "default": "undefined",
+              "description": "Whether the panel is shown. Reflected: a user toggle, find in page and a script set the attribute alike, so server\nmarkup and htmx morphs keep it.",
+              "kind": "field",
+              "name": "open",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "description": "Clicks the summary, so it toggles once.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "description": "Focuses the summary (the shadow root has no `delegatesFocus`); before the first render it does nothing.",
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleDisclosure",
+          "slots": [
+            {
+              "description": "The summary's content; with no host `aria-labelledby` or `aria-label`, its text alone names the control (the summary is labelled by the slot's wrapper, so a slotted icon adds nothing); empty, the control has no name. No interactive content.",
+              "name": "summary"
+            },
+            {
+              "description": "An icon (`ocelle-icon` or a bare `svg`) that replaces the chevron (`chevron-end` closed, `chevron-down` open) in both states; decorative, never labelled: its wrapper is hidden from assistive technology.",
+              "name": "icon"
+            },
+            {
+              "description": "The panel's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-disclosure"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-disclosure.ts",
+            "name": "OcelleDisclosure"
+          },
+          "kind": "js",
+          "name": "OcelleDisclosure"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-disclosure.ts"
     },
     {
       "declarations": [
@@ -1280,6 +2897,1362 @@
         {
           "attributes": [
             {
+              "default": "\"\"",
+              "description": "The default value, restored on reset; it sets the current value while the user has not edited it and no script has set `value` since the last reset. The `value` property is the current value.",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"text\"",
+              "description": "The field's type: `text`, `email`, `url`, `tel`, `search`, `password` or `number`; any other value behaves as `text`\nand the property reads `\"text\"`, while the attribute keeps the value as written. Reflected.",
+              "fieldName": "type",
+              "name": "type",
+              "type": {
+                "text": "\"text\" | \"email\" | \"url\" | \"tel\" | \"search\" | \"password\" | \"number\""
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The placeholder, shown while the value is empty. Reflected.",
+              "fieldName": "placeholder",
+              "name": "placeholder",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The autofill hint, passed to the field. Reflected.",
+              "fieldName": "autocomplete",
+              "name": "autocomplete",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The virtual keyboard hint (attribute `inputmode`), passed to the field. Reflected. Its TypeScript type is the\n`string` of `HTMLElement.inputMode`, which it overrides; absent, it reads `undefined`.",
+              "fieldName": "inputMode",
+              "name": "inputmode",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The pattern the value must match, as the native constraint. Reflected.",
+              "fieldName": "pattern",
+              "name": "pattern",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The minimum of a `number` field, as the native constraint. Reflected.",
+              "fieldName": "min",
+              "name": "min",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The maximum of a `number` field, as the native constraint. Reflected.",
+              "fieldName": "max",
+              "name": "max",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The step of a `number` field, as the native constraint and for ArrowUp and ArrowDown. Reflected.",
+              "fieldName": "step",
+              "name": "step",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The minimum length of the value (attribute `minlength`), as the native constraint; absent, no limit. Reflected.",
+              "fieldName": "minLength",
+              "name": "minlength",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The maximum length of the value (attribute `maxlength`), as the native constraint; absent, no limit. Reflected.",
+              "fieldName": "maxLength",
+              "name": "maxlength",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the value can be focused and submitted but not edited (attribute `readonly`). Reflected.",
+              "fieldName": "readOnly",
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "fieldName": "name",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "fieldName": "label",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "fieldName": "description",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "description",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "fieldName": "error",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "error",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "fieldName": "required",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "required",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "fieldName": "disabled",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The visible label, above the field.",
+              "name": "label"
+            },
+            {
+              "description": "The native field.",
+              "name": "control"
+            },
+            {
+              "description": "The description, under the label.",
+              "name": "description"
+            },
+            {
+              "description": "The error, under the field.",
+              "name": "error"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A labelled text field with an optional description and a host-set error, that takes part in its form like a native\ninput: its value is submitted under `name`, validated by the browser's own constraints, restored on reset and on\nhistory restore, and disabled by a disabled fieldset.",
+          "events": [
+            {
+              "description": "A committed change of the value by the user (the field left after a change, or Enter), with the value; never for a change by script, reset or restore.",
+              "name": "ocelle-form-input-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "placeholder",
+              "default": "undefined",
+              "description": "The placeholder, shown while the value is empty. Reflected.",
+              "kind": "field",
+              "name": "placeholder",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "autocomplete",
+              "default": "undefined",
+              "description": "The autofill hint, passed to the field. Reflected.",
+              "kind": "field",
+              "name": "autocomplete",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "inputmode",
+              "default": "undefined",
+              "description": "The virtual keyboard hint (attribute `inputmode`), passed to the field. Reflected. Its TypeScript type is the\n`string` of `HTMLElement.inputMode`, which it overrides; absent, it reads `undefined`.",
+              "kind": "field",
+              "name": "inputMode",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "pattern",
+              "default": "undefined",
+              "description": "The pattern the value must match, as the native constraint. Reflected.",
+              "kind": "field",
+              "name": "pattern",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "min",
+              "default": "undefined",
+              "description": "The minimum of a `number` field, as the native constraint. Reflected.",
+              "kind": "field",
+              "name": "min",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "max",
+              "default": "undefined",
+              "description": "The maximum of a `number` field, as the native constraint. Reflected.",
+              "kind": "field",
+              "name": "max",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "step",
+              "default": "undefined",
+              "description": "The step of a `number` field, as the native constraint and for ArrowUp and ArrowDown. Reflected.",
+              "kind": "field",
+              "name": "step",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "minlength",
+              "default": "undefined",
+              "description": "The minimum length of the value (attribute `minlength`), as the native constraint; absent, no limit. Reflected.",
+              "kind": "field",
+              "name": "minLength",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "maxlength",
+              "default": "undefined",
+              "description": "The maximum length of the value (attribute `maxlength`), as the native constraint; absent, no limit. Reflected.",
+              "kind": "field",
+              "name": "maxLength",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "readonly",
+              "default": "false",
+              "description": "Whether the value can be focused and submitted but not edited (attribute `readonly`). Reflected.",
+              "kind": "field",
+              "name": "readOnly",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "type",
+              "default": "\"text\"",
+              "description": "The field's type: `text`, `email`, `url`, `tel`, `search`, `password` or `number`; any other value behaves as `text`\nand the property reads `\"text\"`, while the attribute keeps the value as written. Reflected.",
+              "kind": "field",
+              "name": "type",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"text\" | \"email\" | \"url\" | \"tel\" | \"search\" | \"password\" | \"number\""
+              }
+            },
+            {
+              "attribute": "name",
+              "default": "\"\"",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "name",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "description",
+              "default": "\"\"",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "description",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "error",
+              "default": "\"\"",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "error",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "required",
+              "default": "false",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "required",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The current value: what the user typed or chose, or what a script, a reset or a restore set. Not reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "The form the control belongs to, or null, as a native control's.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "form",
+              "readonly": true,
+              "type": {
+                "text": "HTMLFormElement | null"
+              }
+            },
+            {
+              "description": "The `<label>` elements associated with the control, as a native control's.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "labels",
+              "readonly": true,
+              "type": {
+                "text": "NodeList"
+              }
+            },
+            {
+              "description": "The control's validity, the native control's constraint validation.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "validity",
+              "readonly": true,
+              "type": {
+                "text": "ValidityState"
+              }
+            },
+            {
+              "description": "The browser's validation message for the native control, or empty when it is valid.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "validationMessage",
+              "readonly": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Whether the control takes part in constraint validation.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "willValidate",
+              "readonly": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Whether the control satisfies its constraints; when not, it fires `invalid` at the host.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "checkValidity",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "description": "As `checkValidity()`, and when invalid the browser focuses the native control and shows its message.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "reportValidity",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "description": "Focuses the native control; the host is not a tab stop of its own.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleFormInput",
+          "slots": [],
+          "superclass": {
+            "module": "/src/form-control.ts",
+            "name": "FormControl"
+          },
+          "tagName": "ocelle-form-input"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-form-input.ts",
+            "name": "OcelleFormInput"
+          },
+          "kind": "js",
+          "name": "OcelleFormInput"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-form-input.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "fieldName": "name",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "fieldName": "label",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "fieldName": "description",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "description",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "fieldName": "error",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "error",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "fieldName": "required",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "required",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "fieldName": "disabled",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The visible label, above the select.",
+              "name": "label"
+            },
+            {
+              "description": "The native select.",
+              "name": "control"
+            },
+            {
+              "description": "The description, under the label.",
+              "name": "description"
+            },
+            {
+              "description": "The error, under the select.",
+              "name": "error"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A labelled native select for closed choices, with an optional description and a host-set error, whose options are its\nlight-DOM `<option>` and `<optgroup>` children, and that takes part in its form like a native select: its value is\nsubmitted under `name`, validated by the browser's own constraints, restored on reset and on history restore, and\ndisabled by a disabled fieldset.",
+          "events": [
+            {
+              "description": "A committed change of the choice by the user, with the value; never for a change by script, reset, restore or a change of the options.",
+              "name": "ocelle-form-select-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "default": "\"\"",
+              "description": "The current choice: the value of the option the user chose, or that a script, a reset or a restore selected; a\nvalue no option has selects nothing and reads `\"\"`. Not reflected; a host `value` attribute is ignored.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "name",
+              "default": "\"\"",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "name",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "description",
+              "default": "\"\"",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "description",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "error",
+              "default": "\"\"",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "error",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "required",
+              "default": "false",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "required",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "The form the control belongs to, or null, as a native control's.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "form",
+              "readonly": true,
+              "type": {
+                "text": "HTMLFormElement | null"
+              }
+            },
+            {
+              "description": "The `<label>` elements associated with the control, as a native control's.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "labels",
+              "readonly": true,
+              "type": {
+                "text": "NodeList"
+              }
+            },
+            {
+              "description": "The control's validity, the native control's constraint validation.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "validity",
+              "readonly": true,
+              "type": {
+                "text": "ValidityState"
+              }
+            },
+            {
+              "description": "The browser's validation message for the native control, or empty when it is valid.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "validationMessage",
+              "readonly": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Whether the control takes part in constraint validation.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "willValidate",
+              "readonly": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Whether the control satisfies its constraints; when not, it fires `invalid` at the host.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "checkValidity",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "description": "As `checkValidity()`, and when invalid the browser focuses the native control and shows its message.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "reportValidity",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "description": "Focuses the native control; the host is not a tab stop of its own.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleFormSelect",
+          "slots": [],
+          "superclass": {
+            "module": "/src/form-control.ts",
+            "name": "FormControl"
+          },
+          "tagName": "ocelle-form-select"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-form-select.ts",
+            "name": "OcelleFormSelect"
+          },
+          "kind": "js",
+          "name": "OcelleFormSelect"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-form-select.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The default value. The value property is the current answer. Both use LF line endings.",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "fieldName": "name",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "fieldName": "required",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "required",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "fieldName": "disabled",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the answer can be focused, selected and submitted but cannot be edited (attribute `readonly`).",
+              "fieldName": "readOnly",
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "fieldName": "label",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "fieldName": "description",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "description",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "fieldName": "error",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "name": "error",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The visible label.",
+              "name": "label"
+            },
+            {
+              "description": "The native textarea.",
+              "name": "control"
+            },
+            {
+              "description": "The description beneath the label.",
+              "name": "description"
+            },
+            {
+              "description": "The host error beneath the control.",
+              "name": "error"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A labelled multiline field with native editing, form participation, validation, reset and restoration.",
+          "events": [
+            {
+              "description": "A committed user edit, with the current value.",
+              "name": "ocelle-form-textarea-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "readonly",
+              "default": "false",
+              "description": "Whether the answer can be focused, selected and submitted but cannot be edited (attribute `readonly`).",
+              "kind": "field",
+              "name": "readOnly",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The current value: what the user typed or chose, or what a script, a reset or a restore set. Not reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "name",
+              "default": "\"\"",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "name",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "required",
+              "default": "false",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "required",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "description",
+              "default": "\"\"",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "description",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "error",
+              "default": "\"\"",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "error",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "The form the control belongs to, or null, as a native control's.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "form",
+              "readonly": true,
+              "type": {
+                "text": "HTMLFormElement | null"
+              }
+            },
+            {
+              "description": "The `<label>` elements associated with the control, as a native control's.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "labels",
+              "readonly": true,
+              "type": {
+                "text": "NodeList"
+              }
+            },
+            {
+              "description": "The control's validity, the native control's constraint validation.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "validity",
+              "readonly": true,
+              "type": {
+                "text": "ValidityState"
+              }
+            },
+            {
+              "description": "The browser's validation message for the native control, or empty when it is valid.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "validationMessage",
+              "readonly": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Whether the control takes part in constraint validation.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "field",
+              "name": "willValidate",
+              "readonly": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Whether the control satisfies its constraints; when not, it fires `invalid` at the host.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "checkValidity",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "description": "As `checkValidity()`, and when invalid the browser focuses the native control and shows its message.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "reportValidity",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "description": "Focuses the native control; the host is not a tab stop of its own.",
+              "inheritedFrom": {
+                "module": "src/form-control.ts",
+                "name": "FormControl"
+              },
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleFormTextarea",
+          "slots": [],
+          "superclass": {
+            "module": "/src/form-control.ts",
+            "name": "FormControl"
+          },
+          "tagName": "ocelle-form-textarea"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-form-textarea.ts",
+            "name": "OcelleFormTextarea"
+          },
+          "kind": "js",
+          "name": "OcelleFormTextarea"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-form-textarea.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The icon's name, one of the set; any other value draws nothing and keeps the box. Reflected.",
               "fieldName": "name",
@@ -1358,6 +4331,100 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-icon.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The link's target, as written: the anchor carries it while it resolves to an allowed protocol, and the event's\n`detail.href` reports it. Without it the link only emits its event. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's accessible name instead of its text, trimmed; blank counts as none. It must contain the visible text.\nA host `aria-label` does not name the link. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The link's anchor: the native `<a>` that is focused and activated.",
+              "name": "anchor"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A link in running text that tells the host it was activated, and navigates to an allowed `href` unless the host\ncancels.",
+          "events": [
+            {
+              "description": "The user activated the link with Enter or a primary-button click (no modifier, or Alt alone): `href` is the `href` attribute as written, not validated, or `null` without one. Cancelable: a cancelled event stops the link's own navigation. A modified activation (Ctrl, Meta or Shift held, or a middle click) emits nothing.",
+              "name": "ocelle-link-activate",
+              "type": {
+                "text": "CustomEvent<{ href: string | null }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's target, as written: the anchor carries it while it resolves to an allowed protocol, and the event's\n`detail.href` reports it. Without it the link only emits its event. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The link's accessible name instead of its text, trimmed; blank counts as none. It must contain the visible text.\nA host `aria-label` does not name the link. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleLink",
+          "slots": [
+            {
+              "description": "The link's text.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-link"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-link.ts",
+            "name": "OcelleLink"
+          },
+          "kind": "js",
+          "name": "OcelleLink"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-link.ts"
     },
     {
       "declarations": [
@@ -1499,6 +4566,511 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-list-detail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The listbox's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The selected option's value, `\"\"` when none. Setting it selects the first enabled option with the value; `\"\"` or a\nvalue no enabled option has clears the selection, and a non-empty such value is remembered until an option with it\nappears or is enabled. A set never emits an event; setting the current value changes nothing. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The scroll container of the options; a host limits the listbox's height with `max-block-size` on the listbox.",
+              "name": "list"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A single-select listbox of `ocelle-option` children, one tab stop, keyboard and pointer selection.",
+          "events": [
+            {
+              "description": "The user selected another option (Enter, Space or a click); `value` already reads it.",
+              "name": "ocelle-listbox-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            },
+            {
+              "description": "The user confirmed an option: Enter on the selected enabled option, or a double-click on an enabled option. Not cancelable.",
+              "name": "ocelle-listbox-activate",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The listbox's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "\"\"",
+              "description": "The selected option's value, `\"\"` when none. Setting it selects the first enabled option with the value; `\"\"` or a\nvalue no enabled option has clears the selection, and a non-empty such value is remembered until an option with it\nappears or is enabled. A set never emits an event; setting the current value changes nothing. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleListbox",
+          "slots": [
+            {
+              "description": "The `ocelle-option` children.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-listbox"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-listbox.ts",
+            "name": "OcelleListbox"
+          },
+          "kind": "js",
+          "name": "OcelleListbox"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-listbox.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "The native destination. An absent or unusable destination renders text.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The visible and accessible destination name.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "`page` or `true` marks the link current. Other values omit the state.",
+              "fieldName": "current",
+              "name": "current",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Standalone preference for icon-only presentation.",
+              "fieldName": "compact",
+              "name": "compact",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native link, when a destination is supplied.",
+              "name": "link"
+            },
+            {
+              "description": "The visible label, hidden while the link is compact.",
+              "name": "label"
+            },
+            {
+              "description": "The compact label bubble.",
+              "name": "bubble"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A vertical destination link. Compact mode keeps the accessible label and provides a visual label bubble.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "href",
+              "description": "The native destination. An absent or unusable destination renders text.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The visible and accessible destination name.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "current",
+              "description": "`page` or `true` marks the link current. Other values omit the state.",
+              "kind": "field",
+              "name": "current",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "compact",
+              "default": "false",
+              "description": "Standalone preference for icon-only presentation.",
+              "kind": "field",
+              "name": "compact",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleNavItem",
+          "slots": [
+            {
+              "description": "A decorative destination icon.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-nav-item"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-nav-item.ts",
+            "name": "OcelleNavItem"
+          },
+          "kind": "js",
+          "name": "OcelleNavItem"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-nav-item.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"Navigation\"",
+              "description": "Localized name for the navigation landmark.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered list of destination links.",
+              "name": "list"
+            },
+            {
+              "description": "A destination's native link.",
+              "name": "link"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A named, wrapping group of native destination links.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "\"Navigation\"",
+              "description": "Localized name for the navigation landmark.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Destinations in host-supplied order. The first valid current destination owns the current-page state.",
+              "kind": "field",
+              "name": "items",
+              "privacy": "public",
+              "type": {
+                "text": "readonly NavPillItem[]"
+              }
+            }
+          ],
+          "name": "OcelleNavPill",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-nav-pill"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-nav-pill.ts",
+            "name": "OcelleNavPill"
+          },
+          "kind": "js",
+          "name": "OcelleNavPill"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-nav-pill.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"info\"",
+              "description": "The tone: `info`, `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property\nreads `\"info\"`, while the attribute keeps the value as written. Reflected.",
+              "fieldName": "tone",
+              "name": "tone",
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              }
+            },
+            {
+              "default": "\"regular\"",
+              "description": "The size: `regular` or `compact`; any other value behaves as `regular` and the property reads `\"regular\"`, while\nthe attribute keeps the value as written. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"regular\" | \"compact\""
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the notice announces its text once on insertion after parsing, on reveal and on each change, politely\nfor `info`, `success` and `neutral` and assertively for `warning` and `danger`. Reflected.",
+              "fieldName": "announce",
+              "name": "announce",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The heading's box, not drawn when the heading is absent.",
+              "name": "heading"
+            },
+            {
+              "description": "The body's box.",
+              "name": "body"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A message about a state or result in a box whose look follows its tone, with an optional heading, in the regular or\nthe compact size, announced once by assistive technology when `announce` is set.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "tone",
+              "default": "\"info\"",
+              "description": "The tone: `info`, `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property\nreads `\"info\"`, while the attribute keeps the value as written. Reflected.",
+              "kind": "field",
+              "name": "tone",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              }
+            },
+            {
+              "attribute": "size",
+              "default": "\"regular\"",
+              "description": "The size: `regular` or `compact`; any other value behaves as `regular` and the property reads `\"regular\"`, while\nthe attribute keeps the value as written. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\""
+              }
+            },
+            {
+              "attribute": "announce",
+              "default": "false",
+              "description": "Whether the notice announces its text once on insertion after parsing, on reveal and on each change, politely\nfor `info`, `success` and `neutral` and assertively for `warning` and `danger`. Reflected.",
+              "kind": "field",
+              "name": "announce",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleNotice",
+          "slots": [
+            {
+              "description": "The heading, optional; only elements are assigned to it, and it is absent when their text content is empty or whitespace only.",
+              "name": "heading"
+            },
+            {
+              "description": "The body.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-notice"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-notice.ts",
+            "name": "OcelleNotice"
+          },
+          "kind": "js",
+          "name": "OcelleNotice"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-notice.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "false",
+              "description": "Whether the option is disabled: it cannot be selected, the keys and the tab stop skip it, and it stays focusable,\nso a focused option that becomes disabled keeps focus. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the option's index, as a string",
+              "description": "The option's value, reported by the listbox's `value` and events: the `value` attribute as written (not trimmed),\nor, when it is missing or blank, the option's index among its parent's options, as a string, which is not written\nto the attribute. Reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An option of an `ocelle-listbox`: its content is its label, with an optional leading icon.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the option is disabled: it cannot be selected, the keys and the tab stop skip it, and it stays focusable,\nso a focused option that becomes disabled keeps focus. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the option's index, as a string",
+              "description": "The option's value, reported by the listbox's `value` and events: the `value` attribute as written (not trimmed),\nor, when it is missing or blank, the option's index among its parent's options, as a string, which is not written\nto the attribute. Reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleOption",
+          "slots": [
+            {
+              "description": "The option's label.",
+              "name": ""
+            },
+            {
+              "description": "A leading icon, by the slot convention; it adds nothing to the option's name.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-option"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-option.ts",
+            "name": "OcelleOption"
+          },
+          "kind": "js",
+          "name": "OcelleOption"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-option.ts"
     },
     {
       "declarations": [
@@ -2053,6 +5625,497 @@
         {
           "attributes": [
             {
+              "default": "false",
+              "description": "Whether the segment is disabled: it cannot be pressed, the keys and the tab stop skip it, and it stays focusable,\nso a focused segment that becomes disabled keeps focus until the press moves. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the segment's index, as a string",
+              "description": "The segment's value, reported by the segmented choice's `value` and events: the `value` attribute as written (not\ntrimmed), or, when it is missing or blank, the segment's index among its parent's segments, as a string, which is\nnot written to the attribute. Reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A segment of an `ocelle-segmented-choice`: its content is its label, with an optional leading icon.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the segment is disabled: it cannot be pressed, the keys and the tab stop skip it, and it stays focusable,\nso a focused segment that becomes disabled keeps focus until the press moves. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the segment's index, as a string",
+              "description": "The segment's value, reported by the segmented choice's `value` and events: the `value` attribute as written (not\ntrimmed), or, when it is missing or blank, the segment's index among its parent's segments, as a string, which is\nnot written to the attribute. Reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleSegment",
+          "slots": [
+            {
+              "description": "The segment's label.",
+              "name": ""
+            },
+            {
+              "description": "A leading icon, by the slot convention; it adds nothing to the segment's name.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-segment"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-segment.ts",
+            "name": "OcelleSegment"
+          },
+          "kind": "js",
+          "name": "OcelleSegment"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-segment.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The toolbar's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "The joined variant: the segments touch with one shared line between neighbours and between rows, and only each\nrow's first and last segments have rounded outer corners, recomputed by the element when it wraps. Reflected.",
+              "fieldName": "joined",
+              "name": "joined",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the first enabled segment's value",
+              "description": "The pressed segment's value; `\"\"` only while no segment is enabled. Setting it presses the first enabled segment\nwith the value; `\"\"` or a value no enabled segment has keeps the press, and a non-empty such value is remembered\nuntil a segment with it appears or is enabled. A set never emits an event; setting the current value changes\nnothing. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A toolbar of `ocelle-segment` toggle buttons, exactly one pressed; one tab stop, keyboard and pointer pressing, and a\njoined variant that rounds each row's ends itself.",
+          "events": [
+            {
+              "description": "The user pressed another segment (Enter, Space or a click); `value` already reads it.",
+              "name": "ocelle-segmented-choice-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The toolbar's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "joined",
+              "default": "false",
+              "description": "The joined variant: the segments touch with one shared line between neighbours and between rows, and only each\nrow's first and last segments have rounded outer corners, recomputed by the element when it wraps. Reflected.",
+              "kind": "field",
+              "name": "joined",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the first enabled segment's value",
+              "description": "The pressed segment's value; `\"\"` only while no segment is enabled. Setting it presses the first enabled segment\nwith the value; `\"\"` or a value no enabled segment has keeps the press, and a non-empty such value is remembered\nuntil a segment with it appears or is enabled. A set never emits an event; setting the current value changes\nnothing. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleSegmentedChoice",
+          "slots": [
+            {
+              "description": "The `ocelle-segment` children.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-segmented-choice"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-segmented-choice.ts",
+            "name": "OcelleSegmentedChoice"
+          },
+          "kind": "js",
+          "name": "OcelleSegmentedChoice"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-segmented-choice.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "fieldName": "targetSelector",
+              "name": "target-selector",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native keyboard control.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A keyboard shortcut to programmatically focus the start of the page content.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "default": "null",
+              "description": "Explicit target, which takes precedence even when it cannot receive focus.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "type": {
+                "text": "HTMLElement | null"
+              }
+            },
+            {
+              "attribute": "target-selector",
+              "default": "\"\"",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "kind": "field",
+              "name": "targetSelector",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleSkipLink",
+          "slots": [
+            {
+              "description": "The localized shortcut label.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-skip-link"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-skip-link.ts",
+            "name": "OcelleSkipLink"
+          },
+          "kind": "js",
+          "name": "OcelleSkipLink"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-skip-link.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A panel of an `ocelle-tabs`: its content is shown while the tab at the same place among the tabs is selected.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcelleTabPanel",
+          "slots": [
+            {
+              "description": "The panel's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tab-panel"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tab-panel.ts",
+            "name": "OcelleTabPanel"
+          },
+          "kind": "js",
+          "name": "OcelleTabPanel"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tab-panel.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "false",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the tab's index, as a string",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tab of an `ocelle-tabs`: its content is its label, with an optional leading icon; it pairs with the panel at the\nsame place among the tabs' panels.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the tab's index, as a string",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleTab",
+          "slots": [
+            {
+              "description": "The tab's label.",
+              "name": ""
+            },
+            {
+              "description": "A leading icon, by the slot convention; it adds nothing to the tab's name.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tab"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tab.ts",
+            "name": "OcelleTab"
+          },
+          "kind": "js",
+          "name": "OcelleTab"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tab.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "the first enabled tab's value",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The row of the tabs, which wraps onto further rows.",
+              "name": "tablist"
+            },
+            {
+              "description": "The container of the shown panel, beside the tablist.",
+              "name": "panels"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tablist of `ocelle-tab` children and their `ocelle-tab-panel` panels, paired by order; one tab stop, keyboard and\npointer selection, selection following focus.",
+          "events": [
+            {
+              "description": "The user selected another tab (an arrow key, Home, End, Enter, Space or a click); `value` already reads it.",
+              "name": "ocelle-tabs-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the first enabled tab's value",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleTabs",
+          "slots": [
+            {
+              "description": "The `ocelle-tab` and `ocelle-tab-panel` children, in any interleaving; they pair by order among their kind.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tabs"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tabs.ts",
+            "name": "OcelleTabs"
+          },
+          "kind": "js",
+          "name": "OcelleTabs"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tabs.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The event's time as the consumer formats it, shown on its own line above the content. Empty or white space counts\nas no time. Ignored while the event has a slotted time (the `time` slot). Reflected.",
               "fieldName": "time",
@@ -2274,6 +6337,151 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-tooltip.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The product name displayed beside the mark.",
+              "fieldName": "productName",
+              "name": "product-name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether to expose the menu trigger.",
+              "fieldName": "showMenu",
+              "name": "show-menu",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "\"Open navigation\"",
+              "description": "Localized accessible name for the menu trigger.",
+              "fieldName": "menuLabel",
+              "name": "menu-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the host has expanded navigation.",
+              "fieldName": "menuExpanded",
+              "name": "menu-expanded",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chrome container.",
+              "name": "bar"
+            },
+            {
+              "description": "The decorative rosette and product name.",
+              "name": "brand"
+            },
+            {
+              "description": "The host actions region, hidden while empty.",
+              "name": "actions"
+            },
+            {
+              "description": "The native menu trigger.",
+              "name": "menu-button"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "The application's brand, product name, host actions and optional navigation menu trigger.",
+          "events": [
+            {
+              "description": "Requests the next menu state. Bubbles and is composed. The host applies the resulting state with `menuExpanded`.",
+              "name": "ocelle-top-bar-menu-request",
+              "type": {
+                "text": "CustomEvent<{ expanded: boolean }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "product-name",
+              "default": "\"\"",
+              "description": "The product name displayed beside the mark.",
+              "kind": "field",
+              "name": "productName",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "show-menu",
+              "default": "false",
+              "description": "Whether to expose the menu trigger.",
+              "kind": "field",
+              "name": "showMenu",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "menu-label",
+              "default": "\"Open navigation\"",
+              "description": "Localized accessible name for the menu trigger.",
+              "kind": "field",
+              "name": "menuLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "menu-expanded",
+              "default": "false",
+              "description": "Whether the host has expanded navigation.",
+              "kind": "field",
+              "name": "menuExpanded",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleTopBar",
+          "slots": [
+            {
+              "description": "Host-owned controls, shown after the product name.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-top-bar"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-top-bar.ts",
+            "name": "OcelleTopBar"
+          },
+          "kind": "js",
+          "name": "OcelleTopBar"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-top-bar.ts"
     },
     {
       "declarations": [

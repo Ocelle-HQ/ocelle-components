@@ -1,0 +1,16 @@
+Pinned related elements, touch and built fixture projects.
+ Test Files  11 passed (11)
+      Tests  109 passed (109)
+   Duration  28.03s (worker 84%, tests 14%, import 1%)
+Element-node manifest and README checks.
+ Test Files  2 passed (2)
+      Tests  1031 passed (1031)
+   Duration  6.53s (tests 87%, import 8%, transform 5%)
+Manifest, plant repository and Storybook inventory.
+ Test Files  4 passed (4)
+      Tests  54 passed (54)
+   Duration  11.56s (tests 97%, import 2%)
+Build and pack checks.
+ Test Files  2 passed (2)
+      Tests  5 passed (5)
+   Duration  6.94s (tests 99%, transform 1%)
