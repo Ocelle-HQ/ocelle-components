@@ -1,0 +1,17 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "Host position changes can leave an offscreen node active"
+    evidence:
+      - artifact: "plan.md:37–39 refreshes eligibility after canvas rendering, resize, viewport changes and enclosing scroll. The live clip check at a canvas-programmatic handoff does not run when native Tab enters the group."
+      - artifact: "data-model.md:22 and contracts/workflow-canvas.md:34 require the unavailable action to be excluded from focus, assistive-technology navigation and activation."
+      - code: "Pinned Chromium 156.0.8078.4, strict-CSP probe with an HTML button inside an SVG foreignObject. A consumer host class applied translateX(-450px) without an input update or scroll. The native action's right edge went from 200 to -250 CSS pixels. ResizeObserver notifications on the host, map and action stayed at three initial entries and scroll notifications stayed at zero. Native Tab still focused the offscreen action. IntersectionObserver reported the change from a full intersection to zero."
+    claim: |
+      Moving a consumer pane without resizing or scrolling leaves the last eligible native action in the tab order and accessibility tree under the planned refresh triggers. The same missed position-only update can leave a previously unavailable action inert after the host moves it back. The existing check before programmatic focus does not cover native Tab or assistive-technology activation. This is a missing refresh trigger, separate from detecting effective clipping at a known handoff or observing a captured drag frame.
+    remedies:
+      - "Add an intersection or equivalent position-change signal for action and focus bounds while the canvas is idle. Feed it through the existing eligibility and before-demotion focus rules. Retain live validation before a focus handoff or selection forwarding. Exercise a host-only move out of view and back with no input, resize or scroll, checking native Tab, accessibility-tree exclusion, restoration and zero unsolicited requests."
