@@ -1,4 +1,4 @@
-import { afterEach, describe, expect as vitestExpect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect as vitestExpect, it } from "vitest";
 import type { Assertion } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/index.ts";
@@ -22,6 +22,17 @@ import {
   workflowSelectionState,
   workflowTabOrder,
 } from "./scenarios/workflow-node.ts";
+import {
+  changeWorkflowContext,
+  combinedWorkflowDescription,
+  cycleWorkflowNodes,
+  longWorkflowStep,
+  makeLongWorkflowStep,
+  updateWorkflowStates,
+  workflowDescription,
+  workflowStateCues,
+  workflowTabParticipation,
+} from "./scenarios/workflow-node-navigation.ts";
 
 const driver = inProcessDriver();
 const inner = { inner: "button" };
@@ -165,5 +176,125 @@ describe("ocelle-workflow-node selection in process", () => {
     expect(paint.outlineWidth).toBeGreaterThan(0);
     const [text, borderOutside, borderInside, focus, metadata] = workflowContrast(paint.colors);
     expect({ text: (text ?? 0) >= 4.5, borderOutside: (borderOutside ?? 0) >= 3, borderInside: (borderInside ?? 0) >= 3, focus: (focus ?? 0) >= 3, metadata: (metadata ?? 0) >= 4.5 }).toEqual({ text: true, borderOutside: true, borderInside: true, focus: true, metadata: true });
+  });
+});
+
+describe("ocelle-workflow-node navigation and accessible context in process", () => {
+  beforeEach(() => {
+    const sheets = [...document.adoptedStyleSheets];
+    const theme = document.documentElement.dataset.theme;
+    return () => {
+      document.adoptedStyleSheets = sheets;
+      if (theme === undefined) delete document.documentElement.dataset.theme;
+      else document.documentElement.dataset.theme = theme;
+    };
+  });
+
+  it("keeps one native action available while the host excludes and restores it in both Tab directions", async () => {
+    await mountWorkflowNodes();
+    const order = (steps: number) => cycleWorkflowNodes(
+      () => { document.getElementById("before")?.focus(); },
+      (reverse) => commands.press("Tab", reverse ? ["Shift"] : []),
+      readWorkflowFocus,
+      steps,
+    );
+    const original = document.getElementById("review")?.shadowRoot?.querySelector("button");
+    expect(await order(3)).toEqual(workflowTabOrder);
+    expect(await workflowTabParticipation("markup")).toEqual({ field: 0, action: 0, host: -1, focused: null });
+    expect(await workflowTabParticipation("exclude")).toEqual({ field: -1, action: -1, host: -1, focused: null });
+    expect(await order(2)).toEqual(["planning >> button", "after", "planning >> button", "before"]);
+    expect(await workflowTabParticipation("focus")).toEqual({ field: -1, action: -1, host: -1, focused: "button" });
+    expect(readWorkflowActivity()).toEqual([]);
+
+    const activity = selectionActivity("review", "review-12");
+    await commands.press("Enter");
+    expect(readWorkflowActivity()).toEqual(activity);
+    await commands.press("Space");
+    expect(readWorkflowActivity()).toEqual([...activity, ...activity]);
+    expect(await workflowTabParticipation("restore")).toEqual({ field: 0, action: 0, host: -1, focused: "button" });
+    expect(document.getElementById("review")?.shadowRoot?.querySelector("button")).toBe(original);
+    expect(await order(3)).toEqual(workflowTabOrder);
+    expect(readWorkflowActivity()).toEqual([...activity, ...activity]);
+  });
+
+  it.each(["light", "dark", "forced"] as const)("exposes the combined states and full narrow labels with %s focus and contrast", async (mode) => {
+    await driver.mount("");
+    await mountWorkflowNodes();
+    document.documentElement.dataset.theme = mode === "dark" ? "dark" : "light";
+    await commands.emulateForcedColors(mode === "forced" ? "active" : "none");
+    expect(await updateWorkflowStates("defaults")).toEqual({ waiting: false, invalid: false, attributes: [false, false] });
+    await makeLongWorkflowStep(longWorkflowStep);
+    expect(await updateWorkflowStates("combine")).toEqual({ waiting: true, invalid: true, attributes: [true, true] });
+    document.getElementById("before")?.focus();
+    await commands.press("Tab");
+
+    const cues = workflowStateCues();
+    expect({ labels: cues.labels, fits: cues.fits }).toEqual({ labels: ["Selected", "Waiting", "Invalid"], fits: true });
+    expect(cues.titleLines).toBeGreaterThan(1);
+    expect(readWorkflowFocus()).toBe("review >> button");
+    expect(await commands.axState("review", "button")).toMatchObject({ role: "button", name: longWorkflowStep.label, description: combinedWorkflowDescription, pressed: "true" });
+    const paint = workflowPaint();
+    expect(paint.outline).toBe("solid");
+    expect(paint.outlineWidth).toBeGreaterThan(0);
+    expect(paint.min).toBeGreaterThan(0);
+    expect(Math.min(...paint.size)).toBeGreaterThanOrEqual(paint.min);
+    const thresholds = [4.5, 3, 3, 3, 4.5, 4.5, 4.5, 4.5];
+    const contrasts = workflowContrast([...paint.colors, ...cues.colors]);
+    expect(thresholds.map((threshold, at) => (contrasts[at] ?? 0) >= threshold)).toEqual(thresholds.map(() => true));
+
+    expect(await updateWorkflowStates("clear-waiting")).toEqual({ waiting: false, invalid: true, attributes: [false, true] });
+    expect(workflowStateCues().labels).toEqual(["Selected", "Invalid"]);
+    expect(await updateWorkflowStates("clear-invalid")).toEqual({ waiting: false, invalid: false, attributes: [false, false] });
+    expect(workflowStateCues().labels).toEqual(["Selected"]);
+    expect(await updateWorkflowStates("other-states")).toEqual({ waiting: true, invalid: true, attributes: [true, true] });
+    expect(workflowStateCues().labels).toEqual(["Waiting", "Invalid"]);
+    expect(await commands.axState("review", "button")).toMatchObject({ pressed: "false", description: combinedWorkflowDescription.replace(" Selected", "") });
+    expect(readWorkflowActivity()).toEqual([]);
+  });
+
+  it("updates and clears literal name, description and current-step context while retaining focused built-in information", async () => {
+    await mountWorkflowNodes("literal");
+    await updateWorkflowNode("select");
+    await workflowTabParticipation("focus");
+    await changeWorkflowContext("replace-literal");
+    expect(workflowAria()).toMatchObject({ current: "location", nameContext: ["Retrospective context"], descriptionContext: ["Policy applies"] });
+    expect(await commands.axState("review", "button")).toMatchObject({
+      name: "Security review Retrospective context",
+      description: `${workflowDescription} Selected Policy applies`,
+      pressed: "true",
+    });
+    await changeWorkflowContext("clear-literal");
+    expect(workflowAria()).toMatchObject({ current: null, nameContext: [], descriptionContext: [] });
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: `${workflowDescription} Selected`, pressed: "true" });
+    expect(readWorkflowFocus()).toBe("review >> button");
+    expect(readWorkflowActivity()).toEqual([]);
+  });
+
+  it("reads live reference text and refreshes same-ID replacements through the host attributes", async () => {
+    await mountWorkflowNodes("references");
+    await updateWorkflowNode("select");
+    const description = `${workflowDescription} Selected`;
+    await changeWorkflowContext("edit-targets");
+    expect(await commands.axState("review", "button")).toMatchObject({
+      name: "Security review Edited workspace Stage two",
+      description: `${description} Edited description Policy applies`,
+    });
+    await changeWorkflowContext("replace-targets");
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review Release approvals", description });
+    await changeWorkflowContext("restore-targets");
+    expect(await commands.axState("review", "button")).toMatchObject({
+      name: "Security review Replacement workspace Stage two",
+      description: `${description} Replacement description Policy applies`,
+    });
+    expect(readWorkflowActivity()).toEqual([]);
+  });
+
+  it("recomputes the accessible references in the host's shadow root on reconnection", async () => {
+    await mountWorkflowNodes("references");
+    await changeWorkflowContext("move-root");
+    expect(await commands.axState("review", "button")).toMatchObject({
+      name: "Security review Shadow workspace Shadow stage",
+      description: `${workflowDescription} Shadow hint Shadow policy`,
+    });
   });
 });
