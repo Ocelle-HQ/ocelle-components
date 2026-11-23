@@ -30,6 +30,7 @@ export { OcelleFacts } from "./ocelle-facts.ts";
 export { OcelleFormInput } from "./ocelle-form-input.ts";
 export type { FormInputType } from "./ocelle-form-input.ts";
 export { OcelleFormSelect } from "./ocelle-form-select.ts";
+export { OcelleFormTextarea } from "./ocelle-form-textarea.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
 export type { IconName } from "./ocelle-icon.ts";
 export { OcelleLink } from "./ocelle-link.ts";

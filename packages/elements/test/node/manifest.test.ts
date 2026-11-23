@@ -484,6 +484,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-facts.ts",
       "src/ocelle-form-input.ts",
       "src/ocelle-form-select.ts",
+      "src/ocelle-form-textarea.ts",
       "src/ocelle-icon.ts",
       "src/ocelle-link.ts",
       "src/ocelle-list-detail.ts",
@@ -840,6 +841,22 @@ describe("generate(root) on the repository's element source", () => {
       events: [{ name: "ocelle-form-input-change", type: "CustomEvent<{ value: string }>", described: true }],
       parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
     });
+  });
+
+  it("declares the textarea's change event and read-only property in the manifest", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [entry] = modules.find((module) => module.path === "src/ocelle-form-textarea.ts")?.declarations ?? [];
+    expect(entry?.events, "the textarea declares the committed-change event").toEqual([
+      expect.objectContaining({ name: "ocelle-form-textarea-change", type: { text: "CustomEvent<{ value: string }>" } }),
+    ]);
+    expect(entry?.attributes).toContainEqual(expect.objectContaining({ name: "readonly", fieldName: "readOnly" }));
+    expect(entry?.cssParts).toEqual([
+      expect.objectContaining({ name: "label" }),
+      expect.objectContaining({ name: "control" }),
+      expect.objectContaining({ name: "description" }),
+      expect.objectContaining({ name: "error" }),
+    ]);
   });
 
   it('declares ocelle-form-select with its tag name and class, the shared members of contracts/elements.md (value a property with no attribute), none of the input\'s own members, the event ocelle-form-select-change with its detail type, the parts label, control, description and error, no slot and no CSS property, and no value, form, aria-*, role or hidden attribute (specs/010-feedback-forms FR-021, FR-034; analysis G9, I15, I16)', async () => {
