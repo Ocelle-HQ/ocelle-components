@@ -12,6 +12,12 @@ convention are additions to the public surface: a minor change.
 The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an
 internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
 
+`ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain` and
+`ocelle-evidence-step`, their properties (`label`, `wrap`, `stickyHeader` as `sticky-header`, `striped`, `time` and
+`variant`), the event's `time` slot, the parts `list`, `time` and `content`, their entry points and the base-style hook
+`--data-table-box-size` and `--data-table-end-fade` are additions to the public surface: a minor change. None of them
+dispatches an event, and no token is added.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -132,7 +138,8 @@ internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
   inside `@media not (forced-colors: active)`, and layout-only variant rules stay outside it, so a layout variant keeps
   its layout in forced colours (a documentation change; 011).
 - `ocelle-data-table`: a native `<table>` child in a scroll region, a tab stop and a named group only while it
-  overflows, with `label`, `wrap`, `sticky-header` (reflected) and `striped` (reflected); its entry point
+  overflows, with `label`, `wrap` (reflected), the property `stickyHeader` as `sticky-header` (reflected) and `striped`
+  (reflected), its default slot and no part; its entry point
   `@ocelle/elements/ocelle-data-table.js`; and the base-style hook `--data-table-box-size` and `--data-table-end-fade`,
   which it writes for `@ocelle/styles`' caption cap.
 - `ocelle-event-timeline`, an event history as one ordered list of its `ocelle-timeline-event` children in source

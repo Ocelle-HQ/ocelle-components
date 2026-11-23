@@ -5,6 +5,11 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
 
 ## Unreleased
 
+`base.css`'s four blocks for the data records (the `ocelle-data-table` rules, their prose override, the pre-upgrade
+rules of `ocelle-event-timeline` and `ocelle-evidence-chain`, and the numeric-cell rule), the `data-ocelle-align`
+hook with its value `end`, and the base-style hook `--data-table-box-size` and `--data-table-end-fade` that
+`ocelle-data-table` writes are additions to the public surface: a minor change. No token is added.
+
 ### Added
 
 - `base.css`: the base layer for host pages, linked after `@ocelle/tokens` `tokens.css`: a minimal reset, the body
