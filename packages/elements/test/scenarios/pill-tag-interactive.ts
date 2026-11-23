@@ -1042,6 +1042,21 @@ export const pillInteractiveScenarios: readonly Scenario[] = [
     },
   },
   {
+    name: 'FR-035, no mode change: a static pill with title and aria-label on its host, given an href that is not a link ("" and then whitespace), stays static: both stay on its host with no mirror, and it renders no inner control (data-model.md § mode; review round 1, the mutant that runs the transition when the mode does not change)',
+    run: async (driver) => {
+      await mount(driver, '<ocelle-pill-tag id="p" status="info" title="Blocked since Monday" aria-label="Blocked state">Blocked</ocelle-pill-tag>');
+      const read = async (): Promise<unknown> => ({ title: await hostPair(driver, "p", "title"), label: await hostPair(driver, "p", "aria-label"), root: await rendered(driver, "p") });
+      await driver.setAttribute("p", "href", "");
+      const empty = await read();
+      await driver.setAttribute("p", "href", "   ");
+      return { empty, blank: await read() };
+    },
+    expected: {
+      empty: { title: { host: "Blocked since Monday", mirror: null }, label: { host: "Blocked state", mirror: null }, root: staticRoot },
+      blank: { title: { host: "Blocked since Monday", mirror: null }, label: { host: "Blocked state", mirror: null }, root: staticRoot },
+    },
+  },
+  {
     name: "US4-11: an interactive pill whose inner control has focus, made static, loses focus as a removed element does (focus on the body, nothing focused in its shadow root), and the pill does not move it, while a twin switched from button to link mode keeps it (FR-035 (d))",
     run: async (driver) => {
       await mount(driver, '<button id="before" type="button">Before</button> <ocelle-pill-tag id="p" interactive status="info">Mine</ocelle-pill-tag> <ocelle-pill-tag id="t" interactive status="info">Mine</ocelle-pill-tag>');

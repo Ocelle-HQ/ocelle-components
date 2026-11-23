@@ -31,3 +31,13 @@ Decisions:
 - **R1-04: carry the deferred items in tasks.md** (T056, T059): the tooltip half of § US4-10 and its plant "the
   refocus in `updated()` (not queued)", the `min-inline-size: 0` chain and the disabled text's `overflow-wrap:
   anywhere`.
+
+## R1-03 revisited (fix-1)
+
+Question (fix-1 implementer): Stryker 10.1.1 disables by mutator name and line only, so the equivalent `true` and the
+killed `false` `ConditionalExpression` mutants of the one `if` at `ocelle-pill-tag.ts:498` cannot be told apart by a
+disable comment. Options: (a) keep the disable and extend its comment; (b) drop the condition, `adoptMirrors()` at
+upgrade in every mode; (c) restructure the branch for the tool.
+
+Decision: **(a).** The disable stays; its comment is extended to say it also covers the killed `false`, which stays
+covered by US4-12 and by the line's `EqualityOperator` mutant (not disabled). No source change beyond the comment.
