@@ -25,7 +25,7 @@ import { audit, axDetails, axNodes, axeSetup, axStateOf, axStatesOf, axSubtree, 
 import { layoutWait } from "../layout-wait.ts";
 import { fixtureCapture } from "../live.ts";
 import type { Snapshot } from "../live-reading.ts";
-import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
+import { activeInnerOf, activePath, characterBoxes, clickElement, computedOf, copyElement, copySentinel, currentOf, dropSentinel, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, selectSentinel, selectShadowRun, sentinelId, shadowClientRects, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
 import { heardTypes } from "../scenarios/driver.ts";
 import type { Bounds, Box, Drawing, ElementTarget, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, TreeNode, Validity } from "../scenarios/driver.ts";
@@ -180,6 +180,37 @@ async function inShadow(page: Page, id: string, inner: string, act: "append" | "
     { id, inner, act, args },
   );
   await settle(page);
+}
+
+/** The number of `findText` calls so far, on every page: each navigates to a fragment of its own. */
+let finds = 0;
+
+/** Puts the copy sentinel on the clipboard with a user copy of a scratch field (020 phase 2, `copyShadow`). */
+async function sentinelOnClipboard(page: Page): Promise<void> {
+  await page.evaluate(selectSentinel, copySentinel);
+  await page.keyboard.press("ControlOrMeta+C");
+  await page.evaluate(dropSentinel);
+}
+
+/** The clipboard's `text/plain`, read from the `clipboardData` of a user paste into a scratch field. */
+async function pastedText(page: Page): Promise<string> {
+  await page.evaluate(() => {
+    const field = document.createElement("textarea");
+    field.id = "ocelle-driver-paste";
+    document.body.append(field);
+    field.addEventListener("paste", (event) => {
+      field.dataset.pasted = event.clipboardData?.getData("text/plain") ?? "";
+    });
+    field.focus();
+  });
+  await page.keyboard.press("ControlOrMeta+V");
+  return page.evaluate(() => {
+    const field = document.getElementById("ocelle-driver-paste");
+    const pasted = field?.dataset.pasted ?? "";
+    field?.remove();
+    getSelection()?.removeAllRanges();
+    return pasted;
+  });
 }
 
 /**
@@ -1304,6 +1335,49 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }
       return await stop();
     },
+    findText: async (word) => {
+      finds += 1;
+      await page.evaluate((fragment) => {
+        location.href = fragment;
+      }, `#ocelle-find-${String(finds)}:~:text=${encodeURIComponent(word)}`);
+      await settle(page);
+      await settle(page);
+    },
+    setProperties: async (id, name, values) => {
+      await page.evaluate(({ id, name, values }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        for (const value of values) (element as unknown as Record<string, unknown>)[name] = value;
+      }, { id, name, values });
+    },
+    visible: (id) =>
+      page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return element.checkVisibility();
+      }, id),
+    reflected: (id, inner, property) =>
+      page.evaluate(({ id, inner, property }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+        const value = (target as unknown as Record<string, unknown>)[property] as readonly Element[] | null | undefined;
+        return value === null || value === undefined ? null : value.map((each) => (each.id !== "" ? each.id : [each.localName, ...each.classList].join(".")));
+      }, { id, inner, property }),
+    copyShadow: async (id, inner) => {
+      await sentinelOnClipboard(page);
+      await page.locator(`[id="${id}"]`).locator(inner).first().click({ clickCount: 3, force: true, position: { x: 2, y: 2 } });
+      await page.keyboard.press("ControlOrMeta+C");
+      return await pastedText(page);
+    },
+    copyShadowRun: async (id, inner, from, to) => {
+      await sentinelOnClipboard(page);
+      await page.evaluate(selectShadowRun, { id, inner, from, to });
+      await page.keyboard.press("ControlOrMeta+C");
+      return await pastedText(page);
+    },
+    ariaSnapshot: (id, inner) => page.locator(`[id="${id}"]`).locator(inner).first().ariaSnapshot(),
+    clientRects: (id, inner) => page.evaluate(shadowClientRects, { id, inner }),
+    characters: (id, inner) => page.evaluate(characterBoxes, { id, inner }),
   };
   // Every step ends at its own page time, from which `after` measures.
   const step = <T extends (...args: never[]) => Promise<unknown>>(run: T): T =>

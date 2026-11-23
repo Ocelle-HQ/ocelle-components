@@ -473,9 +473,11 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-breadcrumbs.ts",
       "src/ocelle-button.ts",
       "src/ocelle-card.ts",
+      "src/ocelle-code-block.ts",
       "src/ocelle-context-sidebar.ts",
       "src/ocelle-copy-field.ts",
       "src/ocelle-dialog.ts",
+      "src/ocelle-disclosure.ts",
       "src/ocelle-drawer.ts",
       "src/ocelle-empty-state.ts",
       "src/ocelle-fact.ts",
@@ -1453,6 +1455,91 @@ describe("generate(root) on the repository's element source", () => {
       slots: [{ name: "", described: true }],
       parts: [{ name: "label", described: true }],
       properties: [{ name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
+  });
+
+  // 020 phase 1 (T007; contracts/elements.md § `ocelle-disclosure`; FR-017): every list stated, every member described;
+  // the moved attributes and their mirrors, and the mapped `aria-expanded`, declared with `@attr` before the property's
+  // attribute; `aria-expanded` is an attribute only, not a property; no CSS custom property.
+  it("declares ocelle-disclosure with open (boolean | undefined, reflected), click() and focus(), the moved aria-label, aria-labelledby, aria-describedby and title with their four mirrors and the mapped aria-expanded, the slots summary, icon and default, the event ocelle-disclosure-toggle with its detail, the parts details, summary and panel, the state open and no CSS property, each described", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [disclosure] = modules.find((module) => module.path === "src/ocelle-disclosure.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const disclosureMoved = ["aria-label", "aria-labelledby", "aria-describedby", "title"];
+    expect({ kind: disclosure?.kind, name: disclosure?.name, tagName: disclosure?.tagName, customElement: disclosure?.customElement }).toEqual({ kind: "class", name: "OcelleDisclosure", tagName: "ocelle-disclosure", customElement: true });
+    const members = described(disclosure?.members);
+    expect(members.map(({ kind, name }) => ({ kind, name }))).toEqual([
+      { kind: "field", name: "open" },
+      { kind: "method", name: "click" },
+      { kind: "method", name: "focus" },
+    ]);
+    expect(members[0]).toEqual({ kind: "field", name: "open", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "open", reflects: true, described: true });
+    expect(members.map((member) => member.described)).toEqual([true, true, true]);
+    expect(described(disclosure?.attributes)).toEqual([
+      ...disclosureMoved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...disclosureMoved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
+      { name: "aria-expanded", type: { text: '"true" | "false"' }, described: true },
+      { name: "open", fieldName: "open", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: named(disclosure?.slots),
+      parts: named(disclosure?.cssParts),
+      states: named(disclosure?.cssStates),
+      events: described(disclosure?.events),
+      properties: disclosure?.cssProperties,
+      expandedProperty: members.some((member) => member.name === "ariaExpanded" || member.attribute === "aria-expanded"),
+    }).toEqual({
+      slots: [
+        { name: "summary", described: true },
+        { name: "icon", described: true },
+        { name: "", described: true },
+      ],
+      parts: [
+        { name: "details", described: true },
+        { name: "summary", described: true },
+        { name: "panel", described: true },
+      ],
+      states: [{ name: "open", described: true }],
+      events: [{ name: "ocelle-disclosure-toggle", type: { text: "CustomEvent<{ open: boolean }>" }, described: true }],
+      properties: [],
+      expandedProperty: false,
+    });
+  });
+
+  // 020 phase 2 (T027; contracts/elements.md § `ocelle-code-block`; FR-035): every list stated, every member described;
+  // `overflow` and `digest` reflected, `label` not; no slot (the description says the text is the light DOM's text
+  // content), no event, the parts `block` and `code`, no CSS custom property; `aria-label` is observed, not a property.
+  it("declares ocelle-code-block with overflow (string | undefined, reflected), label (string | undefined, not reflected) and digest (boolean | undefined, reflected), each described with the default undefined, no slot, no event, the parts block and code, and no CSS property", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [codeBlock] = modules.find((module) => module.path === "src/ocelle-code-block.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({ kind: codeBlock?.kind, name: codeBlock?.name, tagName: codeBlock?.tagName, customElement: codeBlock?.customElement }).toEqual({ kind: "class", name: "OcelleCodeBlock", tagName: "ocelle-code-block", customElement: true });
+    expect(typeof codeBlock?.description === "string" && codeBlock.description.includes("light-DOM text content")).toBe(true);
+    expect(described(codeBlock?.members)).toEqual([
+      { kind: "field", name: "overflow", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "overflow", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "digest", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "digest", reflects: true, described: true },
+    ]);
+    expect(described(codeBlock?.attributes)).toEqual([
+      { name: "overflow", fieldName: "overflow", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "digest", fieldName: "digest", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({ slots: codeBlock?.slots, events: codeBlock?.events, parts: named(codeBlock?.cssParts), properties: codeBlock?.cssProperties, states: codeBlock?.cssStates ?? [] }).toEqual({
+      slots: [],
+      events: [],
+      parts: [
+        { name: "block", described: true },
+        { name: "code", described: true },
+      ],
+      properties: [],
+      states: [],
     });
   });
 

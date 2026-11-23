@@ -9,10 +9,10 @@ import * as root from "../src/index.ts";
 // 011 `ocelle-card`, `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and
 // `ocelle-personal-rail` (T042); since 010 `ocelle-notice` (phase 2), `ocelle-form-input` (phase 3) and
 // `ocelle-form-select` (phase 4); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051);
-// since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 014 (research.md R-16,
+// since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; since 014 (research.md R-16,
 // T017) `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`,
-// `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`. This file's own iframe
-// (Vitest browser mode, isolate on) holds only what this import defines.
+// `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`; and since 020 (T006) `ocelle-disclosure` and (T026)
+// `ocelle-code-block`. This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-notice, ocelle-form-input and ocelle-form-select as the OcelleIcon, OcelleBrandMark, OcelleNotice, OcelleFormInput and OcelleFormSelect it exports", () => {
     const exported = root as Record<string, unknown>;
@@ -143,5 +143,27 @@ describe("importing src/index.ts", () => {
     const exported = root as Record<string, unknown>;
     expect(typeof exported.OcelleLink).toBe("function");
     expect(customElements.get("ocelle-link")).toEqual(exported.OcelleLink);
+  });
+
+  it("defines ocelle-disclosure as the OcelleDisclosure it exports, and a disclosure renders its summary (020 phase 1)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-disclosure id="d"><span slot="summary">Advanced settings</span><p>Panel</p></ocelle-disclosure>';
+    await (document.getElementById("d") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleDisclosure,
+      disclosure: customElements.get("ocelle-disclosure"),
+      summary: document.getElementById("d")?.shadowRoot?.querySelectorAll('[part="summary"]').length,
+    }).toEqual({ type: "function", disclosure: exported.OcelleDisclosure, summary: 1 });
+  });
+
+  it("defines ocelle-code-block as the OcelleCodeBlock it exports, and a code block renders its text in its code part (020 phase 2)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-code-block id="c">git push origin main</ocelle-code-block>';
+    await (document.getElementById("c") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleCodeBlock,
+      codeBlock: customElements.get("ocelle-code-block"),
+      text: document.getElementById("c")?.shadowRoot?.querySelector('[part="code"]')?.textContent ?? null,
+    }).toEqual({ type: "function", codeBlock: exported.OcelleCodeBlock, text: "git push origin main" });
   });
 });

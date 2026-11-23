@@ -1397,6 +1397,112 @@
       ]
     },
     {
+      "path": "src/ocelle-code-block.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleCodeBlock",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleCodeBlock",
+            "module": "src/ocelle-code-block.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-code-block",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleCodeBlock",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "overflow",
+              "kind": "field",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "default": "undefined",
+              "attribute": "overflow"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "digest",
+              "kind": "field",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "default": "undefined",
+              "attribute": "digest"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A preformatted block for code, commands, logs and digests, in the library's sans with tabular figures. The text is\nthe element's light-DOM text content, read as a copy: child elements add no markup or style.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "block",
+              "description": "The inset box."
+            },
+            {
+              "name": "code",
+              "description": "The `pre` that holds the text."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "overflow",
+              "fieldName": "overflow",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "name": "digest",
+              "fieldName": "digest",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-context-sidebar.ts",
       "kind": "javascript-module",
       "exports": [
@@ -1741,6 +1847,194 @@
               "fieldName": "closeLabel",
               "description": "The accessible name of the close control, in the host's language.",
               "default": "\"Close\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-disclosure.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleDisclosure",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleDisclosure",
+            "module": "src/ocelle-disclosure.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-disclosure",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "summary",
+              "description": "The summary's content; with no host `aria-labelledby` or `aria-label`, its text alone names the control (the summary is labelled by the slot's wrapper, so a slotted icon adds nothing); empty, the control has no name. No interactive content."
+            },
+            {
+              "name": "icon",
+              "description": "An icon (`ocelle-icon` or a bare `svg`) that replaces the chevron (`chevron-end` closed, `chevron-down` open) in both states; decorative, never labelled: its wrapper is hidden from assistive technology."
+            },
+            {
+              "name": "",
+              "description": "The panel's content."
+            }
+          ],
+          "name": "OcelleDisclosure",
+          "members": [
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "open",
+              "kind": "field",
+              "description": "Whether the panel is shown. Reflected: a user toggle, find in page and a script set the attribute alike, so server\nmarkup and htmx morphs keep it.",
+              "default": "undefined",
+              "attribute": "open"
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "name": "click",
+              "kind": "method",
+              "description": "Clicks the summary, so it toggles once."
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "type": {
+                    "text": "FocusOptions"
+                  },
+                  "optional": true,
+                  "name": "options"
+                }
+              ],
+              "name": "focus",
+              "kind": "method",
+              "description": "Focuses the summary (the shadow root has no `delegatesFocus`); before the first render it does nothing."
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ open: boolean }>"
+              },
+              "name": "ocelle-disclosure-toggle",
+              "description": "After each change of the open state, whatever caused it, in a later task after the attribute is reflected, with the new state. Changes made before the inner `details`' native `toggle` runs are coalesced (always those of one task): at most one event per native `toggle`, with the final state; none at upgrade or when the state ends where the last event left it. Bubbles, composed, not cancelable."
+            }
+          ],
+          "description": "A disclosure: a summary that opens and closes a panel inline, on native `details` and `summary` semantics.",
+          "customElement": true,
+          "cssStates": [
+            {
+              "name": "open",
+              "description": "While the disclosure is open."
+            }
+          ],
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "details",
+              "description": "The inner `details`."
+            },
+            {
+              "name": "summary",
+              "description": "The summary control."
+            },
+            {
+              "name": "panel",
+              "description": "The panel wrapper."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-label",
+              "description": "Moved onto the summary: its accessible name, over the `summary` slot's text (while no host `aria-labelledby` names it); an empty or whitespace-only value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-labelledby",
+              "description": "Moved onto the summary: the ids, space-separated, of the elements that name it, resolved in the host's own tree and related by element reference, over `aria-label` and the `summary` slot's text; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-describedby",
+              "description": "Moved onto the summary: the ids, space-separated, of the elements that describe it, resolved in the host's own tree and related by element reference; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "title",
+              "description": "Moved onto the summary: its advisory title; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-label",
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-labelledby",
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-describedby",
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-title",
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "\"true\" | \"false\""
+              },
+              "name": "aria-expanded",
+              "description": "Mapped onto `open` and removed from the host: `\"true\"` opens, `\"false\"` closes, any other value changes nothing. No mirror: `open` is the persisted state. Read after `open` at upgrade."
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "name": "open",
+              "fieldName": "open",
+              "description": "Whether the panel is shown. Reflected: a user toggle, find in page and a script set the attribute alike, so server\nmarkup and htmx morphs keep it.",
+              "default": "undefined"
             }
           ]
         }
