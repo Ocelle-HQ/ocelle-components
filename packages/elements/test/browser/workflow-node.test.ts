@@ -315,4 +315,24 @@ describe("ocelle-workflow-node recorded run inspection on built output under str
     expect(await page.evaluate(readWorkflowActivity)).toEqual([]);
     expect(await finish()).toEqual(clean);
   });
+
+  it("honors hidden, revealed and rehidden status while keeping the host context", async () => {
+    const { page, driver, finish } = await workflow("literal");
+    const name = "Security review Release approvals";
+    const context = "Review the security findings Policy applies";
+    const visibility = [
+      { change: ["add-hidden", recordedStatus], visible: false, description: `${workflowDescription} ${context}` },
+      { change: ["reveal"], visible: true, description: `${workflowDescription} ${recordedStatus} ${context}` },
+      { change: ["hide"], visible: false, description: `${workflowDescription} ${context}` },
+    ] as const;
+    for (const { change, visible, description } of visibility) {
+      await page.evaluate(changeRecordedStatus, change);
+      expect({ status: (await page.evaluate(recordedStep)).status, action: await driver.axState("review", "button") }, change[0]).toMatchObject({
+        status: [{ text: recordedStatus, visible }],
+        action: { name, description },
+      });
+    }
+    expect(await page.evaluate(readWorkflowActivity)).toEqual([]);
+    expect(await finish()).toEqual(clean);
+  });
 });

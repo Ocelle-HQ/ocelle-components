@@ -422,4 +422,23 @@ describe("ocelle-workflow-node recorded run inspection in process", () => {
     expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: workflowDescription });
     expect(readWorkflowActivity()).toEqual([]);
   });
+
+  it("honors hidden, revealed and rehidden status while keeping the host context", async () => {
+    await mountWorkflowNodes("literal");
+    const name = "Security review Release approvals";
+    const context = "Review the security findings Policy applies";
+    const visibility = [
+      { change: ["add-hidden", recordedStatus], visible: false, description: `${workflowDescription} ${context}` },
+      { change: ["reveal"], visible: true, description: `${workflowDescription} ${recordedStatus} ${context}` },
+      { change: ["hide"], visible: false, description: `${workflowDescription} ${context}` },
+    ] as const;
+    for (const { change, visible, description } of visibility) {
+      await changeRecordedStatus(change);
+      expect({ status: recordedStep().status, action: await commands.axState("review", "button") }, change[0]).toMatchObject({
+        status: [{ text: recordedStatus, visible }],
+        action: { name, description },
+      });
+    }
+    expect(readWorkflowActivity()).toEqual([]);
+  });
 });

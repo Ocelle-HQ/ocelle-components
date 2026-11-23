@@ -2,22 +2,24 @@ export const recordedStatus = "Passed in the recorded run";
 export const replacementStatus = "Awaiting the recorded decision";
 export const editedStatus = "Recorded decision available";
 
-type StatusChange = "add" | "replace" | "edit" | "empty" | "remove";
+type StatusChange = "add" | "add-hidden" | "replace" | "edit" | "empty" | "remove" | "reveal" | "hide";
 
 export async function changeRecordedStatus([change, text = ""]: readonly [StatusChange, string?]): Promise<void> {
   const node = document.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review");
   if (node === null) throw new Error("the review node must be mounted");
   const current = node.querySelector<HTMLElement>('[slot="status"]');
-  if (change === "add" || change === "replace") {
+  if (change === "add" || change === "add-hidden" || change === "replace") {
     const status = document.createElement("span");
     status.id = "recorded-status";
     status.slot = "status";
+    status.hidden = change === "add-hidden";
     status.textContent = text;
     if (current === null) node.append(status);
     else current.replaceWith(status);
   } else {
     if (current === null) throw new Error("the status fixture must be mounted before it changes");
     if (change === "remove") current.remove();
+    else if (change === "reveal" || change === "hide") current.hidden = change === "hide";
     else current.textContent = change === "empty" ? "" : text;
   }
   await node.updateComplete;
