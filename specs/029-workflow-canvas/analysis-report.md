@@ -1,19 +1,25 @@
 ---
-analyzed_at: 2026-11-23T23:40:37Z
-head: 4a8fd0ac75f7ecf75a9cb97b7b16fe6f7404158f
+analyzed_at: 2026-11-23T23:42:26Z
+head: 03db1e975df680cc2a4c90c0975607cb3c94eaba
 critical: 0
 high: 0
-medium: 2
+medium: 0
 low: 0
 coverage: 100
 ---
 
 ## Specification Analysis Report
 
-| ID | Category | Severity | Locations | Summary | Recommendation |
+| ID | Category | Severity | Location(s) | Summary | Recommendation |
 |---|---|---|---|---|---|
-| E1 | Coverage gap | MEDIUM | `tasks.md` T013, T015 and T019, `plan.md` phase 2 and `quickstart.md` step 4, `spec.md` US3 scenario 5 and SC-003 | T013 can pass its read-only and capture assertions without checking where focus goes when the mode switch removes a focused named move control. T019 covers removing a target but does not explicitly exercise removal of the source while its edit has focus, which requires a different fallback. | In T013, assert the prescribed visible fallback and zero requests when a focused layout control disappears on mode change, and assign that recovery to T015. In T019, explicitly remove the focused edit's source and assert the documented visible survivor or canvas fallback and zero requests. |
-| E2 | Coverage gap | MEDIUM | `tasks.md` T002, T006, T025 and T027, `data-model.md` connection and layout entries, `contracts/workflow-canvas.md` Keyboard, touch and host inspector | The approved model distinguishes a valid relationship from a drawable edge. A positioned but clipped destination can be followed, while a destination with no layout entry stays named and the reveal action is unavailable. The tasks exercise clipped destinations and suppress undrawable edges, but they do not require a test that keeps the named relationship when position is absent. Dropping it during projection could pass the stated cases. | In T002 and T006, explicitly preserve valid relation identity without a layout entry while excluding its SVG path. In T025 and T027, assert that an unpositioned destination remains named and cannot emit a reveal request until positioned. |
+| — | — | — | — | No open findings. | — |
+
+### Earlier findings
+
+| ID | Result | Evidence |
+|---|---|---|
+| E1 | Resolved | T013 measures visible focus recovery and zero requests when a mode switch removes the named move control, and T015 assigns the corresponding implementation. T019 separately removes an edit source and destination and checks the visible survivor or named fallback and full request stream. |
+| E2 | Resolved | T002 and T006 distinguish valid named relations from drawable SVG edges when a node has no layout entry. T025 and T027 keep an unpositioned destination named and suppress its edge and any reveal request until a position is supplied. |
 
 ### Coverage summary
 
@@ -34,7 +40,7 @@ coverage: 100
 | FR-013 | Yes | T009–T012, T015–T018, T021–T024, T027–T031 | Public exports, generated manifest, consumer docs, controlled fixtures and pinned baseline pairs |
 | SC-001 | Yes | T002–T005, T009, T012 | Actual button requests, visible focus, both Tab directions and late viewport updates |
 | SC-002 | Yes | T013–T018 | Scaled drag and alternative input, captured preview before cancellation, and viewport controls |
-| SC-003 | Yes | T019–T024 | Nine input and operation combinations, exact requests and controlled cancellation, with the source-removal test detail in E1 |
+| SC-003 | Yes | T019–T024 | Nine input and operation combinations, exact requests and controlled cancellation including source removal |
 | SC-004 | Yes | T019, T025–T028, T031 | Read-only follow, no edit leakage, and observable display and accessibility states |
 | SC-005 | Yes | T004, T012, T030 | Approved two-size comparison, shipped panel and built-CSP evidence |
 | SC-006 | Yes | T009–T012, T016–T018, T022–T024, T027–T031 | Per-element export, manifest, documentation and phased visual and interaction evidence |
@@ -43,7 +49,7 @@ coverage: 100
 
 T002 and T003 both depend on T001 and each writes one distinct test file. T006 and T007 both depend on T005 and each writes one distinct production helper. Neither helper requires the other helper or an unfinished viewport implementation. T004 stays with the owner on staging. T005 combines both drafts with the serial test draft at the common scaffold pin and records the test-only canonical red before the production pair starts. The owner commits proof and completed draft checkboxes separately. T008 uses the exact two-helper Unit check before promotion from the red pin and reserves the shared checklist, proof and integration for the owner. The combined phase check and repeat replay remain in T012. Serial fallback, scoped signed returns, timing and readiness at dispatch remain explicit.
 
-The four phases preserve test-first order, exact assertion failures, final proof against prior behavior, the in-process changed-source mutation path, built strict CSP, independent review, affected Plants, pinned light and dark baselines, and the full required hosted checks. The plan keeps eligible inventory collateral local unless its exact candidate has the required evidence before phase review. Shared generated output has one serial owner.
+The Phase 3 red exercises the existing canvas interface. T020 now writes only the red receipt and scope, with the private edit helper reserved for T021 green. The story script resolves the four phase headers to US1 through US4. The four phases preserve test-first order, exact assertion failures, final proof against prior behavior, the in-process changed-source mutation path, built strict CSP, independent review, affected Plants, pinned light and dark baselines, and the full required hosted checks. The plan keeps eligible inventory collateral local unless its exact candidate has the required evidence before phase review. Shared generated output has one serial owner.
 
 ### Unmapped tasks
 
@@ -56,8 +62,8 @@ None. Setup, proof, ownership checks and generated inventory tasks support the r
 - Phase 1 parallel candidates — 4 tasks in 2 separate stages
 - Ambiguity findings — 0
 - Duplicate requirements — 0
-- Findings by severity — 0 critical, 0 high, 2 medium and 0 low
+- Findings by severity — 0 critical, 0 high, 0 medium and 0 low
 
 ### Next actions
 
-Carry E1 and E2 into the task text or resolve them before drafting the affected phase tests. After task-set approval, start Phase 1 at T001 and run the two test-draft workers from its committed scaffold.
+Request approval of the task set. After approval, start Phase 1 at T001 and run the two test-draft workers from its committed scaffold.
