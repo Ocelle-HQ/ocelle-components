@@ -9,6 +9,7 @@ import "./ocelle-icon.ts";
  * The application's brand, product name, host actions and optional navigation menu trigger.
  *
  * @tagname ocelle-top-bar
+ * @slot brand-accessory - Optional content beside the product name.
  * @slot actions - Host-owned controls, shown after the product name.
  * @csspart bar - The chrome container.
  * @csspart brand - The decorative rosette and product name.
@@ -56,6 +57,8 @@ export class OcelleTopBar extends LitElement {
       font-size: var(--ocelle-font-size-md);
       font-weight: var(--ocelle-font-weight-strong);
     }
+
+    slot[name="brand-accessory"] { flex: none; }
 
     .product {
       overflow: hidden;
@@ -151,6 +154,7 @@ export class OcelleTopBar extends LitElement {
         <div part="brand">
           <ocelle-brand-mark ground="chrome"></ocelle-brand-mark>
           <span class="product">${this.productName}</span>
+          <slot name="brand-accessory"></slot>
         </div>
         <div part="actions" ?hidden=${this.#slots.empty("actions")}><slot name="actions"></slot></div>
       </div>

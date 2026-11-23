@@ -96,6 +96,7 @@ function length(value: string | undefined, rootFont: number, hostFont: number): 
  *
  * @tagname ocelle-app-shell
  * @slot skip-link - Optional keyboard shortcut to the main content.
+ * @slot brand-accessory - Optional content beside the product name.
  * @slot actions - The top bar's host-owned actions.
  * @slot rail - Mission destinations.
  * @slot sidebar - Context, project or personal destinations.
@@ -362,6 +363,7 @@ export class OcelleAppShell extends LitElement {
       <ocelle-top-bar .productName=${this.productName} .menuLabel=${this.menuLabel}
         .showMenu=${this.#tier === "narrow" && this.#hasNavigation} .menuExpanded=${this.#drawerOpen}
         @ocelle-top-bar-menu-request=${this.#openDrawer}>
+        <slot name="brand-accessory" slot="brand-accessory"></slot>
         ${this.#actions ? html`<slot name="actions" slot="actions"></slot>` : nothing}
       </ocelle-top-bar>
       <div class="frame" ?data-compact-sidebar=${this.#sidebarCompact}>

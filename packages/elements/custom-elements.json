@@ -656,6 +656,10 @@
               "name": "skip-link"
             },
             {
+              "description": "Optional content beside the product name.",
+              "name": "brand-accessory"
+            },
+            {
               "description": "The top bar's host-owned actions.",
               "name": "actions"
             },
@@ -5981,6 +5985,10 @@
           ],
           "name": "OcelleTopBar",
           "slots": [
+            {
+              "description": "Optional content beside the product name.",
+              "name": "brand-accessory"
+            },
             {
               "description": "Host-owned controls, shown after the product name.",
               "name": "actions"
