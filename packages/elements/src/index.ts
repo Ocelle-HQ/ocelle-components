@@ -57,3 +57,4 @@ export { OcelleTopBar } from "./ocelle-top-bar.ts";
 export { OcelleTooltip } from "./ocelle-tooltip.ts";
 export { OcelleWorkflowBoard } from "./ocelle-workflow-board.ts";
 export { OcelleWorkflowLane } from "./ocelle-workflow-lane.ts";
+export { OcelleWorkflowNode } from "./ocelle-workflow-node.ts";
