@@ -15,3 +15,94 @@ Initial outcome: 77 killed, 21 survived, 25 compile errors, 0 timeout, 0 uncover
 The survivor review simplified observer registration, used one corner predicate, removed transient paint attributes, and strengthened ordinary-host, idle and observer lifecycle tests.
 
 The initial full phase-base selector planned 32 mutation shards and 31 intra-file cuts. Exact hosted matrix verification is required for the final candidate.
+
+$ .specify/extensions/story/scripts/red.sh 1 fix-41
+sha: 419892e3806f15326df3314a94dba287d0765514
+tests_only: true, red: true, recorded: true, expected test exit_code: 1
+4 named assertion failures across five selected files in 27.585s. See red-fix-41.log.
+
+$ pnpm exec vitest run --project elements --project elements-browser packages/elements/test/{workflow-canvas.test.ts,browser/workflow-canvas.test.ts,workflow-canvas-graph.test.ts,workflow-canvas-navigation.test.ts,workflow-canvas-viewport.test.ts}
+Test Files 5 passed (5)
+Tests 186 passed (186)
+Duration 26.02s
+
+$ pnpm run gate:typecheck
+$ node gates/bin/typecheck.ts
+typecheck: no type error in the files of tsconfig.json
+
+$ pnpm run gate:lint
+$ node gates/bin/lint.ts
+lint: 651 files checked, no finding
+
+$ pnpm run gate:test-lint
+$ node gates/bin/test-lint.ts
+test-lint: 490 files checked, no finding
+
+$ pnpm run gate:style-lint
+$ node gates/bin/style-lint.ts
+style-lint: 76 files checked, no finding
+
+$ pnpm run gate:manifest
+$ node gates/bin/manifest.ts
+manifest: 43 elements checked, no finding
+
+$ pnpm -r build
+All workspace package builds completed successfully, including Storybook.
+
+$ pnpm run gate:csp
+$ node gates/bin/csp.ts
+csp: 81 files checked, no finding
+
+$ pnpm run gate:plants -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+$ node gates/bin/plants.ts -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
+
+$ pnpm --silent run gate:mutation -- --base 3515d2757508bd523fa55c6615af4f3996f842aa --plan
+mutation: plan: 34 shards, 33 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+packages/elements/src/browser.ts,packages/elements/src/index.ts,packages/elements/src/ocelle-workflow-canvas.ts:1-30
+packages/elements/src/ocelle-workflow-canvas.ts:31-60
+packages/elements/src/ocelle-workflow-canvas.ts:61-90
+packages/elements/src/ocelle-workflow-canvas.ts:91-120
+packages/elements/src/ocelle-workflow-canvas.ts:121-150
+packages/elements/src/ocelle-workflow-canvas.ts:151-180
+packages/elements/src/ocelle-workflow-canvas.ts:181-210
+packages/elements/src/ocelle-workflow-canvas.ts:211-240
+packages/elements/src/ocelle-workflow-canvas.ts:241-270
+packages/elements/src/ocelle-workflow-canvas.ts:271-300
+packages/elements/src/ocelle-workflow-canvas.ts:301-330
+packages/elements/src/ocelle-workflow-canvas.ts:331-360
+packages/elements/src/ocelle-workflow-canvas.ts:361-390
+packages/elements/src/ocelle-workflow-canvas.ts:391-420
+packages/elements/src/ocelle-workflow-canvas.ts:421-450
+packages/elements/src/ocelle-workflow-canvas.ts:451-480
+packages/elements/src/ocelle-workflow-canvas.ts:481-510
+packages/elements/src/ocelle-workflow-canvas.ts:511-540
+packages/elements/src/ocelle-workflow-canvas.ts:541-570
+packages/elements/src/ocelle-workflow-canvas.ts:571-600
+packages/elements/src/ocelle-workflow-canvas.ts:601-630
+packages/elements/src/ocelle-workflow-canvas.ts:631-660,packages/elements/src/workflow-canvas-graph.ts:1-30
+packages/elements/src/workflow-canvas-types.ts:31-54,packages/elements/src/workflow-canvas-viewport.ts:1-30
+packages/elements/src/workflow-canvas-viewport.ts:31-60
+packages/elements/src/workflow-canvas-viewport.ts:61-90
+packages/elements/src/workflow-canvas-viewport.ts:91-120
+packages/elements/src/workflow-canvas-viewport.ts:121-150
+packages/elements/src/workflow-canvas-viewport.ts:151-180
+packages/elements/src/workflow-canvas-viewport.ts:181-210
+packages/elements/src/workflow-canvas-viewport.ts:211-240
+packages/elements/src/workflow-canvas-viewport.ts:241-258
+
+$ pnpm --silent run gate:mutation -- --base 7c081d129fa4892cea08f6f1b7c83d82ed685de0 --plan
+mutation: plan: 34 shards, 33 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+The phase-base and CI-base plans agree byte for byte.
+
+
+Combined strict changed-line Stryker probe
+Production Chrome runner, four in-process canvas files and exports file, source-focused TypeScript checker and unchanged strict threshold.
+Instrumented 222 mutants. Unmutated run passed 152 tests.
+Initial combined outcome: 176 killed, 5 survived, 41 compile errors, 0 timeout, 0 uncovered.
+Remaining issues covered by DOM evidence: a node wholly inside a polygon cutout requires native corner checks even though no edge crosses its outline. A diagonal with disjoint axis intervals rejects the upper-bound arithmetic mutant. Parallel edges use the same open-interval computation, with exact and boundary-touch controls.
+
+Strict recheck at the final survivor sites, viewport.ts lines 102–117 and ocelle-workflow-canvas.ts line 419
+Instrumented 28 mutants. Unmutated run passed 155 tests.
+Final recheck outcome: 24 killed, 0 survived, 4 compile errors, 0 timeout, 0 uncovered. Threshold 100 met in 45 seconds.

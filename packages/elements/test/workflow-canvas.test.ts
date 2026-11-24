@@ -1210,6 +1210,28 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([selectRequest("review")]);
   });
 
+  it("requires browser visibility when an action lies wholly in a polygon cutout", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule("#canvas-pane { block-size: 445px; overflow: visible; }", sheet.cssRules.length);
+    sheet.insertRule("#canvas-pane.cutout { clip-path: polygon(0 0, 100% 0, 100% 282px, 240px 282px, 240px 386px, 100% 386px, 100% 100%, 0 100%); }", sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    publish.focus({ preventScroll: true });
+    expect(active()).toBe(publish);
+
+    const { left, right, top, bottom } = publish.getBoundingClientRect();
+    const root = publish.getRootNode() as ShadowRoot;
+    const hit = () => publish.contains(root.elementFromPoint((left + right) / 2, (top + bottom) / 2));
+    expect(hit()).toBe(true);
+    pane.classList.add("cutout");
+    expect(hit()).toBe(false);
+    const nativeClick = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(nativeClick)).toBe(false);
+    expect(active()).toBe(action(canvas, "review"));
+    expect(requests).toEqual([]);
+  });
+
   it.each([
     { key: "ArrowLeft", capture: "keydown" },
     { key: "Enter", capture: "click" },

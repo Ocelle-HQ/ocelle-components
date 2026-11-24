@@ -17,6 +17,7 @@ import {
   canvasActionBounds,
   canvasBoundsOverlap,
   canvasClipping,
+  canvasContourCrossesOutline,
   canvasRevealViewport,
   canvasScreenInverse,
   canvasViewport,
@@ -408,14 +409,14 @@ export class OcelleWorkflowCanvas extends LitElement {
     actions: readonly NodeAction[],
     map: SVGSVGElement,
   ): { contained: Set<string>; eligible: Set<string>; bounds: ReadonlyMap<string, CanvasBounds> } {
-    const { bounds: clip, hasInset } = canvasClipping(map);
+    const { bounds: clip, hasInset, contours } = canvasClipping(map);
     const contained = new Set<string>();
     const eligible = new Set<string>();
     const painted = actions.filter(({ node }) => this.#projection.positions.has(node.nodeId));
     const footprints = painted.map(({ face }) => face.getBoundingClientRect());
     const bounds = new Map<string, CanvasBounds>();
     const transform = map.getScreenCTM();
-    const probe = hasInset ? this.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect") : null;
+    const probe = hasInset || contours.length > 0 ? this.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect") : null;
     if (probe !== null) {
       probe.setAttribute("width", "100%");
       probe.setAttribute("height", "100%");
@@ -427,7 +428,8 @@ export class OcelleWorkflowCanvas extends LitElement {
       painted.forEach(({ node, button }, index) => {
         const outline = canvasActionBounds(button, transform);
         bounds.set(node.nodeId, outline);
-        if (!isInsideCanvasClip(clip, outline) || (probe !== null && !this.#insetCoversOutline(probe, outline))) return;
+        if (!isInsideCanvasClip(clip, outline) || contours.some((contour) => canvasContourCrossesOutline(contour, outline))
+          || (probe !== null && !this.#clipCornersHit(probe, outline))) return;
         contained.add(node.nodeId);
         if (!footprints.some((footprint, paintIndex) => paintIndex > index && canvasBoundsOverlap(outline, footprint))) {
           eligible.add(node.nodeId);
@@ -439,8 +441,8 @@ export class OcelleWorkflowCanvas extends LitElement {
     return { contained, eligible, bounds };
   }
 
-  #insetCoversOutline(probe: Element, { left, top, right, bottom }: CanvasBounds): boolean {
-    // A CSS inset is convex, including rounded corners. Covering all four corners covers the outline.
+  #clipCornersHit(probe: Element, { left, top, right, bottom }: CanvasBounds): boolean {
+    // Insets are convex. For straight polygons the contour check also rejects any edge entering the outline.
     // The probe sits outside the inert node wrappers and above the map's independently checked paint order.
     const root = this.shadowRoot;
     const corners = [[left, top], [right, top], [left, bottom], [right, bottom]] as const;

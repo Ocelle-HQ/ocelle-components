@@ -9,6 +9,11 @@ export interface CanvasBounds {
 
 // Computed overflow reports the legacy `overlay` keyword as `auto`.
 const clippingOverflow = new Set(["auto", "clip", "hidden", "scroll"]);
+type CanvasClipContour = readonly [WorkflowCanvasPoint, ...WorkflowCanvasPoint[]];
+
+// Restrict polygon geometry to the browser's resolved straight vertices in the default box.
+const linearPolygon = /polygon\((?:evenodd, )?((?:-?[\d.]+(?:px|%) -?[\d.]+(?:px|%)(?:, )?)+)\)/;
+
 // Computed CSS keeps percentages and combines mixed pixel/percentage lengths as calc().
 const rectangularInset = /inset\(((?:[\d.%px -]|calc\(-?[\d.]+% [+-] [\d.]+px\))+)\)(?: (padding-box|content-box|margin-box))?/;
 const insetValues = /calc\([^)]+\)|[^ ]+/g;
@@ -66,7 +71,56 @@ export function* composedAncestors(element: Element): Generator<Element> {
   }
 }
 
-export function canvasClipping(element: Element): { readonly bounds: CanvasBounds; readonly hasInset: boolean } {
+function hasUntransformedClipBox(element: Element): boolean {
+  return element.getClientRects().length === 1 && [element, ...composedAncestors(element)].every((ancestor) => {
+    const style = getComputedStyle(ancestor);
+    const transforms = [style.transform, style.rotate, style.scale, style.perspective, style.offsetPath];
+    return ancestor instanceof HTMLElement && transforms.every((value) => value === "none") && style.zoom === "1";
+  });
+}
+
+function polygonContour(coordinates: string, pane: DOMRect): CanvasClipContour {
+  return coordinates.split(", ").map((pair) => {
+    const [x, y] = pair.split(" ") as [string, string];
+    return { x: pane.left + screenInset(x, pane.width, 1), y: pane.top + screenInset(y, pane.height, 1) };
+  }) as [WorkflowCanvasPoint, ...WorkflowCanvasPoint[]];
+}
+
+function contourBounds(contour: CanvasClipContour): CanvasBounds {
+  let { x: left, y: top } = contour[0];
+  let right = left;
+  let bottom = top;
+  for (const { x, y } of contour) {
+    left = Math.min(left, x);
+    top = Math.min(top, y);
+    right = Math.max(right, x);
+    bottom = Math.max(bottom, y);
+  }
+  return { left, top, right, bottom };
+}
+
+function segmentInterval(start: number, end: number, low: number, high: number): readonly [number, number] {
+  const delta = end - start;
+  // A parallel line inside the slab yields an unbounded interval. At a shared boundary, NaN fails the open overlap check.
+  const first = (low - start) / delta;
+  const last = (high - start) / delta;
+  return [Math.min(first, last), Math.max(first, last)];
+}
+
+export function canvasContourCrossesOutline(contour: CanvasClipContour, outline: CanvasBounds): boolean {
+  return contour.some((start, index) => {
+    const end = contour[index + 1] ?? contour[0];
+    const [minX, maxX] = segmentInterval(start.x, end.x, outline.left, outline.right);
+    const [minY, maxY] = segmentInterval(start.y, end.y, outline.top, outline.bottom);
+    return Math.max(0, minX, minY) < Math.min(1, maxX, maxY);
+  });
+}
+
+export function canvasClipping(element: Element): {
+  readonly bounds: CanvasBounds;
+  readonly hasInset: boolean;
+  readonly contours: readonly CanvasClipContour[];
+} {
   const rect = element.getBoundingClientRect();
   const viewport = element.ownerDocument.documentElement;
   let left = Math.max(0, rect.left);
@@ -74,6 +128,7 @@ export function canvasClipping(element: Element): { readonly bounds: CanvasBound
   let right = Math.min(viewport.clientWidth, rect.right);
   let bottom = Math.min(viewport.clientHeight, rect.bottom);
   let hasInset = false;
+  const contours: CanvasClipContour[] = [];
   for (const ancestor of composedAncestors(element)) {
     const style = getComputedStyle(ancestor);
     if (style.display === "contents") continue;
@@ -93,7 +148,9 @@ export function canvasClipping(element: Element): { readonly bounds: CanvasBound
     const inset = rectangularInset.exec(square);
     const offsets = inset?.[0] === square ? inset[1] : undefined;
     const referenceBox = inset?.[2];
-    if (!clipsX && !clipsY && offsets === undefined) continue;
+    const polygon = linearPolygon.exec(clipPath);
+    const coordinates = polygon?.[0] === clipPath && hasUntransformedClipBox(ancestor) ? polygon[1] : undefined;
+    if (!clipsX && !clipsY && offsets === undefined && coordinates === undefined) continue;
     const pane = ancestor.getBoundingClientRect();
     const scaleX = ancestor instanceof HTMLElement && ancestor.offsetWidth > 0 ? pane.width / ancestor.offsetWidth : 1;
     const scaleY = ancestor instanceof HTMLElement && ancestor.offsetHeight > 0 ? pane.height / ancestor.offsetHeight : 1;
@@ -107,6 +164,15 @@ export function canvasClipping(element: Element): { readonly bounds: CanvasBound
       top = Math.max(top, y);
       bottom = Math.min(bottom, y + ancestor.clientHeight * scaleY);
     }
+    if (coordinates !== undefined) {
+      const contour = polygonContour(coordinates, pane);
+      contours.push(contour);
+      const box = contourBounds(contour);
+      left = Math.max(left, box.left);
+      right = Math.min(right, box.right);
+      top = Math.max(top, box.top);
+      bottom = Math.min(bottom, box.bottom);
+    }
     if (offsets !== undefined) {
       const [insetTop, insetRight = insetTop, insetBottom = insetTop, insetLeft = insetRight] =
         offsets.match(insetValues) as [string, ...string[]];
@@ -119,7 +185,7 @@ export function canvasClipping(element: Element): { readonly bounds: CanvasBound
       bottom = Math.min(bottom, clipBottom);
     }
   }
-  return { bounds: { left, top, right, bottom }, hasInset };
+  return { bounds: { left, top, right, bottom }, hasInset, contours };
 }
 
 export function effectiveCanvasClip(element: Element): CanvasBounds {
