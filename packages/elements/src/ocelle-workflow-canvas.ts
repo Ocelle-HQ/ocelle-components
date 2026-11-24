@@ -319,7 +319,6 @@ export class OcelleWorkflowCanvas extends LitElement {
   #gesture: PresentationGesture | null = null;
   #preview: WorkflowCanvasPoint | null = null;
   #frameRequest: number | undefined;
-  #commandsOpen = false;
 
   constructor() {
     super();
@@ -367,13 +366,11 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (changes.has("mode") && this.mode !== "author" && this.#namedId !== null
       && previousControl instanceof HTMLElement && previousControl.closest(".move-position") !== null) {
       this.#retainedFocus = { id: this.#namedId, order: this.#order };
-      previousControl.blur();
       const commands = this.renderRoot.querySelector("details.commands");
       if (commands instanceof HTMLDetailsElement) commands.open = false;
     }
     if (changes.has("graph") || changes.has("layout")) {
       this.#projection = projectWorkflowCanvasGraph(this.graph, this.layout);
-      if (this.#projection.positions.size === 0) this.#commandsOpen = false;
       const ids = new Set(this.#order);
       if (this.#raisedId !== null && !ids.has(this.#raisedId)) this.#raisedId = null;
       if (this.#namedId === null || !ids.has(this.#namedId)) {
@@ -458,11 +455,13 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #renderCommands(): unknown {
     if (this.#projection.positions.size === 0) return nothing;
-    const named = this.#namedId === null ? undefined : this.#projection.positions.get(this.#namedId);
+    const id = this.#namedId;
+    const named = id === null ? undefined : this.#projection.positions.get(id);
+    const disclosure = this.renderRoot.querySelector<HTMLDetailsElement>("details.commands");
     return html`
       <details class="commands" @toggle=${this.#toggleCommands}>
         <summary class="control">Canvas controls</summary>
-        ${this.#commandsOpen ? html`<div class="command-panel" role="group" aria-label="Canvas presentation">
+        ${disclosure?.open ? html`<div class="command-panel" role="group" aria-label="Canvas presentation">
           <button type="button" class="control" value="left" @click=${this.#requestViewportCommand}>Pan left</button>
           <button type="button" class="control" value="right" @click=${this.#requestViewportCommand}>Pan right</button>
           <button type="button" class="control" value="up" @click=${this.#requestViewportCommand}>Pan up</button>
@@ -470,12 +469,12 @@ export class OcelleWorkflowCanvas extends LitElement {
           <button type="button" class="control" value="in" @click=${this.#requestViewportCommand}>Zoom in</button>
           <button type="button" class="control" value="out" @click=${this.#requestViewportCommand}>Zoom out</button>
           <button type="button" class="control" value="fit" @click=${this.#requestViewportCommand}>Fit graph</button>
-          ${this.mode === "author" ? repeat([named], () => this.#namedId, () => html`
-            <form class="move-position" @submit=${this.#requestNamedPosition}>
+          ${this.mode === "author" ? repeat([named], () => id, () => html`
+            <form class="move-position" data-node-id=${id ?? nothing} @submit=${this.#requestNamedPosition}>
               <label>X position <input class="control" name="x" type="number" step="any" required
-                .value=${named === undefined ? "" : String(named.x)} ?disabled=${named === undefined}></label>
+                .value=${named === undefined ? nothing : String(named.x)} ?disabled=${named === undefined}></label>
               <label>Y position <input class="control" name="y" type="number" step="any" required
-                .value=${named === undefined ? "" : String(named.y)} ?disabled=${named === undefined}></label>
+                .value=${named === undefined ? nothing : String(named.y)} ?disabled=${named === undefined}></label>
               <button class="control" type="submit" ?disabled=${named === undefined}>Move step</button>
             </form>`) : nothing}
         </div>` : nothing}
@@ -523,9 +522,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     return this.#namedId !== null && this.#projection.positions.has(this.#namedId);
   }
 
-  #toggleCommands(event: Event): void {
-    if (!(event.currentTarget instanceof HTMLDetailsElement)) return;
-    this.#commandsOpen = event.currentTarget.open;
+  #toggleCommands(): void {
     this.requestUpdate();
   }
 
@@ -559,12 +556,11 @@ export class OcelleWorkflowCanvas extends LitElement {
   #fitViewport(map: SVGSVGElement): WorkflowCanvasViewport | null {
     const navigator = map.previousElementSibling;
     const padding = navigator === null ? 0 : Number.parseFloat(getComputedStyle(navigator).paddingLeft);
-    const summary = navigator?.querySelector("summary");
-    const handleWidth = this.mode === "author" && summary !== null && summary !== undefined
-      ? Number.parseFloat(getComputedStyle(summary).minBlockSize) : 0;
-    const loops = new Set(this.#projection.drawableConnections.flatMap(({ source, destination }) =>
-      source.id === destination.id ? [source.id] : [],
-    ));
+    const handleWidth = map.querySelector<SVGRectElement>(".move-handle")?.getBBox().width ?? 0;
+    const loops = new Set<string>();
+    for (const { source, destination } of this.#projection.drawableConnections) {
+      if (source.id === destination.id) loops.add(source.id);
+    }
     const footprints = [];
     for (const [id, point] of this.#projection.positions) {
       const size = this.#sizes.get(id);
@@ -576,7 +572,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #emitViewport(viewport: WorkflowCanvasViewport): void {
-    if (!Number.isFinite(viewport.x) || !Number.isFinite(viewport.y) || !Number.isFinite(viewport.scale) || viewport.scale <= 0) return;
+    if (canvasViewport(viewport) !== viewport) return;
     this.dispatchEvent(new CustomEvent<WorkflowCanvasViewportRequestDetail>("ocelle-workflow-canvas-viewport-request", {
       detail: { viewport },
       bubbles: true,
@@ -585,7 +581,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #emitPosition(nodeId: string, position: WorkflowCanvasPoint): void {
-    if (this.mode !== "author" || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return;
+    if (this.mode !== "author" || ![position.x, position.y].every(Number.isFinite)) return;
     this.dispatchEvent(new CustomEvent<WorkflowCanvasPositionRequestDetail>("ocelle-workflow-canvas-position-request", {
       detail: { nodeId, position },
       bubbles: true,
@@ -596,10 +592,12 @@ export class OcelleWorkflowCanvas extends LitElement {
   #requestNamedPosition(event: SubmitEvent): void {
     event.preventDefault();
     const form = event.currentTarget;
-    const id = this.#namedId;
-    if (this.mode !== "author" || id === null || !(form instanceof HTMLFormElement)) return;
-    const supplied = this.layout.find(({ nodeId }) => nodeId === id);
-    if (supplied === undefined || !this.graph.nodes.some(({ id: nodeId }) => nodeId === id)) return;
+    if (!(form instanceof HTMLFormElement)) return;
+    // An enclosing native submit listener can change the graph and rerender the picker.
+    const subject = this.graph.nodes.find(({ id }) => id === form.dataset.nodeId);
+    if (subject === undefined) return;
+    const supplied = this.layout.find(({ nodeId }) => nodeId === subject.id);
+    if (supplied === undefined) return;
     const x = form.querySelector<HTMLInputElement>('input[name="x"]');
     const y = form.querySelector<HTMLInputElement>('input[name="y"]');
     if (x === null || y === null) return;
@@ -607,7 +605,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     // Restore the supplied values on rejection. A synchronous host acceptance replaces them at the next render.
     x.value = String(supplied.x);
     y.value = String(supplied.y);
-    if (position.x !== supplied.x || position.y !== supplied.y) this.#emitPosition(id, position);
+    if (position.x !== supplied.x || position.y !== supplied.y) this.#emitPosition(subject.id, position);
   }
 
   #hasGestureBasis(gesture: PresentationGesture): boolean {

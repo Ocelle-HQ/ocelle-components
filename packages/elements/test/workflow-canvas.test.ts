@@ -645,6 +645,7 @@ async function assertStaleModeAtFormSubmit(): Promise<void> {
 
 async function assertStaleNamedPositionInput(): Promise<void> {
   const { canvas, requests } = await arranging();
+  const supplied = canvas.layout;
   const { picker } = revealControls(canvas);
   picker.value = "publish";
   picker.dispatchEvent(new Event("change", { bubbles: true }));
@@ -671,7 +672,9 @@ async function assertStaleNamedPositionInput(): Promise<void> {
   move.focus({ preventScroll: true });
   await commands.press("Enter");
   await settle(canvas);
-  expect(canvas.layout.some(({ nodeId }) => nodeId === "publish")).toBe(true);
+  expect(canvas.layout).toBe(supplied);
+  expect(form.isConnected).toBe(false);
+  expect(picker.value).toBe("review");
   expect(requests, "the removed Move step subject cannot submit coordinates for another step").toEqual([]);
 }
 
