@@ -1,10 +1,20 @@
 import { describe, expect, it } from "vitest";
-import {
+type NavigationModule = typeof import("../src/workflow-canvas-navigation.ts");
+
+// Report absent results through the same assertions when replaying before the module existed.
+const navigation = import.meta.glob<NavigationModule>("../src/workflow-canvas-navigation.ts", { eager: true })["../src/workflow-canvas-navigation.ts"];
+const noResult = (): undefined => undefined;
+const {
   navigateWorkflowCanvas,
   recoverWorkflowCanvasFocus,
   workflowCanvasEntryId,
   workflowCanvasRevealTarget,
-} from "../src/workflow-canvas-navigation.ts";
+} = navigation ?? {
+  navigateWorkflowCanvas: noResult,
+  recoverWorkflowCanvasFocus: noResult,
+  workflowCanvasEntryId: noResult,
+  workflowCanvasRevealTarget: noResult,
+};
 
 const order = ["review", "publish", "revise", "archive", "close"];
 

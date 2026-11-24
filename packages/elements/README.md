@@ -1,7 +1,7 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-two elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-three elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
@@ -9,6 +9,7 @@ a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab 
 `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
 `ocelle-workflow-node`, a selectable workflow step with descriptive outcomes,
+`ocelle-workflow-canvas`, a branching workflow map with named navigation,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
@@ -39,6 +40,7 @@ of the host's own.
 | `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-workflow-canvas.js` | `dist/ocelle-workflow-canvas.js` | `ocelle-workflow-canvas` and the `ocelle-workflow-node` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-node.js` | `dist/ocelle-workflow-node.js` | `ocelle-workflow-node` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
@@ -2465,6 +2467,23 @@ default slot, the lane's content, such as cards.
 - **Title.** A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not
   widen for it, and the count stays visible.
 - `ocelle-workflow-lane` has no event, CSS part or CSS custom property.
+
+## `ocelle-workflow-canvas`
+
+Set the canvas's `graph`, `layout`, `viewport`, `selectedNodeId` and `mode` JavaScript properties independently.
+The defaults are an empty graph and layout, `{ x: 0, y: 0, scale: 1 }`, no selection and `"read-only"`.
+Use unique nonempty step IDs and outcome IDs unique within each source step. Provide graph-space locations as
+`{ nodeId, x, y }` entries. Connections identify the source, its outcome and the destination by ID.
+
+Tab enters the visible map actions at the eligible selected step or the first eligible step. Arrow keys, Home
+and End navigate the visible steps in graph order. The named step picker includes clipped and unpositioned steps.
+Reveal focuses the chosen step when its action is visible, or proposes a viewport when the positioned step is
+clipped. Names for unpositioned steps remain available in the picker.
+
+Listen on the canvas for the existing `ocelle-workflow-node-select` request with `{ nodeId }` to apply a selection.
+Listen for `ocelle-workflow-canvas-viewport-request` with `{ viewport: { x, y, scale } }` to apply a view. Both requests
+bubble across shadow roots and leave the supplied state under host control. When the host accepts a view and the
+target becomes visible, the canvas moves focus if the Reveal control still holds focus.
 
 ## `ocelle-workflow-node`
 

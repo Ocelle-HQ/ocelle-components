@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, inject, it } from "vi
 import type { OcelleWorkflowCanvas } from "../../src/ocelle-workflow-canvas.ts";
 import type { OcelleWorkflowNode } from "../../src/ocelle-workflow-node.ts";
 import type { WorkflowCanvasGraph, WorkflowCanvasViewportRequestDetail } from "../../src/workflow-canvas-types.ts";
+import { audit, axeSetup } from "../commands.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
 
@@ -41,7 +42,7 @@ afterAll(async () => {
 
 async function mount(nested = false) {
   if (served === undefined || browser === undefined) throw new Error("The strict-CSP workflow canvas fixture did not start");
-  const mounted = await visit(browser, served.origin, "workflow-canvas.html");
+  const mounted = await visit(browser, served.origin, "workflow-canvas.html", ["ocelle-elements.js", "axe.js"]);
   const { page } = mounted;
   openPage = page;
   expect(await page.evaluate(() => customElements.get("ocelle-workflow-canvas") !== undefined), "the built aggregate registers the workflow canvas").toBe(true);
@@ -53,7 +54,7 @@ async function mount(nested = false) {
     before.textContent = "Before canvas";
     const after = document.createElement("button");
     after.textContent = "After canvas";
-    const canvas = document.createElement("ocelle-workflow-canvas") as OcelleWorkflowCanvas;
+    const canvas = document.createElement("ocelle-workflow-canvas");
     canvas.id = "canvas";
     canvas.graph = graph;
     canvas.layout = [
@@ -122,6 +123,44 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     expect(await page.locator("ocelle-workflow-canvas").evaluate((canvas: OcelleWorkflowCanvas) => ({ graph: canvas.graph, selected: canvas.selectedNodeId })))
       .toEqual({ graph, selected: "publish" });
     expect(await page.locator("ocelle-workflow-canvas svg g[aria-hidden='true'] path").count()).toBe(2);
+
+    const publish = page.getByRole("button", { name: /^Publish/ });
+    await publish.waitFor();
+    await page.evaluate(() => document.fonts.ready.then(() => new Promise((resolve) => requestAnimationFrame(resolve))));
+    const findings = await audit(page.mainFrame(), () => page.addScriptTag({ url: "axe.js" }), axeSetup().rules, "host");
+    const contrast = findings.filter(({ id, targets }) => id === "color-contrast" && targets.some((target) => target.endsWith(" >>> #title")));
+    expect(contrast, "axe can measure the visible native action labels").toEqual([]);
+
+    const canvas = page.locator("ocelle-workflow-canvas");
+    await publish.evaluate((button) => {
+      const pane = document.getElementById("pane");
+      if (pane === null) throw new Error("Canvas test pane unavailable");
+      const style = getComputedStyle(button);
+      const focusOutset = parseFloat(style.getPropertyValue("--ocelle-focus-width"))
+        + parseFloat(style.getPropertyValue("--ocelle-focus-offset"));
+      const width = Math.ceil(button.getBoundingClientRect().right - pane.getBoundingClientRect().left + focusOutset + 2);
+      const shift = focusOutset / 2 + 2;
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(`#pane { inline-size: ${String(width)}px; }
+        #canvas.focus-outline-clipped { transform: translateX(${String(shift)}px); }`);
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    });
+    await publish.focus();
+    expect(await focusedId(page)).toBe("publish");
+    await canvas.evaluate((element) => { element.classList.add("focus-outline-clipped"); });
+    await expect.poll(() => publish.count()).toBe(0);
+    expect(await canvas.evaluate((element) => {
+      const pane = document.getElementById("pane");
+      const node = [...element.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []].find(({ nodeId }) => nodeId === "publish");
+      const button = node?.shadowRoot?.querySelector("button");
+      return pane !== null && button !== null && button !== undefined
+        && button.getBoundingClientRect().right < pane.getBoundingClientRect().right;
+    }), "the host pane clips only the focus outline").toBe(true);
+    expect(await focusedId(page)).not.toBe("publish");
+
+    await canvas.evaluate((element) => { element.classList.remove("focus-outline-clipped"); });
+    await expect.poll(() => publish.count()).toBe(1);
+    expect(await requests(page)).toEqual([expected, expected, expected]);
     expect(await finish()).toEqual(clean);
   });
 

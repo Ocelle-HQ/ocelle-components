@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { projectWorkflowCanvasGraph } from "../src/workflow-canvas-graph.ts";
 import type {
   WorkflowCanvasGraph,
   WorkflowCanvasLayoutEntry,
   WorkflowCanvasNode,
   WorkflowCanvasOutcome,
 } from "../src/workflow-canvas-types.ts";
+
+type GraphModule = typeof import("../src/workflow-canvas-graph.ts");
+
+// Report absent results through the same assertions when replaying before the module existed.
+const graph = import.meta.glob<GraphModule>("../src/workflow-canvas-graph.ts", { eager: true })["../src/workflow-canvas-graph.ts"];
+const projectWorkflowCanvasGraph = graph?.projectWorkflowCanvasGraph ?? (() => ({
+  nodes: undefined,
+  positions: undefined,
+  relationships: undefined,
+  drawableConnections: undefined,
+}));
 
 function step(
   id: string,
