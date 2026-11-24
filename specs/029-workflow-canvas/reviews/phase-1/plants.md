@@ -76,3 +76,9 @@ $ node gates/bin/plants.ts -- --affected 3515d2757508bd523fa55c6615af4f3996f842a
 note: affected: every plant, by packages/elements/package.json (not mapped)
 plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
 ```
+
+The full hosted judge for combined candidate `e3fc15c9b42daa8c8f5d2b1ed319450be037ebf5` exited 0. GitHub tested synthetic merge `c9b750c4d809a7807089cbf9542082947474c118` on the same tree. [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45384501909/job/138421962156)
+
+```text
+plants: 317 plants of 17 gates and the registry judged, every plant as expected
+```
