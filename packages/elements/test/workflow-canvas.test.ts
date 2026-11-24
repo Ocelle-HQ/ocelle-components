@@ -597,9 +597,10 @@ async function assertMoveHandleFocusInsetCoverage(): Promise<void> {
   expect(requests).toEqual([selectRequest("review")]);
 }
 
-async function assertMoveStrokeCoverage(axis: "horizontal" | "vertical"): Promise<void> {
+async function assertMoveStrokeCoverage(edge: "horizontal" | "vertical" | "above" | "corner"): Promise<void> {
   const { canvas, pane, sheet, requests } = await arranging();
   sheet.insertRule("#canvas-frame { transform: scale(1.5, 1.75); transform-origin: left top; }", sheet.cssRules.length);
+  sheet.insertRule("#canvas-pane { block-size: 620px; }", sheet.cssRules.length);
   canvas.viewport = initialViewport;
   canvas.selectedNodeId = "review";
   canvas.layout = [{ nodeId: "review", x: 260, y: 100 }, { nodeId: "publish", x: 45, y: 100 }];
@@ -613,36 +614,47 @@ async function assertMoveStrokeCoverage(axis: "horizontal" | "vertical"): Promis
   if (!(marker instanceof SVGRectElement) || card == null || matrix === null) throw new Error("The transformed fixture needs both card layers");
   const outline = marker.getBoundingClientRect();
   const before = handle.getBoundingClientRect();
-  const horizontal = axis === "horizontal";
-  const stroke = Number.parseFloat(getComputedStyle(handle).strokeWidth) * (horizontal ? matrix.a : matrix.d) / 2;
-  const hit = horizontal
-    ? { x: outline.left + stroke / 10, y: before.top + before.height / 2 }
-    : { x: outline.left + 10, y: outline.bottom - stroke / 10 };
-  const place = (gap: number) => {
+  const stroke = Number.parseFloat(getComputedStyle(handle).strokeWidth) / 2;
+  const strokeX = stroke * matrix.a;
+  const strokeY = stroke * matrix.d;
+  const hit = {
+    horizontal: { x: outline.left + strokeX / 10, y: before.top + before.height / 2 },
+    vertical: { x: outline.left + 10, y: outline.bottom - strokeY / 10 },
+    above: { x: outline.left + 10, y: outline.top + strokeY / 10 },
+    corner: { x: outline.right - strokeX / 10, y: outline.bottom - strokeY / 10 },
+  }[edge];
+  const place = (factor: number) => {
+    const target = {
+      horizontal: { left: outline.left - before.width - strokeX * factor, top: before.top },
+      vertical: { left: outline.left - 8, top: outline.bottom + strokeY * factor },
+      above: { left: outline.left - 8, top: outline.top - before.height - strokeY * factor },
+      corner: { left: outline.right + strokeX * factor, top: outline.bottom + strokeY * factor },
+    }[edge];
     canvas.layout = [
       { nodeId: "review", x: 260, y: 100 },
-      {
-        nodeId: "publish",
-        x: 45 + (horizontal ? outline.left - gap - before.right : outline.left - 8 - before.left) / matrix.a,
-        y: horizontal ? 100 : 100 + (outline.bottom + gap - before.top) / matrix.d,
-      },
+      { nodeId: "publish", x: 45 + (target.left - before.left) / matrix.a, y: 100 + (target.top - before.top) / matrix.d },
     ];
   };
   review.focus({ preventScroll: true });
   expect(active()).toBe(review);
 
-  place(stroke * 1.5);
+  place(1.5);
   await settle(canvas);
   expect(handle.hasAttribute("data-ready")).toBe(true);
   expect(canvas.shadowRoot?.elementFromPoint(hit.x, hit.y)).not.toBe(handle);
   expect(active()).toBe(review);
 
-  place(stroke * 0.8);
+  place(0.8);
   await settle(canvas);
   const fill = handle.getBoundingClientRect();
   const cardBounds = card.getBoundingClientRect();
-  expect(horizontal ? outline.left - fill.right : fill.top - outline.bottom).toBeGreaterThan(0);
-  expect(horizontal ? outline.left - cardBounds.right : cardBounds.top - outline.bottom).toBeGreaterThan(0);
+  const gaps = {
+    horizontal: [outline.left - fill.right, outline.left - cardBounds.right],
+    vertical: [fill.top - outline.bottom, cardBounds.top - outline.bottom],
+    above: [outline.top - fill.bottom, outline.left - cardBounds.right],
+    corner: [fill.left - outline.right, fill.top - outline.bottom, cardBounds.top - outline.bottom],
+  }[edge];
+  expect(gaps.every((gap) => gap > 0)).toBe(true);
   expect(handle.hasAttribute("data-ready")).toBe(true);
   expect(canvas.shadowRoot?.elementFromPoint(hit.x, hit.y)).toBe(handle);
   expect(active(), "the browser-painted SVG stroke alone covers the focus inset").toBe(publish);
@@ -959,6 +971,8 @@ describe("workflow canvas arranging in process", () => {
       await assertSeparateHandleCoverage("later card");
       await assertMoveStrokeCoverage("horizontal");
       await assertMoveStrokeCoverage("vertical");
+      await assertMoveStrokeCoverage("above");
+      await assertMoveStrokeCoverage("corner");
     }
   });
 
