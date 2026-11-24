@@ -474,9 +474,10 @@ interface CanvasFitNode extends WorkflowCanvasPoint {
 }
 
 export function canvasFitViewport(nodes: readonly CanvasFitNode[], width: number, height: number, padding: number): WorkflowCanvasViewport | null {
-  if (nodes.length === 0) return null;
-  const left = Math.min(...nodes.map(({ x }) => x));
-  const top = Math.min(...nodes.map(({ y }) => y));
+  const first = nodes[0];
+  if (first === undefined) return null;
+  const left = nodes.reduce((minimum, { x }) => Math.min(minimum, x), first.x);
+  const top = nodes.reduce((minimum, { y }) => Math.min(minimum, y), first.y);
   const roomX = width - 2 * padding;
   const roomY = height - 2 * padding;
   let scale = 1;
