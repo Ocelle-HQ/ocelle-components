@@ -14,4 +14,4 @@ The initial integrated run passed 113 tests across all five workflow-canvas file
 
 A local Stryker run exercised 231 mutations in the changed areas. Two survived. One let the picker take focus from the host when the reveal initiator never owned focus. The other let canvas navigation consume key input from a native non-node control in the map. Separate Chromium tests each failed on the corresponding isolated mutation and passed on the corrected source. The expanded focused suite passed 115 tests across the same five files.
 
-The local Plants selector selected 317 of 317. The full Plants judge and other hosted results, including strict mutation, remain pending on the exact fix candidate. [Plants record](plants.md)
+The exact corrected commit `8f7d54bcf394b69e431a2e7a1ec5bc7a4fc6c69f` passed all 18 required hosted checks, including all 29 change-scope mutation shards and the full 317-Plant judge. [Hosted run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909) · [Implementation evidence](implementation.md#verification-after-round-1-fixes) · [Plants record](plants.md)
