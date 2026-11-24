@@ -30,7 +30,13 @@ note: affected: axe/pass-repository, by packages/elements/custom-elements.json
 plants: affected since a56fc8309667984bcc63c6f0e341c140728bbd65: 21 of 317 plants selected, none judged (--list)
 ```
 
-The affected selector listed the cases for the exact hosted judge. The local engine lacks the pinned visual image. The hosted verdict covers all selected cases, including the visual and axe cases.
+The official local affected command with `--skip-container` exited 0 after judging all 16 selected cases that use the local toolchain. Every case matched its expected verdict. The Axe repository Plant took 706.8s.
+
+```text
+plants: affected since a56fc8309667984bcc63c6f0e341c140728bbd65: 16 of 317 plants judged, every plant as expected; not the Plants check; partial run: 5 visual plants not run
+```
+
+The five visual Plants require the pinned container image from hosted CI. The complete hosted Plants verdict remains part of candidate verification.
 
 The eight updated manifest overlays were independently built through `buildRepoTree` and checked by the repository manifest gate.
 
@@ -44,3 +50,5 @@ fail-undescribed-property: fail as planted (1 exact findings)
 fail-undescribed-slot: fail as planted (1 exact findings)
 pass-reordered: pass as planted (0 exact findings)
 ```
+
+The exact Phase 2 candidate passed the full hosted Plants judge. All 317 Plants across 17 gates and the registry matched their expected verdicts, including all five visual fixtures in the affected selection. [Exact hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45445205967/job/138640924435)

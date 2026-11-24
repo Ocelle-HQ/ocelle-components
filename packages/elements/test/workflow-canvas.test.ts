@@ -451,12 +451,18 @@ async function assertStaleModeAtPointerStart(): Promise<void> {
   const handle = moveHandle(canvas, "publish");
   const origin = elementCenter(handle);
   const map = mapOf(canvas);
-  const capture: boolean[] = [];
-  pane.addEventListener("pointerdown", (event) => { capture.push(map.hasPointerCapture(event.pointerId)); }, { once: true });
-  pane.addEventListener("pointerdown", () => { canvas.mode = "read-only"; }, { capture: true, once: true });
+  const nativeHits: boolean[] = [];
+  const setCapture = vi.spyOn(map, "setPointerCapture");
+  pane.addEventListener("pointerdown", (event) => {
+    nativeHits.push(event.isTrusted && event.composedPath().includes(handle));
+    canvas.mode = "read-only";
+  }, { capture: true, once: true });
   await commands.pointerPath([{ ...origin, down: true }, { x: origin.x + 40, y: origin.y - 20 }]);
+  const captures = setCapture.mock.calls;
+  setCapture.mockRestore();
   await settle(canvas);
-  expect(capture).toEqual([false]);
+  expect(nativeHits).toEqual([true]);
+  expect(captures).toEqual([]);
   expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
   expect(map.querySelectorAll(".move-handle")).toHaveLength(0);
   await commands.pointerPath([{ x: origin.x + 40, y: origin.y - 20, up: true }]);
@@ -465,21 +471,28 @@ async function assertStaleModeAtPointerStart(): Promise<void> {
 
 async function assertLivePointerAdmission(invalidated: "clip" | "graph"): Promise<void> {
   const { canvas, pane, sheet, requests } = await arranging();
-  sheet.insertRule("#canvas-pane.new-clip { clip-path: inset(0 45% 0 0); }", sheet.cssRules.length);
   const handle = moveHandle(canvas, "publish");
   const down = elementCenter(handle);
   const end = { x: down.x + 40, y: down.y - 20 };
   const map = mapOf(canvas);
-  const capture: boolean[] = [];
-  pane.addEventListener("pointerdown", (event) => { capture.push(map.hasPointerCapture(event.pointerId)); }, { once: true });
-  pane.addEventListener("pointerdown", () => {
-    if (invalidated === "clip") pane.classList.add("new-clip");
-    else canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
+  const nativeHits: boolean[] = [];
+  const setCapture = vi.spyOn(map, "setPointerCapture");
+  pane.addEventListener("pointerdown", (event) => {
+    nativeHits.push(event.isTrusted && event.composedPath().includes(handle));
+    if (invalidated === "clip") {
+      // CSSOM changes the hit geometry without a host attribute mutation.
+      sheet.insertRule("#canvas-pane { clip-path: inset(0 45% 0 0); }", sheet.cssRules.length);
+    } else {
+      canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
+    }
   }, { capture: true, once: true });
   await commands.pointerPath([{ ...down, down: true }, end, { ...end, up: true }]);
+  const captures = setCapture.mock.calls;
+  setCapture.mockRestore();
   await settle(canvas);
+  expect(nativeHits).toEqual([true]);
+  expect(captures).toEqual([]);
   expect(requests).toEqual([]);
-  expect(capture).toEqual([false]);
   expect(canvas.layout.find(({ nodeId }) => nodeId === "publish")).toEqual({ nodeId: "publish", x: 135, y: 35 });
 }
 
@@ -645,6 +658,7 @@ async function assertStaleModeAtFormSubmit(): Promise<void> {
 
 async function assertStaleNamedPositionInput(): Promise<void> {
   const { canvas, requests } = await arranging();
+  const supplied = canvas.layout;
   const { picker } = revealControls(canvas);
   picker.value = "publish";
   picker.dispatchEvent(new Event("change", { bubbles: true }));
@@ -671,7 +685,9 @@ async function assertStaleNamedPositionInput(): Promise<void> {
   move.focus({ preventScroll: true });
   await commands.press("Enter");
   await settle(canvas);
-  expect(canvas.layout.some(({ nodeId }) => nodeId === "publish")).toBe(true);
+  expect(canvas.layout).toBe(supplied);
+  expect(form.isConnected).toBe(false);
+  expect(picker.value).toBe("review");
   expect(requests, "the removed Move step subject cannot submit coordinates for another step").toEqual([]);
 }
 
@@ -725,6 +741,27 @@ async function assertNarrowFitWithSelfLoop(): Promise<void> {
   expect(requests).toEqual([presentationRequest(viewport, { viewport: fitted })]);
   expect(canvas.graph).toBe(graph);
   expect(canvas.layout).toBe(layout);
+}
+
+async function assertReleasedBeforeFrame(canvas: OcelleWorkflowCanvas, map: SVGSVGElement, pointerId: number): Promise<void> {
+  await canvas.updateComplete;
+  expect(map.hasPointerCapture(pointerId)).toBe(false);
+}
+
+async function assertSharedCommandSurvivesModeSwitch(fixture: Fixture, scroll: readonly number[]): Promise<void> {
+  const { canvas, pane, requests } = fixture;
+  await openCommands(canvas);
+  const shared = commandButton(canvas, "Pan left");
+  shared.focus({ preventScroll: true });
+  expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
+  canvas.mode = "author";
+  await settle(canvas);
+  canvas.mode = "read-only";
+  await settle(canvas);
+  expect(active()).toBe(shared);
+  expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
+  expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  expect(requests).toEqual([]);
 }
 
 async function assertStationaryCancellation(cause: "viewport" | "graph" | "width" | "height" | "transform"): Promise<void> {
@@ -818,10 +855,7 @@ describe("workflow canvas arranging in process", () => {
     if (cause === "Escape") await commands.press("Escape");
     if (cause === "layout") canvas.layout = [...canvas.layout];
     const supplied = { graph: canvas.graph, layout: canvas.layout, viewport: canvas.viewport };
-    if (cause === "mode" || cause === "layout") {
-      await canvas.updateComplete;
-      expect(map.hasPointerCapture(pointerId)).toBe(false);
-    }
+    if (cause === "mode" || cause === "layout") await assertReleasedBeforeFrame(canvas, map, pointerId);
     await expect.poll(() => displayedOrigin(canvas, "publish")).toEqual([288, 94]);
     expect(map.hasPointerCapture(pointerId)).toBe(false);
     alignedIncidents(canvas);
@@ -1028,7 +1062,8 @@ describe("workflow canvas arranging in process", () => {
     { name: "the preceding visible step", nodeId: "revise", hidden: ["revise"], expected: "publish" },
     { name: "the named fallback", nodeId: "publish", hidden: ["review", "publish", "revise"], expected: null },
   ])("recovers to $name when leaving authoring with a focused Move step control", async ({ nodeId, hidden, expected }) => {
-    const { canvas, requests, pane } = await arranging();
+    const fixture = await arranging();
+    const { canvas, requests, pane } = fixture;
     canvas.layout = canvas.layout.map((node) => hidden.includes(node.nodeId) ? { ...node, x: 1100 } : node);
     await settle(canvas);
     const { picker } = revealControls(canvas);
@@ -1054,20 +1089,7 @@ describe("workflow canvas arranging in process", () => {
 
     if (expected === "publish" && nodeId === expected) await assertStaleModeAtFormSubmit();
     if (expected === null) await assertPanelCoverageRecovery();
-    if (nodeId === "revise") {
-      await openCommands(canvas);
-      const shared = commandButton(canvas, "Pan left");
-      shared.focus({ preventScroll: true });
-      expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
-      canvas.mode = "author";
-      await settle(canvas);
-      canvas.mode = "read-only";
-      await settle(canvas);
-      expect(active()).toBe(shared);
-      expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
-      expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
-      expect(requests).toEqual([]);
-    }
+    if (nodeId === "revise") await assertSharedCommandSurvivesModeSwitch(fixture, scroll);
   });
 });
 
