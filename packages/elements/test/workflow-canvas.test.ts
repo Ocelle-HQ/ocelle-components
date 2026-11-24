@@ -783,6 +783,37 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("updates SVG and edge geometry for a height change at a fixed step width", async () => {
+    const { canvas, requests } = await mount();
+    const card = getNode(canvas, "review");
+    const foreign = card?.closest("foreignObject");
+    const edge = canvas.shadowRoot?.querySelector<SVGPathElement>("svg path");
+    expect(foreign).toBeInstanceOf(SVGForeignObjectElement);
+    expect(edge).toBeInstanceOf(SVGPathElement);
+    if (foreign === null || foreign === undefined || edge === null || edge === undefined) {
+      throw new Error("The height-change fixture needs a positioned step and edge");
+    }
+    const previousWidth = Number(foreign.getAttribute("width"));
+    const previousHeight = Number(foreign.getAttribute("height"));
+    const previousAnchor = edge.getPointAtLength(0);
+
+    canvas.graph = {
+      ...canvas.graph,
+      nodes: canvas.graph.nodes.map((node) => node.id === "review"
+        ? { ...node, label: "Initial review of the complete authoring proposal with feedback from its accountable reviewer" }
+        : node),
+    };
+    await settle(canvas);
+    const measuredHeight = card?.parentElement?.offsetHeight;
+    expect(measuredHeight).toBeGreaterThan(previousHeight);
+    expect(foreign.getAttribute("height")).toBe(String(measuredHeight));
+    expect(Number(foreign.getAttribute("width"))).toBe(previousWidth);
+    const movedAnchor = edge.getPointAtLength(0);
+    expect(movedAnchor.x).toBe(previousAnchor.x);
+    expect(movedAnchor.y).toBeGreaterThan(previousAnchor.y);
+    expect(requests).toEqual([]);
+  });
+
   it("observes the full native focus outline without writing unchanged geometry", async () => {
     const { canvas, requests } = await mount();
     const button = action(canvas, "review");
@@ -813,6 +844,119 @@ describe("workflow canvas in-process selection and navigation", () => {
       mutations.disconnect();
     }
     expect(requests).toEqual([]);
+  });
+
+  it("keeps finite native focus bounds when a host token overflows", async () => {
+    const { canvas, sheet, requests } = await mount();
+    const button = action(canvas, "review");
+    const face = getNode(canvas, "review")?.parentElement;
+    const marker = face?.parentElement?.nextElementSibling;
+    expect(marker).toBeInstanceOf(SVGRectElement);
+    if (!(marker instanceof SVGRectElement)) throw new Error("The focus outline needs its SVG observation box");
+    const size = () => ["x", "y", "width", "height"].map((name) => marker.getAttribute(name));
+    const laidOut = size();
+    expect(laidOut.every((value) => value !== null && Number.isFinite(Number(value)))).toBe(true);
+
+    sheet.replaceSync(`${fixtureStyles(760)}\n${tag} { --ocelle-focus-width: 1e309px; }`);
+    expect(Number.parseFloat(getComputedStyle(button).getPropertyValue("--ocelle-focus-width"))).toBe(Infinity);
+    window.dispatchEvent(new Event("resize"));
+    expect(size()).toEqual(laidOut);
+    expect(face?.inert).toBe(true);
+
+    sheet.replaceSync(fixtureStyles(760));
+    window.dispatchEvent(new Event("resize"));
+    expect(face?.inert).toBe(false);
+    expect(size()).toEqual(laidOut);
+    expect(requests).toEqual([]);
+  });
+
+  it("leaves stable visible and clipped accessibility states untouched on resize", async () => {
+    const { canvas, requests } = await mount();
+    const visible = getNode(canvas, "review")?.parentElement;
+    const clipped = getNode(canvas, "revise")?.parentElement;
+    expect(visible).toBeInstanceOf(HTMLElement);
+    expect(clipped).toBeInstanceOf(HTMLElement);
+    if (visible === null || visible === undefined || clipped === null || clipped === undefined) {
+      throw new Error("The fixture needs visible and clipped steps");
+    }
+    expect(visible.getAttribute("aria-hidden")).toBeNull();
+    expect(clipped.getAttribute("aria-hidden")).toBe("true");
+    const mutations = new MutationObserver(() => undefined);
+    for (const face of [visible, clipped]) mutations.observe(face, { attributeFilter: ["aria-hidden"] });
+    try {
+      window.dispatchEvent(new Event("resize"));
+      expect(mutations.takeRecords()).toEqual([]);
+    } finally {
+      mutations.disconnect();
+    }
+    expect(requests).toEqual([]);
+  });
+
+  it("moves the native tab stop with node focus and restores host entry after blur", async () => {
+    const { canvas, before, requests } = await mount();
+    const review = action(canvas, "review");
+    const publish = action(canvas, "publish");
+    expect([review.tabIndex, publish.tabIndex]).toEqual([-1, 0]);
+
+    review.focus({ preventScroll: true });
+    expect(active()).toBe(review);
+    expect([review.tabIndex, publish.tabIndex]).toEqual([0, -1]);
+
+    before.focus();
+    await Promise.resolve();
+    expect(active()).toBe(before);
+    expect([review.tabIndex, publish.tabIndex]).toEqual([-1, 0]);
+    expect(requests).toEqual([]);
+  });
+
+  it("refreshes the visible native actions after Lit renders and before observers deliver", async () => {
+    const { canvas, requests } = await mount();
+    const review = getNode(canvas, "review");
+    const publish = getNode(canvas, "publish");
+    expect(review?.parentElement?.inert).toBe(false);
+    expect(publish?.parentElement?.inert).toBe(false);
+
+    canvas.viewport = { ...initialViewport, x: -240 };
+    await canvas.updateComplete;
+    await Promise.all([review?.updateComplete, publish?.updateComplete]);
+    await Promise.resolve();
+
+    expect(review?.parentElement?.inert).toBe(true);
+    expect(review?.parentElement?.getAttribute("aria-hidden")).toBe("true");
+    expect(publish?.parentElement?.inert).toBe(false);
+    expect(action(canvas, "publish").tabIndex).toBe(0);
+    expect(requests).toEqual([]);
+  });
+
+  it("skips map measurement for named focus and a node blur queued before disconnect", async () => {
+    const { canvas, before, requests } = await mount();
+    const map = canvas.shadowRoot?.querySelector("svg");
+    expect(map).toBeInstanceOf(SVGSVGElement);
+    if (map === null || map === undefined) throw new Error("The canvas needs a native SVG map");
+    const measure = vi.spyOn(map, "getScreenCTM");
+    try {
+      const { picker } = revealControls(canvas);
+      picker.focus();
+      expect(active()).toBe(picker);
+      expect(measure).not.toHaveBeenCalled();
+
+      before.focus();
+      await Promise.resolve();
+      expect(active()).toBe(before);
+      expect(measure).not.toHaveBeenCalled();
+
+      action(canvas, "review").focus({ preventScroll: true });
+      expect(measure).toHaveBeenCalled();
+      before.focus();
+      canvas.remove();
+      measure.mockClear();
+      await Promise.resolve();
+      expect(measure).not.toHaveBeenCalled();
+      expect(active()).toBe(before);
+      expect(requests).toEqual([]);
+    } finally {
+      measure.mockRestore();
+    }
   });
 
   it("cancels a stale native activation before the geometry observers deliver", async () => {
