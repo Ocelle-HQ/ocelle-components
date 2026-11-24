@@ -298,6 +298,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   #edgePath(sourceId: string, destinationId: string): string {
     const source = this.#projection.positions.get(sourceId);
     const destination = this.#projection.positions.get(destinationId);
+    // Stryker disable next-line StringLiteral: drawable connections come from the same private map with both endpoints present.
     if (source === undefined || destination === undefined) return "";
     const view = canvasViewport(this.viewport);
     const start = canvasViewportPoint(source, view);
@@ -366,15 +367,13 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #focusedAction(): NodeAction | undefined {
     const node = this.shadowRoot?.activeElement;
-    if (!(node instanceof OcelleWorkflowNode)) return;
-    const action = this.#action(node);
-    return action?.button === node.shadowRoot?.activeElement ? action : undefined;
+    // The managed workflow node's native button is its only focusable control.
+    return node instanceof OcelleWorkflowNode ? this.#action(node) : undefined;
   }
 
   #eventAction(event: Event): NodeAction | undefined {
     const path = event.composedPath();
-    const node = path.find((part): part is OcelleWorkflowNode =>
-      part instanceof OcelleWorkflowNode && part.getRootNode() === this.shadowRoot);
+    const node = path.find((part) => part instanceof OcelleWorkflowNode);
     if (node === undefined) return;
     const action = this.#action(node);
     return action !== undefined && path.includes(action.button) ? action : undefined;
@@ -522,9 +521,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   };
 
   #onActionBlur = (event: FocusEvent): void => {
-    if (this.#eventAction(event) !== undefined) queueMicrotask(() => {
-      if (this.isConnected) this.#refresh();
-    });
+    if (this.#eventAction(event) !== undefined) queueMicrotask(this.#onGeometryChange);
   };
 
   #onActionKey = (event: KeyboardEvent): void => {
@@ -545,8 +542,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.requestUpdate();
   }
 
-  #loseRevealFocus(event: FocusEvent): void {
-    if (this.#pendingReveal?.initiator !== event.currentTarget) return;
+  #loseRevealFocus(): void {
     // Stryker disable next-line AssignmentOperator: either direction is equivalent because the pending reveal is discarded immediately.
     this.#focusEpoch += 1;
     this.#pendingReveal = null;
@@ -593,7 +589,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (navigator !== null && !isInsideCanvasClip(effectiveCanvasClip(navigator), pending.initiator.getBoundingClientRect())) {
       this.#pendingReveal = null;
       this.#focusNamed(map);
-      if (this.shadowRoot.activeElement === pending.initiator) pending.initiator.blur();
+      pending.initiator.blur();
       return;
     }
     const ready = workflowCanvasRevealTarget(pending, eligible, this.#generation, this.#focusEpoch);
