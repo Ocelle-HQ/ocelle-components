@@ -493,6 +493,23 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([selectRequest("publish")]);
   });
 
+  it("restores eligibility after a same-task attempt to focus a clipped node", async () => {
+    const { canvas, frame, before, requests } = await mount(true);
+    const publish = action(canvas, "publish");
+    before.focus();
+    frame.classList.add("move-away");
+    publish.focus({ preventScroll: true });
+    expect(active()).not.toBe(publish);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+
+    frame.classList.remove("move-away");
+    await settle(canvas);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+    expect(active()).not.toBe(publish);
+    expect(requests).toEqual([]);
+  });
+
+
   it("draws the supplied branching graph, carrying the labels and source outcomes into the existing node controls", async () => {
     const { canvas, requests } = await mount();
     const rendered = [...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []];
