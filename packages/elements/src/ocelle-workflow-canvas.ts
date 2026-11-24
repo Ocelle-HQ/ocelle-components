@@ -16,6 +16,7 @@ import {
   canvasActionBounds,
   canvasBoundsOverlap,
   canvasRevealViewport,
+  canvasScreenInverse,
   canvasViewport,
   canvasViewportPoint,
   composedAncestors,
@@ -409,7 +410,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     const previous = this.#retainedFocus;
     this.#retainedFocus = null;
     const { contained, eligible, bounds } = this.#measureEligibility(actions, map);
-    const inverse = map.getScreenCTM()?.inverse();
+    const inverse = canvasScreenInverse(map);
     const ownsFocusLoss = previous !== null && this.#documentFocusIsUnclaimed();
     const currentId = focused?.node.nodeId ?? (ownsFocusLoss ? previous.id : null);
     const entry = currentId !== null && eligible.has(currentId)
@@ -420,7 +421,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       button.tabIndex = tabIndex;
       face.inert = !eligible.has(node.nodeId);
       const outline = bounds.get(node.nodeId);
-      if (outline !== undefined && inverse !== undefined) this.#placeFocusBounds(focusBounds, outline, inverse);
+      if (outline !== undefined && inverse !== null) this.#placeFocusBounds(focusBounds, outline, inverse);
       if (!this.#projection.positions.has(node.nodeId)) continue;
       const size = this.#sizes.get(node.nodeId);
       if (size?.width !== face.offsetWidth || size.height !== face.offsetHeight) {

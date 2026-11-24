@@ -50,8 +50,9 @@ export function recoverWorkflowCanvasFocus(
   if (previousIndex === -1) return null;
 
   const isEligible = (id: string) => eligibleIds.has(id);
+  // If the forward search fails, every eligible survivor precedes previousId.
   return previousOrder.slice(previousIndex + 1).find(isEligible)
-    ?? previousOrder.slice(0, previousIndex).findLast(isEligible)
+    ?? previousOrder.findLast(isEligible)
     ?? null;
 }
 

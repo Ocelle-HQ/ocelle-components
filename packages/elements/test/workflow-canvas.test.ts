@@ -325,6 +325,29 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("forgets a pending reveal when the host removes only the destination position", async () => {
+    const { canvas, requests } = await mount();
+    const initiator = await askReveal(canvas, "revise");
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(initiator);
+
+    const { picker } = revealControls(canvas);
+    picker.value = "publish";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    canvas.layout = initialLayout.filter(({ nodeId }) => nodeId !== "revise");
+    await settle(canvas);
+    expect(picker.value).toBe("publish");
+    expect(active()).toBe(initiator);
+    expect(initiator.disabled).toBe(false);
+
+    canvas.layout = [...canvas.layout, { nodeId: "revise", x: 530, y: 20 }];
+    await settle(canvas);
+    expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
+    expect(active()).toBe(initiator);
+    expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+  });
+
   it("draws the supplied branching graph, carrying the labels and source outcomes into the existing node controls", async () => {
     const { canvas, requests } = await mount();
     const rendered = [...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []];
