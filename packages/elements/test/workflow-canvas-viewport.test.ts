@@ -122,4 +122,19 @@ describe("workflow canvas viewport geometry", () => {
     expect(canvasRevealViewport(view, map, action)).toEqual(expected);
   });
 
+  it("declines a reveal while the SVG has no CSS box", () => {
+    const { action, map } = viewportFixture(250, 170);
+    map.style.display = "none";
+
+    expect(canvasRevealViewport(view, map, action)).toBeNull();
+  });
+
+  it("declines a reveal when the rendering transform cannot be inverted", () => {
+    const { action, map } = viewportFixture(250, 170);
+    map.style.transform = "scaleX(0)";
+    map.style.transformOrigin = "top left";
+
+    expect(() => canvasRevealViewport(view, map, action), "a singular host transform must never throw").not.toThrow();
+    expect(canvasRevealViewport(view, map, action)).toBeNull();
+  });
 });
