@@ -538,7 +538,7 @@ async function assertSeparateHandleCoverage(cover: "pane clip" | "later card"): 
 
 async function assertMoveHandleFocusInsetCoverage(): Promise<void> {
   const fixture = await arranging();
-  const { canvas, pane, requests } = fixture;
+  const { canvas, pane, sheet, requests } = fixture;
   canvas.viewport = initialViewport;
   canvas.selectedNodeId = "review";
   canvas.layout = [{ nodeId: "review", x: 330, y: 100 }, { nodeId: "publish", x: 80, y: 100 }];
@@ -561,8 +561,17 @@ async function assertMoveHandleFocusInsetCoverage(): Promise<void> {
     { nodeId: "review", x: 330, y: 100 },
     { nodeId: "publish", x: 80 + outline.left + gap - publishHandle.getBoundingClientRect().right, y: 100 },
   ];
+  const clipLeft = outline.left - pane.getBoundingClientRect().left - 1;
+  const clipRule = sheet.insertRule(`#canvas-pane { clip-path: inset(0 0 0 ${String(clipLeft)}px); }`, sheet.cssRules.length);
   canvas.layout = layout;
   await settle(canvas);
+  expect(getComputedStyle(publishHandle).visibility).toBe("hidden");
+  expect(active()).toBe(review);
+  expect(await axButtons()).toContain("Initial review");
+  expect(requests).toEqual([]);
+
+  sheet.deleteRule(clipRule);
+  await expect.poll(() => publishHandle.hasAttribute("data-ready")).toBe(true);
   const handle = publishHandle.getBoundingClientRect();
   expect(publishObject.getBoundingClientRect().right).toBeLessThan(outline.left);
   expect(handle.right).toBeGreaterThan(outline.left);
