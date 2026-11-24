@@ -13,6 +13,7 @@ type CanvasClipContour = readonly [WorkflowCanvasPoint, ...WorkflowCanvasPoint[]
 
 export interface CanvasClipMeasurement {
   readonly bounds: CanvasBounds;
+  readonly contours: readonly CanvasClipContour[];
   contains(outline: CanvasBounds): boolean;
 }
 
@@ -285,6 +286,88 @@ function centeredOutline(outline: CanvasBounds, target: CanvasBounds): CanvasBou
   return { left: outline.left + x, right: outline.right + x, top: outline.top + y, bottom: outline.bottom + y };
 }
 
+// A center can change its relation to a contour only where its outline contacts a segment or a vertex.
+type ContactLine = readonly [normalX: number, normalY: number, offset: number];
+
+function outlineContactLines(contours: readonly CanvasClipContour[], halfWidth: number, halfHeight: number): ContactLine[] {
+  const lines: ContactLine[] = [];
+  for (const contour of contours) {
+    contour.forEach((start, index) => {
+      const end = contour[index + 1] ?? contour[0];
+      const x = end.y - start.y;
+      const y = start.x - end.x;
+      const offset = x * start.x + y * start.y;
+      const reach = Math.abs(x) * halfWidth + Math.abs(y) * halfHeight;
+      // Each vertex's column contacts fall where its two row contacts meet the incident offset edges.
+      lines.push(
+        [0, 1, start.y - halfHeight], [0, 1, start.y + halfHeight],
+        [x, y, offset - reach], [x, y, offset + reach],
+      );
+    });
+  }
+  return lines;
+}
+
+function* sectionCoordinates(events: Iterable<number>, low: number, high: number): Generator<number> {
+  const boundaries = [...new Set([low, high, ...events])].filter((value) => value >= low && value <= high).sort((a, b) => a - b);
+  // Open cells come first. Keep their boundaries too, so a gap that fits exactly can still be used.
+  const [, ...laterBoundaries] = boundaries;
+  let previous = low;
+  for (const boundary of laterBoundaries) {
+    yield (previous + boundary) / 2;
+    previous = boundary;
+  }
+  yield* boundaries;
+}
+
+export function canvasClipSections(outline: CanvasBounds, clip: Pick<CanvasClipMeasurement, "bounds" | "contours">) {
+  const halfWidth = (outline.right - outline.left) / 2;
+  const halfHeight = (outline.bottom - outline.top) / 2;
+  const minX = clip.bounds.left + halfWidth;
+  const maxX = clip.bounds.right - halfWidth;
+  const minY = clip.bounds.top + halfHeight;
+  const maxY = clip.bounds.bottom - halfHeight;
+  if (minX > maxX || minY > maxY) return undefined;
+  const lines = outlineContactLines(clip.contours, halfWidth, halfHeight);
+  lines.push([0, 1, minY], [0, 1, maxY]);
+  return {
+    halfWidth, halfHeight,
+    rows(column: number) {
+      const events = lines.map(([x, y, offset]) => (offset - x * column) / y);
+      return sectionCoordinates(events, minY, maxY);
+    },
+    columns() {
+      // Between two contact intersections, the order of all section boundaries is fixed.
+      const events = lines.flatMap(([x, y, offset], index) => {
+        // Stryker disable next-line MethodExpression: Reversed pairs repeat the same cuts, which sectionCoordinates deduplicates.
+        const others = lines.slice(index);
+        return others.map(([otherX, otherY, otherOffset]) => (offset * otherY - otherOffset * y) / (x * otherY - otherX * y));
+      });
+      return sectionCoordinates(events, minX, maxX);
+    },
+  };
+}
+
+function findOutlineInClip(outline: CanvasBounds, preferred: CanvasBounds, clip: CanvasClipMeasurement): CanvasBounds | undefined {
+  const sections = canvasClipSections(outline, clip);
+  if (sections === undefined) return undefined;
+  const { halfWidth, halfHeight } = sections;
+  const findInColumn = (column: number) => {
+    for (const row of sections.rows(column)) {
+      const candidate = { left: column - halfWidth, top: row - halfHeight, right: column + halfWidth, bottom: row + halfHeight };
+      if (clip.contains(candidate)) return candidate;
+    }
+    return undefined;
+  };
+  const sameColumn = findInColumn((preferred.left + preferred.right) / 2);
+  if (sameColumn !== undefined) return sameColumn;
+  for (const column of sections.columns()) {
+    const candidate = findInColumn(column);
+    if (candidate !== undefined) return candidate;
+  }
+  return undefined;
+}
+
 export function canvasRevealViewport(
   view: WorkflowCanvasViewport,
   map: SVGSVGElement,
@@ -301,6 +384,7 @@ export function canvasRevealViewport(
   const target = centeredOutline(actionBounds, fits ? clip : map.getBoundingClientRect());
   const accepted = measured?.contains(target) === false
     ? visibleActions.map((bounds) => centeredOutline(actionBounds, bounds)).find((bounds) => measured.contains(bounds))
+      ?? findOutlineInClip(actionBounds, target, measured)
     : target;
   const destination = accepted ?? target;
   const delta = new DOMPoint(destination.left - actionBounds.left, destination.top - actionBounds.top, 0, 0).matrixTransform(inverse);

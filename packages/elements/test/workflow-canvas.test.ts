@@ -1449,6 +1449,27 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toHaveLength(1);
   });
 
+  it("places the focus outline in a polygon arm that fits its height exactly", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible;
+      clip-path: polygon(0 0, 100% 0, 100% 65px, 110px 65px, 110px 310px, 640px 310px,
+        640px 364px, 110px 364px, 110px 100%, 0 100%); }`, sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 330, y: 160 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    const initialBounds = publish.getBoundingClientRect();
+    const reveal = await askReveal(canvas, "publish");
+    const proposed = lastViewport(requests);
+    expect(proposed).toEqual({ x: -58, y: 2, scale: 1 });
+    expect(active()).toBe(reveal);
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(publish);
+    expect(publish.getBoundingClientRect().top - initialBounds.top).toBe(2);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual([0, 0]);
+    expect(requests).toHaveLength(1);
+  });
+
   it("keeps the reveal pending when every exposed arm is too narrow for the focus outline", async () => {
     const { canvas, pane, sheet, requests } = await mount(true);
     sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible;

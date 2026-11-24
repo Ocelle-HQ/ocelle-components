@@ -1,0 +1,38 @@
+Phase 1 review round 5 local placement verification
+
+$ .specify/extensions/story/scripts/red.sh 1 fix-51
+sha: fa1b18c358eedbdd99a95642832a3748efd68ff5
+tests_only: true, red: true, recorded: true, expected test exit_code: 1
+4 named assertion failures in 33.992s. See red-fix-51.log.
+
+The old proposal for the translated C-shaped pane was {x:-58,y:-90,scale:1}.
+The centered proposal for its exposed lower arm is {x:-58,y:60,scale:1}. The recorded review trial at y:55 established a different usable location. The amended RED requires the measured arm center, y403 on the page, and was recorded with the original source restored.
+
+$ pnpm exec vitest run --project elements --project elements-browser packages/elements/test/{workflow-canvas.test.ts,browser/workflow-canvas.test.ts,workflow-canvas-graph.test.ts,workflow-canvas-navigation.test.ts,workflow-canvas-viewport.test.ts}
+Test Files 5 passed (5)
+Tests 232 passed (232)
+Duration 56.64s alongside the mutation run
+
+The C-shaped pane has no eligible map action when Reveal is pressed. Reveal stays focused and host scroll stays fixed until the host accepts the emitted proposal. Acceptance focuses the same native Publish action, and Enter adds exactly one Publish selection. The browser diagnostics are clean under strict CSP.
+
+In-process Chromium also accepts proposals in an off-center vertical strip, behind a diagonal pane edge, and in an opening whose height exactly fits the focus outline. When the aperture is too narrow, accepting the fallback view keeps the action unavailable and Reveal focused. The clipped pending Reveal control still recovers to visible Step.
+
+The section model checks the bounded contact coordinates and at least one representative per open cell through a translated diagonal and an oblique closing edge. It retains an exact-fit axis and rejects a rectangle too small for the outline before building the contact geometry.
+
+The recursive build and final elements aggregate build passed. TypeScript, ESLint, test lint, style lint, built CSP scan and manifest passed.
+
+Raw strict mutation used the standard elements Chromium project filtered to the four in-process canvas files and the exports test. The TypeScript checker covered both production files. The three intervals include all four changed source hunks and span the relevant official shard boundaries.
+
+packages/elements/src/ocelle-workflow-canvas.ts:440-472
+packages/elements/src/workflow-canvas-viewport.ts:14-18,283-393
+
+The initial all-range run identified arithmetic and range-filter survivors. The final section tests verify actual contact cells, an oblique intersection, clip bounds and an exact fit. Redundant vertical vertex contacts were removed because the adjacent shifted edge intersects the vertex row contacts at the same column positions.
+
+Initial test run succeeded. Ran 190 tests.
+Instrumented 196 mutants. 143 killed, 52 TypeScript checker rejections, 1 documented equivalent, 0 timeouts, 0 survived, 0 with no coverage.
+Final mutation score 100.00 met break threshold 100. Exit 0 in 2m44s.
+The equivalent pair-iteration mutant repeats reversed intersections. Sorting and deduplicating the resulting finite cut coordinates leaves exactly the same cells.
+
+The phase-base and CI-base plans match byte for byte.
+mutation: plan: 41 shards, 40 cuts within files
+plants: 317 of 317 selected for the exact hosted judge
