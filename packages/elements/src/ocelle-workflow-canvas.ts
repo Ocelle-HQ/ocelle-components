@@ -301,7 +301,14 @@ export class OcelleWorkflowCanvas extends LitElement {
     const startSize = this.#sizes.get(sourceId);
     const endSize = this.#sizes.get(destinationId);
     const x = start.x + (startSize?.width ?? 1);
-    const y = start.y + (startSize?.height ?? 1) / 2;
+    const height = startSize?.height ?? 1;
+    const y = start.y + height / 2;
+    if (sourceId === destinationId) {
+      const bend = x + height / 2;
+      const upper = y - height / 4;
+      const lower = y + height / 4;
+      return `M ${String(x)} ${String(upper)} C ${String(bend)} ${String(upper)}, ${String(bend)} ${String(lower)}, ${String(x)} ${String(lower)}`;
+    }
     const endY = end.y + (endSize?.height ?? 1) / 2;
     const middle = (x + end.x) / 2;
     return `M ${String(x)} ${String(y)} C ${String(middle)} ${String(y)}, ${String(middle)} ${String(endY)}, ${String(end.x)} ${String(endY)}`;
@@ -319,7 +326,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       <div class="canvas">
         <div class="navigator">
           <label>Step
-            <select class="control" .value=${this.#namedId ?? ""} @change=${this.#chooseNamed} ?disabled=${nodes.length === 0}>
+            <select class="control" .value=${this.#namedId ?? ""} @change=${this.#chooseNamed}>
               ${nodes.map((node) => html`<option value=${node.id} ?selected=${node.id === this.#namedId}>
                 ${node.label} ${nameContext(node)}
               </option>`)}
@@ -462,6 +469,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     }
     this.#scrollAncestors = ancestors;
     const elements = new Set<Element>([map, ...ancestors]);
+    for (const control of map.previousElementSibling?.querySelectorAll("select, button") ?? []) elements.add(control);
     for (const { face, button, focusBounds } of actions) {
       elements.add(face);
       elements.add(button);
