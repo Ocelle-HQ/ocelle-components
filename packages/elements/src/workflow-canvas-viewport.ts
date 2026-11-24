@@ -453,7 +453,7 @@ export function canvasGestureFrame(map: SVGSVGElement): CanvasGestureFrame | nul
 
 export function sameCanvasGestureFrame(first: CanvasGestureFrame, map: SVGSVGElement): boolean {
   const next = canvasGestureFrame(map);
-  if (next === null || first.width !== next.width || first.height !== next.height) return false;
+  if (next?.width !== first.width || next.height !== first.height) return false;
   const values = next.inverse.toFloat64Array();
   return first.inverse.toFloat64Array().every((value, index) => value === values[index]);
 }

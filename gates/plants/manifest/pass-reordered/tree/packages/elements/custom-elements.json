@@ -6129,6 +6129,14 @@
           }
         },
         {
+          "name": "WorkflowCanvasPositionRequestDetail",
+          "kind": "js",
+          "declaration": {
+            "name": "WorkflowCanvasPositionRequestDetail",
+            "module": "./workflow-canvas-types.ts"
+          }
+        },
+        {
           "name": "WorkflowCanvasViewport",
           "kind": "js",
           "declaration": {
@@ -6221,7 +6229,14 @@
                 "text": "CustomEvent<WorkflowCanvasViewportRequestDetail>"
               },
               "name": "ocelle-workflow-canvas-viewport-request",
-              "description": "A proposal to reveal a named step in the viewport."
+              "description": "A proposed pan, zoom, fit or named reveal viewport."
+            },
+            {
+              "type": {
+                "text": "CustomEvent<WorkflowCanvasPositionRequestDetail>"
+              },
+              "name": "ocelle-workflow-canvas-position-request",
+              "description": "The requested absolute graph position of a step in author mode."
             },
             {
               "type": {
@@ -6231,7 +6246,7 @@
               "description": "The original bubbling request from the native node action."
             }
           ],
-          "description": "A host-controlled workflow map with native step selection and named navigation.",
+          "description": "A host-controlled workflow map with native selection, navigation and presentation controls.",
           "customElement": true,
           "cssProperties": [],
           "cssParts": [],

@@ -184,7 +184,8 @@ export class OcelleWorkflowCanvas extends LitElement {
         display: flex;
         flex-wrap: wrap;
         gap: var(--ocelle-space-2);
-        inline-size: min(100%, calc(8 * var(--ocelle-target-min)));
+        inline-size: calc(8 * var(--ocelle-target-min));
+        max-inline-size: 100%;
         padding: var(--ocelle-space-2);
         border: var(--ocelle-border-width) solid var(--ocelle-color-control-border);
         background-color: var(--ocelle-color-sheet);
