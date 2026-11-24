@@ -730,6 +730,27 @@ async function assertNarrowFitWithSelfLoop(): Promise<void> {
   expect(canvas.layout).toBe(layout);
 }
 
+async function assertReleasedBeforeFrame(canvas: OcelleWorkflowCanvas, map: SVGSVGElement, pointerId: number): Promise<void> {
+  await canvas.updateComplete;
+  expect(map.hasPointerCapture(pointerId)).toBe(false);
+}
+
+async function assertSharedCommandSurvivesModeSwitch(fixture: Fixture, scroll: readonly number[]): Promise<void> {
+  const { canvas, pane, requests } = fixture;
+  await openCommands(canvas);
+  const shared = commandButton(canvas, "Pan left");
+  shared.focus({ preventScroll: true });
+  expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
+  canvas.mode = "author";
+  await settle(canvas);
+  canvas.mode = "read-only";
+  await settle(canvas);
+  expect(active()).toBe(shared);
+  expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
+  expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  expect(requests).toEqual([]);
+}
+
 async function assertStationaryCancellation(cause: "viewport" | "graph" | "width" | "height" | "transform"): Promise<void> {
   const fixture = await arranging();
   const { canvas, pane, sheet, requests } = fixture;
@@ -821,10 +842,7 @@ describe("workflow canvas arranging in process", () => {
     if (cause === "Escape") await commands.press("Escape");
     if (cause === "layout") canvas.layout = [...canvas.layout];
     const supplied = { graph: canvas.graph, layout: canvas.layout, viewport: canvas.viewport };
-    if (cause === "mode" || cause === "layout") {
-      await canvas.updateComplete;
-      expect(map.hasPointerCapture(pointerId)).toBe(false);
-    }
+    if (cause === "mode" || cause === "layout") await assertReleasedBeforeFrame(canvas, map, pointerId);
     await expect.poll(() => displayedOrigin(canvas, "publish")).toEqual([288, 94]);
     expect(map.hasPointerCapture(pointerId)).toBe(false);
     alignedIncidents(canvas);
@@ -1031,7 +1049,8 @@ describe("workflow canvas arranging in process", () => {
     { name: "the preceding visible step", nodeId: "revise", hidden: ["revise"], expected: "publish" },
     { name: "the named fallback", nodeId: "publish", hidden: ["review", "publish", "revise"], expected: null },
   ])("recovers to $name when leaving authoring with a focused Move step control", async ({ nodeId, hidden, expected }) => {
-    const { canvas, requests, pane } = await arranging();
+    const fixture = await arranging();
+    const { canvas, requests, pane } = fixture;
     canvas.layout = canvas.layout.map((node) => hidden.includes(node.nodeId) ? { ...node, x: 1100 } : node);
     await settle(canvas);
     const { picker } = revealControls(canvas);
@@ -1057,20 +1076,7 @@ describe("workflow canvas arranging in process", () => {
 
     if (expected === "publish" && nodeId === expected) await assertStaleModeAtFormSubmit();
     if (expected === null) await assertPanelCoverageRecovery();
-    if (nodeId === "revise") {
-      await openCommands(canvas);
-      const shared = commandButton(canvas, "Pan left");
-      shared.focus({ preventScroll: true });
-      expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
-      canvas.mode = "author";
-      await settle(canvas);
-      canvas.mode = "read-only";
-      await settle(canvas);
-      expect(active()).toBe(shared);
-      expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
-      expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
-      expect(requests).toEqual([]);
-    }
+    if (nodeId === "revise") await assertSharedCommandSurvivesModeSwitch(fixture, scroll);
   });
 });
 
