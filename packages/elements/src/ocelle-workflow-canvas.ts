@@ -267,6 +267,9 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   protected override updated(): void {
+    const picker = this.renderRoot.querySelector("select");
+    // Apply the value after Lit has updated the native option list.
+    if (picker !== null) picker.value = this.#namedId ?? "";
     const nodes = this.renderRoot.querySelectorAll("ocelle-workflow-node");
     void Promise.all([...nodes].map((node) => node.updateComplete)).then(() => {
       if (this.isConnected) this.#refresh();
@@ -327,8 +330,8 @@ export class OcelleWorkflowCanvas extends LitElement {
       <div class="canvas">
         <div class="navigator">
           <label>Step
-            <select class="control" .value=${this.#namedId ?? ""} @change=${this.#chooseNamed}>
-              ${nodes.map((node) => html`<option value=${node.id} ?selected=${node.id === this.#namedId}>
+            <select class="control" @change=${this.#chooseNamed}>
+              ${nodes.map((node) => html`<option value=${node.id}>
                 ${node.label} ${nameContext(node)}
               </option>`)}
             </select>
