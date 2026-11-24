@@ -16,6 +16,7 @@ import {
 import {
   canvasActionBounds,
   canvasBoundsOverlap,
+  canvasClipping,
   canvasRevealViewport,
   canvasScreenInverse,
   canvasViewport,
@@ -208,9 +209,11 @@ export class OcelleWorkflowCanvas extends LitElement {
   #pendingReveal: (WorkflowCanvasPendingReveal & { readonly initiator: HTMLButtonElement }) | null = null;
   #retainedFocus: { readonly id: string; readonly order: readonly string[] } | null = null;
   #watched = new Set<Element>();
+  #onGeometryChange = (): void => { this.#refresh(); };
   #scrollAncestors = new Set<Element>();
   #resize = new ResizeObserver(() => { this.#refresh(); });
   #intersection = new IntersectionObserver(() => { this.#refresh(); }, { threshold: [0, 1] });
+  #clipAttributes = new MutationObserver(this.#onGeometryChange);
   #listeners: AbortController | undefined;
 
   constructor() {
@@ -240,6 +243,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#listeners?.abort();
     this.#resize.disconnect();
     this.#intersection.disconnect();
+    this.#clipAttributes.disconnect();
     this.#watched.clear();
     this.#scrollAncestors.clear();
     this.#pendingReveal = null;
@@ -404,23 +408,43 @@ export class OcelleWorkflowCanvas extends LitElement {
     actions: readonly NodeAction[],
     map: SVGSVGElement,
   ): { contained: Set<string>; eligible: Set<string>; bounds: ReadonlyMap<string, CanvasBounds> } {
-    const clip = effectiveCanvasClip(map);
+    const { bounds: clip, hasInset } = canvasClipping(map);
     const contained = new Set<string>();
     const eligible = new Set<string>();
     const painted = actions.filter(({ node }) => this.#projection.positions.has(node.nodeId));
     const footprints = painted.map(({ face }) => face.getBoundingClientRect());
     const bounds = new Map<string, CanvasBounds>();
     const transform = map.getScreenCTM();
-    painted.forEach(({ node, button }, index) => {
-      const outline = canvasActionBounds(button, transform);
-      bounds.set(node.nodeId, outline);
-      if (!isInsideCanvasClip(clip, outline)) return;
-      contained.add(node.nodeId);
-      if (!footprints.some((footprint, paintIndex) => paintIndex > index && canvasBoundsOverlap(outline, footprint))) {
-        eligible.add(node.nodeId);
-      }
-    });
+    const probe = hasInset ? this.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect") : null;
+    if (probe !== null) {
+      probe.setAttribute("width", "100%");
+      probe.setAttribute("height", "100%");
+      probe.setAttribute("pointer-events", "all");
+      // The target exists only during the synchronous measurement and is removed before paint.
+      map.append(probe);
+    }
+    try {
+      painted.forEach(({ node, button }, index) => {
+        const outline = canvasActionBounds(button, transform);
+        bounds.set(node.nodeId, outline);
+        if (!isInsideCanvasClip(clip, outline) || (probe !== null && !this.#insetCoversOutline(probe, outline))) return;
+        contained.add(node.nodeId);
+        if (!footprints.some((footprint, paintIndex) => paintIndex > index && canvasBoundsOverlap(outline, footprint))) {
+          eligible.add(node.nodeId);
+        }
+      });
+    } finally {
+      probe?.remove();
+    }
     return { contained, eligible, bounds };
+  }
+
+  #insetCoversOutline(probe: Element, { left, top, right, bottom }: CanvasBounds): boolean {
+    // A CSS inset is convex, including rounded corners. Covering all four corners covers the outline.
+    // The probe sits outside the inert node wrappers and above the map's independently checked paint order.
+    const root = this.shadowRoot;
+    const corners = [[left, top], [right, top], [left, bottom], [right, bottom]] as const;
+    return corners.every(([x, y]) => root?.elementFromPoint(x, y) === probe);
   }
 
   #refresh(): void {
@@ -486,9 +510,14 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (signal === undefined) return;
     const ancestors = new Set(composedAncestors(map));
     for (const element of this.#scrollAncestors) {
-      if (!ancestors.has(element)) element.removeEventListener("scroll", this.#onGeometryChange);
+      if (!ancestors.has(element)) {
+        this.#clipAttributes.disconnect();
+        element.removeEventListener("scroll", this.#onGeometryChange);
+      }
     }
     for (const element of ancestors) {
+      // A corner can change without changing the IntersectionObserver's rectangular intersection.
+      this.#clipAttributes.observe(element, { attributes: true });
       if (!this.#scrollAncestors.has(element)) element.addEventListener("scroll", this.#onGeometryChange, { signal });
     }
     this.#scrollAncestors = ancestors;
@@ -521,8 +550,6 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (visible instanceof HTMLElement) visible.focus(withoutScroll);
     else this.#focusedAction()?.button.blur();
   }
-
-  #onGeometryChange = (): void => { this.#refresh(); };
 
   #onActionClick = (event: MouseEvent): void => {
     const action = this.#eventAction(event);

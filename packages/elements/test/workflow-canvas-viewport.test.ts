@@ -131,6 +131,16 @@ describe("workflow canvas viewport geometry", () => {
     expect(effectiveCanvasClip(map)).toEqual(expected);
   });
 
+  it("uses all four scaled margins for an inset's margin box", () => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
+      margin: 2px 6px 8px 4px; transform: scale(2, 3); transform-origin: top left;
+      overflow: visible; clip-path: inset(5px 20px 7px 8px) margin-box;`;
+    map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 132, top: 91, right: 360, bottom: 397 });
+  });
+
   it("measures content-box inset percentages relative to the scaled content edges", () => {
     const { map, pane } = viewportFixture(120, 90);
     pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;

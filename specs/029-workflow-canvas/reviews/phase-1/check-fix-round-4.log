@@ -1,0 +1,17 @@
+Phase 1 review round 4 local verification
+
+$ .specify/extensions/story/scripts/red.sh 1 fix-4
+sha: 72a004974d01c932559042b3360ff32b93b28fbd
+tests_only: true, red: true, recorded: true, expected test exit_code: 1
+12 named assertion failures across five selected files in 26.236s. See red-fix-4.log.
+
+$ pnpm exec vitest run --project elements --project elements-browser packages/elements/test/{workflow-canvas.test.ts,browser/workflow-canvas.test.ts,workflow-canvas-graph.test.ts,workflow-canvas-navigation.test.ts,workflow-canvas-viewport.test.ts}
+Test Files 5 passed (5)
+Tests 161 passed (161)
+Duration 22.48s
+
+The initial strict inset probe against both changed source files ran 131 unmutated tests and instrumented 123 mutants.
+Initial outcome: 77 killed, 21 survived, 25 compile errors, 0 timeout, 0 uncovered.
+The survivor review simplified observer registration, used one corner predicate, removed transient paint attributes, and strengthened ordinary-host, idle and observer lifecycle tests.
+
+The initial full phase-base selector planned 32 mutation shards and 31 intra-file cuts. Exact hosted matrix verification is required for the final candidate.
