@@ -9,3 +9,5 @@ The shared viewport geometry intersects both axes with the host pane's scaled cl
 The signed test-only commit `b62a8bbb4f68e3d5645979532764fcf235b115e1` follows the reviewed parent `4d7dcf481c946e2aee0a239b34c4ad6cce2a88d4`. The story command `red.sh 1 fix-2` recorded three built strict-CSP failures and four in-process geometry failures. [Recorded red](red-fix-2.log)
 
 The integrated local run passed 125 tests across five files. Typecheck, code lint, test lint, style lint and the 43-element manifest gate passed. The local affected selector listed all 317 Plants for hosted verification. [Local checks](check-fix-round-2.log) · [Plants record](plants.md#round-2-fix)
+
+The exact replay for `a5a70a5e9c25728ec96ea34ae71ab19a8173a745` passed all 22 stages. Full hosted Unit, Visual regression, Accessibility, Plants and strict changed-source mutation passed on the candidate's identical merge tree. Details include the retry of the two incomplete mutation shards. [Verification](implementation.md#verification-after-round-2-fixes) · [Hosted result](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45337422057/attempts/2)
