@@ -376,6 +376,29 @@ async function assertNativeCaptureLoss(): Promise<void> {
   expect(requests).toEqual([]);
 }
 
+async function assertDisconnectEndsCapture(): Promise<void> {
+  const listeners = vi.spyOn(document, "addEventListener");
+  const fixture = await arranging();
+  const { canvas, frame, requests } = fixture;
+  const options = listeners.mock.calls.find(([type]) => type === "keydown")?.[2];
+  listeners.mockRestore();
+  const signal = typeof options === "object" ? options.signal : undefined;
+  expect(signal?.aborted).toBe(false);
+  const { end, map, pointerId } = await previewMove(fixture);
+  const cancelFrame = vi.spyOn(window, "cancelAnimationFrame");
+  canvas.remove();
+  const canceledFrames = cancelFrame.mock.calls;
+  cancelFrame.mockRestore();
+  expect(signal?.aborted).toBe(true);
+  expect(canceledFrames).toHaveLength(1);
+  expect(map.hasPointerCapture(pointerId)).toBe(false);
+  frame.append(canvas);
+  await commands.pointerPath([{ ...end, up: true }]);
+  await settle(canvas);
+  expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
+  expect(requests).toEqual([]);
+}
+
 async function assertRepeatedPointerDown(): Promise<void> {
   const fixture = await arranging();
   const { canvas, requests } = fixture;
@@ -407,8 +430,10 @@ async function assertBubblingAfterFrameChange(): Promise<void> {
 async function assertEscapeHandling(): Promise<void> {
   const fixture = await arranging();
   const { canvas, requests } = fixture;
-  const { end, map, pointerId } = await previewMove(fixture);
   const escaped: boolean[] = [];
+  document.addEventListener("keydown", (event) => { escaped.push(event.defaultPrevented); }, { once: true });
+  await commands.press("Escape");
+  const { end, map, pointerId } = await previewMove(fixture);
   document.addEventListener("keydown", (event) => { escaped.push(event.defaultPrevented); }, { once: true });
   await commands.press("Shift");
   expect(map.hasPointerCapture(pointerId)).toBe(true);
@@ -416,7 +441,7 @@ async function assertEscapeHandling(): Promise<void> {
   document.addEventListener("keydown", (event) => { escaped.push(event.defaultPrevented); }, { once: true });
   await commands.press("Escape");
   await expect.poll(() => displayedOrigin(canvas, "publish")).toEqual([288, 94]);
-  expect(escaped).toEqual([false, true]);
+  expect(escaped).toEqual([false, false, true]);
   await commands.pointerPath([{ ...end, up: true }]);
   expect(requests).toEqual([]);
 }
@@ -425,11 +450,15 @@ async function assertStaleModeAtPointerStart(): Promise<void> {
   const { canvas, pane, requests } = await arranging();
   const handle = moveHandle(canvas, "publish");
   const origin = elementCenter(handle);
+  const map = mapOf(canvas);
+  const capture: boolean[] = [];
+  pane.addEventListener("pointerdown", (event) => { capture.push(map.hasPointerCapture(event.pointerId)); }, { once: true });
   pane.addEventListener("pointerdown", () => { canvas.mode = "read-only"; }, { capture: true, once: true });
   await commands.pointerPath([{ ...origin, down: true }, { x: origin.x + 40, y: origin.y - 20 }]);
   await settle(canvas);
+  expect(capture).toEqual([false]);
   expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
-  expect(mapOf(canvas).querySelectorAll(".move-handle")).toHaveLength(0);
+  expect(map.querySelectorAll(".move-handle")).toHaveLength(0);
   await commands.pointerPath([{ x: origin.x + 40, y: origin.y - 20, up: true }]);
   expect(requests).toEqual([]);
 }
@@ -440,6 +469,9 @@ async function assertLivePointerAdmission(invalidated: "clip" | "graph"): Promis
   const handle = moveHandle(canvas, "publish");
   const down = elementCenter(handle);
   const end = { x: down.x + 40, y: down.y - 20 };
+  const map = mapOf(canvas);
+  const capture: boolean[] = [];
+  pane.addEventListener("pointerdown", (event) => { capture.push(map.hasPointerCapture(event.pointerId)); }, { once: true });
   pane.addEventListener("pointerdown", () => {
     if (invalidated === "clip") pane.classList.add("new-clip");
     else canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
@@ -447,6 +479,7 @@ async function assertLivePointerAdmission(invalidated: "clip" | "graph"): Promis
   await commands.pointerPath([{ ...down, down: true }, end, { ...end, up: true }]);
   await settle(canvas);
   expect(requests).toEqual([]);
+  expect(capture).toEqual([false]);
   expect(canvas.layout.find(({ nodeId }) => nodeId === "publish")).toEqual({ nodeId: "publish", x: 135, y: 35 });
 }
 
@@ -558,13 +591,16 @@ async function assertVerticallyLimitedFit(): Promise<void> {
   const fitted = lastViewport(requests);
   expect(fitted.scale).toBeLessThan(1);
   const bounds = mapOf(canvas).getBoundingClientRect();
-  for (const face of mapOf(canvas).querySelectorAll("foreignObject")) {
-    const card = face.getBoundingClientRect();
+  const cards = [...mapOf(canvas).querySelectorAll("foreignObject")].map((face) => face.getBoundingClientRect());
+  for (const card of cards) {
     expect(card.left).toBeGreaterThan(bounds.left);
     expect(card.top).toBeGreaterThan(bounds.top);
     expect(card.right).toBeLessThan(bounds.right);
     expect(card.bottom).toBeLessThan(bounds.bottom);
   }
+  const left = Math.min(...cards.map((card) => card.left));
+  const right = Math.max(...cards.map((card) => card.right));
+  expect((left + right) / 2).toBeCloseTo((bounds.left + bounds.right) / 2, 1);
   expect(requests).toEqual([presentationRequest(viewport, { viewport: fitted })]);
   expect(canvas.graph).toBe(graph);
   expect(canvas.layout).toBe(layout);
@@ -580,6 +616,7 @@ async function assertUnpositionedNumericMove(): Promise<void> {
   await settle(canvas);
   await openCommands(canvas);
   expect(commandButton(canvas, "Move step").disabled).toBe(true);
+  expect(mapOf(canvas).querySelector('.move-handle[data-node-id="publish"]')).toBeNull();
   const fields = [...canvas.shadowRoot?.querySelectorAll<HTMLInputElement>("form input") ?? []];
   expect(fields.map(({ disabled, value }) => ({ disabled, value }))).toEqual([
     { disabled: true, value: "" }, { disabled: true, value: "" },
@@ -604,6 +641,53 @@ async function assertStaleModeAtFormSubmit(): Promise<void> {
   expect(action(canvas, "review")).toBe(active());
   expect([pane.scrollLeft, pane.scrollTop]).toEqual([0, 0]);
   expect(requests).toEqual([]);
+}
+
+async function assertStaleNamedPositionInput(): Promise<void> {
+  const { canvas, requests } = await arranging();
+  const { picker } = revealControls(canvas);
+  picker.value = "publish";
+  picker.dispatchEvent(new Event("change", { bubbles: true }));
+  await settle(canvas);
+  await openCommands(canvas);
+  const move = commandButton(canvas, "Move step");
+  const form = move.form;
+  const x = form?.querySelector<HTMLInputElement>('input[name="x"]');
+  const y = form?.querySelector<HTMLInputElement>('input[name="y"]');
+  if (form === null || x === null || x === undefined || y === null || y === undefined) throw new Error("The move form is missing");
+  x.value = "";
+  y.value = "35";
+  form.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+  x.value = "136";
+  y.value = "";
+  form.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+  expect(requests).toEqual([]);
+  expect([x.value, y.value]).toEqual(["135", "35"]);
+
+  x.value = "136";
+  form.addEventListener("submit", () => {
+    canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
+  }, { capture: true, once: true });
+  move.focus({ preventScroll: true });
+  await commands.press("Enter");
+  await settle(canvas);
+  expect(canvas.layout.some(({ nodeId }) => nodeId === "publish")).toBe(true);
+  expect(requests, "the removed Move step subject cannot submit coordinates for another step").toEqual([]);
+}
+
+async function assertOverflowingZoom(): Promise<void> {
+  const { canvas, requests } = await arranging();
+  const supplied = { x: Number.MAX_VALUE, y: 0, scale: 1 };
+  canvas.viewport = supplied;
+  await settle(canvas);
+  await openCommands(canvas);
+  const button = commandButton(canvas, "Zoom in");
+  button.focus({ preventScroll: true });
+  await commands.press("Enter");
+  await settle(canvas);
+  expect(requests).toEqual([]);
+  expect(canvas.viewport).toBe(supplied);
+  expect(active()).toBe(button);
 }
 
 async function assertNarrowFitWithSelfLoop(): Promise<void> {
@@ -635,6 +719,7 @@ async function assertNarrowFitWithSelfLoop(): Promise<void> {
   await settle(canvas);
   const fitted = lastViewport(requests);
   const routed = map.querySelector<SVGPathElement>("path.edge")?.getBBox();
+  expect(fitted.x).toBeCloseTo((width - measured.width - measured.height / 2) / 2 - 25);
   expect(routed?.x).toBeGreaterThan(0);
   expect((routed?.x ?? 0) + (routed?.width ?? 0)).toBeLessThan(map.clientWidth);
   expect(requests).toEqual([presentationRequest(viewport, { viewport: fitted })]);
@@ -693,7 +778,11 @@ describe("workflow canvas arranging in process", () => {
     pane.addEventListener(position, () => { capturedAtDispatch.push(map.hasPointerCapture(pointerId)); });
     expect(canvas.layout).toBe(originalLayout);
     expect(requests).toEqual([]);
+    const cancelFrame = vi.spyOn(window, "cancelAnimationFrame");
     await commands.pointerPath([{ ...end, up: true }]);
+    const canceledFrames = cancelFrame.mock.calls;
+    cancelFrame.mockRestore();
+    expect(canceledFrames).toHaveLength(1);
     await settle(canvas);
     expect(requests).toEqual([presentationRequest(position, expected)]);
     expect(capturedAtDispatch).toEqual([false]);
@@ -711,6 +800,7 @@ describe("workflow canvas arranging in process", () => {
       await assertSeparateHandleCoverage("pane clip");
     } else {
       await assertRepeatedPointerDown();
+      await assertDisconnectEndsCapture();
       await assertLivePointerAdmission("graph");
       await assertSingleAxisDrag(0, -20, { x: 135, y: 25 });
       await assertSeparateHandleCoverage("later card");
@@ -728,6 +818,10 @@ describe("workflow canvas arranging in process", () => {
     if (cause === "Escape") await commands.press("Escape");
     if (cause === "layout") canvas.layout = [...canvas.layout];
     const supplied = { graph: canvas.graph, layout: canvas.layout, viewport: canvas.viewport };
+    if (cause === "mode" || cause === "layout") {
+      await canvas.updateComplete;
+      expect(map.hasPointerCapture(pointerId)).toBe(false);
+    }
     await expect.poll(() => displayedOrigin(canvas, "publish")).toEqual([288, 94]);
     expect(map.hasPointerCapture(pointerId)).toBe(false);
     alignedIncidents(canvas);
@@ -836,6 +930,7 @@ describe("workflow canvas arranging in process", () => {
     await commands.press("Enter");
     await settle(canvas);
     const fitted = lastViewport(requests);
+    expect(canvas.shadowRoot?.querySelector<HTMLDetailsElement>("details")?.open).toBe(false);
     expect(requests).toEqual([...poses.map(({ view }) => presentationRequest(viewport, { viewport: view })),
       presentationRequest(viewport, { viewport: fitted })]);
     const clip = map.getBoundingClientRect();
@@ -847,6 +942,10 @@ describe("workflow canvas arranging in process", () => {
       expect(painted.bottom).toBeLessThan(clip.bottom);
       expect(painted.height).toBe(baseline.height);
     }
+    const footprints = [...map.querySelectorAll("foreignObject, .move-handle")].map((part) => part.getBoundingClientRect());
+    const left = Math.min(...footprints.map((part) => part.left));
+    const right = Math.max(...footprints.map((part) => part.right));
+    expect((left + right) / 2).toBeCloseTo((clip.left + clip.right) / 2, 1);
     const visibleFocus = active()?.getBoundingClientRect();
     expect(visibleFocus?.width).toBeGreaterThan(0);
     expect(visibleFocus?.height).toBeGreaterThan(0);
@@ -859,6 +958,7 @@ describe("workflow canvas arranging in process", () => {
     await assertConstrainedFit("height");
     await assertVerticallyLimitedFit();
     await assertNarrowFitWithSelfLoop();
+    await assertOverflowingZoom();
   });
 
   it("moves the named step without dragging and preserves the supplied layout after rejection", async () => {
@@ -875,7 +975,7 @@ describe("workflow canvas arranging in process", () => {
     expect(x, "the named step exposes a native absolute X input").toBeInstanceOf(HTMLInputElement);
     expect(y, "the named step exposes a native absolute Y input").toBeInstanceOf(HTMLInputElement);
     if (!(x instanceof HTMLInputElement) || !(y instanceof HTMLInputElement)) throw new Error("Position fields missing");
-    expect([x.value, y.value]).toEqual(["135", "35"]);
+    expect([x.value, y.value, x.disabled, y.disabled]).toEqual(["135", "35", false, false]);
     submit.focus({ preventScroll: true });
     await commands.press("Enter");
     expect(requests).toEqual([]);
@@ -913,7 +1013,14 @@ describe("workflow canvas arranging in process", () => {
     expect(canvas.layout).toBe(accepted);
     alignedIncidents(canvas);
 
+    picker.value = "revise";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    expect(x.isConnected).toBe(false);
+    expect(y.isConnected).toBe(false);
+    expect([...canvas.shadowRoot?.querySelectorAll<HTMLInputElement>("form input") ?? []].map(({ value }) => value)).toEqual(["245", "35"]);
     await assertUnpositionedNumericMove();
+    await assertStaleNamedPositionInput();
   });
 
   it.each([
@@ -934,6 +1041,10 @@ describe("workflow canvas arranging in process", () => {
     expect(active()).toBe(move);
     const scroll = [pane.scrollLeft, pane.scrollTop];
     canvas.mode = "read-only";
+    canvas.mode = "author";
+    await settle(canvas);
+    expect(active()).toBe(move);
+    canvas.mode = "read-only";
     await settle(canvas);
     expect(active()).toBe(expected === null ? picker : action(canvas, expected));
     expect(mapOf(canvas).querySelectorAll(".move-handle")).toHaveLength(0);
@@ -943,6 +1054,20 @@ describe("workflow canvas arranging in process", () => {
 
     if (expected === "publish" && nodeId === expected) await assertStaleModeAtFormSubmit();
     if (expected === null) await assertPanelCoverageRecovery();
+    if (nodeId === "revise") {
+      await openCommands(canvas);
+      const shared = commandButton(canvas, "Pan left");
+      shared.focus({ preventScroll: true });
+      expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
+      canvas.mode = "author";
+      await settle(canvas);
+      canvas.mode = "read-only";
+      await settle(canvas);
+      expect(active()).toBe(shared);
+      expect(canvas.shadowRoot?.querySelector("form")).toBeNull();
+      expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+      expect(requests).toEqual([]);
+    }
   });
 });
 
