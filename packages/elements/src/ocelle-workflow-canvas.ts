@@ -438,7 +438,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #withLiveClip<T>(surface: Element, read: (clip: CanvasClipMeasurement) => T): T {
-    const { bounds, contours, hasConvexClip } = canvasClipping(surface);
+    const { bounds, contours, ellipses, hasConvexClip } = canvasClipping(surface);
     const probe = hasConvexClip || contours.length > 0 ? this.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect") : null;
     let temporary: Element | null = probe;
     if (probe !== null) {
@@ -460,6 +460,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       return read({
         bounds,
         contours,
+        ellipses,
         contains: (outline) => isInsideCanvasClip(bounds, outline)
           && !contours.some((contour) => canvasContourCrossesOutline(contour, outline))
           && (probe === null || this.#clipCornersHit(probe, outline)),

@@ -1481,6 +1481,31 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests.slice(1)).toEqual([selectRequest("publish")]);
   });
 
+  it("rejects the curve center when a straight host clip cuts through the proposed outline", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible; transform: translateX(1px);
+      clip-path: ellipse(450px 117px at 200px 0px); }`, sheet.cssRules.length);
+    sheet.insertRule("#canvas-frame { clip-path: polygon(0 0, 100% 0, 100% 100%, 132px 100%, 132px 60px, 0 60px); }", sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 330, y: 160 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    const reveal = await askReveal(canvas, "publish");
+    const proposed = lastViewport(requests);
+    expect(proposed.x, "the complete outline is to the right of the polygon edge").toBeGreaterThanOrEqual(-210);
+    expect(requests).toHaveLength(1);
+    expect(active()).toBe(reveal);
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(publish);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toHaveLength(1);
+    await commands.press("Enter");
+    expect(requests.slice(1)).toEqual([selectRequest("publish")]);
+  });
+
   it.each([
     { name: "an off-center vertical strip", path: "polygon(0 0, 100% 0, 100% 100%, 500px 100%, 500px 65px, 0 65px)" },
     { name: "a diagonal pane edge", path: "polygon(0 0, 100% 0, 100% 100%, 300px 100%, 600px 65px, 0 65px)" },

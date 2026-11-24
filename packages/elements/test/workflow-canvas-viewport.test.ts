@@ -239,7 +239,7 @@ describe("workflow canvas viewport geometry", () => {
     const { left, top, right, bottom } = map.getBoundingClientRect();
 
     expect(getComputedStyle(pane).clipPath).toBe(clipPath);
-    expect(canvasClipping(map)).toEqual({ bounds: { left, top, right, bottom }, hasConvexClip: true, contours: [] });
+    expect(canvasClipping(map)).toEqual({ bounds: { left, top, right, bottom }, hasConvexClip: true, contours: [], ellipses: [] });
   });
 
   it("leaves an SVG clip reference to the browser's SVG geometry", () => {
@@ -435,6 +435,7 @@ describe("workflow canvas viewport geometry", () => {
     const sections = canvasClipSections(outline, {
       bounds: { left: 10, top: 20, right: 30, bottom: 40 },
       contours: [[{ x: 10, y: 20 }, { x: 30, y: 20 }, { x: 10, y: 40 }]],
+      ellipses: [],
     });
     if (sections === undefined) throw new Error("The clip bounds can fit the outline");
 
@@ -448,6 +449,7 @@ describe("workflow canvas viewport geometry", () => {
     const sections = canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, {
       bounds: { left: 0, top: 0, right: 50, bottom: 50 },
       contours: [[{ x: 10, y: 10 }, { x: 42, y: 14 }, { x: 24, y: 44 }]],
+      ellipses: [],
     });
     if (sections === undefined) throw new Error("The clip bounds can fit the outline");
 
@@ -459,7 +461,7 @@ describe("workflow canvas viewport geometry", () => {
   it("retains a single outline center when both clip dimensions are an exact fit", async () => {
     const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
     const sections = canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, {
-      bounds: { left: 10, top: 20, right: 16, bottom: 24 }, contours: [],
+      bounds: { left: 10, top: 20, right: 16, bottom: 24 }, contours: [], ellipses: [],
     });
     if (sections === undefined) throw new Error("The clip bounds fit the outline exactly");
 
@@ -473,7 +475,70 @@ describe("workflow canvas viewport geometry", () => {
   ] as const)("has no cross-section when the outline exceeds the clip %s", async (_axis, bounds) => {
     const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
 
-    expect(canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, { bounds, contours: [] })).toBeUndefined();
+    expect(canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, { bounds, contours: [], ellipses: [] })).toBeUndefined();
+  });
+
+  it("clamps the ellipse center into the rectangular domain and bounds curved row intervals", async () => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+    const sections = canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, {
+      bounds: { left: 8, top: 23, right: 17, bottom: 42 },
+      contours: [],
+      ellipses: [{ x: 10, y: 20, radiusX: 16, radiusY: 10 }],
+    });
+    if (sections === undefined) throw new Error("The ellipse admits an outline in the rectangular domain");
+
+    expect(sections.centers).toEqual([{ x: 11, y: 25 }]);
+    // At x = 13, the farthest horizontal corner is 6 pixels from the center.
+    // The vertical reach before accounting for the outline is 10 * sqrt(1 - (6 / 16)^2).
+    const rows = [...sections.rows(13)];
+    expect(rows).toHaveLength(3);
+    expect(Math.min(...rows)).toBe(25);
+    expect(Math.max(...rows)).toBeCloseTo(27.2702481089, 9);
+    expect([...sections.rows(25)]).toEqual([]);
+  });
+
+  it("keeps the common row of two ellipse sections that meet at their outline boundaries", async () => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+    const sections = canvasClipSections({ left: 0, top: 0, right: 4, bottom: 2 }, {
+      bounds: { left: 0, top: 0, right: 30, bottom: 35 },
+      contours: [],
+      ellipses: [
+        { x: 10, y: 10, radiusX: 10, radiusY: 10 },
+        { x: 18, y: 24, radiusX: 10, radiusY: 10 },
+      ],
+    });
+    if (sections === undefined) throw new Error("The outline can reach the intersection column");
+
+    expect([...sections.rows(13)]).toEqual([]);
+    expect([...sections.rows(14)]).toEqual([17]);
+    expect([...sections.rows(15)]).toEqual([]);
+    expect([...sections.columns()]).toContain(14);
+  });
+
+  it("limits columns by the farthest corner when the ellipse center is below the map", async () => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+    const sections = canvasClipSections({ left: 0, top: 0, right: 4, bottom: 2 }, {
+      bounds: { left: 0, top: 10, right: 35, bottom: 20 },
+      contours: [],
+      ellipses: [{ x: 28, y: 26, radiusX: 20, radiusY: 10 }],
+    });
+    if (sections === undefined) throw new Error("The outline fits the top of the ellipse");
+
+    expect(sections.centers).toEqual([{ x: 28, y: 19 }]);
+    // At y = 19, the farthest corner is 8 pixels vertically from the center.
+    // The horizontal reach for its center is 20 * 0.6 - 2 = 10.
+    expect([...sections.columns()].sort((a, b) => a - b)).toEqual([expect.closeTo(18, 10), 23, 28, 30.5, 33]);
+  });
+
+  it("rejects a rectangular domain beyond the farthest reachable rows of an ellipse", async () => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+    const sections = canvasClipSections({ left: 0, top: 0, right: 4, bottom: 2 }, {
+      bounds: { left: 2, top: 23, right: 30, bottom: 35 },
+      contours: [],
+      ellipses: [{ x: 10, y: 10, radiusX: 16, radiusY: 14 }],
+    });
+
+    expect(sections).toBeUndefined();
   });
 
   it("declines a reveal while the SVG has no CSS box", () => {

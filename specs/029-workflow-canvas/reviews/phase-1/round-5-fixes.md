@@ -22,4 +22,10 @@ The signed test-only commit `fa1b18c358eedbdd99a95642832a3748efd68ff5` recorded 
 
 All 232 focused tests passed. Strict mutation across the changed ranges of both production files scored 100%, with zero survivors and zero uncovered mutants. [Placement checks](check-fix-round-51.log)
 
-The exact next candidate needs all 18 required checks, including the passing Unit aggregate and exact deferred visual and axe shard artifacts, all 41 emitted strict changed-source mutation shards and aggregate, and the complete Plants verdict. The phase-base and CI-base selectors agree. [Placement checks](check-fix-round-51.log) · [Plants record](plants.md#round-5-placement-follow-up)
+### Usable viewport inside a circular or elliptical cap
+
+The visible map could fit Publish through a translated ellipse or circle while the center of the clip bounds remained outside the usable opening. The resolved curve now contributes a preferred placement inside the rectangular center domain. At a candidate column, the geometry intersects the usable row intervals of the resolved curves. Chromium still checks the complete focus outline before the canvas proposes a view. The built fixtures prove exact accepted requests, unchanged scroll and focus on the same native Publish action. An in-process case also accepts the proposal in the narrow overlap of two curved clips. [Supplemental RED](red-fix-52.log) · [Curved placement checks](check-fix-round-52.log)
+
+All 242 focused tests passed. The strict rerun killed both exact survivors from the local all-range mutation run. The controls cover an ellipse centered below the visible map and a polygon that clips the otherwise preferred ellipse placement. [Curved placement checks](check-fix-round-52.log)
+
+The exact next candidate needs all 18 required checks, including the passing Unit aggregate and exact deferred visual and axe shard artifacts, all 42 emitted strict changed-source mutation shards and aggregate, and the complete Plants verdict. The phase-base and CI-base selectors agree. [Curved placement checks](check-fix-round-52.log) · [Plants record](plants.md#round-5-curved-placement-follow-up)

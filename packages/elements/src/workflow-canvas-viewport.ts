@@ -11,9 +11,20 @@ export interface CanvasBounds {
 const clippingOverflow = new Set(["auto", "clip", "hidden", "scroll"]);
 type CanvasClipContour = readonly [WorkflowCanvasPoint, ...WorkflowCanvasPoint[]];
 
-export interface CanvasClipMeasurement {
+interface CanvasEllipse {
+  readonly x: number;
+  readonly y: number;
+  readonly radiusX: number;
+  readonly radiusY: number;
+}
+
+interface CanvasClipGeometry {
   readonly bounds: CanvasBounds;
   readonly contours: readonly CanvasClipContour[];
+  readonly ellipses: readonly CanvasEllipse[];
+}
+
+export interface CanvasClipMeasurement extends CanvasClipGeometry {
   contains(outline: CanvasBounds): boolean;
 }
 
@@ -98,7 +109,7 @@ function polygonContour(coordinates: string, pane: DOMRect, scale: WorkflowCanva
   }) as [WorkflowCanvasPoint, ...WorkflowCanvasPoint[]];
 }
 
-function roundedBounds(path: string, pane: DOMRect, scale: WorkflowCanvasPoint, circular: boolean): CanvasBounds | undefined {
+function roundedEllipse(path: string, pane: DOMRect, scale: WorkflowCanvasPoint, circular: boolean): CanvasEllipse | undefined {
   const match = /(?:ellipse|circle)\(([\d.]+(?:px|%))(?: ([\d.]+(?:px|%)))?(?: at (-?[\d.]+(?:px|%)) (-?[\d.]+(?:px|%)))?\)/.exec(path);
   if (match?.[0] !== path) return undefined;
   const [radiusX, radiusY = radiusX, centerX = "50%", centerY = "50%"] = match.slice(1) as [string, string?, string?, string?];
@@ -108,7 +119,7 @@ function roundedBounds(path: string, pane: DOMRect, scale: WorkflowCanvasPoint, 
   const diagonal = circular ? Math.hypot(pane.width / scale.x, pane.height / scale.y) / Math.SQRT2 : null;
   const rx = screenInset(radiusX, diagonal === null ? pane.width : diagonal * scale.x, scale.x);
   const ry = screenInset(radiusY, diagonal === null ? pane.height : diagonal * scale.y, scale.y);
-  return { left: x - rx, right: x + rx, top: y - ry, bottom: y + ry };
+  return { x, y, radiusX: rx, radiusY: ry };
 }
 
 function insetParts(path: string): RegExpExecArray | null {
@@ -148,11 +159,7 @@ export function canvasContourCrossesOutline(contour: CanvasClipContour, outline:
   });
 }
 
-export function canvasClipping(element: Element): {
-  readonly bounds: CanvasBounds;
-  readonly hasConvexClip: boolean;
-  readonly contours: readonly CanvasClipContour[];
-} {
+export function canvasClipping(element: Element): CanvasClipGeometry & { readonly hasConvexClip: boolean } {
   const rect = element.getBoundingClientRect();
   const viewport = element.ownerDocument.documentElement;
   let left = Math.max(0, rect.left);
@@ -161,6 +168,7 @@ export function canvasClipping(element: Element): {
   let bottom = Math.min(viewport.clientHeight, rect.bottom);
   let hasConvexClip = false;
   const contours: CanvasClipContour[] = [];
+  const ellipses: CanvasEllipse[] = [];
   for (const ancestor of composedAncestors(element)) {
     const style = getComputedStyle(ancestor);
     if (style.display === "contents") continue;
@@ -209,7 +217,12 @@ export function canvasClipping(element: Element): {
         contours.push(contour);
         box = contourBounds(contour);
       } else {
-        box = roundedBounds(clipPath, pane, shapeScale, shape === "circle");
+        const ellipse = roundedEllipse(clipPath, pane, shapeScale, shape === "circle");
+        if (ellipse !== undefined) {
+          ellipses.push(ellipse);
+          const { x, y, radiusX, radiusY } = ellipse;
+          box = { left: x - radiusX, right: x + radiusX, top: y - radiusY, bottom: y + radiusY };
+        }
       }
       if (box !== undefined) {
         left = Math.max(left, box.left);
@@ -230,7 +243,7 @@ export function canvasClipping(element: Element): {
       bottom = Math.min(bottom, clipBottom);
     }
   }
-  return { bounds: { left, top, right, bottom }, hasConvexClip, contours };
+  return { bounds: { left, top, right, bottom }, hasConvexClip, contours, ellipses };
 }
 
 export function effectiveCanvasClip(element: Element): CanvasBounds {
@@ -320,21 +333,46 @@ function* sectionCoordinates(events: Iterable<number>, low: number, high: number
   yield* boundaries;
 }
 
-export function canvasClipSections(outline: CanvasBounds, clip: Pick<CanvasClipMeasurement, "bounds" | "contours">) {
+function clamp(value: number, low: number, high: number): number {
+  return Math.max(low, Math.min(high, value));
+}
+
+function ellipseReach(distance: number, radius: number, perpendicularRadius: number): number {
+  return perpendicularRadius * Math.sqrt(1 - (distance / radius) ** 2);
+}
+
+export function canvasClipSections(outline: CanvasBounds, clip: CanvasClipGeometry) {
   const halfWidth = (outline.right - outline.left) / 2;
   const halfHeight = (outline.bottom - outline.top) / 2;
-  const minX = clip.bounds.left + halfWidth;
-  const maxX = clip.bounds.right - halfWidth;
+  let minX = clip.bounds.left + halfWidth;
+  let maxX = clip.bounds.right - halfWidth;
   const minY = clip.bounds.top + halfHeight;
   const maxY = clip.bounds.bottom - halfHeight;
-  if (minX > maxX || minY > maxY) return undefined;
+  if (minY > maxY) return undefined;
+  for (const { x, y, radiusX, radiusY } of clip.ellipses) {
+    // The closest feasible row minimizes the distance of the farthest corner from this ellipse's center.
+    const distance = Math.abs(clamp(y, minY, maxY) - y) + halfHeight;
+    const reach = ellipseReach(distance, radiusY, radiusX) - halfWidth;
+    minX = Math.max(minX, x - reach);
+    maxX = Math.min(maxX, x + reach);
+  }
+  if (!(minX <= maxX)) return undefined;
+  const centers = clip.ellipses.map(({ x, y }) => ({ x: clamp(x, minX, maxX), y: clamp(y, minY, maxY) }));
   const lines = outlineContactLines(clip.contours, halfWidth, halfHeight);
   lines.push([0, 1, minY], [0, 1, maxY]);
   return {
-    halfWidth, halfHeight,
+    halfWidth, halfHeight, centers,
     rows(column: number) {
+      let top = minY;
+      let bottom = maxY;
+      for (const { x, y, radiusX, radiusY } of clip.ellipses) {
+        const distance = Math.abs(column - x) + halfWidth;
+        const reach = ellipseReach(distance, radiusX, radiusY) - halfHeight;
+        top = Math.max(top, y - reach);
+        bottom = Math.min(bottom, y + reach);
+      }
       const events = lines.map(([x, y, offset]) => (offset - x * column) / y);
-      return sectionCoordinates(events, minY, maxY);
+      return sectionCoordinates(events, top, bottom);
     },
     columns() {
       // Between two contact intersections, the order of all section boundaries is fixed.
@@ -343,7 +381,7 @@ export function canvasClipSections(outline: CanvasBounds, clip: Pick<CanvasClipM
         const others = lines.slice(index);
         return others.map(([otherX, otherY, otherOffset]) => (offset * otherY - otherOffset * y) / (x * otherY - otherX * y));
       });
-      return sectionCoordinates(events, minX, maxX);
+      return sectionCoordinates([...events, ...centers.map(({ x }) => x)], minX, maxX);
     },
   };
 }
@@ -351,10 +389,18 @@ export function canvasClipSections(outline: CanvasBounds, clip: Pick<CanvasClipM
 function findOutlineInClip(outline: CanvasBounds, preferred: CanvasBounds, clip: CanvasClipMeasurement): CanvasBounds | undefined {
   const sections = canvasClipSections(outline, clip);
   if (sections === undefined) return undefined;
-  const { halfWidth, halfHeight } = sections;
+  const { halfWidth, halfHeight, centers } = sections;
+  const outlineAt = (column: number, row: number) => ({
+    left: column - halfWidth, top: row - halfHeight, right: column + halfWidth, bottom: row + halfHeight,
+  });
+  // For one ellipse, clamping its center to the feasible rectangle minimizes both corner distances.
+  for (const { x, y } of centers) {
+    const candidate = outlineAt(x, y);
+    if (clip.contains(candidate)) return candidate;
+  }
   const findInColumn = (column: number) => {
     for (const row of sections.rows(column)) {
-      const candidate = { left: column - halfWidth, top: row - halfHeight, right: column + halfWidth, bottom: row + halfHeight };
+      const candidate = outlineAt(column, row);
       if (clip.contains(candidate)) return candidate;
     }
     return undefined;
