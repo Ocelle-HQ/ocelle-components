@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands } from "vitest/browser";
 import type { OcelleWorkflowCanvas } from "../src/ocelle-workflow-canvas.ts";
 import { OcelleWorkflowNode } from "../src/ocelle-workflow-node.ts";
@@ -400,6 +400,27 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("keeps host focus that is claimed during the render that removes the focused node", async () => {
+    const { canvas, after, requests } = await mount();
+    const review = action(canvas, "review");
+    review.focus();
+    expect(active()).toBe(review);
+    const host = {
+      hostUpdated: () => {
+        after.focus();
+        canvas.removeController(host);
+      },
+    };
+    canvas.addController(host);
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id !== "review"), connections: [] };
+    await settle(canvas);
+
+    expect(getNode(canvas, "review")).toBeUndefined();
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+    expect(active()).toBe(after);
+    expect(requests).toEqual([]);
+  });
+
   it("rechecks map eligibility when the same canvas reconnects into a moved host", async () => {
     const { canvas, frame, after, requests } = await mount(true);
     const lifecycle: string[] = [];
@@ -428,6 +449,78 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
     await click(review);
     expect(requests).toEqual([selectRequest("review")]);
+  });
+
+  it("releases real canvas observers and listener signals after node and canvas removal", async () => {
+    const listenOnWindow = vi.spyOn(window, "addEventListener");
+    const listen = vi.spyOn(EventTarget.prototype, "addEventListener");
+    const observeSize = vi.spyOn(ResizeObserver.prototype, "observe");
+    const releaseSize = vi.spyOn(ResizeObserver.prototype, "unobserve");
+    const disconnectSize = vi.spyOn(ResizeObserver.prototype, "disconnect");
+    const observeClip = vi.spyOn(IntersectionObserver.prototype, "observe");
+    const releaseClip = vi.spyOn(IntersectionObserver.prototype, "unobserve");
+    const disconnectClip = vi.spyOn(IntersectionObserver.prototype, "disconnect");
+    try {
+      const { canvas, frame, pane, requests } = await mount(true);
+      const map = canvas.shadowRoot?.querySelector("svg");
+      const removedAction = action(canvas, "revise");
+      const face = getNode(canvas, "revise")?.parentElement;
+      const marker = face?.parentElement?.nextElementSibling;
+      const { picker, button } = revealControls(canvas);
+      const resizeObserver = observeSize.mock.contexts[observeSize.mock.calls.findIndex(([target]) => target === map)];
+      const intersectionObserver = observeClip.mock.contexts[observeClip.mock.calls.findIndex(([target]) => target === map)];
+      expect(resizeObserver).toBeInstanceOf(ResizeObserver);
+      expect(intersectionObserver).toBeInstanceOf(IntersectionObserver);
+      const resizeTargets = observeSize.mock.calls.filter((_, index) => observeSize.mock.contexts[index] === resizeObserver).map(([target]) => target);
+      const intersectionTargets = observeClip.mock.calls.filter((_, index) => observeClip.mock.contexts[index] === intersectionObserver).map(([target]) => target);
+      expect(resizeTargets).toEqual(expect.arrayContaining([map, frame, pane, picker, button, face, removedAction, marker]));
+      expect(intersectionTargets).toEqual(expect.arrayContaining([map, frame, pane, picker, button, face, removedAction, marker]));
+
+      const registered = (target: EventTarget, name: string) => listen.mock.calls.find(
+        ([type], index) => type === name && listen.mock.contexts[index] === target,
+      )?.[2];
+      const clickOptions = registered(canvas, "click");
+      const signal = typeof clickOptions === "object" ? clickOptions.signal : undefined;
+      expect(signal).toBeInstanceOf(AbortSignal);
+      if (signal === undefined) throw new Error("The canvas must own an abortable native click listener");
+      expect(clickOptions).toMatchObject({ capture: true, signal });
+      expect(registered(canvas, "focusin")).toMatchObject({ capture: true, signal });
+      expect(registered(canvas, "focusout")).toMatchObject({ signal });
+      expect(registered(canvas, "keydown")).toMatchObject({ signal });
+      const windowSignals = listenOnWindow.mock.calls.map(([type, , options]) => [type, typeof options === "object" ? options.signal : undefined]);
+      expect(windowSignals).toEqual(expect.arrayContaining([["resize", signal], ["scroll", signal]]));
+      expect(registered(pane, "scroll")).toMatchObject({ signal });
+      expect(signal.aborted).toBe(false);
+
+      canvas.graph = { nodes: namedSteps.filter(({ id }) => id !== "revise"), connections: [] };
+      await settle(canvas);
+      expect(getNode(canvas, "revise")).toBeUndefined();
+      expect(releaseSize.mock.calls.map(([target]) => target)).toEqual(expect.arrayContaining([face, removedAction, marker]));
+      expect(releaseClip.mock.calls.map(([target]) => target)).toEqual(expect.arrayContaining([face, removedAction, marker]));
+      expect(requests).toEqual([]);
+
+      canvas.remove();
+      expect(signal.aborted).toBe(true);
+      expect(disconnectSize.mock.contexts).toContain(resizeObserver);
+      expect(disconnectClip.mock.contexts).toContain(intersectionObserver);
+
+      const previousSizeCalls = observeSize.mock.calls.length;
+      const previousClipCalls = observeClip.mock.calls.length;
+      const previousListenerCalls = listen.mock.calls.length;
+      frame.append(canvas);
+      await settle(canvas);
+      expect(observeSize.mock.calls.slice(previousSizeCalls).map(([target]) => target)).toContain(map);
+      expect(observeClip.mock.calls.slice(previousClipCalls).map(([target]) => target)).toContain(map);
+      const newPaneOptions = listen.mock.calls.find(([type], index) =>
+        index >= previousListenerCalls && type === "scroll" && listen.mock.contexts[index] === pane)?.[2];
+      const newSignal = typeof newPaneOptions === "object" ? newPaneOptions.signal : undefined;
+      expect(newSignal).toBeInstanceOf(AbortSignal);
+      expect(newSignal).not.toBe(signal);
+      expect(newSignal?.aborted).toBe(false);
+      expect(requests).toEqual([]);
+    } finally {
+      for (const spy of [listen, observeSize, releaseSize, disconnectSize, observeClip, releaseClip, disconnectClip, listenOnWindow]) spy.mockRestore();
+    }
   });
 
   it("recovers clipped focus synchronously on an enclosing pane's own scroll event", async () => {
@@ -466,9 +559,44 @@ describe("workflow canvas in-process selection and navigation", () => {
     const rect = card.getBoundingClientRect();
     expect(rect.width).toBeGreaterThan(initialWidth + 20);
     expect(start()).toBeCloseTo(rect.right - map.getBoundingClientRect().left, 0);
+    const foreign = card.closest("foreignObject");
+    expect(foreign?.getAttribute("width")).toBe(String(card.parentElement?.offsetWidth));
+    expect(foreign?.getAttribute("height")).toBe(String(card.parentElement?.offsetHeight));
     expect(card.parentElement?.inert).toBe(false);
     expect(canvas.layout).toEqual(initialLayout);
     expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([]);
+  });
+
+  it("observes the full native focus outline without writing unchanged geometry", async () => {
+    const { canvas, requests } = await mount();
+    const button = action(canvas, "review");
+    const marker = getNode(canvas, "review")?.parentElement?.parentElement?.nextElementSibling;
+    if (!(marker instanceof SVGRectElement)) throw new Error("The focus outline needs its SVG observation box");
+    const style = getComputedStyle(button);
+    const inset = Number.parseFloat(style.getPropertyValue("--ocelle-focus-width"))
+      + Number.parseFloat(style.getPropertyValue("--ocelle-focus-offset"));
+    expect(inset).toBeGreaterThan(0);
+
+    canvas.viewport = { x: 47, y: 38, scale: 1 };
+    await settle(canvas);
+    const buttonRect = button.getBoundingClientRect();
+    const markerRect = marker.getBoundingClientRect();
+    expect(markerRect.left).toBeCloseTo(buttonRect.left - inset, 0);
+    expect(markerRect.right).toBeCloseTo(buttonRect.right + inset, 0);
+    expect(markerRect.top).toBeCloseTo(buttonRect.top - inset, 0);
+    expect(markerRect.bottom).toBeCloseTo(buttonRect.bottom + inset, 0);
+    expect(getComputedStyle(marker).visibility).toBe("hidden");
+    expect(marker.getAttribute("aria-hidden")).toBe("true");
+
+    const mutations = new MutationObserver(() => undefined);
+    mutations.observe(marker, { attributes: true });
+    try {
+      window.dispatchEvent(new Event("resize"));
+      expect(mutations.takeRecords()).toEqual([]);
+    } finally {
+      mutations.disconnect();
+    }
     expect(requests).toEqual([]);
   });
 
