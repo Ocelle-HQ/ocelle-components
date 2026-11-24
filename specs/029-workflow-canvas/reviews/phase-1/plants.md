@@ -104,7 +104,23 @@ note: affected: every plant, by packages/elements/package.json (not mapped)
 plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
 ```
 
+## Round 5 curved placement follow-up
+
+The local affected selector exited 0 and selected all 317 Plants for the hosted judge.
+
+```text
+$ pnpm run gate:plants -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
+```
+
 The full hosted judge for the round 5 candidate `892326d2c382f06b56fe97eae28303fcc21432b0` exited 0. GitHub tested synthetic merge `9cff11c5e0153d7b1868f22698da7356ea2e3561` on the same tree. [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45399679956/job/138476607656)
+
+```text
+plants: 317 plants of 17 gates and the registry judged, every plant as expected
+```
+
+The hosted judge for the curved placement candidate `b380398313474026f949af38ee549bc486b778fe` exited 0. GitHub tested the identical tree at synthetic merge `48cf346274ca48c3dfd3d3d212e846827d554ea5`. [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45419174274/job/138547670433)
 
 ```text
 plants: 317 plants of 17 gates and the registry judged, every plant as expected
