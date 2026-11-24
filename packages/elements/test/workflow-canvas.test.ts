@@ -238,6 +238,36 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(button.disabled).toBe(true);
   });
 
+  it("keeps host-owned canvas inputs as JavaScript properties when markup attributes change", async () => {
+    await driver.mount("");
+    const canvas = document.createElement(tag) as OcelleWorkflowCanvas;
+    const graph = structuredClone(initialGraph);
+    const layout = structuredClone(initialLayout);
+    const viewport = { ...initialViewport };
+    canvas.graph = graph;
+    canvas.layout = layout;
+    canvas.viewport = viewport;
+    canvas.selectedNodeId = "publish";
+    canvas.mode = "author";
+    canvas.setAttribute("graph", '{"nodes":[],"connections":[]}');
+    canvas.setAttribute("layout", "[]");
+    canvas.setAttribute("viewport", '{"x":200,"y":20,"scale":2}');
+    canvas.setAttribute("selectednodeid", "review");
+    canvas.setAttribute("mode", "read-only");
+
+    expect(canvas.graph).toBe(graph);
+    expect(canvas.layout).toBe(layout);
+    expect(canvas.viewport).toBe(viewport);
+    expect(canvas.selectedNodeId).toBe("publish");
+    expect(canvas.mode).toBe("author");
+    const requests: string[] = [];
+    for (const type of requestTypes) canvas.addEventListener(type, (event) => { requests.push(event.type); });
+    document.body.append(canvas);
+    await settle(canvas);
+    expect(action(canvas, "publish").getAttribute("aria-pressed")).toBe("true");
+    expect(requests).toEqual([]);
+  });
+
   it("keeps the name of an unpositioned node and reflects every supplied node state once positioned", async () => {
     const { canvas, requests } = await mount();
     const [review, publish] = namedSteps;
@@ -256,7 +286,27 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(named.button.disabled).toBe(true);
     expect(await axButtons()).not.toContain("Initial review");
     expect(canvas.shadowRoot?.querySelectorAll("svg path")).toHaveLength(0);
-    expect(getNode(canvas, "review")?.closest("foreignObject")?.hasAttribute("hidden")).toBe(true);
+    const face = getNode(canvas, "review")?.parentElement;
+    expect(face?.parentElement?.hasAttribute("hidden")).toBe(true);
+    if (face === undefined || face === null) throw new Error("The unpositioned node must keep its DOM identity");
+    const readHiddenBounds = vi.spyOn(face, "getBoundingClientRect");
+    try {
+      window.dispatchEvent(new Event("resize"));
+      expect(readHiddenBounds).not.toHaveBeenCalled();
+    } finally {
+      readHiddenBounds.mockRestore();
+    }
+
+    named.picker.value = "publish";
+    named.picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    expect(named.button.disabled).toBe(false);
+    named.picker.value = "review";
+    named.picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    expect(named.button.disabled).toBe(true);
+    named.button.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
+    expect(requests).toEqual([]);
 
     canvas.layout = [{ nodeId: "review", x: 30, y: 20 }, ...canvas.layout];
     await settle(canvas);
@@ -327,6 +377,10 @@ describe("workflow canvas in-process selection and navigation", () => {
     picker.focus();
     expect(keydown(picker, "Home")).toBe(true);
     expect(active()).toBe(picker);
+    const metadata = getNode(canvas, "review")?.shadowRoot?.querySelector<HTMLElement>("dd");
+    if (metadata === undefined || metadata === null) throw new Error("The node needs its noninteractive metadata");
+    expect(keydown(metadata, "ArrowRight")).toBe(true);
+    expect(active()).toBe(picker);
     expect(requests).toEqual([]);
   });
 
@@ -350,6 +404,31 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
     expect(active()).toBe(initiator);
     expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+  });
+
+  it("focuses a programmatic reveal and keeps the supplied paint order until acceptance", async () => {
+    const { canvas, frame, before, requests } = await mount(true);
+    canvas.viewport = { x: -250, y: 0, scale: 1 };
+    const { picker, button } = revealControls(canvas);
+    picker.value = "review";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    before.focus();
+    button.click();
+    window.dispatchEvent(new Event("resize"));
+    await settle(canvas);
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(button);
+    expect([...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []].map(({ nodeId }) => nodeId))
+      .toEqual(["review", "publish", "revise"]);
+
+    frame.classList.add("move-away");
+    await expect.poll(active).not.toBe(button);
+    frame.classList.remove("move-away");
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(focusId(canvas)).toBeNull();
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
@@ -386,6 +465,8 @@ describe("workflow canvas in-process selection and navigation", () => {
     await settle(canvas);
     expect(active()).toBe(action(canvas, "review"));
     expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect([...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []].map(({ nodeId }) => nodeId))
+      .toEqual(["publish", "revise", "review"]);
 
     canvas.graph = { nodes: namedSteps.filter(({ id }) => id !== "review"), connections: [] };
     await settle(canvas);
