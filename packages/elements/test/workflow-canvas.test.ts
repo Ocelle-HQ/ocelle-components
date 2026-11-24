@@ -1428,6 +1428,28 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(active(), "the named picker receives focus after the last pending destination is removed").toBe(picker);
   });
 
+  it("preserves external focus when removing a destination whose reveal never acquired focus", async () => {
+    const { canvas, before, requests } = await mount();
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id === "revise"), connections: [] };
+    await settle(canvas);
+    const { picker, button } = revealControls(canvas);
+    before.focus();
+
+    canvas.inert = true;
+    button.click();
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(before);
+
+    canvas.inert = false;
+    canvas.graph = { nodes: [], connections: [] };
+    await settle(canvas);
+    expect(button.disabled).toBe(true);
+    expect(picker.disabled).toBe(false);
+    expect(active(), "focus stays with the host when the reveal initiator never owned it").toBe(before);
+    expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+  });
+
   it("ignores an older reveal when only its target appears and fulfills the latest reveal from the same control", async () => {
     const { canvas, requests } = await mount();
     action(canvas, "revise");
