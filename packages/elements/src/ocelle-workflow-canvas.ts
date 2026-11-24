@@ -2,7 +2,8 @@ import { LitElement, css, html, nothing, svg, type PropertyValues } from "lit";
 import { repeat } from "lit/directives/repeat.js";
 import { controlStyles } from "./control.ts";
 import { define } from "./define.ts";
-import { OcelleWorkflowNode } from "./ocelle-workflow-node.ts";
+import "./ocelle-workflow-node.ts";
+import type { OcelleWorkflowNode } from "./ocelle-workflow-node.ts";
 import { projectWorkflowCanvasGraph } from "./workflow-canvas-graph.ts";
 import {
   navigateWorkflowCanvas,
@@ -257,8 +258,12 @@ export class OcelleWorkflowCanvas extends LitElement {
       if (this.#namedId === null || !ids.has(this.#namedId)) {
         this.#namedId = this.#projection.nodes[0]?.id ?? null;
       }
-      if (this.#pendingReveal !== null && !this.#projection.positions.has(this.#pendingReveal.nodeId)) {
+      const pending = this.#pendingReveal;
+      if (pending !== null && !this.#projection.positions.has(pending.nodeId)) {
         this.#pendingReveal = null;
+        if (!this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
+          this.#focusNamed(pending.initiator.parentElement, "select");
+        }
       }
       for (const id of this.#sizes.keys()) {
         if (!ids.has(id)) this.#sizes.delete(id);
@@ -318,7 +323,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   protected override render(): unknown {
-    const { nodes, drawableConnections, positions } = this.#projection;
+    const { nodes, drawableConnections } = this.#projection;
     const labelCounts = new Map<string, number>();
     for (const { label } of nodes) labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
     const nameContext = (node: WorkflowCanvasNode) => (labelCounts.get(node.label) ?? 0) > 1
@@ -335,7 +340,7 @@ export class OcelleWorkflowCanvas extends LitElement {
               </option>`)}
             </select>
           </label>
-          <button class="control" type="button" ?disabled=${this.#namedId === null || !positions.has(this.#namedId)}
+          <button class="control" type="button" ?disabled=${!this.#canRevealNamed}
             @click=${this.#revealNamed} @blur=${this.#loseRevealFocus}>Reveal step</button>
         </div>
         <svg class="map">
@@ -351,7 +356,14 @@ export class OcelleWorkflowCanvas extends LitElement {
     return this.#projection.nodes.map(({ id }) => id);
   }
 
-  #action(node: OcelleWorkflowNode): NodeAction | undefined {
+  get #canRevealNamed(): boolean {
+    return this.#namedId !== null && this.#projection.positions.has(this.#namedId);
+  }
+
+  #action(target: EventTarget | null | undefined): NodeAction | undefined {
+    // A standalone node may already own the tag when the browser aggregate loads.
+    if (!(target instanceof HTMLElement) || target.localName !== "ocelle-workflow-node" || target.getRootNode() !== this.renderRoot) return;
+    const node = target as OcelleWorkflowNode;
     const face = node.parentElement;
     const button = node.shadowRoot?.querySelector("button");
     const focusBounds = face?.parentElement?.nextElementSibling;
@@ -364,17 +376,28 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #focusedAction(): NodeAction | undefined {
-    const node = this.shadowRoot?.activeElement;
     // The managed workflow node's native button is its only focusable control.
-    return node instanceof OcelleWorkflowNode ? this.#action(node) : undefined;
+    return this.#action(this.shadowRoot?.activeElement);
   }
 
   #eventAction(event: Event): NodeAction | undefined {
     const path = event.composedPath();
-    const node = path.find((part) => part instanceof OcelleWorkflowNode);
-    if (node === undefined) return;
-    const action = this.#action(node);
-    return action !== undefined && path.includes(action.button) ? action : undefined;
+    for (const target of path) {
+      const action = this.#action(target);
+      if (action !== undefined && path.includes(action.button)) return action;
+    }
+  }
+
+  #focusAction(action: NodeAction | undefined): void {
+    if (action === undefined) return;
+    // A live measurement can expose this action before the observers clear its wrapper.
+    this.#enableAction(action.face);
+    action.button.focus(withoutScroll);
+  }
+
+  #enableAction(face: HTMLElement): void {
+    face.inert = false;
+    face.removeAttribute("aria-hidden");
   }
 
   #measureEligibility(
@@ -419,7 +442,8 @@ export class OcelleWorkflowCanvas extends LitElement {
       const tabIndex = node.nodeId === entry ? 0 : -1;
       node.selectionTabIndex = tabIndex;
       button.tabIndex = tabIndex;
-      face.inert = !eligible.has(node.nodeId);
+      if (eligible.has(node.nodeId)) this.#enableAction(face);
+      else face.inert = true;
       const outline = bounds.get(node.nodeId);
       if (outline !== undefined && inverse !== null) this.#placeFocusBounds(focusBounds, outline, inverse);
       if (!this.#projection.positions.has(node.nodeId)) continue;
@@ -433,14 +457,13 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (currentId !== null && (focused === undefined || !eligible.has(currentId))) {
       const recoveryId = recoverWorkflowCanvasFocus(previous?.order ?? this.#order, eligible, currentId);
       const recovery = actions.find(({ node }) => node.nodeId === recoveryId);
-      if (recovery === undefined) this.#focusNamed(map);
+      if (recovery === undefined) this.#focusNamed(map.previousElementSibling);
       else recovery.node.focus(withoutScroll);
     }
     for (const { face } of actions) {
       if (face.inert && !face.hasAttribute("aria-hidden")) face.setAttribute("aria-hidden", "true");
-      if (!face.inert) face.removeAttribute("aria-hidden");
     }
-    this.#completeReveal(actions, map, contained, eligible);
+    this.#completeReveal(actions, contained, eligible);
   }
 
   #placeFocusBounds(marker: SVGRectElement, bounds: CanvasBounds, inverse: DOMMatrix): void {
@@ -489,11 +512,10 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#watched = elements;
   }
 
-  #focusNamed(map: SVGSVGElement): void {
-    const navigator = map.previousElementSibling;
+  #focusNamed(navigator: Element | null, controls = "select, button"): void {
     if (navigator === null) return;
     const clip = effectiveCanvasClip(navigator);
-    const visible = [...navigator.querySelectorAll("select, button")].find(
+    const visible = [...navigator.querySelectorAll(controls)].find(
       (control) => !control.matches(":disabled") && isInsideCanvasClip(clip, control.getBoundingClientRect()),
     );
     if (visible instanceof HTMLElement) visible.focus(withoutScroll);
@@ -531,7 +553,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     const { eligible } = this.#measureEligibility(actions, map);
     const next = navigateWorkflowCanvas(this.#order, eligible, action.node.nodeId, event.key as WorkflowCanvasNavigationKey);
     event.preventDefault();
-    actions.find(({ node }) => node.nodeId === next)?.node.focus(withoutScroll);
+    this.#focusAction(actions.find(({ node }) => node.nodeId === next));
   };
 
   #chooseNamed(event: Event): void {
@@ -559,7 +581,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     const actions = this.#actions();
     const { contained, eligible } = this.#measureEligibility(actions, map);
     if (contained.has(id)) {
-      this.#completeReveal(actions, map, contained, eligible);
+      this.#completeReveal(actions, contained, eligible);
       return;
     }
     const action = actions.find(({ node }) => node.nodeId === id)?.button;
@@ -577,7 +599,6 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #completeReveal(
     actions: readonly NodeAction[],
-    map: SVGSVGElement,
     contained: ReadonlySet<string>,
     eligible: ReadonlySet<string>,
   ): void {
@@ -586,14 +607,14 @@ export class OcelleWorkflowCanvas extends LitElement {
     const navigator = pending.initiator.parentElement;
     if (navigator !== null && !isInsideCanvasClip(effectiveCanvasClip(navigator), pending.initiator.getBoundingClientRect())) {
       this.#pendingReveal = null;
-      this.#focusNamed(map);
+      this.#focusNamed(navigator);
       pending.initiator.blur();
       return;
     }
     const ready = workflowCanvasRevealTarget(pending, eligible, this.#generation, this.#focusEpoch);
     if (ready !== null) {
       this.#pendingReveal = null;
-      actions.find(({ node }) => node.nodeId === ready)?.node.focus(withoutScroll);
+      this.#focusAction(actions.find(({ node }) => node.nodeId === ready));
     } else if (contained.has(pending.nodeId) && this.#raisedId !== pending.nodeId) {
       this.#raisedId = pending.nodeId;
       this.requestUpdate();

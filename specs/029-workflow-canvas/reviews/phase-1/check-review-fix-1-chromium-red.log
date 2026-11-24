@@ -1,0 +1,21 @@
+Phase 1 review round 1 — supplemental Chromium red for the mutation runner
+Revision 38fec580ab1cf5be0455b9a11ac8b4287fef9bdc, test-only
+Project: elements (chromium)
+File: packages/elements/test/workflow-canvas.test.ts
+Command: pnpm exec vitest run --config vitest.mutation.elements.config.ts --project 'elements (chromium)' packages/elements/test/workflow-canvas.test.ts -t 'first native|unmanaged light-DOM|only pending reveal destination'
+Exit: 1
+
+uses the first native ArrowLeft after the host reveals an inert action
+AssertionError: the native ArrowLeft reaches the newly exposed Review action without a second input: expected <button class="control" …(6)>…(1)</button> to be <button class="control" …(6)>…(1)</button> // Object.is equality
+
+uses the first native Enter after the host reveals an inert action
+AssertionError: the native Enter reaches the newly exposed Review action without a second input: expected <button class="control" …(1)></button> to be <button class="control" …(6)>…(1)</button> // Object.is equality
+
+leaves native key handling on an unmanaged light-DOM workflow node alone
+AssertionError: the canvas does not consume input from a foreign action using the same stable ID: expected false to be true // Object.is equality
+
+focuses the native picker when removing the only pending reveal destination disables its button
+AssertionError: the named picker receives focus after the last pending destination is removed: expected <body><section …(2)></section></body> to be <select class="control"></select> // Object.is equality
+
+Test Files  1 failed (1)
+Tests  4 failed | 53 skipped (57)
