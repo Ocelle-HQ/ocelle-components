@@ -1,28 +1,31 @@
 import { describe, expect, it } from "vitest";
 type NavigationModule = typeof import("../src/workflow-canvas-navigation.ts");
 
-// Pre-scaffold replay reports the missing helper in each named case.
+// Report absent results through the same assertions when replaying before the module existed.
 const navigation = import.meta.glob<NavigationModule>("../src/workflow-canvas-navigation.ts", { eager: true })["../src/workflow-canvas-navigation.ts"];
-
-function navigationHelper<K extends keyof NavigationModule>(name: K): NavigationModule[K] {
-  const helper = navigation?.[name];
-  expect(typeof helper, `the navigation module exports ${name}`).toBe("function");
-  if (helper === undefined) throw new Error(`Navigation helper unavailable: ${name}`);
-  return helper;
-}
+const noResult = (): undefined => undefined;
+const {
+  navigateWorkflowCanvas,
+  recoverWorkflowCanvasFocus,
+  workflowCanvasEntryId,
+  workflowCanvasRevealTarget,
+} = navigation ?? {
+  navigateWorkflowCanvas: noResult,
+  recoverWorkflowCanvasFocus: noResult,
+  workflowCanvasEntryId: noResult,
+  workflowCanvasRevealTarget: noResult,
+};
 
 const order = ["review", "publish", "revise", "archive", "close"];
 
 describe("workflow canvas navigation", () => {
   it("uses the eligible selected node as the single sequential entry", () => {
-    const workflowCanvasEntryId = navigationHelper("workflowCanvasEntryId");
     const eligible = new Set(["close", "review", "revise"]);
 
     expect(workflowCanvasEntryId(order, eligible, "revise")).toBe("revise");
   });
 
   it("uses the first eligible node in graph order when selection is unavailable", () => {
-    const workflowCanvasEntryId = navigationHelper("workflowCanvasEntryId");
     const eligible = new Set(["close", "revise"]);
 
     expect(workflowCanvasEntryId(order, eligible, "publish")).toBe("revise");
@@ -31,7 +34,6 @@ describe("workflow canvas navigation", () => {
   });
 
   it("moves forward with Right and Down and stops at the last eligible action", () => {
-    const navigateWorkflowCanvas = navigationHelper("navigateWorkflowCanvas");
     const eligible = new Set(["close", "review", "revise"]);
 
     expect(navigateWorkflowCanvas(order, eligible, "review", "ArrowRight")).toBe("revise");
@@ -41,7 +43,6 @@ describe("workflow canvas navigation", () => {
   });
 
   it("moves backward with Left and Up and stops at the first eligible action", () => {
-    const navigateWorkflowCanvas = navigationHelper("navigateWorkflowCanvas");
     const eligible = new Set(["close", "review", "revise"]);
 
     expect(navigateWorkflowCanvas(order, eligible, "close", "ArrowLeft")).toBe("revise");
@@ -51,7 +52,6 @@ describe("workflow canvas navigation", () => {
   });
 
   it("takes Home and End to eligible endpoints when the graph endpoints are clipped", () => {
-    const navigateWorkflowCanvas = navigationHelper("navigateWorkflowCanvas");
     const eligible = new Set(["archive", "publish", "revise"]);
 
     expect(navigateWorkflowCanvas(order, eligible, "revise", "Home")).toBe("publish");
@@ -59,21 +59,18 @@ describe("workflow canvas navigation", () => {
   });
 
   it("retains the same eligible focused action on host reorder", () => {
-    const recoverWorkflowCanvasFocus = navigationHelper("recoverWorkflowCanvasFocus");
     const reordered = new Set(["close", "archive", "publish", "revise", "review"]);
 
     expect(recoverWorkflowCanvasFocus(order, reordered, "publish")).toBe("publish");
   });
 
   it("recovers to the first eligible successor in the previous order after removal", () => {
-    const recoverWorkflowCanvasFocus = navigationHelper("recoverWorkflowCanvasFocus");
     const remaining = new Set(["close", "archive", "review"]);
 
     expect(recoverWorkflowCanvasFocus(order, remaining, "publish")).toBe("archive");
   });
 
   it("recovers to the nearest eligible predecessor when clipping rules out successors", () => {
-    const recoverWorkflowCanvasFocus = navigationHelper("recoverWorkflowCanvasFocus");
     const eligible = new Set(["review", "publish"]);
 
     expect(recoverWorkflowCanvasFocus(order, eligible, "archive")).toBe("publish");
@@ -81,7 +78,6 @@ describe("workflow canvas navigation", () => {
   });
 
   it("keeps a reveal pending until the current target becomes eligible", () => {
-    const workflowCanvasRevealTarget = navigationHelper("workflowCanvasRevealTarget");
     const pending = { nodeId: "publish", generation: 4, focusEpoch: 7 };
 
     expect(workflowCanvasRevealTarget(pending, new Set(["review", "publish"]), 4, 7)).toBe("publish");
@@ -89,7 +85,6 @@ describe("workflow canvas navigation", () => {
   });
 
   it("gives overlapping reveals to the latest request even when both targets become eligible", () => {
-    const workflowCanvasRevealTarget = navigationHelper("workflowCanvasRevealTarget");
     const previous = { nodeId: "publish", generation: 4, focusEpoch: 7 };
     const current = { nodeId: "revise", generation: 5, focusEpoch: 7 };
     const eligible = new Set(["publish", "revise"]);
@@ -100,7 +95,6 @@ describe("workflow canvas navigation", () => {
   });
 
   it("allows the current focus epoch to hand off and abandons it after focus departs", () => {
-    const workflowCanvasRevealTarget = navigationHelper("workflowCanvasRevealTarget");
     const pending = { nodeId: "revise", generation: 5, focusEpoch: 7 };
     const eligible = new Set(["revise"]);
 
