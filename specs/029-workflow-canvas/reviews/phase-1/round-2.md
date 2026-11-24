@@ -1,0 +1,40 @@
+---
+phase: 1
+round: 2
+verdict: changes_requested
+base: 3515d2757508bd523fa55c6615af4f3996f842aa
+head: e3e517b6b61ce05e2257fb6e4089f14a461994d4
+tdd_check: pass
+---
+
+# Phase 1 review, round 2
+
+T001–T012 are complete. The review head adds 16 verification files or updates over hosted candidate `8f7d54bcf394b69e431a2e7a1ec5bc7a4fc6c69f`, all within this phase's review directory. The implementation, tests, fixtures, package exports, stories, baselines, CI and `test-scope.txt` match the hosted candidate exactly.
+
+## Findings
+
+| ID | Severity | Where | Finding | Required change |
+|----|----------|-------|---------|-----------------|
+| R2-01 | blocking | [workflow-canvas-viewport.ts:31](../../../../packages/elements/src/workflow-canvas-viewport.ts#L31), [ocelle-workflow-canvas.ts:407](../../../../packages/elements/src/ocelle-workflow-canvas.ts#L407), [plan.md:37](../../plan.md#L37) | The effective clip ignores a host pane with CSS `contain: paint` and visible overflow. In built Chromium under strict CSP, Publish was fully clipped below that pane, with an intersection ratio of zero and a missed pointer hit-test. Its wrapper remained active and its action stayed in the accessibility tree. A trusted ArrowRight focused it, and Enter emitted a Publish selection. Named Reveal also focused the hidden action and emitted zero viewport requests. This breaks visible traversal, unavailable-action suppression and named reveal in US1. | Add a red built-browser case with a paint-containing host pane. Incorporate the pane's clip into live eligibility. Verify that the clipped action is unavailable to keyboard navigation, accessibility and native activation, remains available by name and receives focus after the host accepts a view that actually exposes it. Assert the exact request stream throughout. |
+
+The same geometry using `overflow: hidden` excludes Publish from navigation and the accessibility tree. Its named Reveal keeps focus on the initiating button and emits one viewport proposal. [Independent probe](check-review-round-2.log)
+
+## Test quality
+
+- The test-free scaffold `129c6620` contains inert signatures and readonly types. The phase red records 39 named failures. The eight follow-up red groups record 18 additional named failures. The final tests reproduce the original failures at the base and scaffold, and each follow-up at its own base. The green replay selects 12 project/file identities, including the five focused canvas files. [Canonical replay](tdd-check.json)
+- The signed test-only red `66d43d1f` precedes `592fd64b` and records five named browser assertion failures. The final browser test file is byte-identical to that red. The supplemental test-only red `38fec580` records four named in-process Chromium failures. Later additions against two isolated surviving mutations preserve its assertions. The tests observe trusted input, native focus, exact request streams, host state, scroll and CSP diagnostics. [Built red replay](check-final-tests-on-fix-1-base.log) · [Supplemental red](check-review-fix-1-chromium-red.log)
+- The two hosted-only files retain exact inventory assertions. The axe totals account for the four new story-theme runs and preserve the two expected defect findings. The visual totals account for the four new baselines and preserve the original defect files and exact light-theme token differences, with the two additional measured canvas differences. The manifest and empty-index overlays retain their intentional defects. The notice Plant fixture now waits for the first due update to render before requesting the second and preserves its expected outcomes.
+- I regenerated the strict mutation plan from the phase base and the hosted base and compared the arrays. All 29 shard definitions match, and all 29 hosted shards passed on the verified candidate. I checked the three inline equivalence records. Drawable paths come from the same private positions map that provides both endpoints. Clearing or overwriting the sole pending reveal makes either counter direction equivalent in its respective operation. [Hosted mutation](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/job/138243509248)
+
+## Checks run
+
+- Run 45327915909 tested synthetic merge `5195e3515f8fae671f540cb80f44f7b6fffcd5e2`, with parents `7c081d129fa4892cea08f6f1b7c83d82ed685de0` and the exact candidate. The recorded merge tree and local candidate tree agree at `76d0312d0abf324a859472c49acfcd4ad86c1eb6`. I verified the revision in the downloaded Unit plan and both shard artifacts. The Unit aggregate passed 10,991 tests in 331 files across six shards. The plan assigns `gates-integration` / `gates/test/integration/visual.test.ts` to shard 0 and `gates-integration` / `gates/test/integration/axe.test.ts` to shard 1. The matching shard artifacts report all 11 visual cases and all four axe cases passed, with zero shard or file errors. [Run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909) · [Unit aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/job/138235241077) · [Plan](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/artifacts/14890417806) · [Shard 0](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/artifacts/14892810437) · [Shard 1](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/artifacts/14891047995)
+- All 18 required hosted checks passed. Visual regression matched all 674 captures in Docker and Podman. Accessibility completed 674 story-theme runs with zero serious, critical or incomplete results and 58 existing exceptions. Branching and Narrow focus each have both pinned theme baselines. [Visual regression](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/job/138221858339) · [Accessibility](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/job/138221858235)
+- I reran all five focused files and all 115 cases passed, including the built strict-CSP browser cases. Typecheck, code lint, test lint, style lint, manifest, contrast, brand rules, config copies, package builds, prefix, pins, Content security, Storybook build and sign-off passed locally. The independent Chromium probe reproduced R2-01. [Local checks](check-review-round-2.log)
+- I reran the phase-base Plants selector and confirmed the recorded selection reason and count. The registry selected all 317 Plants due to the elements package registration. Hosted CI judged all 317 on the verified candidate with every result as expected. [Plants record](plants.md) · [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45327915909/job/138228535961)
+
+## Earlier findings
+
+- **R1-01 resolved.** Both trusted inputs expose the target in capture while its existing wrapper is still inert. ArrowLeft and Enter on Reveal each focus the newly exposed Review action on the first input, with zero requests and no host scroll. [Built browser cases](../../../../packages/elements/test/browser/workflow-canvas.test.ts#L350)
+- **R1-02 resolved.** Removing the only pending reveal destination focuses the visible Step picker when the active Reveal button becomes disabled. The proposal stream and host pane scroll are preserved. The external-focus control and the successor that keeps Reveal enabled retain their respective focus. [Built browser cases](../../../../packages/elements/test/browser/workflow-canvas.test.ts#L377)
+- **R1-03 resolved.** Registering the standalone node before the built aggregate keeps the first constructor. Trusted ArrowRight reaches the correct native Publish action, and Enter produces exactly one Publish selection. A second trusted activation clipped in capture contributes zero requests. The in-process cases verify that a matching-ID foreign action and a non-node control keep their own input behavior. [Built browser cases](../../../../packages/elements/test/browser/workflow-canvas.test.ts#L431) · [Native action boundary](../../../../packages/elements/test/workflow-canvas.test.ts#L1128)

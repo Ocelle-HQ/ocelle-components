@@ -1,0 +1,44 @@
+Phase 1 independent round 2 review checks
+Review input e3e517b6b61ce05e2257fb6e4089f14a461994d4
+Hosted candidate 8f7d54bcf394b69e431a2e7a1ec5bc7a4fc6c69f
+
+Independent built Chromium probe for R2-01
+
+Built the production browser aggregate with the elements package's Vite configuration. The repository's workflow-canvas.html and fixture server supplied the normal CSP, local token stylesheet and vendored font. An adopted host stylesheet defined a 700 × 180 CSS pixel pane containing a 390 CSS pixel tall canvas. Review at (35, 15) was inside the pane. Publish at (330, 220) was inside the SVG map and below the pane. The host supplied selectedNodeId "review" and did not apply any viewport proposals. Chromium reported pane bottom y=188 and Publish action top y=305. An independent IntersectionObserver returned intersectionRatio 0 and a hit-test at the Publish action center returned the outer HTML element.
+
+With contain: paint on the host pane:
+- Publish wrapper inert=false, aria-hidden absent, and the Publish button is in the canvas accessibility snapshot.
+- Focus the Review action, then press ArrowRight through Playwright. The actual focused action is Publish.
+- Press Enter. The complete request stream is [{"type":"ocelle-workflow-node-select","detail":{"nodeId":"publish"}}].
+- Clear the captured stream, choose Publish in the Step picker and press Enter on the focused Reveal step button. The actual focused action is Publish. Requests: [].
+
+With overflow: hidden on the same size pane:
+- Publish wrapper inert=true, aria-hidden="true", and the Publish button is absent from the canvas accessibility snapshot.
+- Focus Review, then press ArrowRight. Review retains focus.
+- Press Enter. The complete request stream is [{"type":"ocelle-workflow-node-select","detail":{"nodeId":"review"}}].
+- Clear the captured stream, choose Publish in the Step picker and press Enter on the focused Reveal step button. The Reveal step button retains focus. Requests: [{"type":"ocelle-workflow-canvas-viewport-request","detail":{"viewport":{"x":-68,"y":-199,"scale":1}}}].
+
+Both panes had zero CSP violations, page errors, failed requests and outside requests.
+
+Independent local checks
+
+pnpm exec vitest run --project elements --project elements-browser <five workflow-canvas files>
+Test Files  5 passed (5)
+Tests       115 passed (115)
+typecheck: no type error in the files of tsconfig.json
+lint: 651 files checked, no finding
+test-lint: 490 files checked, no finding
+style-lint: 76 files checked, no finding
+manifest: 43 elements checked, no finding
+contrast: 207 pairs checked in light, 215 in dark (196 required per theme)
+brand-rules: 7 rules checked
+config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical
+prefix: 749 files checked, no finding
+pins: 5 manifests checked, no finding
+packages/tokens, packages/styles, packages/elements: build passed
+csp: 81 files checked, no finding
+storybook-build: built 337 stories
+signoff: 71 commits checked, no finding
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
+mutation: identical 29-shard plans from phase base and hosted base, each with 28 cuts
