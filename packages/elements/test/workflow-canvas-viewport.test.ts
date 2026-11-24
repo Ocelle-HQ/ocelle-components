@@ -118,6 +118,19 @@ describe("workflow canvas viewport geometry", () => {
     expect(effectiveCanvasClip(map)).toEqual(expected);
   });
 
+  it.each([
+    ["inset(5px 20px 7px 8px round 4px 8px / 10% 5%)", { left: 136, top: 95, right: 344, bottom: 371 }],
+    ["inset(calc(25% + 3px) 20px 7px 8px round 4px) margin-box", { left: 136, top: 185, right: 344, bottom: 443 }],
+  ] as const)("finds the scaled reveal bounds of %s", (path, expected) => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
+      margin-bottom: 24px; transform: scale(2, 3); transform-origin: top left;
+      overflow: visible; clip-path: ${path};`;
+    map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
+
+    expect(effectiveCanvasClip(map)).toEqual(expected);
+  });
+
   it("measures content-box inset percentages relative to the scaled content edges", () => {
     const { map, pane } = viewportFixture(120, 90);
     pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
