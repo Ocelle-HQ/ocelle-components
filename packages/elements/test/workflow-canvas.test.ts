@@ -356,6 +356,63 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("reuses the projected graph on viewport-only updates and reads it for a new layout", async () => {
+    const { canvas, requests } = await mount();
+    let connectionReads = 0;
+    canvas.graph = {
+      nodes: initialGraph.nodes,
+      get connections() {
+        connectionReads += 1;
+        return initialGraph.connections;
+      },
+    };
+    await settle(canvas);
+    const fromGraph = connectionReads;
+    expect(fromGraph).toBeGreaterThan(0);
+
+    canvas.viewport = { x: -40, y: 37, scale: 1.2 };
+    await settle(canvas);
+    expect(connectionReads).toBe(fromGraph);
+    expect(canvas.shadowRoot?.querySelectorAll("svg path")).toHaveLength(2);
+
+    canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "revise");
+    await settle(canvas);
+    expect(connectionReads).toBeGreaterThan(fromGraph);
+    expect(canvas.shadowRoot?.querySelectorAll("svg path")).toHaveLength(1);
+    expect(requests).toEqual([]);
+  });
+
+  it("does not reuse an old measured SVG size when a removed step returns", async () => {
+    const { canvas, requests } = await mount();
+    const measuredSize = (nodeId: string) => {
+      const box = getNode(canvas, nodeId)?.closest("foreignObject");
+      return [box?.getAttribute("width"), box?.getAttribute("height")];
+    };
+    const old = measuredSize("review");
+    const retainedSize = measuredSize("publish");
+    expect(Number(old[0])).toBeGreaterThan(1);
+    expect(Number(old[1])).toBeGreaterThan(1);
+    canvas.graph = { nodes: initialGraph.nodes.filter(({ id }) => id !== "review"), connections: [] };
+    await settle(canvas);
+    expect(getNode(canvas, "review")).toBeUndefined();
+
+    const firstRender: ReturnType<typeof measuredSize>[][] = [];
+    const host = {
+      hostUpdated: () => {
+        firstRender.push([measuredSize("review"), measuredSize("publish")]);
+        canvas.removeController(host);
+      },
+    };
+    canvas.addController(host);
+    canvas.graph = initialGraph;
+    await settle(canvas);
+    expect(firstRender).toHaveLength(1);
+    expect(firstRender[0]?.[0]).not.toEqual(old);
+    expect(firstRender[0]?.[1]).toEqual(retainedSize);
+    expect(measuredSize("review")).toEqual(old);
+    expect(requests).toEqual([]);
+  });
+
   it("handles only unmodified navigation keys from a native node action", async () => {
     const { canvas, requests } = await mount();
     const review = action(canvas, "review");
@@ -404,6 +461,20 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
     expect(active()).toBe(initiator);
     expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+  });
+
+  it("keeps the pending reveal through a layout update that preserves its destination", async () => {
+    const { canvas, requests } = await mount();
+    const initiator = await askReveal(canvas, "revise");
+    const proposed = lastViewport(requests);
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "review" ? { ...entry, x: entry.x + 1 } : entry);
+    await settle(canvas);
+    expect(active()).toBe(initiator);
+
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(action(canvas, "revise"));
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
@@ -467,6 +538,15 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
     expect([...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []].map(({ nodeId }) => nodeId))
       .toEqual(["publish", "revise", "review"]);
+
+    const raisedAction = action(canvas, "review");
+    canvas.graph = {
+      ...canvas.graph,
+      nodes: canvas.graph.nodes.map((node) => node.id === "review" ? { ...node, label: "Updated review" } : node),
+    };
+    await settle(canvas);
+    expect(active()).toBe(raisedAction);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
 
     canvas.graph = { nodes: namedSteps.filter(({ id }) => id !== "review"), connections: [] };
     await settle(canvas);
@@ -572,6 +652,12 @@ describe("workflow canvas in-process selection and navigation", () => {
       expect(windowSignals).toEqual(expect.arrayContaining([["resize", signal], ["scroll", signal]]));
       expect(registered(pane, "scroll")).toMatchObject({ signal });
       expect(signal.aborted).toBe(false);
+
+      const unchangedSizeCalls = observeSize.mock.calls.length;
+      const unchangedClipCalls = observeClip.mock.calls.length;
+      window.dispatchEvent(new Event("resize"));
+      expect(observeSize.mock.calls).toHaveLength(unchangedSizeCalls);
+      expect(observeClip.mock.calls).toHaveLength(unchangedClipCalls);
 
       canvas.graph = { nodes: namedSteps.filter(({ id }) => id !== "revise"), connections: [] };
       await settle(canvas);
