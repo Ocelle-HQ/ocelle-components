@@ -150,6 +150,8 @@ export class OcelleWorkflowCanvas extends LitElement {
       }
 
       .focus-bounds {
+        /* Hidden markers still report geometric intersections. */
+        visibility: hidden;
         fill: none;
         pointer-events: none;
       }
