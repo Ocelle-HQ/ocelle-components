@@ -451,12 +451,18 @@ async function assertStaleModeAtPointerStart(): Promise<void> {
   const handle = moveHandle(canvas, "publish");
   const origin = elementCenter(handle);
   const map = mapOf(canvas);
-  const capture: boolean[] = [];
-  pane.addEventListener("pointerdown", (event) => { capture.push(map.hasPointerCapture(event.pointerId)); }, { once: true });
-  pane.addEventListener("pointerdown", () => { canvas.mode = "read-only"; }, { capture: true, once: true });
+  const nativeHits: boolean[] = [];
+  const setCapture = vi.spyOn(map, "setPointerCapture");
+  pane.addEventListener("pointerdown", (event) => {
+    nativeHits.push(event.isTrusted && event.composedPath().includes(handle));
+    canvas.mode = "read-only";
+  }, { capture: true, once: true });
   await commands.pointerPath([{ ...origin, down: true }, { x: origin.x + 40, y: origin.y - 20 }]);
+  const captures = setCapture.mock.calls;
+  setCapture.mockRestore();
   await settle(canvas);
-  expect(capture).toEqual([false]);
+  expect(nativeHits).toEqual([true]);
+  expect(captures).toEqual([]);
   expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
   expect(map.querySelectorAll(".move-handle")).toHaveLength(0);
   await commands.pointerPath([{ x: origin.x + 40, y: origin.y - 20, up: true }]);
@@ -465,21 +471,28 @@ async function assertStaleModeAtPointerStart(): Promise<void> {
 
 async function assertLivePointerAdmission(invalidated: "clip" | "graph"): Promise<void> {
   const { canvas, pane, sheet, requests } = await arranging();
-  sheet.insertRule("#canvas-pane.new-clip { clip-path: inset(0 45% 0 0); }", sheet.cssRules.length);
   const handle = moveHandle(canvas, "publish");
   const down = elementCenter(handle);
   const end = { x: down.x + 40, y: down.y - 20 };
   const map = mapOf(canvas);
-  const capture: boolean[] = [];
-  pane.addEventListener("pointerdown", (event) => { capture.push(map.hasPointerCapture(event.pointerId)); }, { once: true });
-  pane.addEventListener("pointerdown", () => {
-    if (invalidated === "clip") pane.classList.add("new-clip");
-    else canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
+  const nativeHits: boolean[] = [];
+  const setCapture = vi.spyOn(map, "setPointerCapture");
+  pane.addEventListener("pointerdown", (event) => {
+    nativeHits.push(event.isTrusted && event.composedPath().includes(handle));
+    if (invalidated === "clip") {
+      // CSSOM changes the hit geometry without a host attribute mutation.
+      sheet.insertRule("#canvas-pane { clip-path: inset(0 45% 0 0); }", sheet.cssRules.length);
+    } else {
+      canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
+    }
   }, { capture: true, once: true });
   await commands.pointerPath([{ ...down, down: true }, end, { ...end, up: true }]);
+  const captures = setCapture.mock.calls;
+  setCapture.mockRestore();
   await settle(canvas);
+  expect(nativeHits).toEqual([true]);
+  expect(captures).toEqual([]);
   expect(requests).toEqual([]);
-  expect(capture).toEqual([false]);
   expect(canvas.layout.find(({ nodeId }) => nodeId === "publish")).toEqual({ nodeId: "publish", x: 135, y: 35 });
 }
 
