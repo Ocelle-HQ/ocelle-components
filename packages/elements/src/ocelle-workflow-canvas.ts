@@ -18,20 +18,28 @@ import {
   canvasBoundsOverlap,
   canvasClipping,
   canvasContourCrossesOutline,
+  canvasFitViewport,
+  canvasGestureFrame,
+  canvasGesturePoint,
   canvasRevealViewport,
   canvasScreenInverse,
   canvasViewport,
   canvasViewportPoint,
+  canvasZoomViewport,
   composedAncestors,
   isInsideCanvasClip,
+  sameCanvasGestureFrame,
   type CanvasBounds,
   type CanvasClipMeasurement,
+  type CanvasGestureFrame,
 } from "./workflow-canvas-viewport.ts";
 import type {
   WorkflowCanvasGraph,
   WorkflowCanvasLayoutEntry,
   WorkflowCanvasMode,
   WorkflowCanvasNode,
+  WorkflowCanvasPoint,
+  WorkflowCanvasPositionRequestDetail,
   WorkflowCanvasViewport,
   WorkflowCanvasViewportRequestDetail,
 } from "./workflow-canvas-types.ts";
@@ -44,6 +52,7 @@ export type {
   WorkflowCanvasNode,
   WorkflowCanvasOutcome,
   WorkflowCanvasPoint,
+  WorkflowCanvasPositionRequestDetail,
   WorkflowCanvasViewport,
   WorkflowCanvasViewportRequestDetail,
 } from "./workflow-canvas-types.ts";
@@ -65,12 +74,26 @@ interface NodeAction {
   readonly focusBounds: SVGRectElement;
 }
 
+interface PresentationGesture {
+  readonly pointerId: number;
+  readonly map: SVGSVGElement;
+  readonly frame: CanvasGestureFrame;
+  readonly start: WorkflowCanvasPoint;
+  readonly nodeId: string | null;
+  readonly origin: WorkflowCanvasPoint;
+  readonly view: WorkflowCanvasViewport;
+  readonly suppliedView: WorkflowCanvasViewport;
+  readonly layout: readonly WorkflowCanvasLayoutEntry[];
+  readonly graph: WorkflowCanvasGraph;
+}
+
 /**
- * A host-controlled workflow map with native step selection and named navigation.
+ * A host-controlled workflow map with native selection, navigation and presentation controls.
  *
  * @tagname ocelle-workflow-canvas
  * @fires {CustomEvent<{nodeId: string}>} ocelle-workflow-node-select - The original bubbling request from the native node action.
- * @fires {CustomEvent<WorkflowCanvasViewportRequestDetail>} ocelle-workflow-canvas-viewport-request - A proposal to reveal a named step in the viewport.
+ * @fires {CustomEvent<WorkflowCanvasViewportRequestDetail>} ocelle-workflow-canvas-viewport-request - A proposed pan, zoom, fit or named reveal viewport.
+ * @fires {CustomEvent<WorkflowCanvasPositionRequestDetail>} ocelle-workflow-canvas-position-request - The requested absolute graph position of a step in author mode.
  */
 export class OcelleWorkflowCanvas extends LitElement {
   static override properties = {
@@ -142,6 +165,46 @@ export class OcelleWorkflowCanvas extends LitElement {
         font: inherit;
       }
 
+      .commands {
+        order: 1;
+        margin-inline-start: auto;
+      }
+
+      summary,
+      .command-panel button {
+        cursor: pointer;
+      }
+
+      .command-panel {
+        position: absolute;
+        z-index: 1;
+        inset-block-start: 100%;
+        inset-inline-end: 0;
+        box-sizing: border-box;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ocelle-space-2);
+        inline-size: calc(8 * var(--ocelle-target-min));
+        max-inline-size: 100%;
+        padding: var(--ocelle-space-2);
+        border: var(--ocelle-border-width) solid var(--ocelle-color-control-border);
+        background-color: var(--ocelle-color-sheet);
+      }
+
+      .commands:not([open]) > .command-panel {
+        display: none;
+      }
+
+      .move-position {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ocelle-space-2);
+      }
+
+      .move-position input {
+        inline-size: calc(2 * var(--ocelle-target-min));
+      }
+
       .map {
         display: block;
         inline-size: 100%;
@@ -149,12 +212,34 @@ export class OcelleWorkflowCanvas extends LitElement {
         min-block-size: 0;
         overflow: hidden;
         background-color: var(--ocelle-color-sheet);
+        touch-action: none;
       }
 
       .edge {
         fill: none;
         stroke: var(--ocelle-color-control-border);
         stroke-width: var(--ocelle-border-width);
+        pointer-events: none;
+      }
+
+      .move-handle {
+        width: var(--ocelle-target-min);
+        height: var(--ocelle-target-min);
+        visibility: hidden;
+        pointer-events: none;
+        fill: var(--ocelle-color-hover-bg);
+        stroke: var(--ocelle-color-control-border);
+        stroke-width: var(--ocelle-border-width);
+        cursor: grab;
+      }
+
+      .move-handle[data-ready] {
+        visibility: visible;
+        pointer-events: all;
+      }
+
+      .move-handle:active {
+        cursor: grabbing;
       }
 
       foreignObject {
@@ -188,6 +273,13 @@ export class OcelleWorkflowCanvas extends LitElement {
 
         .edge {
           stroke: CanvasText;
+        }
+
+        .command-panel, .move-handle {
+          background-color: Canvas;
+          border-color: ButtonText;
+          fill: ButtonFace;
+          stroke: ButtonText;
         }
       }
     `,
@@ -224,6 +316,10 @@ export class OcelleWorkflowCanvas extends LitElement {
   #intersection = new IntersectionObserver(() => { this.#refresh(); }, { threshold: [0, 1] });
   #clipAttributes = new MutationObserver(this.#onGeometryChange);
   #listeners: AbortController | undefined;
+  #gesture: PresentationGesture | null = null;
+  #preview: WorkflowCanvasPoint | null = null;
+  #frameRequest: number | undefined;
+  #commandsOpen = false;
 
   constructor() {
     super();
@@ -242,6 +338,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.addEventListener("focusin", this.#onActionFocus, { capture: true, signal });
     this.addEventListener("focusout", this.#onActionBlur, { signal });
     this.addEventListener("keydown", this.#onActionKey, { signal });
+    this.ownerDocument.addEventListener("keydown", this.#cancelOnEscape, { signal });
     this.ownerDocument.defaultView?.addEventListener("resize", this.#onGeometryChange, { signal });
     this.ownerDocument.defaultView?.addEventListener("scroll", this.#onGeometryChange, { signal });
     this.requestUpdate();
@@ -249,6 +346,7 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.#clearGesture();
     this.#listeners?.abort();
     this.#resize.disconnect();
     this.#intersection.disconnect();
@@ -264,8 +362,18 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (focusedId !== undefined) {
       this.#retainedFocus ??= { id: focusedId, order: this.#order };
     }
+    if (this.#gesture !== null && !this.#hasGestureBasis(this.#gesture)) this.#clearGesture();
+    const previousControl = this.shadowRoot?.activeElement;
+    if (changes.has("mode") && this.mode !== "author" && this.#namedId !== null
+      && previousControl instanceof HTMLElement && previousControl.closest(".move-position") !== null) {
+      this.#retainedFocus = { id: this.#namedId, order: this.#order };
+      previousControl.blur();
+      const commands = this.renderRoot.querySelector("details.commands");
+      if (commands instanceof HTMLDetailsElement) commands.open = false;
+    }
     if (changes.has("graph") || changes.has("layout")) {
       this.#projection = projectWorkflowCanvasGraph(this.graph, this.layout);
+      if (this.#projection.positions.size === 0) this.#commandsOpen = false;
       const ids = new Set(this.#order);
       if (this.#raisedId !== null && !ids.has(this.#raisedId)) this.#raisedId = null;
       if (this.#namedId === null || !ids.has(this.#namedId)) {
@@ -293,8 +401,8 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #renderNode(node: WorkflowCanvasNode, context: string): unknown {
-    const position = this.#projection.positions.get(node.id);
-    const point = position === undefined ? { x: 0, y: 0 } : canvasViewportPoint(position, canvasViewport(this.viewport));
+    const position = this.#displayPosition(node.id);
+    const point = position === undefined ? { x: 0, y: 0 } : canvasViewportPoint(position, this.#displayViewport);
     const size = this.#sizes.get(node.id);
     return svg`
       <foreignObject x=${point.x} y=${point.y} width=${size?.width ?? 1} height=${size?.height ?? 1}
@@ -308,15 +416,28 @@ export class OcelleWorkflowCanvas extends LitElement {
           </ocelle-workflow-node>
         </div>`}
       </foreignObject>
-      <rect class="focus-bounds" aria-hidden="true"></rect>`;
+      <rect class="focus-bounds" aria-hidden="true"></rect>
+      ${this.mode === "author" && position !== undefined ? svg`
+        <rect class="move-handle" aria-hidden="true" data-node-id=${node.id}
+          x=${point.x + (size?.width ?? 1)} y=${point.y}><title>Drag to move ${node.label}</title></rect>` : nothing}`;
+  }
+
+  get #displayViewport(): WorkflowCanvasViewport {
+    const view = canvasViewport(this.viewport);
+    return this.#gesture?.nodeId === null && this.#preview !== null
+      ? { ...this.#preview, scale: view.scale } : view;
+  }
+
+  #displayPosition(id: string): WorkflowCanvasPoint | undefined {
+    return this.#gesture?.nodeId === id && this.#preview !== null ? this.#preview : this.#projection.positions.get(id);
   }
 
   #edgePath(sourceId: string, destinationId: string): string {
-    const source = this.#projection.positions.get(sourceId);
-    const destination = this.#projection.positions.get(destinationId);
+    const source = this.#displayPosition(sourceId);
+    const destination = this.#displayPosition(destinationId);
     // Stryker disable next-line StringLiteral: drawable connections come from the same private map with both endpoints present.
     if (source === undefined || destination === undefined) return "";
-    const view = canvasViewport(this.viewport);
+    const view = this.#displayViewport;
     const start = canvasViewportPoint(source, view);
     const end = canvasViewportPoint(destination, view);
     const startSize = this.#sizes.get(sourceId);
@@ -335,6 +456,32 @@ export class OcelleWorkflowCanvas extends LitElement {
     return `M ${String(x)} ${String(y)} C ${String(middle)} ${String(y)}, ${String(middle)} ${String(endY)}, ${String(end.x)} ${String(endY)}`;
   }
 
+  #renderCommands(): unknown {
+    if (this.#projection.positions.size === 0) return nothing;
+    const named = this.#namedId === null ? undefined : this.#projection.positions.get(this.#namedId);
+    return html`
+      <details class="commands" @toggle=${this.#toggleCommands}>
+        <summary class="control">Canvas controls</summary>
+        ${this.#commandsOpen ? html`<div class="command-panel" role="group" aria-label="Canvas presentation">
+          <button type="button" class="control" value="left" @click=${this.#requestViewportCommand}>Pan left</button>
+          <button type="button" class="control" value="right" @click=${this.#requestViewportCommand}>Pan right</button>
+          <button type="button" class="control" value="up" @click=${this.#requestViewportCommand}>Pan up</button>
+          <button type="button" class="control" value="down" @click=${this.#requestViewportCommand}>Pan down</button>
+          <button type="button" class="control" value="in" @click=${this.#requestViewportCommand}>Zoom in</button>
+          <button type="button" class="control" value="out" @click=${this.#requestViewportCommand}>Zoom out</button>
+          <button type="button" class="control" value="fit" @click=${this.#requestViewportCommand}>Fit graph</button>
+          ${this.mode === "author" ? repeat([named], () => this.#namedId, () => html`
+            <form class="move-position" @submit=${this.#requestNamedPosition}>
+              <label>X position <input class="control" name="x" type="number" step="any" required
+                .value=${named === undefined ? "" : String(named.x)} ?disabled=${named === undefined}></label>
+              <label>Y position <input class="control" name="y" type="number" step="any" required
+                .value=${named === undefined ? "" : String(named.y)} ?disabled=${named === undefined}></label>
+              <button class="control" type="submit" ?disabled=${named === undefined}>Move step</button>
+            </form>`) : nothing}
+        </div>` : nothing}
+      </details>`;
+  }
+
   protected override render(): unknown {
     const { nodes, drawableConnections } = this.#projection;
     const labelCounts = new Map<string, number>();
@@ -346,6 +493,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     return html`
       <div class="canvas">
         <div class="navigator">
+          ${this.#renderCommands()}
           <label>Step
             <select class="control" @change=${this.#chooseNamed}>
               ${nodes.map((node) => html`<option value=${node.id}>
@@ -356,7 +504,9 @@ export class OcelleWorkflowCanvas extends LitElement {
           <button class="control" type="button" ?disabled=${!this.#canRevealNamed}
             @click=${this.#revealNamed} @blur=${this.#loseRevealFocus}>Reveal step</button>
         </div>
-        <svg class="map">
+        <svg class="map"
+          @pointerdown=${this.#startGesture} @pointermove=${this.#moveGesture} @pointerup=${this.#finishGesture}
+          @pointercancel=${this.#loseGesture} @lostpointercapture=${this.#loseGesture}>
           <g aria-hidden="true">
             ${drawableConnections.map(({ source, destination }) => svg`<path class="edge" d=${this.#edgePath(source.id, destination.id)}></path>`)}
           </g>
@@ -371,6 +521,191 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   get #canRevealNamed(): boolean {
     return this.#namedId !== null && this.#projection.positions.has(this.#namedId);
+  }
+
+  #toggleCommands(event: Event): void {
+    if (!(event.currentTarget instanceof HTMLDetailsElement)) return;
+    this.#commandsOpen = event.currentTarget.open;
+    this.requestUpdate();
+  }
+
+  #requestViewportCommand(event: MouseEvent): void {
+    const button = event.currentTarget;
+    const map = this.renderRoot.querySelector("svg.map");
+    if (!(button instanceof HTMLButtonElement) || !(map instanceof SVGSVGElement)) return;
+    const view = canvasViewport(this.viewport);
+    let proposed: WorkflowCanvasViewport | null;
+    switch (button.value) {
+      case "left": proposed = { ...view, x: view.x - 64 }; break;
+      case "right": proposed = { ...view, x: view.x + 64 }; break;
+      case "up": proposed = { ...view, y: view.y - 64 }; break;
+      case "down": proposed = { ...view, y: view.y + 64 }; break;
+      case "in": proposed = canvasZoomViewport(view, map.clientWidth, map.clientHeight, 1.25); break;
+      case "out": proposed = canvasZoomViewport(view, map.clientWidth, map.clientHeight, 0.8); break;
+      case "fit": {
+        proposed = this.#fitViewport(map);
+        const disclosure = button.closest("details");
+        if (disclosure !== null) {
+          disclosure.querySelector("summary")?.focus(withoutScroll);
+          disclosure.open = false;
+        }
+        break;
+      }
+      default: return;
+    }
+    if (proposed !== null) this.#emitViewport(proposed);
+  }
+
+  #fitViewport(map: SVGSVGElement): WorkflowCanvasViewport | null {
+    const navigator = map.previousElementSibling;
+    const padding = navigator === null ? 0 : Number.parseFloat(getComputedStyle(navigator).paddingLeft);
+    const summary = navigator?.querySelector("summary");
+    const handleWidth = this.mode === "author" && summary !== null && summary !== undefined
+      ? Number.parseFloat(getComputedStyle(summary).minBlockSize) : 0;
+    const loops = new Set(this.#projection.drawableConnections.flatMap(({ source, destination }) =>
+      source.id === destination.id ? [source.id] : [],
+    ));
+    const footprints = [];
+    for (const [id, point] of this.#projection.positions) {
+      const size = this.#sizes.get(id);
+      if (size === undefined) return null;
+      const reach = Math.max(handleWidth, loops.has(id) ? size.height / 2 : 0);
+      footprints.push({ ...point, width: size.width + reach, height: size.height });
+    }
+    return canvasFitViewport(footprints, map.clientWidth, map.clientHeight, padding);
+  }
+
+  #emitViewport(viewport: WorkflowCanvasViewport): void {
+    if (!Number.isFinite(viewport.x) || !Number.isFinite(viewport.y) || !Number.isFinite(viewport.scale) || viewport.scale <= 0) return;
+    this.dispatchEvent(new CustomEvent<WorkflowCanvasViewportRequestDetail>("ocelle-workflow-canvas-viewport-request", {
+      detail: { viewport },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  #emitPosition(nodeId: string, position: WorkflowCanvasPoint): void {
+    if (this.mode !== "author" || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return;
+    this.dispatchEvent(new CustomEvent<WorkflowCanvasPositionRequestDetail>("ocelle-workflow-canvas-position-request", {
+      detail: { nodeId, position },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  #requestNamedPosition(event: SubmitEvent): void {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = this.#namedId;
+    if (this.mode !== "author" || id === null || !(form instanceof HTMLFormElement)) return;
+    const supplied = this.layout.find(({ nodeId }) => nodeId === id);
+    if (supplied === undefined || !this.graph.nodes.some(({ id: nodeId }) => nodeId === id)) return;
+    const x = form.querySelector<HTMLInputElement>('input[name="x"]');
+    const y = form.querySelector<HTMLInputElement>('input[name="y"]');
+    if (x === null || y === null) return;
+    const position = { x: x.valueAsNumber, y: y.valueAsNumber };
+    // Restore the supplied values on rejection. A synchronous host acceptance replaces them at the next render.
+    x.value = String(supplied.x);
+    y.value = String(supplied.y);
+    if (position.x !== supplied.x || position.y !== supplied.y) this.#emitPosition(id, position);
+  }
+
+  #hasGestureBasis(gesture: PresentationGesture): boolean {
+    return this.viewport === gesture.suppliedView && this.layout === gesture.layout && this.graph === gesture.graph
+      && (gesture.nodeId === null || this.mode === "author");
+  }
+
+  #startGesture(event: PointerEvent): void {
+    const map = event.currentTarget;
+    const target = event.target;
+    if (!(map instanceof SVGSVGElement) || this.#gesture !== null || !event.isPrimary || event.button !== 0) return;
+    const view = canvasViewport(this.viewport);
+    let nodeId: string | null = null;
+    let origin: WorkflowCanvasPoint = view;
+    if (target !== map) {
+      if (this.mode !== "author" || !(target instanceof SVGRectElement) || !target.matches(".move-handle")) return;
+      this.#refresh();
+      if (!target.hasAttribute("data-ready")) return;
+      const id = target.dataset.nodeId;
+      const position = this.layout.find(({ nodeId }) => nodeId === id);
+      if (id === undefined || position === undefined || !this.graph.nodes.some((node) => node.id === id)) return;
+      nodeId = id;
+      origin = position;
+    }
+    const frame = canvasGestureFrame(map);
+    if (frame === null) return;
+    map.setPointerCapture(event.pointerId);
+    this.#gesture = {
+      pointerId: event.pointerId, map, frame, start: canvasGesturePoint(frame, event), nodeId, origin, view,
+      suppliedView: this.viewport, layout: this.layout, graph: this.graph,
+    };
+    this.#monitorGestureFrame();
+  }
+
+  #monitorGestureFrame = (): void => {
+    this.#frameRequest = undefined;
+    const gesture = this.#gesture;
+    if (gesture === null) return;
+    if (!this.#hasGestureBasis(gesture) || !sameCanvasGestureFrame(gesture.frame, gesture.map)) {
+      this.#clearGesture();
+      return;
+    }
+    this.#frameRequest = this.ownerDocument.defaultView?.requestAnimationFrame(this.#monitorGestureFrame);
+  };
+
+  #gestureProposal(event: PointerEvent, gesture: PresentationGesture): WorkflowCanvasPoint | null {
+    if (!this.#hasGestureBasis(gesture) || !sameCanvasGestureFrame(gesture.frame, gesture.map)) return null;
+    const current = canvasGesturePoint(gesture.frame, event);
+    const scale = gesture.nodeId === null ? 1 : gesture.view.scale;
+    return {
+      x: gesture.origin.x + (current.x - gesture.start.x) / scale,
+      y: gesture.origin.y + (current.y - gesture.start.y) / scale,
+    };
+  }
+
+  #moveGesture(event: PointerEvent): void {
+    const gesture = this.#gesture;
+    if (gesture?.pointerId !== event.pointerId) return;
+    const proposal = this.#gestureProposal(event, gesture);
+    if (proposal === null) {
+      this.#clearGesture();
+      return;
+    }
+    this.#preview = proposal;
+    this.requestUpdate();
+  }
+
+  #finishGesture(event: PointerEvent): void {
+    const gesture = this.#gesture;
+    if (gesture?.pointerId !== event.pointerId) return;
+    const proposal = this.#gestureProposal(event, gesture);
+    this.#clearGesture();
+    if (proposal === null || (proposal.x === gesture.origin.x && proposal.y === gesture.origin.y)) return;
+    if (gesture.nodeId === null) this.#emitViewport({ ...proposal, scale: gesture.view.scale });
+    else this.#emitPosition(gesture.nodeId, proposal);
+  }
+
+  #loseGesture(event: PointerEvent): void {
+    if (this.#gesture?.pointerId === event.pointerId) this.#clearGesture();
+  }
+
+  #cancelOnEscape = (event: KeyboardEvent): void => {
+    if (event.key !== "Escape" || this.#gesture === null) return;
+    event.preventDefault();
+    this.#clearGesture();
+  };
+
+  #clearGesture(): void {
+    const gesture = this.#gesture;
+    if (gesture === null) return;
+    this.#gesture = null;
+    this.#preview = null;
+    if (this.#frameRequest !== undefined) {
+      this.ownerDocument.defaultView?.cancelAnimationFrame(this.#frameRequest);
+      this.#frameRequest = undefined;
+    }
+    this.requestUpdate();
+    if (gesture.map.hasPointerCapture(gesture.pointerId)) gesture.map.releasePointerCapture(gesture.pointerId);
   }
 
   #action(target: EventTarget | null | undefined): NodeAction | undefined {
@@ -422,15 +757,22 @@ export class OcelleWorkflowCanvas extends LitElement {
       const eligible = new Set<string>();
       const painted = actions.filter(({ node }) => this.#projection.positions.has(node.nodeId));
       const footprints = painted.map(({ face }) => face.getBoundingClientRect());
+      const panel = map.previousElementSibling?.querySelector("details[open] .command-panel")?.getBoundingClientRect();
       const bounds = new Map<string, CanvasBounds>();
       const transform = map.getScreenCTM();
-      painted.forEach(({ node, button }, index) => {
+      painted.forEach(({ node, button, focusBounds }, index) => {
+        const covered = (outline: CanvasBounds) => (panel !== undefined && canvasBoundsOverlap(outline, panel))
+          || footprints.some((footprint, paintIndex) => paintIndex > index && canvasBoundsOverlap(outline, footprint));
         const outline = canvasActionBounds(button, transform);
         bounds.set(node.nodeId, outline);
-        if (!clip.contains(outline)) return;
-        contained.add(node.nodeId);
-        if (!footprints.some((footprint, paintIndex) => paintIndex > index && canvasBoundsOverlap(outline, footprint))) {
-          eligible.add(node.nodeId);
+        if (clip.contains(outline)) {
+          contained.add(node.nodeId);
+          if (!covered(outline)) eligible.add(node.nodeId);
+        }
+        const handle = focusBounds.nextElementSibling;
+        if (handle?.matches(".move-handle") === true) {
+          const handleBounds = handle.getBoundingClientRect();
+          handle.toggleAttribute("data-ready", eligible.has(node.nodeId) && clip.contains(handleBounds) && !covered(handleBounds));
         }
       });
       return { contained, eligible, bounds };
@@ -573,7 +915,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#watched = elements;
   }
 
-  #focusNamed(navigator: Element | null, controls = "select, button"): void {
+  #focusNamed(navigator: Element | null, controls = ":scope > label select, :scope > button"): void {
     if (navigator === null) return;
     const visible = this.#withLiveClip(navigator, (clip) => [...navigator.querySelectorAll(controls)].find(
       (control) => !control.matches(":disabled") && clip.contains(control.getBoundingClientRect()),
@@ -651,11 +993,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       this.#pendingReveal = null;
       return;
     }
-    this.dispatchEvent(new CustomEvent<WorkflowCanvasViewportRequestDetail>("ocelle-workflow-canvas-viewport-request", {
-      detail: { viewport },
-      bubbles: true,
-      composed: true,
-    }));
+    this.#emitViewport(viewport);
   }
 
   #completeReveal(

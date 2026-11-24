@@ -6073,13 +6073,20 @@
           "cssParts": [],
           "cssProperties": [],
           "customElement": true,
-          "description": "A host-controlled workflow map with native step selection and named navigation.",
+          "description": "A host-controlled workflow map with native selection, navigation and presentation controls.",
           "events": [
             {
-              "description": "A proposal to reveal a named step in the viewport.",
+              "description": "A proposed pan, zoom, fit or named reveal viewport.",
               "name": "ocelle-workflow-canvas-viewport-request",
               "type": {
                 "text": "CustomEvent<WorkflowCanvasViewportRequestDetail>"
+              }
+            },
+            {
+              "description": "The requested absolute graph position of a step in author mode.",
+              "name": "ocelle-workflow-canvas-position-request",
+              "type": {
+                "text": "CustomEvent<WorkflowCanvasPositionRequestDetail>"
               }
             },
             {
@@ -6208,6 +6215,14 @@
           },
           "kind": "js",
           "name": "WorkflowCanvasPoint"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasPositionRequestDetail"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasPositionRequestDetail"
         },
         {
           "declaration": {
