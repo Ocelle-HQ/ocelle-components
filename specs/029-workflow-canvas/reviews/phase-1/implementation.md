@@ -1,0 +1,29 @@
+# Phase 1 implementation evidence
+
+The phase starts from `3515d2757508bd523fa55c6615af4f3996f842aa`. The test-free scaffold is `129c66205d178ce18bfe01c68328670ff7788115`. The test-only phase red `54b4d71a3305997bc2bc3fd152162b237b8b7f89` recorded 39 named assertion failures. Seven follow-up reds recorded 13 more. Each red and its base use the same exact project and file identities. [Phase red](red-phase.log) · [Recorded red commits](red-commits)
+
+The controlled graph retains stable node IDs and delegates native selection to the existing workflow-node action. The canvas manages visible tab stops and accessibility exposure for clipped or covered actions. Named reveal follows host viewport acceptance and preserves explicit host focus and pane scroll. While testing, I corrected a pre-existing notice Plant fixture whose two updates could coalesce before the first render under load. The fixture still checks the same positive and intentionally defective behavior, with an explicit render turn between the due updates.
+
+## Focused proof
+
+The integrated source and built strict-CSP Chromium suites passed 102 tests across five files on `d5d078bbeeed6fc4b5d4a3f8e39fb500f7bdb0de`. Typecheck, lint and the 43-element manifest gate passed. The first exact replay passed all 18 stages in 312.298 seconds across stages and reused one result. The unchanged replay passed in 2.090 seconds across stages and reused all 18 results. It verified the original final tests against the base and scaffold, the named follow-up assertions at their respective bases, and all selected tests at the head. [Exact replay](tdd-check.json) · [Head check](check-head.log)
+
+The following exact Chromium files provided the focused integrated proof. The replay also selected local manifest, package, Plants and Storybook inventory checks.
+
+- `packages/elements/test/workflow-canvas.test.ts`
+- `packages/elements/test/workflow-canvas-graph.test.ts`
+- `packages/elements/test/workflow-canvas-navigation.test.ts`
+- `packages/elements/test/workflow-canvas-viewport.test.ts`
+- `packages/elements/test/browser/workflow-canvas.test.ts`
+
+## Hosted proof
+
+Run 45317324025 passed all 18 required checks in **55m 06s**, from 03:07:51 to 04:02:57 UTC on November 24, 2026. GitHub tested merge `59c171c42cee3998f7f4a9ab3f5c66eaea9c4a8f`, with parents `7c081d129fa4892cea08f6f1b7c83d82ed685de0` and `d5d078bbeeed6fc4b5d4a3f8e39fb500f7bdb0de`. The candidate and tested merge share tree `3db393215891a672ac31a17216e55b454e7198bf`. [Hosted run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025)
+
+- Full Unit passed **10,978 tests in 331 files across six shards**, 34m 10s after run creation. The plan and both result artifacts name the same tested merge. Shard 0 passed all 11 cases in `gates/test/integration/visual.test.ts`. Shard 1 passed all four cases in `gates/test/integration/axe.test.ts`. Both files were selected in the `gates-integration` project and both artifacts report zero errors. [Full Unit](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138200033202) · [Plan](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/artifacts/14885771210) · [Shard 0](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/artifacts/14888435227) · [Shard 1](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/artifacts/14886598019)
+- All 674 visual captures matched their baselines in Docker and Podman. Accessibility completed 674 story-theme runs with zero serious, critical or incomplete findings and 58 previously excepted notes. The four committed Branching and Narrow focus baselines were captured with the pinned image. The changed-token Plant includes the two measured additional light-theme results. [Visual regression](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138187180688) · [Accessibility](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138187180268)
+- Strict changed-source mutation passed all 28 shards. The phase-base and hosted-base mutation plans are identical. The last shard exercised 11 mutations in the static Lit property declarations, with zero survivors, timeouts or compile errors. It took 54m 00s. [Mutation aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138207582578) · [Static property shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138187321983)
+- The local full-file Stryker probe on the same revision exercised the entire canvas source, including mutations across hosted shard boundaries. In 18m 41s it reported 307 killed, three loop-limit timeouts, 254 compile rejections and zero survivors or uncovered mutants. Three inline records give the documented reasons for a string fallback and two equivalent counter directions. This probe used the canvas-focused Chromium runner.
+- Storybook build, Content security and the manifest passed on the same hosted tree. The hosted Plants judge reported all 317 outcomes as expected. [Storybook build](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138187180197) · [Content security](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138187180311) · [Manifest](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025/job/138187180328) · [Plants record](plants.md)
+
+The helper integration green, replay times and whole-phase CI result have independent timestamps. [Worktree pilot timing](worktree-pilot.md)

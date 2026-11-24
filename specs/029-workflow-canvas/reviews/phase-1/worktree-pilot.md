@@ -66,3 +66,7 @@ The following identities come from canonical red `54b4d71a`. They depend on the 
 - `workflow canvas in-process selection and navigation > keeps the actual native target and focus indicator at a reduced scale in light`
 - `workflow canvas in-process selection and navigation > keeps the actual native target and focus indicator at a reduced scale in dark`
 - `workflow canvas in-process selection and navigation > keeps the actual native target and focus indicator at a reduced scale in forced`
+
+## Whole-phase green
+
+The verified integrated candidate is `d5d078bbeeed6fc4b5d4a3f8e39fb500f7bdb0de`. Its local replay passed all 18 stages in 312.298 seconds across stages. The unchanged repeat reused every stage in 2.090 seconds. Hosted verification took 55m 06s. The first draft dispatch preceded that complete hosted result by 4h 16m 07s. This interval includes serial implementation, fixes and successive hosted candidates. [Implementation evidence](implementation.md) · [Exact hosted run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45317324025)
