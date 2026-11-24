@@ -223,7 +223,9 @@ async function setUpPaintPane(canvas: Locator, clipped: boolean): Promise<void> 
   }, clipped);
 }
 
-async function setUpClippingPane(canvas: Locator, mode: "inset" | "calculated" | "overflow" | "contents" | "ordinary", clipped = true): Promise<void> {
+type PaneClip = "inset" | "calculated" | "margin-box" | "rounded" | "corner" | "overflow" | "contents" | "ordinary";
+
+async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true): Promise<void> {
   await canvas.evaluate(async (element: OcelleWorkflowCanvas, { mode, clipped }) => {
     const pane = element.parentElement;
     const root = element.getRootNode();
@@ -231,13 +233,18 @@ async function setUpClippingPane(canvas: Locator, mode: "inset" | "calculated" |
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(`
       #pane { overflow: visible; block-size: 445px; }
-      #pane.clipped { clip-path: inset(0 0 220px 0); }
+      #pane.inset.clipped { clip-path: inset(0 0 220px 0); }
       #pane.calculated { clip-path: inset(0 0 calc(50% - 2.5px) 0); }
+      #pane.margin-box { margin-block-end: 36px; }
+      #pane.margin-box.clipped { clip-path: inset(0 0 220px 0) margin-box; }
+      #pane.rounded.clipped { clip-path: inset(0 0 220px 0 round 4px); }
+      #pane.rounded.clipped.reopened { clip-path: inset(0 round 4px); }
+      #pane.corner.clipped { clip-path: inset(0 255px 72px 0 round 100px); }
       #pane.overflow { block-size: 250px; overflow: clip; }
       #pane.contents { display: contents; overflow: hidden; }
     `);
     root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
-    pane.classList.toggle("clipped", mode === "inset" && clipped);
+    pane.classList.toggle("clipped", clipped);
     pane.classList.add(mode);
     element.layout = [
       { nodeId: "review", x: 24, y: 14 },
@@ -708,6 +715,209 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     await page.keyboard.press("Enter");
     expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);
     expect(await finish()).toEqual(clean);
+  });
+
+  it.each([
+    "margin-box", "rounded",
+  ] as const)("excludes an action clipped by %s from native focus, selection and accessibility", async (mode) => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, mode);
+    const nodes = canvas.locator("ocelle-workflow-node");
+    const review = nodes.nth(0).locator("button");
+    const publish = nodes.nth(1).locator("button");
+    expect(await observeClipping(publish), "Chromium clips Publish inside the pane border box").toEqual({
+      intersectionRatio: 0, hasPaneBox: true, insidePaneBox: true,
+    });
+
+    await page.getByRole("button", { name: /^Reveal / }).focus();
+    await page.keyboard.press("Tab");
+    expect(await focusedId(page)).toBe("review");
+    await page.keyboard.press("ArrowRight");
+    const afterArrow = await focusedId(page);
+    const navigationRequests = await requests(page);
+    await page.keyboard.press("Enter");
+    const selectionRequests = await requests(page);
+    const actionNames = await canvasActionNames(page);
+    await review.focus();
+    await publish.evaluate((button: HTMLButtonElement) => { button.focus({ preventScroll: true }); });
+    expect({
+      actionNames, afterArrow, navigationRequests, selectionRequests,
+      afterDirectFocus: await focusedId(page),
+      finalRequests: await requests(page),
+      diagnostics: await finish(),
+    }, "the clip restricts native traversal, activation, and accessibility").toEqual({
+      actionNames: ["Initial review"], afterArrow: "review", navigationRequests: [], selectionRequests: [{ type: selection, detail: { nodeId: "review" } }],
+      afterDirectFocus: "review",
+      finalRequests: [{ type: selection, detail: { nodeId: "review" } }], diagnostics: clean,
+    });
+  });
+
+  it.each([
+    { mode: "margin-box", y: -174.5 },
+    { mode: "rounded", y: -192.5 },
+  ] as const)("proposes a named reveal through $mode and waits for host exposure", async ({ mode, y }) => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, mode);
+    const action = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    const nativeAction = await action.elementHandle();
+    expect(await observeClipping(action)).toEqual({ intersectionRatio: 0, hasPaneBox: true, insidePaneBox: true });
+    const picker = page.getByRole("combobox", { name: "Step" });
+    const reveal = page.getByRole("button", { name: /^Reveal / });
+    expect(await picker.getByRole("option", { name: "Publish" }).count()).toBe(1);
+    await picker.selectOption("publish");
+    await picker.focus();
+    await page.keyboard.press("Tab");
+    expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+    expect(await requests(page)).toEqual([]);
+    const before = await controlledState(canvas);
+    await page.keyboard.press("Enter");
+
+    const proposed = { x: -58, y, scale: 1 };
+    const proposal = { type: viewport, detail: { viewport: proposed } };
+    expect(await controlledState(canvas)).toEqual(before);
+    expect({
+      recorded: await requests(page),
+      revealFocused: await reveal.evaluate((button) => button.matches(":focus")),
+      actions: await page.getByRole("button", { name: /^Publish/ }).count(),
+    }, "named Reveal requests exactly one viewport and holds focus while clipped").toEqual({
+      recorded: [proposal], revealFocused: true, actions: 0,
+    });
+
+    const stillClipped = { ...before.viewport, y: 5 };
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, accepted) => {
+      element.viewport = accepted;
+      await element.updateComplete;
+    }, stillClipped);
+    expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+    expect(await requests(page)).toEqual([proposal]);
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, accepted) => {
+      element.viewport = accepted;
+      await element.updateComplete;
+    }, proposed);
+    await expect.poll(() => focusedId(page)).toBe("publish");
+    expect(await nativeAction.evaluate((button) => button.isConnected && button.matches(":focus")),
+      "the host's accepted proposal focuses the original native action").toBe(true);
+    expect(await observeClipping(action)).toEqual({ intersectionRatio: 1, hasPaneBox: true, insidePaneBox: true });
+    expect(await controlledState(canvas)).toEqual({ ...before, viewport: proposed });
+    expect(await requests(page)).toEqual([proposal]);
+    await page.keyboard.press("Enter");
+    expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);
+    expect(await finish()).toEqual(clean);
+  });
+
+  it.each([
+    { mode: "margin-box", hits: [false, false, false, false, false, false] },
+    { mode: "rounded", hits: [false, false, false, false, false, false] },
+    { mode: "corner", hits: [true, true, true, true, false, true] },
+  ] as const)("guards the native action when a $mode clip takes effect during capture", async ({ mode, hits }) => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, mode, false);
+    const rawAction = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    const publish = page.getByRole("button", { name: /^Publish/ });
+    await page.getByRole("button", { name: /^Reveal / }).focus();
+    await page.keyboard.press("Tab");
+    expect(await focusedId(page)).toBe("publish");
+    await page.keyboard.press("Enter");
+    const accepted = [{ type: selection, detail: { nodeId: "publish" } }];
+    expect(await requests(page)).toEqual(accepted);
+    await rawAction.evaluate(async (button) => {
+      const root = button.getRootNode() as ShadowRoot;
+      const canvas = (root.host.getRootNode() as ShadowRoot).host;
+      const pane = canvas.parentElement;
+      if (pane === null) throw new Error("The corner fixture is missing its pane");
+      let ratio: number | undefined;
+      await new Promise<void>((resolve) => {
+        const observer = new IntersectionObserver(([entry]) => { ratio = entry?.intersectionRatio; resolve(); });
+        observer.observe(button);
+        document.addEventListener("click", (event) => {
+          const { left, right, top, bottom } = button.getBoundingClientRect();
+          const midX = (left + right) / 2;
+          const points: readonly (readonly [number, number])[] = [[midX, (top + bottom) / 2], [left + 4, top + 4], [right - 4, top + 4],
+            [left + 4, bottom - 4], [right - 4, bottom - 4], [midX, top + 10]];
+          const hits = () => points.map(([x, y]) => root.elementFromPoint(x, y) === button);
+          const open = hits();
+          pane.classList.add("clipped");
+          canvas.setAttribute("data-live-clip", JSON.stringify({
+            trusted: event.isTrusted, nativeTarget: event.composedPath().includes(button), ratio, open, clipped: hits(),
+          }));
+          observer.disconnect();
+        }, { capture: true, once: true });
+      });
+    });
+
+    await page.keyboard.press("Enter");
+    expect(JSON.parse(await canvas.getAttribute("data-live-clip") ?? "null") as unknown).toEqual({
+      trusted: true, nativeTarget: true, ratio: 1, open: [true, true, true, true, true, true], clipped: hits,
+    });
+    expect({
+      recorded: await requests(page),
+      publishedFocused: await focusedId(page) === "publish",
+      available: await publish.count(),
+      inTree: (await canvasActionNames(page)).includes("Publish"),
+      diagnostics: await finish(),
+    }).toEqual({ recorded: accepted, publishedFocused: false, available: 0, inTree: false, diagnostics: clean });
+  });
+
+  it("updates idle native focus and accessibility after the host clips only a rounded corner", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, "corner", false);
+    const publish = page.getByRole("button", { name: "Publish" });
+    await publish.focus();
+    expect(await focusedId(page)).toBe("publish");
+    const before = await publish.boundingBox();
+    await page.locator("#pane").evaluate(async (pane) => {
+      pane.classList.add("clipped");
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+    const rawAction = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    expect(await rawAction.boundingBox(), "the host leaves the action's laid-out rectangle unchanged").toEqual(before);
+    expect(await observeClipping(rawAction), "the intersection rectangle still contains the entire action").toEqual({
+      intersectionRatio: 1, hasPaneBox: true, insidePaneBox: true,
+    });
+    expect({
+      names: await canvasActionNames(page), focused: await focusedId(page), recorded: await requests(page), diagnostics: await finish(),
+    }).toEqual({ names: ["Initial review"], focused: "review", recorded: [], diagnostics: clean });
+  });
+
+  it("focuses the original rounded-clipped action on the same trusted Reveal that opens the pane", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, "rounded");
+    const action = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    const reveal = page.getByRole("button", { name: /^Reveal / });
+    const nativeAction = await action.elementHandle();
+    expect(await observeClipping(action)).toEqual({ intersectionRatio: 0, hasPaneBox: true, insidePaneBox: true });
+    await page.getByRole("combobox", { name: "Step" }).selectOption("publish");
+    await reveal.focus();
+    await action.evaluate((button) => {
+      const root = button.getRootNode() as ShadowRoot;
+      const face = root.host.parentElement;
+      const canvas = (root.host.getRootNode() as ShadowRoot).host;
+      const pane = canvas.parentElement;
+      if (face === null || pane === null) throw new Error("The rounded fixture is missing its action wrapper");
+      document.addEventListener("click", (event) => {
+        const { left, right, top, bottom } = button.getBoundingClientRect();
+        const hit = () => root.elementFromPoint((left + right) / 2, (top + bottom) / 2) === button;
+        const before = hit();
+        pane.classList.add("reopened");
+        canvas.setAttribute("data-live-clip", JSON.stringify({ trusted: event.isTrusted, inert: face.inert, before, after: hit() }));
+      }, { capture: true, once: true });
+    });
+    expect(await requests(page)).toEqual([]);
+    await page.keyboard.press("Enter");
+    expect({
+      beforeCanvas: JSON.parse(await canvas.getAttribute("data-live-clip") ?? "null") as unknown,
+      focused: await nativeAction.evaluate((button) => button.matches(":focus")),
+      recorded: await requests(page),
+      diagnostics: await finish(),
+    }).toEqual({
+      beforeCanvas: { trusted: true, inert: true, before: false, after: false },
+      focused: true, recorded: [], diagnostics: clean,
+    });
   });
 
   it.each([

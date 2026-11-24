@@ -1103,6 +1103,41 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([selectRequest("publish")]);
   });
 
+  it("checks rounded clip corners before a click and reveals the same node after the host reopens the contour", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule("#canvas-pane { block-size: 445px; overflow: visible; }", sheet.cssRules.length);
+    sheet.insertRule("#canvas-pane.corner { clip-path: inset(0 255px 72px 0 round 100px); }", sheet.cssRules.length);
+    sheet.insertRule("#canvas-pane.open { clip-path: inset(0 round 4px); }", sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    const { left, right, top, bottom } = publish.getBoundingClientRect();
+    const root = publish.getRootNode() as ShadowRoot;
+    const hit = (x: number, y: number) => root.elementFromPoint(x, y) === publish;
+    publish.focus({ preventScroll: true });
+    expect(active()).toBe(publish);
+    expect(hit(right - 4, bottom - 4)).toBe(true);
+    pane.classList.add("corner");
+    expect(hit((left + right) / 2, (top + bottom) / 2), "the visible center alone cannot prove eligibility").toBe(true);
+    expect(hit(right - 4, bottom - 4), "Chromium clips the action corner inside the inset bounding box").toBe(false);
+    const clickWhileClipped = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(clickWhileClipped), "the stale action cannot request selection").toBe(false);
+    expect(requests).toEqual([]);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+
+    const { picker, button } = revealControls(canvas);
+    picker.value = "publish";
+    picker.dispatchEvent(new Event("change"));
+    await canvas.updateComplete;
+    button.focus();
+    pane.classList.add("open");
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(hit((left + right) / 2, (top + bottom) / 2), "the original action itself is still inert").toBe(false);
+    button.click();
+    expect(active()).toBe(publish);
+    expect(requests).toEqual([]);
+  });
+
   it.each([
     { key: "ArrowLeft", capture: "keydown" },
     { key: "Enter", capture: "click" },
