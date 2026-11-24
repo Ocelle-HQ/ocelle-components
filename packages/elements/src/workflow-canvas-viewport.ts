@@ -9,6 +9,43 @@ export interface CanvasBounds {
 
 // Computed overflow reports the legacy `overlay` keyword as `auto`.
 const clippingOverflow = new Set(["auto", "clip", "hidden", "scroll"]);
+// Computed CSS keeps percentages and combines mixed pixel/percentage lengths as calc().
+const rectangularInset = /inset\(((?:[\d.%px -]|calc\(-?[\d.]+% [+-] [\d.]+px\))+)\)(?: (padding-box|content-box))?/;
+const insetValues = /calc\([^)]+\)|[^ ]+/g;
+
+function screenInset(value: string, span: number, scale: number): number {
+  if (value.startsWith("calc(")) {
+    const [percent, operator, pixels] = value.slice(5, -1).split(" ") as [string, string, string];
+    const absolute = parseFloat(pixels) * scale;
+    return span * (parseFloat(percent) / 100) + (operator === "-" ? -absolute : absolute);
+  }
+  const length = parseFloat(value);
+  return value.endsWith("%") ? span * (length / 100) : length * scale;
+}
+
+function insetAxis(start: number, end: number, near: string, far: string, scale: number): readonly [number, number] {
+  const span = end - start;
+  const first = screenInset(near, span, scale);
+  const last = screenInset(far, span, scale);
+  const total = first + last;
+  if (total > span) {
+    // CSS proportionally reduces opposing insets when the pair exceeds the reference box.
+    const edge = start + span * (first / total);
+    return [edge, edge];
+  }
+  return [start + first, end - last];
+}
+
+function insetReferenceBox(pane: CanvasBounds, style: CSSStyleDeclaration, box: string | undefined, scaleX: number, scaleY: number): CanvasBounds {
+  if (box === undefined) return pane;
+  const content = box === "content-box";
+  return {
+    left: pane.left + scaleX * (parseFloat(style.borderLeftWidth) + (content ? parseFloat(style.paddingLeft) : 0)),
+    right: pane.right - scaleX * (parseFloat(style.borderRightWidth) + (content ? parseFloat(style.paddingRight) : 0)),
+    top: pane.top + scaleY * (parseFloat(style.borderTopWidth) + (content ? parseFloat(style.paddingTop) : 0)),
+    bottom: pane.bottom - scaleY * (parseFloat(style.borderBottomWidth) + (content ? parseFloat(style.paddingBottom) : 0)),
+  };
+}
 
 export function* composedAncestors(element: Element): Generator<Element> {
   let current: Element = element;
@@ -30,25 +67,43 @@ export function effectiveCanvasClip(element: Element): CanvasBounds {
   let bottom = Math.min(viewport.clientHeight, rect.bottom);
   for (const ancestor of composedAncestors(element)) {
     const style = getComputedStyle(ancestor);
+    if (style.display === "contents") continue;
     const containment = style.contain;
-    // Boxless and non-atomic inline wrappers do not establish a paint clip.
-    const clipsPaint = style.display !== "contents" && style.display !== "inline"
+    // A non-atomic inline HTML wrapper establishes neither an overflow nor a paint clip.
+    const inline = style.display === "inline";
+    const clipsPaint = !inline
       && (containment === "content" || containment === "strict" || containment.split(" ").includes("paint"));
-    const clipsX = clipsPaint || clippingOverflow.has(style.overflowX);
-    const clipsY = clipsPaint || clippingOverflow.has(style.overflowY);
-    if (!clipsX && !clipsY) continue;
+    const hasOverflowBox = !inline || ancestor instanceof SVGElement;
+    const clipsX = clipsPaint || (hasOverflowBox && clippingOverflow.has(style.overflowX));
+    const clipsY = clipsPaint || (hasOverflowBox && clippingOverflow.has(style.overflowY));
+    const clipPath = style.clipPath;
+    const inset = rectangularInset.exec(clipPath);
+    const offsets = inset?.[0] === clipPath ? inset[1] : undefined;
+    const referenceBox = inset?.[2];
+    if (!clipsX && !clipsY && offsets === undefined) continue;
     const pane = ancestor.getBoundingClientRect();
     const scaleX = ancestor instanceof HTMLElement && ancestor.offsetWidth > 0 ? pane.width / ancestor.offsetWidth : 1;
     const scaleY = ancestor instanceof HTMLElement && ancestor.offsetHeight > 0 ? pane.height / ancestor.offsetHeight : 1;
-    const x = pane.left + ancestor.clientLeft * scaleX;
-    const y = pane.top + ancestor.clientTop * scaleY;
     if (clipsX) {
+      const x = pane.left + ancestor.clientLeft * scaleX;
       left = Math.max(left, x);
       right = Math.min(right, x + ancestor.clientWidth * scaleX);
     }
     if (clipsY) {
+      const y = pane.top + ancestor.clientTop * scaleY;
       top = Math.max(top, y);
       bottom = Math.min(bottom, y + ancestor.clientHeight * scaleY);
+    }
+    if (offsets !== undefined) {
+      const [insetTop, insetRight = insetTop, insetBottom = insetTop, insetLeft = insetRight] =
+        offsets.match(insetValues) as [string, ...string[]];
+      const box = insetReferenceBox(pane, style, referenceBox, scaleX, scaleY);
+      const [clipLeft, clipRight] = insetAxis(box.left, box.right, insetLeft, insetRight, scaleX);
+      const [clipTop, clipBottom] = insetAxis(box.top, box.bottom, insetTop, insetBottom, scaleY);
+      left = Math.max(left, clipLeft);
+      right = Math.min(right, clipRight);
+      top = Math.max(top, clipTop);
+      bottom = Math.min(bottom, clipBottom);
     }
   }
   return { left, top, right, bottom };
