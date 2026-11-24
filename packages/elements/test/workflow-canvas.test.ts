@@ -234,6 +234,29 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("draws the supplied self connection outside the step card and inside the visible map", async () => {
+    const { canvas, requests } = await mount();
+    const connection = { sourceId: "review", outcomeId: "approved", destinationId: "review" };
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id === "review"), connections: [connection] };
+    canvas.layout = [{ nodeId: "review", x: 230, y: 40 }];
+    await settle(canvas);
+    const card = getNode(canvas, "review");
+    const map = canvas.shadowRoot?.querySelector("svg");
+    const edges = [...map?.querySelectorAll<SVGPathElement>("g[aria-hidden='true'] path") ?? []];
+    expect(edges).toHaveLength(1);
+    const [edge] = edges;
+    if (edge === undefined || card === undefined || map === undefined || map === null) throw new Error("Self edge fixture missing");
+    const edgeBounds = edge.getBoundingClientRect();
+    const cardBounds = card.getBoundingClientRect();
+    const mapBounds = map.getBoundingClientRect();
+    expect(edgeBounds.right, "the loop exposes a visible arc outside the opaque step card").toBeGreaterThan(cardBounds.right + 5);
+    expect(edgeBounds.right).toBeLessThan(mapBounds.right);
+    expect(edgeBounds.top).toBeGreaterThan(mapBounds.top);
+    expect(edgeBounds.bottom).toBeLessThan(mapBounds.bottom);
+    expect(canvas.graph.connections).toEqual([connection]);
+    expect(requests).toEqual([]);
+  });
+
   it("emits exactly one composed native selection on pointer, Enter and Space without changing supplied snapshots", async () => {
     const { canvas, requests, activity } = await mount();
     const review = action(canvas, "review");
@@ -344,6 +367,30 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("retains a native named tab stop when the last focused step is removed", async () => {
+    const { canvas, before, after, requests } = await mount();
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id === "review"), connections: [] };
+    await settle(canvas);
+    action(canvas, "review").focus({ preventScroll: true });
+    expect(focusId(canvas)).toBe("review");
+
+    canvas.graph = { nodes: [], connections: [] };
+    await settle(canvas);
+    const { picker, button } = revealControls(canvas);
+    expect(active(), "the empty canvas keeps focus on its visible named picker").toBe(picker);
+    expect(picker.disabled).toBe(false);
+    expect(picker.options).toHaveLength(0);
+    expect(button.disabled).toBe(true);
+    before.focus();
+    await commands.press("Tab");
+    expect(active()).toBe(picker);
+    await commands.press("Tab");
+    expect(active()).toBe(after);
+    await commands.press("Tab", ["Shift"]);
+    expect(active()).toBe(picker);
+    expect(requests).toEqual([]);
+  });
+
   it("keeps an eligible focused action through a host reorder of keyed nodes without emitting requests", async () => {
     const { canvas, requests } = await mount();
     const publish = action(canvas, "publish");
@@ -378,6 +425,35 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toHaveLength(1);
     const restoredNames = await axButtons();
     expect(restoredNames.some((name) => name.startsWith("Revise"))).toBe(true);
+  });
+
+  it("recovers an idle clipped reveal initiator to the visible named picker without scrolling", async () => {
+    const { canvas, pane, frame, sheet, requests } = await mount(true);
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id === "revise"), connections: [] };
+    canvas.layout = [{ nodeId: "revise", x: 2000, y: 20 }];
+    sheet.replaceSync(`${fixtureStyles(440)} #canvas-pane { overflow: hidden; }`);
+    await document.fonts.ready;
+    await settle(canvas);
+    const hidden = action(canvas, "revise");
+    const { picker, button } = revealControls(canvas);
+    const clip = pane.getBoundingClientRect();
+    expect(hidden.getBoundingClientRect().left).toBeGreaterThan(clip.right);
+    expect(button.getBoundingClientRect().right).toBeLessThan(clip.right);
+    const shift = clip.right - button.getBoundingClientRect().right + 15;
+    sheet.insertRule(`#canvas-frame.reveal-clipped { transform: translateX(${String(shift)}px); }`);
+    const reveal = await askReveal(canvas, "revise");
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(reveal);
+    const before = { width: frame.offsetWidth, height: frame.offsetHeight, scroll: pane.scrollLeft, viewport: structuredClone(canvas.viewport) };
+    frame.classList.add("reveal-clipped");
+    expect(button.getBoundingClientRect().right).toBeGreaterThan(clip.right);
+    expect(picker.getBoundingClientRect().left).toBeGreaterThanOrEqual(clip.left);
+    expect(picker.getBoundingClientRect().right).toBeLessThan(clip.right);
+    expect(hidden.getBoundingClientRect().left).toBeGreaterThan(clip.right);
+
+    await expect.poll(() => active(), { message: "the visible picker receives focus when idle host translation clips the pending reveal button" }).toBe(picker);
+    expect({ width: frame.offsetWidth, height: frame.offsetHeight, scroll: pane.scrollLeft, viewport: canvas.viewport }).toEqual(before);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
   it("ignores an older reveal when only its target appears and fulfills the latest reveal from the same control", async () => {

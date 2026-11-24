@@ -191,6 +191,56 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     expect(await finish()).toEqual(clean);
   });
 
+  it("recovers focus to the visible named picker when the idle strict-CSP host clips the reveal button", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("ocelle-workflow-canvas");
+    const reveal = page.getByRole("button", { name: /^Reveal\b/i });
+    const picker = page.getByRole("combobox", { name: /^Step/i });
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+      const pane = element.parentElement;
+      const hostRoot = pane?.getRootNode();
+      if (!(hostRoot instanceof ShadowRoot) || pane === null) throw new Error("The nested clip fixture is missing");
+      element.graph = { nodes: element.graph.nodes.filter(({ id }) => id === "revise"), connections: [] };
+      element.layout = [{ nodeId: "revise", x: 2000, y: 20 }];
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync("#pane { inline-size: 440px; overflow: hidden; }");
+      hostRoot.adoptedStyleSheets = [...hostRoot.adoptedStyleSheets, sheet];
+      await element.updateComplete;
+      await document.fonts.ready;
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const button = element.shadowRoot?.querySelector("button");
+      if (button === undefined || button === null) throw new Error("The reveal control is missing");
+      const shift = pane.getBoundingClientRect().right - button.getBoundingClientRect().right + 15;
+      sheet.insertRule(`#canvas.reveal-clipped { transform: translateX(${String(shift)}px); }`);
+    });
+    await reveal.focus();
+    await page.keyboard.press("Enter");
+    expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+    const recorded = await requests(page);
+    expect(recorded).toMatchObject([{ type: viewport, detail: { viewport: {} } }]);
+    const before = await canvas.evaluate((element: OcelleWorkflowCanvas) => ({
+      viewport: element.viewport, scroll: element.parentElement?.scrollLeft,
+      width: element.offsetWidth, height: element.offsetHeight,
+    }));
+    await canvas.evaluate((element) => { element.classList.add("reveal-clipped"); });
+    expect(await canvas.evaluate((element) => {
+      const clip = element.parentElement?.getBoundingClientRect();
+      const button = element.shadowRoot?.querySelector("button")?.getBoundingClientRect();
+      const select = element.shadowRoot?.querySelector("select")?.getBoundingClientRect();
+      return clip !== undefined && button !== undefined && select !== undefined
+        && button.right > clip.right && select.left >= clip.left && select.right < clip.right;
+    }), "the translated pane clips only the reveal button").toBe(true);
+    await expect.poll(() => picker.evaluate((control) => control.matches(":focus")), {
+      message: "the still-visible native picker takes focus without host interaction",
+    }).toBe(true);
+    expect(await canvas.evaluate((element: OcelleWorkflowCanvas) => ({
+      viewport: element.viewport, scroll: element.parentElement?.scrollLeft,
+      width: element.offsetWidth, height: element.offsetHeight,
+    }))).toEqual(before);
+    expect(await requests(page)).toEqual(recorded);
+    expect(await finish()).toEqual(clean);
+  });
+
   it("changes native focus eligibility after a host pane translates away and back without canvas inputs", async () => {
     const { page, finish } = await mount(true);
     const publish = page.getByRole("button", { name: /^Publish/ });
