@@ -57,4 +57,16 @@ export { OcelleTopBar } from "./ocelle-top-bar.ts";
 export { OcelleTooltip } from "./ocelle-tooltip.ts";
 export { OcelleWorkflowBoard } from "./ocelle-workflow-board.ts";
 export { OcelleWorkflowLane } from "./ocelle-workflow-lane.ts";
+export { OcelleWorkflowCanvas } from "./ocelle-workflow-canvas.ts";
+export type {
+  WorkflowCanvasConnection,
+  WorkflowCanvasGraph,
+  WorkflowCanvasLayoutEntry,
+  WorkflowCanvasMode,
+  WorkflowCanvasNode,
+  WorkflowCanvasOutcome,
+  WorkflowCanvasPoint,
+  WorkflowCanvasViewport,
+  WorkflowCanvasViewportRequestDetail,
+} from "./ocelle-workflow-canvas.ts";
 export { OcelleWorkflowNode } from "./ocelle-workflow-node.ts";

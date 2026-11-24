@@ -14,6 +14,7 @@
     "./ocelle-scroller.js": "./dist/ocelle-scroller.js",
     "./ocelle-workflow-board.js": "./dist/ocelle-workflow-board.js",
     "./ocelle-workflow-lane.js": "./dist/ocelle-workflow-lane.js",
+    "./ocelle-workflow-canvas.js": "./dist/ocelle-workflow-canvas.js",
     "./ocelle-workflow-node.js": "./dist/ocelle-workflow-node.js",
     "./ocelle-list-detail.js": "./dist/ocelle-list-detail.js",
     "./ocelle-dialog.js": "./dist/ocelle-dialog.js",

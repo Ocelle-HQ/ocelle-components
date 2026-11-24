@@ -5,6 +5,9 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Branching workflow canvas (#73).** `ocelle-workflow-canvas` renders supplied steps and outcome connections,
+keeps clipped steps reachable through named navigation, and emits host-controlled selection and viewport requests.
+
 **Responsive app frames and keyboard navigation are a MINOR addition (mission 015, #12).** Applications can share
 one shell across mission, project and personal screens. The shell measures its own width, presents the same
 destinations in a narrow drawer and supports a keyboard shortcut to the main content.
