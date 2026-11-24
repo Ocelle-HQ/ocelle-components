@@ -50,3 +50,5 @@ fail-undescribed-property: fail as planted (1 exact findings)
 fail-undescribed-slot: fail as planted (1 exact findings)
 pass-reordered: pass as planted (0 exact findings)
 ```
+
+The exact Phase 2 candidate passed the full hosted Plants judge. All 317 Plants across 17 gates and the registry matched their expected verdicts, including all five visual fixtures in the affected selection. [Exact hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45445205967/job/138640924435)
