@@ -199,6 +199,30 @@ async function watchRestoredAction(canvas: Locator, eventType: "click" | "keydow
   }, eventType);
 }
 
+async function setUpPaintPane(canvas: Locator, clipped: boolean): Promise<void> {
+  await canvas.evaluate(async (element: OcelleWorkflowCanvas, clipped) => {
+    const pane = element.parentElement;
+    if (pane === null) throw new Error("The paint containment fixture is missing its pane");
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(`
+      #pane { inline-size: 700px; block-size: 180px; overflow: visible; }
+      #pane.paint-clipped { contain: paint; }
+      #canvas { inline-size: 700px; block-size: 390px; }
+    `);
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    pane.classList.toggle("paint-clipped", clipped);
+    element.layout = [
+      { nodeId: "review", x: 35, y: 15 },
+      { nodeId: "publish", x: 330, y: 220 },
+      { nodeId: "revise", x: 1080, y: 20 },
+    ];
+    element.selectedNodeId = "review";
+    await element.updateComplete;
+    await document.fonts.ready;
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }, clipped);
+}
+
 describe("workflow canvas on the built aggregate under strict CSP", () => {
   it("renders stable steps and a branching map, emitting exact native pointer and keyboard selection requests", async () => {
     const { page, finish } = await mount();
@@ -344,6 +368,135 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     await expect.poll(() => publish.count()).toBe(1);
     await publish.click();
     expect(await requests(page)).toEqual([{ type: selection, detail: { nodeId: "publish" } }]);
+    expect(await finish()).toEqual(clean);
+  });
+
+  it("excludes a paint-clipped action from native traversal and the accessibility tree", async () => {
+    const { page, finish } = await mount();
+    const canvas = page.locator("#canvas");
+    await setUpPaintPane(canvas, true);
+    const publish = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    const geometry = await publish.evaluate(async (button) => {
+      const pane = document.getElementById("pane");
+      if (pane === null) throw new Error("The paint containment fixture is missing its pane");
+      const bounds = button.getBoundingClientRect();
+      const intersectionRatio = await new Promise<number | undefined>((resolve) => {
+        const observer = new IntersectionObserver(([entry]) => {
+          observer.disconnect();
+          resolve(entry?.intersectionRatio);
+        });
+        observer.observe(button);
+      });
+      return {
+        belowPane: bounds.top > pane.getBoundingClientRect().bottom,
+        intersectionRatio,
+        overflow: getComputedStyle(pane).overflow,
+      };
+    });
+    expect(geometry, "Chromium clips Publish even with visible overflow").toEqual({ belowPane: true, intersectionRatio: 0, overflow: "visible" });
+
+    const review = page.getByRole("button", { name: /^Initial review/ });
+    await review.focus();
+    expect(await review.evaluate((button) => button.matches(":focus"))).toBe(true);
+    await page.keyboard.press("ArrowRight");
+    const traversed = await review.evaluate((button) => button.matches(":focus"));
+    expect(await requests(page)).toEqual([]);
+    await page.keyboard.press("Enter");
+    const recorded = await requests(page);
+    const accessibility = await canvas.ariaSnapshot();
+    await publish.evaluate((button: HTMLButtonElement) => { button.focus({ preventScroll: true }); });
+    const focused = await review.evaluate((button) => button.matches(":focus"));
+    const afterFocus = { recorded: await requests(page), diagnostics: await finish() };
+    expect(accessibility).toMatch(/button "Initial review/);
+    expect({ traversed, recorded, publishInTree: accessibility.includes('button "Publish'), focused },
+      "paint-clipped Publish is unavailable to native traversal, activation, accessibility and direct focus")
+      .toEqual({ traversed: true, recorded: [{ type: selection, detail: { nodeId: "review" } }], publishInTree: false, focused: true });
+    expect(afterFocus).toEqual({ recorded, diagnostics: clean });
+  });
+
+  it("guards a trusted native activation when paint containment clips the action during capture", async () => {
+    const { page, finish } = await mount();
+    const canvas = page.locator("#canvas");
+    await setUpPaintPane(canvas, false);
+    const publish = page.getByRole("button", { name: /^Publish/ });
+    await publish.focus();
+    expect(await publish.evaluate((button) => button.matches(":focus"))).toBe(true);
+    const before = await controlledState(canvas);
+    await page.keyboard.press("Enter");
+    const expected = [{ type: selection, detail: { nodeId: "publish" } }];
+    expect(await requests(page)).toEqual(expected);
+
+    await publish.evaluate((button) => {
+      const node = (button.getRootNode() as ShadowRoot).host;
+      const canvas = (node.getRootNode() as ShadowRoot).host;
+      const pane = canvas.parentElement;
+      const face = node.parentElement;
+      if (pane === null || face === null) throw new Error("The paint containment fixture is missing its action wrapper");
+      document.addEventListener("click", (event) => {
+        pane.classList.add("paint-clipped");
+        canvas.setAttribute("data-paint-input", JSON.stringify({
+          trusted: event.isTrusted,
+          nativeTarget: event.composedPath().includes(button),
+          clipped: button.getBoundingClientRect().top > pane.getBoundingClientRect().bottom,
+          inert: face.inert,
+        }));
+      }, { capture: true, once: true });
+    });
+    await page.keyboard.press("Enter");
+    expect(JSON.parse(await canvas.getAttribute("data-paint-input") ?? "null") as unknown,
+      "paint containment clips the trusted click target before the canvas makes it inert")
+      .toEqual({ trusted: true, nativeTarget: true, clipped: true, inert: false });
+    const recorded = await requests(page);
+    const focused = await page.getByRole("button", { name: /^Initial review/ }).evaluate((button) => button.matches(":focus"));
+    expect(await controlledState(canvas)).toEqual(before);
+    const afterActivation = { available: await publish.count(), diagnostics: await finish() };
+    expect(recorded, "activating the newly paint-clipped action adds no selection request").toEqual(expected);
+    expect(afterActivation).toEqual({ available: 0, diagnostics: clean });
+    expect(focused, "the visible native Review action recovers focus").toBe(true);
+  });
+
+  it("proposes and accepts a named reveal through a paint-containing host pane", async () => {
+    const { page, finish } = await mount();
+    const canvas = page.locator("#canvas");
+    await setUpPaintPane(canvas, true);
+    const picker = page.getByRole("combobox", { name: /^Step/i });
+    const reveal = page.getByRole("button", { name: /^Reveal\b/i });
+    const publish = page.getByRole("button", { name: /^Publish/ });
+    expect(await picker.getByRole("option", { name: /^Publish/ }).count(), "the clipped step remains available by name").toBe(1);
+    expect(await requests(page)).toEqual([]);
+    const before = await controlledState(canvas);
+    await picker.selectOption("publish");
+    expect(await requests(page)).toEqual([]);
+    await reveal.focus();
+    await page.keyboard.press("Enter");
+    const recorded = await requests(page);
+    const proposed = { x: -68, y: -199, scale: 1 };
+    const proposal = { type: viewport, detail: { viewport: proposed } };
+    expect({
+      recorded,
+      revealFocused: await reveal.evaluate((button) => button.matches(":focus")),
+      publishActions: await publish.count(),
+    }, "the hidden destination issues one proposal centered in the visible map and keeps focus on Reveal")
+      .toEqual({ recorded: [proposal], revealFocused: true, publishActions: 0 });
+    expect(await controlledState(canvas)).toEqual(before);
+
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, accepted) => {
+      element.viewport = accepted;
+      await element.updateComplete;
+    }, (recorded as [typeof proposal])[0].detail.viewport);
+    await expect.poll(() => focusedId(page)).toBe("publish");
+    expect(await publish.evaluate((button) => {
+      const pane = document.getElementById("pane");
+      if (pane === null) throw new Error("The paint containment fixture is missing its pane");
+      const bounds = button.getBoundingClientRect();
+      const clip = pane.getBoundingClientRect();
+      return button.matches(":focus") && clip.left < bounds.left && bounds.right < clip.right
+        && clip.top < bounds.top && bounds.bottom < clip.bottom;
+    }), "acceptance exposes and focuses the actual native Publish action").toBe(true);
+    expect(await controlledState(canvas)).toEqual({ ...before, viewport: proposed });
+    expect(await requests(page), "acceptance sends no follow-up request").toEqual([proposal]);
+    await page.keyboard.press("Enter");
+    expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);
     expect(await finish()).toEqual(clean);
   });
 

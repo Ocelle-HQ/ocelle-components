@@ -62,6 +62,33 @@ describe("workflow canvas viewport geometry", () => {
     expect(effectiveCanvasClip(map)).toEqual({ left: 120, top: 80, right: 120 + pane.clientWidth, bottom: 80 + pane.clientHeight });
   });
 
+  it.each(["paint", "layout paint", "content", "strict"])("clips both axes at the scaled pane padding edge with contain: %s", (containment) => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
+      padding: 3px 5px 7px 11px; transform: scale(2, 3); transform-origin: top left;
+      overflow: visible; contain: ${containment};`;
+    map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 128, top: 98, right: 400, bottom: 398 });
+  });
+
+  it.each([["contents", "paint"], ["inline", "paint"], ["block", "layout"]] as const)("leaves the map visible through display: %s with contain: %s", async (display, containment) => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText = `display: ${display}; contain: ${containment}; width: 120px; height: 90px;`;
+    map.style.cssText = "display: inline-block; width: 400px; height: 300px;";
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+    const intersectionRatio = await new Promise<number | undefined>((resolve) => {
+      const observer = new IntersectionObserver(([entry]) => {
+        observer.disconnect();
+        resolve(entry?.intersectionRatio);
+      });
+      observer.observe(map);
+    });
+
+    expect(intersectionRatio, "Chromium reports the full SVG map visible").toBe(1);
+    expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
+  });
+
   it("avoids a layout read for an ancestor that cannot clip either axis", () => {
     const { map, pane } = viewportFixture(250, 170);
     pane.style.overflow = "visible";
