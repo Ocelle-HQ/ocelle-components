@@ -1185,6 +1185,64 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     expect(await finish()).toEqual(clean);
   });
 
+  it("pans the built canvas background with one trusted viewport request", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    const map = canvas.locator("svg.map");
+    const state = await controlledState(canvas);
+    const box = await map.boundingBox();
+    if (box === null) throw new Error("Map is not rendered");
+    const down = { x: box.x + box.width - 50, y: box.y + box.height - 75 };
+    await page.mouse.move(down.x, down.y);
+    await page.mouse.down();
+    await page.mouse.move(down.x - 36, down.y + 28);
+    await page.mouse.up();
+    expect(await requests(page), "trusted background pan emits one exact viewport proposal").toEqual([
+      { type: viewport, detail: { viewport: { x: -36, y: 28, scale: 1 } } },
+    ]);
+    expect(await controlledState(canvas)).toEqual(state);
+    expect(await finish()).toEqual(clean);
+  });
+
+  it("clears the built move preview on a nested shadow pane scroll before pointer release", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+      const root = element.getRootNode();
+      if (!(root instanceof ShadowRoot)) throw new Error("Nested pane is missing");
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync("#pane { block-size: 330px; }");
+      root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+      element.viewport = { x: 18, y: 24, scale: 2 };
+      element.layout = [{ nodeId: "review", x: 25, y: 35 }, { nodeId: "publish", x: 135, y: 35 }, { nodeId: "revise", x: 245, y: 35 }];
+      await element.updateComplete;
+    });
+    const handle = canvas.locator('svg.map rect.move-handle[data-node-id="publish"]');
+    expect(await handle.count(), "the built canvas supplies a native browser hit target for a positioned step").toBe(1);
+    const box = await handle.boundingBox();
+    if (box === null) throw new Error("Move handle is not rendered");
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    const orig = canvas.locator("foreignObject").nth(1);
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 40, y - 20);
+    await expect.poll(() => orig.getAttribute("x")).toBe("328");
+    expect(await orig.getAttribute("y")).toBe("74");
+    expect(await requests(page)).toEqual([]);
+
+    await canvas.evaluate((element) => {
+      if (element.parentElement !== null) element.parentElement.scrollTop = 28;
+    });
+    await expect.poll(() => orig.getAttribute("x")).toBe("288");
+    expect(await orig.getAttribute("y")).toBe("94");
+    expect((await controlledState(canvas)).scroll).toEqual([0, 28]);
+    expect(await requests(page)).toEqual([]);
+    await page.mouse.up();
+    expect(await requests(page)).toEqual([]);
+    expect(await finish()).toEqual(clean);
+  });
+
   it.each([
     { mode: "high-ellipse", shape: "ellipse" },
     { mode: "high-circle", shape: "circle" },
