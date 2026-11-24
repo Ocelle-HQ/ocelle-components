@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   canvasActionBounds,
   canvasBoundsOverlap,
@@ -51,6 +51,28 @@ describe("workflow canvas viewport geometry", () => {
     map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
 
     expect(effectiveCanvasClip(map)).toEqual(expected);
+  });
+
+  it.each([["scroll", "scroll"], ["overlay", "auto"]] as const)("clips at the pane edges for overflow %s", (overflow, computedOverflow) => {
+    const { map, pane } = viewportFixture(250, 170);
+    pane.style.overflow = overflow;
+
+    const style = getComputedStyle(pane);
+    expect([style.overflowX, style.overflowY]).toEqual([computedOverflow, computedOverflow]);
+    expect(effectiveCanvasClip(map)).toEqual({ left: 120, top: 80, right: 120 + pane.clientWidth, bottom: 80 + pane.clientHeight });
+  });
+
+  it("avoids a layout read for an ancestor that cannot clip either axis", () => {
+    const { map, pane } = viewportFixture(250, 170);
+    pane.style.overflow = "visible";
+    const readBounds = vi.spyOn(pane, "getBoundingClientRect");
+
+    try {
+      expect(effectiveCanvasClip(map)).toEqual({ left: 120, top: 80, right: 520, bottom: 380 });
+      expect(readBounds).not.toHaveBeenCalled();
+    } finally {
+      readBounds.mockRestore();
+    }
   });
 
   it("reports an empty finite clip when the enclosing pane collapses along both axes", () => {
@@ -135,6 +157,14 @@ describe("workflow canvas viewport geometry", () => {
     map.style.transformOrigin = "top left";
 
     expect(() => canvasRevealViewport(view, map, action), "a singular host transform must never throw").not.toThrow();
+    expect(canvasRevealViewport(view, map, action)).toBeNull();
+  });
+
+  it("declines a reveal when a host focus token overflows the transformed outline", () => {
+    const { action, map } = viewportFixture(250, 170);
+    map.setAttribute("viewBox", "0 0 200 300");
+    action.style.setProperty("--ocelle-focus-width", "1e308px");
+
     expect(canvasRevealViewport(view, map, action)).toBeNull();
   });
 });
