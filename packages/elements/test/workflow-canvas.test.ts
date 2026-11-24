@@ -467,6 +467,26 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("cancels a stale native activation before the geometry observers deliver", async () => {
+    const { canvas, frame, before, requests } = await mount(true);
+    const publish = action(canvas, "publish");
+    before.focus();
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+
+    frame.classList.add("move-away");
+    const activation = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(activation)).toBe(false);
+    expect(activation.defaultPrevented).toBe(true);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(active()).toBe(before);
+    expect(requests).toEqual([]);
+
+    frame.classList.remove("move-away");
+    await settle(canvas);
+    expect(getNode(canvas, "publish")?.parentElement?.inert, "the same-task host restore makes the stale action available again").toBe(false);
+    await click(publish);
+    expect(requests).toEqual([selectRequest("publish")]);
+  });
 
   it("draws the supplied branching graph, carrying the labels and source outcomes into the existing node controls", async () => {
     const { canvas, requests } = await mount();
