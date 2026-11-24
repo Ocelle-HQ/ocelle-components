@@ -223,7 +223,7 @@ async function setUpPaintPane(canvas: Locator, clipped: boolean): Promise<void> 
   }, clipped);
 }
 
-type PaneClip = "inset" | "calculated" | "margin-box" | "rounded" | "corner" | "notched" | "transformed-notch" | "ellipse" | "circle" | "fallback-notch" | "overflow" | "contents" | "ordinary";
+type PaneClip = "inset" | "calculated" | "margin-box" | "rounded" | "corner" | "notched" | "transformed-notch" | "c-shaped" | "ellipse" | "circle" | "fallback-notch" | "overflow" | "contents" | "ordinary";
 
 async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true): Promise<void> {
   await canvas.evaluate(async (element: OcelleWorkflowCanvas, { mode, clipped }) => {
@@ -240,11 +240,14 @@ async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true
       #pane.rounded.clipped { clip-path: inset(0 0 220px 0 round 4px); }
       #pane.rounded.clipped.reopened { clip-path: inset(0 round 4px); }
       #pane.corner.clipped { clip-path: inset(0 255px 72px 0 round 100px); }
-      #pane.transformed-notch { transform: translateX(1px); }
+      #pane.transformed-notch, #pane.c-shaped { transform: translateX(1px); }
       #pane.ellipse.clipped { clip-path: ellipse(440px 150px at 300px 115px); }
       #pane.circle.clipped { clip-path: circle(268px at 228px 5px); }
       #pane.notched.clipped, #pane.transformed-notch.clipped {
         clip-path: polygon(0 0, 100% 0, 100% 318px, 394px 318px, 394px 328px, 100% 328px, 100% 100%, 0 100%);
+      }
+      #pane.c-shaped.clipped {
+        clip-path: polygon(0 0, 100% 0, 100% 65px, 180px 65px, 180px 360px, 100% 360px, 100% 100%, 0 100%);
       }
       #pane.overflow { block-size: 250px; overflow: clip; }
       #pane.contents { display: contents; overflow: hidden; }
@@ -253,7 +256,7 @@ async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true
     pane.classList.toggle("clipped", clipped);
     pane.classList.add(mode);
     element.layout = [
-      { nodeId: "review", x: 24, y: 14 },
+      mode === "c-shaped" ? { nodeId: "review", x: 330, y: 160 } : { nodeId: "review", x: 24, y: 14 },
       { nodeId: "publish", x: 330, y: 236 },
       { nodeId: "revise", x: 1080, y: 20 },
     ];
@@ -1137,6 +1140,42 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     expect(await original.evaluate((button) => button.isConnected && button.matches(":focus"))).toBe(true);
     expect(await observeClipping(publish)).toEqual({ intersectionRatio: 1, hasPaneBox: true, insidePaneBox: true });
     expect(await controlledState(canvas)).toEqual({ ...before, viewport: proposed });
+    expect(await requests(page)).toEqual([proposal]);
+    await page.keyboard.press("Enter");
+    expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);
+    expect(await finish()).toEqual(clean);
+  });
+
+  it("reveals Publish into the C-shaped pane when no map action is initially visible", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, "c-shaped");
+    const original = await canvas.locator("ocelle-workflow-node").nth(1).locator("button").elementHandle();
+    const picker = page.getByRole("combobox", { name: "Step" });
+    const reveal = page.getByRole("button", { name: "Reveal step" });
+    const before = await controlledState(canvas);
+    await picker.selectOption("publish");
+    await picker.focus();
+    await page.keyboard.press("Tab");
+    expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+    expect(await canvasActionNames(page)).toEqual([]);
+    expect(await requests(page)).toEqual([]);
+    await page.keyboard.press("Enter");
+
+    const proposal = { type: viewport, detail: { viewport: { x: -58, y: 60, scale: 1 } } };
+    const issued = await requests(page);
+    expect(issued, "the one named Reveal proposal uses the exposed lower arm").toEqual([proposal]);
+    expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+    expect(await controlledState(canvas)).toEqual(before);
+    const accepted = (issued as [typeof proposal])[0].detail.viewport;
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, accepted) => {
+      element.viewport = accepted;
+      await element.updateComplete;
+    }, accepted);
+    await expect.poll(() => focusedId(page)).toBe("publish");
+    expect(await original.evaluate((button) => button.isConnected && button.matches(":focus"))).toBe(true);
+    expect(await canvasActionNames(page)).toEqual(["Publish"]);
+    expect(await controlledState(canvas)).toEqual({ ...before, viewport: accepted });
     expect(await requests(page)).toEqual([proposal]);
     await page.keyboard.press("Enter");
     expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);

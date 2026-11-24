@@ -1396,6 +1396,77 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
   });
 
+  it("proposes the empty C-shaped pane's lower arm and focuses the original action on acceptance", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible; transform: translateX(1px);
+      clip-path: polygon(0 0, 100% 0, 100% 65px, 180px 65px, 180px 360px, 100% 360px, 100% 100%, 0 100%); }`, sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 330, y: 160 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    const initial = canvas.viewport;
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    const reveal = await askReveal(canvas, "publish");
+    const expected = { x: -58, y: 60, scale: 1 };
+    const proposal = { type: viewport, detail: { viewport: expected }, bubbles: true, composed: true, cancelable: false };
+    expect(requests, "one request places the whole focus outline in the exposed arm").toEqual([proposal]);
+    expect(active()).toBe(reveal);
+    expect(canvas.viewport).toEqual(initial);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    canvas.viewport = lastViewport(requests);
+    await settle(canvas);
+    expect(active()).toBe(publish);
+    expect(action(canvas, "publish")).toBe(publish);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([proposal]);
+    await commands.press("Enter");
+    expect(requests).toEqual([proposal, selectRequest("publish")]);
+  });
+
+  it.each([
+    { name: "an off-center vertical strip", path: "polygon(0 0, 100% 0, 100% 100%, 500px 100%, 500px 65px, 0 65px)" },
+    { name: "a diagonal pane edge", path: "polygon(0 0, 100% 0, 100% 100%, 300px 100%, 600px 65px, 0 65px)" },
+  ])("finds a usable proposal beyond the initial map center with $name", async ({ path }) => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible; clip-path: ${path}; }`, sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 330, y: 160 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    const reveal = await askReveal(canvas, "publish");
+    const proposed = lastViewport(requests);
+    expect(proposed.x).toBeGreaterThan(-58);
+    expect(proposed.scale).toBe(1);
+    expect(requests).toHaveLength(1);
+    expect(active()).toBe(reveal);
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(publish);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toHaveLength(1);
+  });
+
+  it("keeps the reveal pending when every exposed arm is too narrow for the focus outline", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible;
+      clip-path: polygon(0 0, 100% 0, 100% 65px, 100px 65px, 100px 412px, 100% 412px, 100% 100%, 0 100%); }`, sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 330, y: 160 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    const reveal = await askReveal(canvas, "publish");
+    const proposed = lastViewport(requests);
+    expect(proposed).toEqual({ x: -58, y: -90, scale: 1 });
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(reveal);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toHaveLength(1);
+  });
+
   it("keeps focus on the painted Step control after a polygon clips the pending Reveal", async () => {
     const { canvas, pane, sheet, requests } = await mount(true);
     const { picker, button } = revealControls(canvas);
