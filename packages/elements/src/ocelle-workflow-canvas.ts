@@ -23,9 +23,9 @@ import {
   canvasViewport,
   canvasViewportPoint,
   composedAncestors,
-  effectiveCanvasClip,
   isInsideCanvasClip,
   type CanvasBounds,
+  type CanvasClipMeasurement,
 } from "./workflow-canvas-viewport.ts";
 import type {
   WorkflowCanvasGraph,
@@ -104,6 +104,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       }
 
       .navigator {
+        position: relative;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -111,6 +112,13 @@ export class OcelleWorkflowCanvas extends LitElement {
         padding: var(--ocelle-space-2);
         color: var(--ocelle-color-ink);
         background-color: var(--ocelle-color-sheet);
+      }
+
+      .navigator > .clip-probe {
+        position: absolute;
+        inset: 0;
+        inline-size: 100%;
+        block-size: 100%;
       }
 
       label {
@@ -409,40 +417,60 @@ export class OcelleWorkflowCanvas extends LitElement {
     actions: readonly NodeAction[],
     map: SVGSVGElement,
   ): { contained: Set<string>; eligible: Set<string>; bounds: ReadonlyMap<string, CanvasBounds> } {
-    const { bounds: clip, hasInset, contours } = canvasClipping(map);
-    const contained = new Set<string>();
-    const eligible = new Set<string>();
-    const painted = actions.filter(({ node }) => this.#projection.positions.has(node.nodeId));
-    const footprints = painted.map(({ face }) => face.getBoundingClientRect());
-    const bounds = new Map<string, CanvasBounds>();
-    const transform = map.getScreenCTM();
-    const probe = hasInset || contours.length > 0 ? this.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect") : null;
-    if (probe !== null) {
-      probe.setAttribute("width", "100%");
-      probe.setAttribute("height", "100%");
-      probe.setAttribute("pointer-events", "all");
-      // The target exists only during the synchronous measurement and is removed before paint.
-      map.append(probe);
-    }
-    try {
+    return this.#withLiveClip(map, (clip) => {
+      const contained = new Set<string>();
+      const eligible = new Set<string>();
+      const painted = actions.filter(({ node }) => this.#projection.positions.has(node.nodeId));
+      const footprints = painted.map(({ face }) => face.getBoundingClientRect());
+      const bounds = new Map<string, CanvasBounds>();
+      const transform = map.getScreenCTM();
       painted.forEach(({ node, button }, index) => {
         const outline = canvasActionBounds(button, transform);
         bounds.set(node.nodeId, outline);
-        if (!isInsideCanvasClip(clip, outline) || contours.some((contour) => canvasContourCrossesOutline(contour, outline))
-          || (probe !== null && !this.#clipCornersHit(probe, outline))) return;
+        if (!clip.contains(outline)) return;
         contained.add(node.nodeId);
         if (!footprints.some((footprint, paintIndex) => paintIndex > index && canvasBoundsOverlap(outline, footprint))) {
           eligible.add(node.nodeId);
         }
       });
-    } finally {
-      probe?.remove();
+      return { contained, eligible, bounds };
+    });
+  }
+
+  #withLiveClip<T>(surface: Element, read: (clip: CanvasClipMeasurement) => T): T {
+    const { bounds, contours, hasConvexClip } = canvasClipping(surface);
+    const probe = hasConvexClip || contours.length > 0 ? this.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect") : null;
+    let temporary: Element | null = probe;
+    if (probe !== null) {
+      probe.setAttribute("width", "100%");
+      probe.setAttribute("height", "100%");
+      probe.setAttribute("pointer-events", "all");
+      if (surface instanceof SVGSVGElement) {
+        surface.append(probe);
+      } else {
+        const overlay = this.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "svg");
+        overlay.classList.add("clip-probe");
+        overlay.append(probe);
+        surface.append(overlay);
+        temporary = overlay;
+      }
     }
-    return { contained, eligible, bounds };
+    try {
+      // A supported outline crosses no resolved straight edge and every corner hits the browser's painted clip.
+      return read({
+        bounds,
+        contains: (outline) => isInsideCanvasClip(bounds, outline)
+          && !contours.some((contour) => canvasContourCrossesOutline(contour, outline))
+          && (probe === null || this.#clipCornersHit(probe, outline)),
+      });
+    } finally {
+      // The target exists only during the synchronous measurement and is removed before paint.
+      temporary?.remove();
+    }
   }
 
   #clipCornersHit(probe: Element, { left, top, right, bottom }: CanvasBounds): boolean {
-    // Insets are convex. For straight polygons the contour check also rejects any edge entering the outline.
+    // Insets, ellipses and circles are convex. A separate check handles the interior of straight polygons.
     // The probe sits outside the inert node wrappers and above the map's independently checked paint order.
     const root = this.shadowRoot;
     const corners = [[left, top], [right, top], [left, bottom], [right, bottom]] as const;
@@ -545,10 +573,9 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #focusNamed(navigator: Element | null, controls = "select, button"): void {
     if (navigator === null) return;
-    const clip = effectiveCanvasClip(navigator);
-    const visible = [...navigator.querySelectorAll(controls)].find(
-      (control) => !control.matches(":disabled") && isInsideCanvasClip(clip, control.getBoundingClientRect()),
-    );
+    const visible = this.#withLiveClip(navigator, (clip) => [...navigator.querySelectorAll(controls)].find(
+      (control) => !control.matches(":disabled") && clip.contains(control.getBoundingClientRect()),
+    ));
     if (visible instanceof HTMLElement) visible.focus(withoutScroll);
     else this.#focusedAction()?.button.blur();
   }
@@ -608,13 +635,16 @@ export class OcelleWorkflowCanvas extends LitElement {
     // Stryker disable next-line UpdateOperator: either direction stores the same current value in the sole pending reveal.
     this.#pendingReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator };
     const actions = this.#actions();
-    const { contained, eligible } = this.#measureEligibility(actions, map);
+    const { contained, eligible, bounds } = this.#measureEligibility(actions, map);
     if (contained.has(id)) {
       this.#completeReveal(actions, contained, eligible);
       return;
     }
     const action = actions.find(({ node }) => node.nodeId === id)?.button;
-    const viewport = action === undefined ? null : canvasRevealViewport(canvasViewport(this.viewport), map, action);
+    const visible = [...bounds].flatMap(([nodeId, outline]) => eligible.has(nodeId) ? [outline] : []);
+    const viewport = action === undefined ? null : this.#withLiveClip(map,
+      (clip) => canvasRevealViewport(canvasViewport(this.viewport), map, action, clip, visible),
+    );
     if (viewport === null) {
       this.#pendingReveal = null;
       return;
@@ -634,7 +664,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     const pending = this.#pendingReveal;
     if (pending === null || this.shadowRoot?.activeElement !== pending.initiator) return;
     const navigator = pending.initiator.parentElement;
-    if (navigator !== null && !isInsideCanvasClip(effectiveCanvasClip(navigator), pending.initiator.getBoundingClientRect())) {
+    if (navigator !== null && !this.#withLiveClip(navigator, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
       this.#pendingReveal = null;
       this.#focusNamed(navigator);
       pending.initiator.blur();

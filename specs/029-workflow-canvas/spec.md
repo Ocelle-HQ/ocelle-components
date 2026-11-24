@@ -111,5 +111,6 @@ A run reviewer follows named outcomes in the same graph and examines selected or
 
 - The consumer is Workflow Studio in the Ocelle web console. It owns validation, persistence, serialization, undo and runtime services. Its composition is covered by #76. The canvas consumes the #72 node contract and uses the existing workflow board and list/detail only as reference for layout and focus behavior.
 - The host supplies well-formed records with unique nonempty node identifiers and outcome identifiers unique within their source, finite coordinates and a valid viewport scale. The host owns domain policy for self-connections, cycles and outcome eligibility.
+- The host uses the clipping panes described in the [consumer contract](contracts/workflow-canvas.md#host-clipping). Custom CSS outlines and SVG clip references are follow-up work.
 - A matching host update represents acceptance. Keeping the supplied state represents rejection or a pending decision. The fixture exercises both without external services.
 - Keep phases in order and use the reviewed Op 028 instructions for the first eligible group inside a phase. Planning establishes each task's dependencies and exact write paths. The trial records dispatch-to-combined-green time, the integrated red/green proof and any serial fallback. Standard review and hosted gates apply.

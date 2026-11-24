@@ -82,3 +82,20 @@ The full hosted judge for combined candidate `e3fc15c9b42daa8c8f5d2b1ed319450be0
 ```text
 plants: 317 plants of 17 gates and the registry judged, every plant as expected
 ```
+
+## Round 5 fix
+
+The local affected selector exited 0 and listed all 317 Plants for the hosted judge.
+
+```text
+$ pnpm run gate:plants -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+$ node gates/bin/plants.ts -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
+```
+
+The full hosted judge for the round 5 candidate `892326d2c382f06b56fe97eae28303fcc21432b0` exited 0. GitHub tested synthetic merge `9cff11c5e0153d7b1868f22698da7356ea2e3561` on the same tree. [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45399679956/job/138476607656)
+
+```text
+plants: 317 plants of 17 gates and the registry judged, every plant as expected
+```

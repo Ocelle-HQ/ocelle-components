@@ -299,7 +299,7 @@ async function watchRoundFiveCapture(action: Locator, fallback: boolean): Promis
           const cut = pickerBounds.bottom - paneBounds.top + 2;
           const bottom = Math.max(pickerBounds.bottom, revealBounds.bottom) - paneBounds.top + 8;
           const sheet = new CSSStyleSheet();
-          sheet.replaceSync(`#pane.clipped { clip-path: polygon(0 0, ${left}px 0, ${left}px ${cut}px, ${right}px ${cut}px, ${right}px 0, 100% 0, 100% ${bottom}px, 0 ${bottom}px); }`);
+          sheet.replaceSync(`#pane.clipped { clip-path: polygon(0 0, ${String(left)}px 0, ${String(left)}px ${String(cut)}px, ${String(right)}px ${String(cut)}px, ${String(right)}px 0, 100% 0, 100% ${String(bottom)}px, 0 ${String(bottom)}px); }`);
           const host = pane.getRootNode() as ShadowRoot;
           host.adoptedStyleSheets = [...host.adoptedStyleSheets, sheet];
         }

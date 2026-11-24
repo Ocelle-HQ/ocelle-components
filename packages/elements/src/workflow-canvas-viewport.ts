@@ -11,12 +11,10 @@ export interface CanvasBounds {
 const clippingOverflow = new Set(["auto", "clip", "hidden", "scroll"]);
 type CanvasClipContour = readonly [WorkflowCanvasPoint, ...WorkflowCanvasPoint[]];
 
-// Restrict polygon geometry to the browser's resolved straight vertices in the default box.
-const linearPolygon = /polygon\((?:evenodd, )?((?:-?[\d.]+(?:px|%) -?[\d.]+(?:px|%)(?:, )?)+)\)/;
-
-// Computed CSS keeps percentages and combines mixed pixel/percentage lengths as calc().
-const rectangularInset = /inset\(((?:[\d.%px -]|calc\(-?[\d.]+% [+-] [\d.]+px\))+)\)(?: (padding-box|content-box|margin-box))?/;
-const insetValues = /calc\([^)]+\)|[^ ]+/g;
+export interface CanvasClipMeasurement {
+  readonly bounds: CanvasBounds;
+  contains(outline: CanvasBounds): boolean;
+}
 
 function screenInset(value: string, span: number, scale: number): number {
   if (value.startsWith("calc(")) {
@@ -71,19 +69,52 @@ export function* composedAncestors(element: Element): Generator<Element> {
   }
 }
 
-function hasUntransformedClipBox(element: Element): boolean {
-  return element.getClientRects().length === 1 && [element, ...composedAncestors(element)].every((ancestor) => {
+function axisAlignedScale(element: Element): WorkflowCanvasPoint | undefined {
+  if (element.getClientRects().length !== 1) return undefined;
+  let x = 1;
+  let y = 1;
+  for (const ancestor of [element, ...composedAncestors(element)]) {
     const style = getComputedStyle(ancestor);
-    const transforms = [style.transform, style.rotate, style.scale, style.perspective, style.offsetPath];
-    return ancestor instanceof HTMLElement && transforms.every((value) => value === "none") && style.zoom === "1";
-  });
+    const independent = [style.rotate, style.scale, style.perspective, style.offsetPath];
+    if (!(ancestor instanceof HTMLElement) || independent.some((value) => value !== "none") || style.zoom !== "1") return undefined;
+    const matrix = new DOMMatrixReadOnly(style.transform);
+    if (!matrix.is2D || matrix.b !== 0 || matrix.c !== 0 || matrix.a <= 0 || matrix.d <= 0) return undefined;
+    x *= matrix.a;
+    y *= matrix.d;
+  }
+  return { x, y };
 }
 
-function polygonContour(coordinates: string, pane: DOMRect): CanvasClipContour {
+function polygonCoordinates(path: string): string | undefined {
+  const polygon = /polygon\((?:evenodd, )?((?:-?[\d.]+(?:px|%) -?[\d.]+(?:px|%)(?:, )?)+)\)/.exec(path);
+  return polygon?.[0] === path ? polygon[1] : undefined;
+}
+
+function polygonContour(coordinates: string, pane: DOMRect, scale: WorkflowCanvasPoint): CanvasClipContour {
   return coordinates.split(", ").map((pair) => {
     const [x, y] = pair.split(" ") as [string, string];
-    return { x: pane.left + screenInset(x, pane.width, 1), y: pane.top + screenInset(y, pane.height, 1) };
+    return { x: pane.left + screenInset(x, pane.width, scale.x), y: pane.top + screenInset(y, pane.height, scale.y) };
   }) as [WorkflowCanvasPoint, ...WorkflowCanvasPoint[]];
+}
+
+function roundedBounds(path: string, pane: DOMRect, scale: WorkflowCanvasPoint, circular: boolean): CanvasBounds | undefined {
+  const match = /(?:ellipse|circle)\(([\d.]+(?:px|%))(?: ([\d.]+(?:px|%)))?(?: at (-?[\d.]+(?:px|%)) (-?[\d.]+(?:px|%)))?\)/.exec(path);
+  if (match?.[0] !== path) return undefined;
+  const [radiusX, radiusY = radiusX, centerX = "50%", centerY = "50%"] = match.slice(1) as [string, string?, string?, string?];
+  const x = pane.left + screenInset(centerX, pane.width, scale.x);
+  const y = pane.top + screenInset(centerY, pane.height, scale.y);
+  // A percentage circle radius resolves against the normalized unscaled diagonal.
+  const diagonal = circular ? Math.hypot(pane.width / scale.x, pane.height / scale.y) / Math.SQRT2 : null;
+  const rx = screenInset(radiusX, diagonal === null ? pane.width : diagonal * scale.x, scale.x);
+  const ry = screenInset(radiusY, diagonal === null ? pane.height : diagonal * scale.y, scale.y);
+  return { left: x - rx, right: x + rx, top: y - ry, bottom: y + ry };
+}
+
+function insetParts(path: string): RegExpExecArray | null {
+  const rounding = path.indexOf(" round ");
+  const outer = rounding === -1 ? path : path.slice(0, rounding) + path.slice(path.lastIndexOf(")"));
+  const inset = /inset\(((?:[\d.%px -]|calc\(-?[\d.]+% [+-] [\d.]+px\))+)\)(?: (padding-box|content-box|margin-box))?/.exec(outer);
+  return inset?.[0] === outer ? inset : null;
 }
 
 function contourBounds(contour: CanvasClipContour): CanvasBounds {
@@ -118,7 +149,7 @@ export function canvasContourCrossesOutline(contour: CanvasClipContour, outline:
 
 export function canvasClipping(element: Element): {
   readonly bounds: CanvasBounds;
-  readonly hasInset: boolean;
+  readonly hasConvexClip: boolean;
   readonly contours: readonly CanvasClipContour[];
 } {
   const rect = element.getBoundingClientRect();
@@ -127,7 +158,7 @@ export function canvasClipping(element: Element): {
   let top = Math.max(0, rect.top);
   let right = Math.min(viewport.clientWidth, rect.right);
   let bottom = Math.min(viewport.clientHeight, rect.bottom);
-  let hasInset = false;
+  let hasConvexClip = false;
   const contours: CanvasClipContour[] = [];
   for (const ancestor of composedAncestors(element)) {
     const style = getComputedStyle(ancestor);
@@ -141,16 +172,22 @@ export function canvasClipping(element: Element): {
     const clipsX = clipsPaint || (hasOverflowBox && clippingOverflow.has(style.overflowX));
     const clipsY = clipsPaint || (hasOverflowBox && clippingOverflow.has(style.overflowY));
     const clipPath = style.clipPath;
-    hasInset ||= clipPath.startsWith("inset(");
-    // Resolve the outer rectangle for the viewport proposal. Chromium tests the actual rounded corners.
-    const rounding = clipPath.indexOf(" round ");
-    const square = rounding === -1 ? clipPath : clipPath.slice(0, rounding) + clipPath.slice(clipPath.lastIndexOf(")"));
-    const inset = rectangularInset.exec(square);
-    const offsets = inset?.[0] === square ? inset[1] : undefined;
-    const referenceBox = inset?.[2];
-    const polygon = linearPolygon.exec(clipPath);
-    const coordinates = polygon?.[0] === clipPath && hasUntransformedClipBox(ancestor) ? polygon[1] : undefined;
-    if (!clipsX && !clipsY && offsets === undefined && coordinates === undefined) continue;
+    const shape = clipPath.slice(0, clipPath.indexOf("("));
+    const rounded = shape === "ellipse" || shape === "circle";
+    hasConvexClip ||= shape === "inset" || rounded;
+    let inset: RegExpExecArray | null = null;
+    let coordinates: string | undefined;
+    switch (shape) {
+      case "inset":
+        inset = insetParts(clipPath);
+        break;
+      case "polygon":
+        coordinates = polygonCoordinates(clipPath);
+        break;
+    }
+    const offsets = inset?.[1];
+    const shapeScale = coordinates !== undefined || rounded ? axisAlignedScale(ancestor) : undefined;
+    if (!clipsX && !clipsY && offsets === undefined && shapeScale === undefined) continue;
     const pane = ancestor.getBoundingClientRect();
     const scaleX = ancestor instanceof HTMLElement && ancestor.offsetWidth > 0 ? pane.width / ancestor.offsetWidth : 1;
     const scaleY = ancestor instanceof HTMLElement && ancestor.offsetHeight > 0 ? pane.height / ancestor.offsetHeight : 1;
@@ -164,19 +201,26 @@ export function canvasClipping(element: Element): {
       top = Math.max(top, y);
       bottom = Math.min(bottom, y + ancestor.clientHeight * scaleY);
     }
-    if (coordinates !== undefined) {
-      const contour = polygonContour(coordinates, pane);
-      contours.push(contour);
-      const box = contourBounds(contour);
-      left = Math.max(left, box.left);
-      right = Math.min(right, box.right);
-      top = Math.max(top, box.top);
-      bottom = Math.min(bottom, box.bottom);
+    if (shapeScale !== undefined) {
+      let box;
+      if (coordinates !== undefined) {
+        const contour = polygonContour(coordinates, pane, shapeScale);
+        contours.push(contour);
+        box = contourBounds(contour);
+      } else {
+        box = roundedBounds(clipPath, pane, shapeScale, shape === "circle");
+      }
+      if (box !== undefined) {
+        left = Math.max(left, box.left);
+        right = Math.min(right, box.right);
+        top = Math.max(top, box.top);
+        bottom = Math.min(bottom, box.bottom);
+      }
     }
     if (offsets !== undefined) {
       const [insetTop, insetRight = insetTop, insetBottom = insetTop, insetLeft = insetRight] =
-        offsets.match(insetValues) as [string, ...string[]];
-      const box = insetReferenceBox(pane, style, referenceBox, scaleX, scaleY);
+        offsets.match(/calc\([^)]+\)|[^ ]+/g) as [string, ...string[]];
+      const box = insetReferenceBox(pane, style, inset?.[2], scaleX, scaleY);
       const [clipLeft, clipRight] = insetAxis(box.left, box.right, insetLeft, insetRight, scaleX);
       const [clipTop, clipBottom] = insetAxis(box.top, box.bottom, insetTop, insetBottom, scaleY);
       left = Math.max(left, clipLeft);
@@ -185,7 +229,7 @@ export function canvasClipping(element: Element): {
       bottom = Math.min(bottom, clipBottom);
     }
   }
-  return { bounds: { left, top, right, bottom }, hasInset, contours };
+  return { bounds: { left, top, right, bottom }, hasConvexClip, contours };
 }
 
 export function effectiveCanvasClip(element: Element): CanvasBounds {
@@ -235,24 +279,31 @@ export function canvasScreenInverse(map: SVGSVGElement): DOMMatrix | null {
   return allFinite(inverse.toFloat64Array()) ? inverse : null;
 }
 
+function centeredOutline(outline: CanvasBounds, target: CanvasBounds): CanvasBounds {
+  const x = (target.left + target.right - outline.left - outline.right) / 2;
+  const y = (target.top + target.bottom - outline.top - outline.bottom) / 2;
+  return { left: outline.left + x, right: outline.right + x, top: outline.top + y, bottom: outline.bottom + y };
+}
+
 export function canvasRevealViewport(
   view: WorkflowCanvasViewport,
   map: SVGSVGElement,
   action: HTMLButtonElement,
+  measured?: CanvasClipMeasurement,
+  visibleActions: readonly CanvasBounds[] = [],
 ): WorkflowCanvasViewport | null {
   const inverse = canvasScreenInverse(map);
   if (inverse === null) return null;
   const actionBounds = canvasActionBounds(action, map.getScreenCTM());
-  const clip = effectiveCanvasClip(map);
+  const clip = measured?.bounds ?? effectiveCanvasClip(map);
   const fits = clip.right - clip.left >= actionBounds.right - actionBounds.left
     && clip.bottom - clip.top >= actionBounds.bottom - actionBounds.top;
-  const target = fits ? clip : map.getBoundingClientRect();
-  const delta = new DOMPoint(
-    (target.left + target.right - actionBounds.left - actionBounds.right) / 2,
-    (target.top + target.bottom - actionBounds.top - actionBounds.bottom) / 2,
-    0,
-    0,
-  ).matrixTransform(inverse);
+  const target = centeredOutline(actionBounds, fits ? clip : map.getBoundingClientRect());
+  const accepted = measured?.contains(target) === false
+    ? visibleActions.map((bounds) => centeredOutline(actionBounds, bounds)).find((bounds) => measured.contains(bounds))
+    : target;
+  const destination = accepted ?? target;
+  const delta = new DOMPoint(destination.left - actionBounds.left, destination.top - actionBounds.top, 0, 0).matrixTransform(inverse);
   return allFinite([delta.x, delta.y])
     ? { x: view.x + delta.x, y: view.y + delta.y, scale: view.scale } : null;
 }

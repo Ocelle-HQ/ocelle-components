@@ -1332,7 +1332,7 @@ describe("workflow canvas in-process selection and navigation", () => {
     const right = step.right - paneBounds.left + 2;
     const cut = step.bottom - paneBounds.top + 2;
     const bottom = Math.max(step.bottom, reveal.bottom) - paneBounds.top + 8;
-    sheet.insertRule(`#canvas-pane.fallback-notch { clip-path: polygon(0 0, ${left}px 0, ${left}px ${cut}px, ${right}px ${cut}px, ${right}px 0, 100% 0, 100% ${bottom}px, 0 ${bottom}px); }`);
+    sheet.insertRule(`#canvas-pane.fallback-notch { clip-path: polygon(0 0, ${String(left)}px 0, ${String(left)}px ${String(cut)}px, ${String(right)}px ${String(cut)}px, ${String(right)}px 0, 100% 0, 100% ${String(bottom)}px, 0 ${String(bottom)}px); }`);
     await settle(canvas);
     publish.focus({ preventScroll: true });
     expect(active()).toBe(publish);
@@ -1350,6 +1350,75 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(active(), "only the painted named control can receive fallback focus").toBe(button);
     expect(requests).toEqual([]);
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
+  it.each([
+    { name: "an ellipse", path: "ellipse(320px 195px at 280px 195px)" },
+    { name: "a circle", path: "circle(260px at 268px 185px)" },
+  ])("uses the browser clip for $name whose corner lies inside the measured bounding box", async ({ path }) => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule("#canvas-pane { block-size: 445px; overflow: visible; }", sheet.cssRules.length);
+    sheet.insertRule(`#canvas-pane.ellipse-corner { clip-path: ${path}; }`, sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    publish.focus({ preventScroll: true });
+    expect(active()).toBe(publish);
+    const { left, right, top, bottom } = publish.getBoundingClientRect();
+    const root = publish.getRootNode() as ShadowRoot;
+    const hit = (x: number, y: number) => publish.contains(root.elementFromPoint(x, y));
+    expect(hit(right - 4, bottom - 4)).toBe(true);
+    pane.classList.add("ellipse-corner");
+    expect(hit((left + right) / 2, (top + bottom) / 2)).toBe(true);
+    expect(hit(right - 4, bottom - 4)).toBe(false);
+    const nativeClick = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(nativeClick)).toBe(false);
+    expect(active()).toBe(action(canvas, "review"));
+    expect(requests).toEqual([]);
+  });
+
+  it("uses a visible action placement when the center of the proposal bounds crosses a polygon notch", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule("#canvas-pane { block-size: 445px; overflow: visible; clip-path: polygon(0 0, 100% 0, 100% 200px, 240px 200px, 240px 385px, 100% 385px, 100% 100%, 0 100%); }", sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    const reveal = await askReveal(canvas, "publish");
+    const proposed = { x: -306, y: -222, scale: 1 };
+    const proposal = { type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false };
+    expect(requests).toEqual([proposal]);
+    expect(active()).toBe(reveal);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(publish);
+    expect(requests).toEqual([proposal]);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
+  it("keeps focus on the painted Step control after a polygon clips the pending Reveal", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    const { picker, button } = revealControls(canvas);
+    const reveal = await askReveal(canvas, "revise");
+    expect(reveal).toBe(button);
+    expect(active()).toBe(reveal);
+    const proposed = lastViewport(requests);
+    const before = structuredClone(requests);
+    const paneBounds = pane.getBoundingClientRect();
+    const revealBounds = button.getBoundingClientRect();
+    const left = revealBounds.left - paneBounds.left - 2;
+    const right = revealBounds.right - paneBounds.left + 2;
+    const bottom = revealBounds.bottom - paneBounds.top + 8;
+    sheet.insertRule(`#canvas-pane.reveal-notch { clip-path: polygon(0 0, ${String(left)}px 0, ${String(left)}px ${String(bottom - 4)}px, ${String(right)}px ${String(bottom - 4)}px, ${String(right)}px 0, 100% 0, 100% ${String(bottom)}px, 0 ${String(bottom)}px); }`);
+    pane.classList.add("reveal-notch");
+    await settle(canvas);
+    expect(active()).toBe(picker);
+    expect(requests).toEqual(before);
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(picker);
+    expect(requests).toEqual(before);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual([0, 0]);
   });
 
   it.each([
