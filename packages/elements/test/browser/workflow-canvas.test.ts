@@ -128,8 +128,9 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     await publish.waitFor();
     await page.evaluate(() => document.fonts.ready.then(() => new Promise((resolve) => requestAnimationFrame(resolve))));
     const findings = await audit(page.mainFrame(), () => page.addScriptTag({ url: "axe.js" }), axeSetup().rules, "host");
-    const contrast = findings.filter(({ id, targets }) => id === "color-contrast" && targets.some((target) => target.endsWith(" >>> #title")));
-    expect(contrast, "axe can measure the visible native action labels").toEqual([]);
+    const contrastTitles = findings.flatMap(({ id, targets }) =>
+      id === "color-contrast" ? targets.filter((target) => target.endsWith(" >>> #title")) : []);
+    expect(contrastTitles, "axe can measure color contrast for the visible native workflow action titles").toEqual([]);
 
     const canvas = page.locator("ocelle-workflow-canvas");
     await publish.evaluate((button) => {
