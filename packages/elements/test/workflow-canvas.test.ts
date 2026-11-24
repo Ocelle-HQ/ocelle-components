@@ -503,6 +503,25 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
+  it("does not scroll the host pane when a programmatic reveal focuses a clipped control", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.replaceSync(fixtureStyles(260));
+    await settle(canvas);
+    pane.scrollLeft = pane.scrollWidth - pane.clientWidth;
+    pane.dispatchEvent(new Event("scroll"));
+    const position = pane.scrollLeft;
+    const { button } = revealControls(canvas);
+    expect(position).toBeGreaterThan(0);
+    expect(button.getBoundingClientRect().right).toBeLessThan(pane.getBoundingClientRect().left);
+
+    button.click();
+
+    expect(pane.scrollLeft).toBe(position);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.type).toBe(viewport);
+    expect(canvas.viewport).toEqual(initialViewport);
+  });
+
   it.each([
     ["a hidden map", "display: none"],
     ["a singular host transform", "transform: scaleX(0)"],
