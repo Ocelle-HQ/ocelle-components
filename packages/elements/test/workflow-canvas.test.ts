@@ -536,6 +536,58 @@ async function assertSeparateHandleCoverage(cover: "pane clip" | "later card"): 
   expect(requests).toEqual([]);
 }
 
+async function assertMoveHandleFocusInsetCoverage(): Promise<void> {
+  const fixture = await arranging();
+  const { canvas, pane, requests } = fixture;
+  canvas.viewport = initialViewport;
+  canvas.selectedNodeId = "review";
+  canvas.layout = [{ nodeId: "review", x: 330, y: 100 }, { nodeId: "publish", x: 80, y: 100 }];
+  await settle(canvas);
+  const review = action(canvas, "review");
+  const publish = action(canvas, "publish");
+  const publishHandle = moveHandle(canvas, "publish");
+  const reviewObject = getNode(canvas, "review")?.closest("foreignObject");
+  const publishObject = getNode(canvas, "publish")?.closest("foreignObject");
+  const marker = reviewObject?.nextElementSibling;
+  if (!(marker instanceof SVGRectElement) || publishObject == null) throw new Error("The fixture needs both painted cards and the focus bounds");
+  const button = review.getBoundingClientRect();
+  const outline = marker.getBoundingClientRect();
+  const gap = (button.left - outline.left) / 2;
+  expect(gap).toBeGreaterThan(0);
+  review.focus({ preventScroll: true });
+  expect(active()).toBe(review);
+  const graph = canvas.graph;
+  const layout = [
+    { nodeId: "review", x: 330, y: 100 },
+    { nodeId: "publish", x: 80 + outline.left + gap - publishHandle.getBoundingClientRect().right, y: 100 },
+  ];
+  canvas.layout = layout;
+  await settle(canvas);
+  const handle = publishHandle.getBoundingClientRect();
+  expect(publishObject.getBoundingClientRect().right).toBeLessThan(outline.left);
+  expect(handle.right).toBeGreaterThan(outline.left);
+  expect(handle.right).toBeLessThan(button.left);
+  expect(publishHandle.hasAttribute("data-ready")).toBe(true);
+  expect(canvas.shadowRoot?.elementFromPoint(outline.left + gap / 2, handle.top + handle.height / 2)).toBe(publishHandle);
+  expect(active(), "a ready later Move handle covering only the focus inset recovers to Publish").toBe(publish);
+  expect(await axButtons()).not.toContain("Initial review");
+  expect(requests).toEqual([]);
+  expect([pane.scrollLeft, pane.scrollTop]).toEqual([0, 0]);
+
+  await askReveal(canvas, "review");
+  await settle(canvas);
+  expect(active()).toBe(review);
+  expect(await axButtons()).toContain("Initial review");
+  expect(publishHandle.hasAttribute("data-ready")).toBe(false);
+  expect(canvas.graph).toBe(graph);
+  expect(canvas.layout).toBe(layout);
+  expect(canvas.selectedNodeId).toBe("review");
+  expect([pane.scrollLeft, pane.scrollTop]).toEqual([0, 0]);
+  expect(requests).toEqual([]);
+  await commands.press("Enter");
+  expect(requests).toEqual([selectRequest("review")]);
+}
+
 async function assertPanelCoverageRecovery(): Promise<void> {
   const { canvas, requests } = await arranging();
   const publish = action(canvas, "publish");
@@ -835,6 +887,7 @@ describe("workflow canvas arranging in process", () => {
       await assertLivePointerAdmission("clip");
       await assertSingleAxisDrag(40, 0, { x: 155, y: 35 });
       await assertSeparateHandleCoverage("pane clip");
+      await assertMoveHandleFocusInsetCoverage();
     } else {
       await assertRepeatedPointerDown();
       await assertDisconnectEndsCapture();

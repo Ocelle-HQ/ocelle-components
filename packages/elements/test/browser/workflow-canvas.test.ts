@@ -333,6 +333,85 @@ async function canvasActionNames(page: Page): Promise<string[]> {
   }
 }
 
+async function assertBuiltMoveHandleOverlap(): Promise<void> {
+  const { page, finish } = await mount(true);
+  const canvas = page.locator("#canvas");
+  await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+    element.graph = {
+      nodes: element.graph.nodes.slice(0, 2),
+      connections: element.graph.connections.filter(({ destinationId }) => destinationId === "publish"),
+    };
+    element.selectedNodeId = "review";
+    element.layout = [{ nodeId: "review", x: 330, y: 100 }, { nodeId: "publish", x: 80, y: 100 }];
+    await element.updateComplete;
+    await document.fonts.ready;
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  const original = await canvas.locator("ocelle-workflow-node").first().locator("button").elementHandle();
+  await original.evaluate((button) => { button.focus({ preventScroll: true }); });
+  expect(await focusedId(page)).toBe("review");
+  const geometry = await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+    const root = element.shadowRoot;
+    const [review, publish] = root?.querySelectorAll("ocelle-workflow-node") ?? [];
+    const action = review?.shadowRoot?.querySelector("button");
+    const outline = review?.closest("foreignObject")?.nextElementSibling;
+    const card = publish?.closest("foreignObject");
+    const handle = root?.querySelector('.move-handle[data-node-id="publish"]');
+    if (root === null || action == null || outline == null || card == null || handle == null) {
+      throw new Error("The built fixture needs both cards, the native action, and its outlined Move overlap");
+    }
+    const bounds = action.getBoundingClientRect();
+    const earlierOutline = outline.getBoundingClientRect();
+    const before = handle.getBoundingClientRect();
+    const midY = (bounds.top + bounds.bottom) / 2;
+    element.layout = [
+      { nodeId: "review", x: 330, y: 100 },
+      { nodeId: "publish", x: 80 + bounds.left - 8 - before.left, y: 100 + midY - (before.top + before.bottom) / 2 },
+    ];
+    await element.updateComplete;
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return {
+      cardClearsOutline: card.getBoundingClientRect().right < earlierOutline.left,
+      handleWinsHitTest: root.elementFromPoint(bounds.left + 10, midY) === handle,
+      handleReady: handle.hasAttribute("data-ready"),
+    };
+  });
+  expect(geometry).toEqual({ cardClearsOutline: true, handleWinsHitTest: true, handleReady: true });
+  const state = await controlledState(canvas);
+  expect(state.scroll).toEqual([0, 0]);
+  expect(await canvasActionNames(page), "the built AX tree excludes Review under the ready later Move handle").toEqual(["Publish"]);
+  expect(await focusedId(page)).toBe("publish");
+  expect(await requests(page)).toEqual([]);
+
+  const reveal = page.getByRole("button", { name: "Reveal step" });
+  await reveal.focus();
+  await page.keyboard.press("Tab");
+  expect(await focusedId(page)).toBe("publish");
+  expect(await requests(page)).toEqual([]);
+
+  const picker = page.getByRole("combobox", { name: "Step" });
+  await picker.selectOption("review");
+  await picker.focus();
+  await page.keyboard.press("Tab");
+  expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+  await page.keyboard.press("Enter");
+  await expect.poll(() => focusedId(page)).toBe("review");
+  expect(await original.evaluate((button) => button.isConnected && button.matches(":focus"))).toBe(true);
+  expect((await canvasActionNames(page)).sort()).toEqual(["Initial review", "Publish"]);
+  expect(await requests(page)).toEqual([]);
+  expect(await controlledState(canvas)).toEqual(state);
+
+  await page.keyboard.press("ArrowRight");
+  expect(await focusedId(page)).toBe("publish");
+  await page.keyboard.press("ArrowLeft");
+  expect(await focusedId(page)).toBe("review");
+  expect(await requests(page)).toEqual([]);
+  await page.keyboard.press("Enter");
+  expect(await requests(page)).toEqual([{ type: selection, detail: { nodeId: "review" } }]);
+  expect(await controlledState(canvas)).toEqual(state);
+  expect(await finish()).toEqual(clean);
+}
+
 async function observeClipping(action: Locator) {
   return action.evaluate(async (button) => {
     const node = (button.getRootNode() as ShadowRoot).host;
@@ -1241,6 +1320,8 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     await page.mouse.up();
     expect(await requests(page)).toEqual([]);
     expect(await finish()).toEqual(clean);
+    await page.context().close();
+    await assertBuiltMoveHandleOverlap();
   });
 
   it.each([
