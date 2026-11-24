@@ -80,13 +80,21 @@ export function canvasViewportPoint(point: WorkflowCanvasPoint, view: WorkflowCa
   return { x: point.x * view.scale + view.x, y: point.y * view.scale + view.y };
 }
 
+export function canvasScreenInverse(map: SVGSVGElement): DOMMatrix | null {
+  const transform = map.getScreenCTM();
+  if (transform === null || map.getClientRects().length === 0) return null;
+  // The legacy SVG matrix can throw when a host transform temporarily has zero scale.
+  const inverse = DOMMatrix.fromMatrix(transform).invertSelf();
+  return inverse.toFloat64Array().every(Number.isFinite) ? inverse : null;
+}
+
 export function canvasRevealViewport(
   view: WorkflowCanvasViewport,
   map: SVGSVGElement,
   action: HTMLButtonElement,
 ): WorkflowCanvasViewport | null {
-  const inverse = map.getScreenCTM()?.inverse();
-  if (inverse === undefined) return null;
+  const inverse = canvasScreenInverse(map);
+  if (inverse === null) return null;
   const actionBounds = canvasActionBounds(action, map.getScreenCTM());
   const clip = effectiveCanvasClip(map);
   const fits = clip.right - clip.left >= actionBounds.right - actionBounds.left
