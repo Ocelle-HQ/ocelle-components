@@ -290,11 +290,14 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(face?.parentElement?.hasAttribute("hidden")).toBe(true);
     if (face === undefined || face === null) throw new Error("The unpositioned node must keep its DOM identity");
     const readHiddenBounds = vi.spyOn(face, "getBoundingClientRect");
+    const readHiddenWidth = vi.spyOn(face, "offsetWidth", "get");
     try {
       window.dispatchEvent(new Event("resize"));
       expect(readHiddenBounds).not.toHaveBeenCalled();
+      expect(readHiddenWidth).not.toHaveBeenCalled();
     } finally {
       readHiddenBounds.mockRestore();
+      readHiddenWidth.mockRestore();
     }
 
     named.picker.value = "publish";
@@ -520,6 +523,53 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toHaveLength(1);
     expect(requests[0]?.type).toBe(viewport);
     expect(canvas.viewport).toEqual(initialViewport);
+  });
+
+  it("keeps external focus when the named reveal could never acquire initiating focus", async () => {
+    const { canvas, before, requests } = await mount();
+    const { picker, button } = revealControls(canvas);
+    picker.value = "revise";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    before.focus();
+
+    canvas.inert = true;
+    button.click();
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(before);
+
+    canvas.inert = false;
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
+    expect(active()).toBe(before);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+  });
+
+  it("schedules one paint update when a covered named action is revealed", async () => {
+    const { canvas, requests } = await mount();
+    canvas.layout = [{ nodeId: "review", x: 40, y: 20 }, { nodeId: "publish", x: 40, y: 20 }];
+    await settle(canvas);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    const { picker, button } = revealControls(canvas);
+    expect(picker.value).toBe("review");
+
+    const update = vi.spyOn(canvas, "requestUpdate");
+    try {
+      button.click();
+      expect(active()).toBe(button);
+      expect(update).toHaveBeenCalledTimes(1);
+      window.dispatchEvent(new Event("resize"));
+      window.dispatchEvent(new Event("resize"));
+      expect(update).toHaveBeenCalledTimes(1);
+
+      await settle(canvas);
+      expect(active()).toBe(action(canvas, "review"));
+      expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+      expect(requests).toEqual([]);
+    } finally {
+      update.mockRestore();
+    }
   });
 
   it.each([
@@ -953,6 +1003,15 @@ describe("workflow canvas in-process selection and navigation", () => {
     review.focus({ preventScroll: true });
     expect(active()).toBe(review);
     expect([review.tabIndex, publish.tabIndex]).toEqual([0, -1]);
+    const step = getNode(canvas, "review");
+    if (step === undefined) throw new Error("The focused step must still exist");
+    const refocus = vi.spyOn(step, "focus");
+    try {
+      window.dispatchEvent(new Event("resize"));
+      expect(refocus).not.toHaveBeenCalled();
+    } finally {
+      refocus.mockRestore();
+    }
 
     before.focus();
     await Promise.resolve();
