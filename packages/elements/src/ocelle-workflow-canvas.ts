@@ -512,6 +512,8 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (action.face.inert) {
       event.preventDefault();
       event.stopImmediatePropagation();
+      // A same-task host restore can leave no intersection transition for the observer.
+      this.ownerDocument.defaultView?.requestAnimationFrame(this.#onGeometryChange);
     }
   };
 
