@@ -714,6 +714,58 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([selectRequest("review")]);
   });
 
+  it("repairs idle eligibility when the host stylesheet partially clips only the focus outline", async () => {
+    const { canvas, frame, pane, sheet, requests } = await mount(true);
+    const review = action(canvas, "review");
+    const publish = action(canvas, "publish");
+    const face = getNode(canvas, "review")?.parentElement;
+    const outline = face?.parentElement?.nextElementSibling;
+    if (face == null || !(outline instanceof SVGRectElement)) throw new Error("The review action is missing its focus outline");
+
+    const ratio = (target: Element) => new Promise<number | undefined>((resolve) => {
+      const observer = new IntersectionObserver(([entry]) => {
+        observer.disconnect();
+        resolve(entry?.intersectionRatio);
+      });
+      observer.observe(target);
+    });
+    const hostState = () => ({
+      width: frame.offsetWidth, height: frame.offsetHeight, paneWidth: pane.clientWidth,
+      scroll: [pane.scrollLeft, pane.scrollTop], viewport: canvas.viewport,
+    });
+    const actionState = () => ({ focused: focusId(canvas), inert: face.inert, hidden: face.getAttribute("aria-hidden") });
+    review.focus({ preventScroll: true });
+    await settle(canvas);
+    expect(actionState()).toEqual({ focused: "review", inert: false, hidden: null });
+    expect(await ratio(outline)).toBe(1);
+
+    const before = hostState();
+    const left = review.getBoundingClientRect().left;
+    const focusOutset = left - outline.getBoundingClientRect().left;
+    const shift = pane.getBoundingClientRect().left - left + focusOutset / 2;
+    expect(focusOutset).toBeGreaterThan(0);
+    // Editing the adopted sheet changes position without changing a host DOM attribute.
+    sheet.replaceSync(`${fixtureStyles(760)} #canvas-frame { transform: translateX(${String(shift)}px); }`);
+    const partial = await ratio(outline) ?? 0;
+    expect(partial).toBeGreaterThan(0);
+    expect(partial).toBeLessThan(1);
+    expect(await ratio(review), "the native button remains fully in view while its focus outline clips").toBe(1);
+    await expect.poll(actionState, { message: "idle clipping moves native focus to the visible survivor" })
+      .toEqual({ focused: "publish", inert: true, hidden: "true" });
+    expect(active()).toBe(publish);
+    expect(hostState()).toEqual(before);
+    expect(requests).toEqual([]);
+
+    await settle(canvas);
+    sheet.replaceSync(fixtureStyles(760));
+    expect(await ratio(outline)).toBe(1);
+    await expect.poll(actionState, { message: "the idle outline becomes eligible again without stealing focus" })
+      .toEqual({ focused: "publish", inert: false, hidden: null });
+    expect(action(canvas, "review")).toBe(review);
+    expect(hostState()).toEqual(before);
+    expect(requests).toEqual([]);
+  });
+
   it("releases real canvas observers and listener signals after node and canvas removal", async () => {
     const listenOnWindow = vi.spyOn(window, "addEventListener");
     const listen = vi.spyOn(EventTarget.prototype, "addEventListener");
@@ -1210,6 +1262,28 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([selectRequest("review")]);
   });
 
+  it("requires browser visibility when an action lies wholly in a polygon cutout", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule("#canvas-pane { block-size: 445px; overflow: visible; }", sheet.cssRules.length);
+    sheet.insertRule("#canvas-pane.cutout { clip-path: polygon(0 0, 100% 0, 100% 282px, 240px 282px, 240px 386px, 100% 386px, 100% 100%, 0 100%); }", sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    publish.focus({ preventScroll: true });
+    expect(active()).toBe(publish);
+
+    const { left, right, top, bottom } = publish.getBoundingClientRect();
+    const root = publish.getRootNode() as ShadowRoot;
+    const hit = () => publish.contains(root.elementFromPoint((left + right) / 2, (top + bottom) / 2));
+    expect(hit()).toBe(true);
+    pane.classList.add("cutout");
+    expect(hit()).toBe(false);
+    const nativeClick = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(nativeClick)).toBe(false);
+    expect(active()).toBe(action(canvas, "review"));
+    expect(requests).toEqual([]);
+  });
+
   it.each([
     { key: "ArrowLeft", capture: "keydown" },
     { key: "Enter", capture: "click" },
@@ -1505,6 +1579,40 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toHaveLength(1);
     const restoredNames = await axButtons();
     expect(restoredNames.some((name) => name.startsWith("Revise"))).toBe(true);
+  });
+
+  it.each([
+    { name: "clipped enabled", offset: -1000, disabled: false, inView: false },
+    { name: "visible disabled", offset: 0, disabled: true, inView: true },
+  ])("skips a $name first control during native focus recovery", async ({ offset, disabled, inView }) => {
+    const { canvas, pane, requests } = await mount(true);
+    const { picker, button: reveal } = revealControls(canvas);
+    const root = canvas.shadowRoot;
+    if (root === null) throw new Error("The canvas is missing its shadow root");
+    const appearance = new CSSStyleSheet();
+    appearance.replaceSync(`.navigator select { transform: translateX(${String(offset)}px); }`);
+    root.adoptedStyleSheets = [...root.adoptedStyleSheets, appearance];
+    picker.disabled = disabled;
+    await settle(canvas);
+
+    const clip = pane.getBoundingClientRect();
+    const visibleInPane = (control: HTMLElement) => {
+      const box = control.getBoundingClientRect();
+      return clip.left <= box.left && box.right <= clip.right && clip.top <= box.top && box.bottom <= clip.bottom;
+    };
+    expect({ disabled: picker.matches(":disabled"), visible: visibleInPane(picker) }).toEqual({ disabled, visible: inView });
+    expect({ disabled: reveal.matches(":disabled"), visible: visibleInPane(reveal) }).toEqual({ disabled: false, visible: true });
+    const publish = action(canvas, "publish");
+    publish.focus({ preventScroll: true });
+    expect(active()).toBe(publish);
+
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    canvas.viewport = { x: -2000, y: 0, scale: 1 };
+    await settle(canvas);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(active(), "the eligible native Reveal control receives focus").toBe(reveal);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([]);
   });
 
   it("recovers an idle clipped reveal initiator to the visible named picker without scrolling", async () => {

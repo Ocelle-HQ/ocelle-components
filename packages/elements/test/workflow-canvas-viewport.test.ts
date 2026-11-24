@@ -150,6 +150,85 @@ describe("workflow canvas viewport geometry", () => {
     });
   });
 
+  it.each([
+    ["transform", "rotate(10deg)"], ["rotate", "10deg"], ["scale", "1.25"],
+    ["perspective", "900px"], ["offset-path", 'path("M 10 20 L 50 60")'], ["zoom", "1.25"],
+  ])("uses the ordinary map bounds when polygon reference ancestry has %s", (property, value) => {
+    const { map, pane } = viewportFixture(250, 170);
+    const host = document.createElement("section");
+    document.body.append(host);
+    host.append(pane);
+    host.style.setProperty(property, value);
+    pane.style.cssText += "overflow: visible; clip-path: polygon(30px 20px, 100% 20px, 100% 80%, 30px 80%);";
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+
+    expect(effectiveCanvasClip(map)).toEqual({
+      left: Math.max(0, left), top: Math.max(0, top),
+      right: Math.min(document.documentElement.clientWidth, right),
+      bottom: Math.min(document.documentElement.clientHeight, bottom),
+    });
+  });
+
+  it.each([
+    "polygon(30px 20px, 100% 20px, 100% 80%, 30px 80%) margin-box",
+    "polygon(calc(20% + 5px) 20px, 100% 20px, 100% 80%, 30px 80%)",
+  ])("uses the ordinary map bounds when polygon vertices or reference box need more geometry: %s", (path) => {
+    const { map, pane } = viewportFixture(250, 170);
+    pane.style.cssText += `overflow: visible; margin-bottom: 10px; clip-path: ${path};`;
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+
+    expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
+  });
+
+  it("leaves an SVG clip reference to the browser's SVG geometry", () => {
+    const pane = document.createElementNS(svg, "svg");
+    pane.style.cssText = "display: block; width: 250px; height: 170px; overflow: visible; clip-path: polygon(20px 10px, 100% 10px, 100% 80%, 20px 80%);";
+    const map = document.createElementNS(svg, "svg");
+    map.setAttribute("width", "400");
+    map.setAttribute("height", "300");
+    const face = document.createElementNS(svg, "rect");
+    face.setAttribute("width", "400");
+    face.setAttribute("height", "300");
+    map.append(face);
+    pane.append(map);
+    document.body.append(pane);
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+
+    expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
+  });
+
+  it("uses the ordinary map bounds for a fragmented CSS polygon reference box", () => {
+    const { map } = viewportFixture(250, 170);
+    const wrapper = document.createElement("span");
+    wrapper.style.clipPath = "polygon(25px 10px, 100% 10px, 100% 80%, 25px 80%)";
+    wrapper.append("First line", document.createElement("br"), "Second line", map);
+    document.body.append(wrapper);
+    expect(wrapper.getClientRects().length).toBeGreaterThan(1);
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+
+    expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
+  });
+
+  it.each([
+    { name: "enclosing edges", points: [[-10, -10], [30, -10], [30, 30], [-10, 30]], crosses: false },
+    { name: "closing edge", points: [[10, -10], [30, -10], [30, 30], [10, 30]], crosses: true },
+    { name: "left boundary", points: [[0, -10], [30, -10], [30, 30], [0, 30]], crosses: false },
+    { name: "top boundary", points: [[-10, 0], [30, 0], [30, 30], [-10, 30]], crosses: false },
+    { name: "exact corner", points: [[-10, 10], [10, -10], [-10, -10]], crosses: false },
+    { name: "diagonal crossing", points: [[-10, 20], [20, -10], [-10, -10]], crosses: true },
+    { name: "right boundary", points: [[20, -10], [30, -10], [30, 30], [20, 30]], crosses: false },
+    { name: "disjoint axis intervals", points: [[10, -25], [30, 5], [30, -25]], crosses: false },
+    { name: "extension before start", points: [[30, 30], [50, 50], [45, 30]], crosses: false },
+    { name: "extension beyond end", points: [[-30, -30], [-5, -5], [-40, -5]], crosses: false },
+  ] as const)("checks every polygon segment for an interior outline crossing at the $name", async ({ points, crosses }) => {
+    const { canvasContourCrossesOutline } = await import("../src/workflow-canvas-viewport.ts");
+    const [first, ...rest] = points;
+    const outline = { left: 0, top: 0, right: 20, bottom: 20 };
+
+    expect(canvasContourCrossesOutline([{ x: first[0], y: first[1] }, ...rest.map(([x, y]) => ({ x, y }))], outline))
+      .toBe(crosses);
+  });
+
   it("measures content-box inset percentages relative to the scaled content edges", () => {
     const { map, pane } = viewportFixture(120, 90);
     pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
