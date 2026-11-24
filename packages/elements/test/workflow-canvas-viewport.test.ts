@@ -141,6 +141,15 @@ describe("workflow canvas viewport geometry", () => {
     expect(effectiveCanvasClip(map)).toEqual({ left: 132, top: 91, right: 360, bottom: 397 });
   });
 
+  it("uses the outer bounds of a resolved straight-edge polygon for a viewport proposal", () => {
+    const { map, pane } = viewportFixture(250, 170);
+    pane.style.cssText += "overflow: visible; clip-path: polygon(evenodd, 25px 10px, 75% 10px, 75% 80%, 25px 80%);";
+
+    expect(effectiveCanvasClip(map), "pixel and percentage vertices share the HTML border box").toEqual({
+      left: 145, top: 90, right: 307.5, bottom: 216,
+    });
+  });
+
   it("measures content-box inset percentages relative to the scaled content edges", () => {
     const { map, pane } = viewportFixture(120, 90);
     pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
