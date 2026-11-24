@@ -119,3 +119,9 @@ The full hosted judge for the round 5 candidate `892326d2c382f06b56fe97eae28303f
 ```text
 plants: 317 plants of 17 gates and the registry judged, every plant as expected
 ```
+
+The hosted judge for the curved placement candidate `b380398313474026f949af38ee549bc486b778fe` exited 0. GitHub tested the identical tree at synthetic merge `48cf346274ca48c3dfd3d3d212e846827d554ea5`. [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45419174274/job/138547670433)
+
+```text
+plants: 317 plants of 17 gates and the registry judged, every plant as expected
+```
