@@ -443,6 +443,31 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("remeasures edge anchors when the host enlarges fully visible node controls", async () => {
+    const { canvas, sheet, requests } = await mount(true);
+    const card = getNode(canvas, "review");
+    const map = canvas.shadowRoot?.querySelector("svg");
+    const edge = map?.querySelector("path");
+    if (card === undefined || map === undefined || map === null || edge === undefined || edge === null) {
+      throw new Error("The size change fixture needs its displayed node and edge");
+    }
+    const start = () => edge.getPointAtLength(0).x;
+    const initialStart = start();
+    const initialWidth = card.getBoundingClientRect().width;
+    expect(card.parentElement?.inert).toBe(false);
+
+    sheet.replaceSync(`${fixtureStyles(760)}\n${tag} { --ocelle-target-min: 56px; }`);
+    await expect.poll(start).toBeGreaterThan(initialStart + 20);
+    const rect = card.getBoundingClientRect();
+    expect(rect.width).toBeGreaterThan(initialWidth + 20);
+    expect(start()).toBeCloseTo(rect.right - map.getBoundingClientRect().left, 0);
+    expect(card.parentElement?.inert).toBe(false);
+    expect(canvas.layout).toEqual(initialLayout);
+    expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([]);
+  });
+
+
   it("draws the supplied branching graph, carrying the labels and source outcomes into the existing node controls", async () => {
     const { canvas, requests } = await mount();
     const rendered = [...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []];
