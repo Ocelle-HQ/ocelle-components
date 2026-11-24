@@ -6,7 +6,7 @@
 // fixture pages. The protected names below are the seams src/live.ts and src/ocelle-notice.ts declare in green; the
 // tests run untyped (the typecheck gate runs at the phase's end), so the plants load against the scaffold too.
 import type { PropertyValues } from "lit";
-import { Announcer } from "../../src/live.ts";
+import { afterTask, Announcer } from "../../src/live.ts";
 import { OcelleNotice } from "../../src/ocelle-notice.ts";
 
 type Read = () => { readonly text: string; readonly politeness: "polite" | "assertive" };
@@ -31,10 +31,20 @@ class NoWait extends Announcer {
 
 /** Merge window: no restart; each trigger writes the text it saw after its own wait. */
 class NoRestart extends Announcer {
+  #afterRender = Promise.resolve();
+
   protected override wait(): void {
     const { text, politeness } = this.read();
     setTimeout(() => {
-      this.write(this.normalise(text), politeness);
+      this.#afterRender = this.#afterRender.then(() => {
+        this.write(this.normalise(text), politeness);
+        // Each timer still writes its captured text. Keep one rendering opportunity between due writes.
+        return new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => { afterTask(resolve); });
+          });
+        });
+      });
     }, this.waitTime());
   }
 }
