@@ -454,8 +454,8 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #documentFocusIsUnclaimed(): boolean {
-    const active = this.ownerDocument.activeElement;
-    return active === this.ownerDocument.body || active === this.ownerDocument.documentElement;
+    // activeElement can fall back to the body or document element when neither has focus.
+    return !this.ownerDocument.activeElement?.matches(":focus");
   }
 
   #watchGeometry(map: SVGSVGElement, actions: readonly NodeAction[]): void {
