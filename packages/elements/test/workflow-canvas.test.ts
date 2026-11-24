@@ -1026,17 +1026,29 @@ describe("workflow canvas in-process selection and navigation", () => {
     const publish = getNode(canvas, "publish");
     expect(review?.parentElement?.inert).toBe(false);
     expect(publish?.parentElement?.inert).toBe(false);
+    if (review === undefined) throw new Error("The geometry update needs a rendered workflow node");
 
-    canvas.viewport = { ...initialViewport, x: -240 };
-    await canvas.updateComplete;
-    await Promise.all([review?.updateComplete, publish?.updateComplete]);
-    await Promise.resolve();
+    const pending = Promise.withResolvers<boolean>();
+    const nodeUpdate = vi.spyOn(review, "updateComplete", "get").mockReturnValue(pending.promise);
+    try {
+      canvas.viewport = { ...initialViewport, x: -240 };
+      await canvas.updateComplete;
+      await Promise.all([publish?.updateComplete]);
+      await Promise.resolve();
+      expect(review.parentElement?.inert, "geometry waits for the child render").toBe(false);
 
-    expect(review?.parentElement?.inert).toBe(true);
-    expect(review?.parentElement?.getAttribute("aria-hidden")).toBe("true");
-    expect(publish?.parentElement?.inert).toBe(false);
-    expect(action(canvas, "publish").tabIndex).toBe(0);
-    expect(requests).toEqual([]);
+      pending.resolve(true);
+      await Promise.all([review.updateComplete, publish?.updateComplete]);
+      await Promise.resolve();
+      expect(review.parentElement?.inert).toBe(true);
+      expect(review.parentElement?.getAttribute("aria-hidden")).toBe("true");
+      expect(publish?.parentElement?.inert).toBe(false);
+      expect(action(canvas, "publish").tabIndex).toBe(0);
+      expect(requests).toEqual([]);
+    } finally {
+      pending.resolve(true);
+      nodeUpdate.mockRestore();
+    }
   });
 
   it("skips map measurement for named focus and a node blur queued before disconnect", async () => {
