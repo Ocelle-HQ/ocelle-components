@@ -106,3 +106,32 @@ Remaining issues covered by DOM evidence: a node wholly inside a polygon cutout 
 Strict recheck at the final survivor sites, viewport.ts lines 102–117 and ocelle-workflow-canvas.ts line 419
 Instrumented 28 mutants. Unmutated run passed 155 tests.
 Final recheck outcome: 24 killed, 0 survived, 4 compile errors, 0 timeout, 0 uncovered. Threshold 100 met in 45 seconds.
+
+R4-02 hosted survivors and exact local proof
+Hosted run 45384501909, shards 138412053476 and 138412053561, reported six survivors on ocelle-workflow-canvas.ts lines 216 and 550.
+
+$ pnpm exec stryker run <focused config> --mutate packages/elements/src/ocelle-workflow-canvas.ts:216-216,packages/elements/src/ocelle-workflow-canvas.ts:550-550
+The focused config uses the unchanged strict threshold of 100, the repository TypeScript checker, per-test coverage and the elements project's Playwright runner. The selected file is packages/elements/test/workflow-canvas.test.ts.
+The unmutated run passed 66 tests. The sandbox instrumented 10 mutants and killed all 10, with zero survivors, timeouts, uncovered mutants or compile errors. Mutation score 100, elapsed 1m15s.
+
+Hosted mutant                                    Result  Killing test
+216 BlockStatement {}                            Killed  Idle stylesheet-only focus outline
+216 CallExpression ;                             Killed  Idle stylesheet-only focus outline
+216 ObjectLiteral {}                             Killed  Idle stylesheet-only focus outline
+216 ArrayDeclaration []                          Killed  Idle stylesheet-only focus outline
+550 ConditionalExpression true                   Killed  Clipped enabled first control
+550 LogicalOperator enabled || visible           Killed  Clipped enabled first control
+
+$ pnpm exec vitest run --project elements --project elements-browser packages/elements/test/{workflow-canvas.test.ts,browser/workflow-canvas.test.ts,workflow-canvas-graph.test.ts,workflow-canvas-navigation.test.ts,workflow-canvas-viewport.test.ts}
+Test Files 5 passed (5)
+Tests 189 passed (189)
+Duration 30.82s
+
+$ pnpm run gate:typecheck
+typecheck: no type error in the files of tsconfig.json
+
+$ pnpm run gate:test-lint
+test-lint: 490 files checked, no finding
+
+$ pnpm run gate:lint
+lint: 651 files checked, no finding
