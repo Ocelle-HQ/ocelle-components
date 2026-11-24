@@ -39,7 +39,7 @@ Use a rectangular overflow or paint-containment pane, or one of these CSS clip p
 
 Keep the shaped host pane in one unfragmented box and its HTML ancestor chain axis-aligned. Use translation and positive scaling through the CSS `transform` property. A wrapper with `display: contents` has no clipping box.
 
-Custom CSS outlines such as `path()` and shapes supplied through SVG clip references are follow-up work. Use a supported host clip when placing the canvas inside a clipped panel.
+Use a supported host clip when placing the canvas inside a clipped panel. Custom CSS outlines such as `path()` and shapes supplied through SVG clip references are tracked separately. [Custom clipping follow-up](https://github.com/Ocelle-HQ/ocelle-components/issues/95)
 
 ## Keyboard, touch and host inspector
 

@@ -459,6 +459,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       // A supported outline crosses no resolved straight edge and every corner hits the browser's painted clip.
       return read({
         bounds,
+        contours,
         contains: (outline) => isInsideCanvasClip(bounds, outline)
           && !contours.some((contour) => canvasContourCrossesOutline(contour, outline))
           && (probe === null || this.#clipCornersHit(probe, outline)),

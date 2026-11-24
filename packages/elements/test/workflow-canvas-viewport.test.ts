@@ -429,6 +429,53 @@ describe("workflow canvas viewport geometry", () => {
     expect(canvasRevealViewport(view, map, action)).toEqual(expected);
   });
 
+  it("includes each bounded cross-section cell and contact of a translated diagonal edge", async () => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+    const outline = { left: 0, top: 0, right: 6, bottom: 4 };
+    const sections = canvasClipSections(outline, {
+      bounds: { left: 10, top: 20, right: 30, bottom: 40 },
+      contours: [[{ x: 10, y: 20 }, { x: 30, y: 20 }, { x: 10, y: 40 }]],
+    });
+    if (sections === undefined) throw new Error("The clip bounds can fit the outline");
+
+    // The two contact lines are x + y = 45 and x + y = 55. Their cuts divide both axes.
+    expect(new Set(sections.rows(19))).toEqual(new Set([22, 24, 26, 31, 36, 37, 38]));
+    expect(new Set(sections.columns())).toEqual(new Set([13, 15, 17, 20, 23, 25, 27]));
+  });
+
+  it("includes each vertex contact and the closing edge of an oblique polygon", async () => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+    const sections = canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, {
+      bounds: { left: 0, top: 0, right: 50, bottom: 50 },
+      contours: [[{ x: 10, y: 10 }, { x: 42, y: 14 }, { x: 24, y: 44 }]],
+    });
+    if (sections === undefined) throw new Error("The clip bounds can fit the outline");
+
+    // The contacts 4x - 32y = -356 and 30x + 18y = 1386 cross at x = 37944 / 1032.
+    expect([...sections.columns()]).toEqual(expect.arrayContaining([7, 13, 39, 45, 21, 27, 37944 / 1032]));
+    expect([...sections.rows(23)]).toEqual(expect.arrayContaining([8, 12, 16, 42, 46, 226 / 7]));
+  });
+
+  it("retains a single outline center when both clip dimensions are an exact fit", async () => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+    const sections = canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, {
+      bounds: { left: 10, top: 20, right: 16, bottom: 24 }, contours: [],
+    });
+    if (sections === undefined) throw new Error("The clip bounds fit the outline exactly");
+
+    expect([...sections.columns()]).toEqual([13]);
+    expect([...sections.rows(13)]).toEqual([22]);
+  });
+
+  it.each([
+    ["width", { left: 10, top: 20, right: 15, bottom: 40 }],
+    ["height", { left: 10, top: 20, right: 30, bottom: 23 }],
+  ] as const)("has no cross-section when the outline exceeds the clip %s", async (_axis, bounds) => {
+    const { canvasClipSections } = await import("../src/workflow-canvas-viewport.ts");
+
+    expect(canvasClipSections({ left: 0, top: 0, right: 6, bottom: 4 }, { bounds, contours: [] })).toBeUndefined();
+  });
+
   it("declines a reveal while the SVG has no CSS box", () => {
     const { action, map } = viewportFixture(250, 170);
     map.style.display = "none";

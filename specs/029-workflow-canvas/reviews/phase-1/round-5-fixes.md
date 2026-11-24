@@ -14,4 +14,12 @@ The signed test-only commit `efc45e614bdee8284be6e8658e6096e3fc5548ee` recorded 
 
 The five focused files passed all 221 tests. Strict local mutation across the changed ranges of both TypeScript files scored 100%, with zero survivors and zero uncovered mutants. [Local checks](check-fix-round-5.log)
 
-The exact next candidate needs all 18 required checks, including the passing Unit aggregate and exact deferred visual and axe shard artifacts, all 37 emitted strict changed-source mutation shards and aggregate, and the complete Plants verdict. The phase-base and CI-base selectors agree. [Local checks](check-fix-round-5.log) · [Plants record](plants.md#round-5-fix)
+### Usable viewport when no map action is visible
+
+A translated C-shaped pane hid every map action. Its bounding center fell in the notch, while the lower arm could fit Publish and its focus outline. The viewport search keeps a valid preferred placement and then tests alternatives derived from the contour. It uses the positions where the outline touches a segment or vertex to divide the space into intervals, and validates each proposed outline through the live clip. [Placement search](../../../../packages/elements/src/workflow-canvas-viewport.ts#L289)
+
+The signed test-only commit `fa1b18c358eedbdd99a95642832a3748efd68ff5` recorded four named failures. The built test accepts the one emitted viewport, keeps scroll fixed, and verifies that focus reaches the original native Publish action, which then emits one selection. In-process Chromium also checks an off-center vertical strip, a diagonal edge, an opening that fits the outline exactly, and a pane with no usable aperture. [Supplemental RED](red-fix-51.log) · [Placement checks](check-fix-round-51.log)
+
+All 232 focused tests passed. Strict mutation across the changed ranges of both production files scored 100%, with zero survivors and zero uncovered mutants. [Placement checks](check-fix-round-51.log)
+
+The exact next candidate needs all 18 required checks, including the passing Unit aggregate and exact deferred visual and axe shard artifacts, all 41 emitted strict changed-source mutation shards and aggregate, and the complete Plants verdict. The phase-base and CI-base selectors agree. [Placement checks](check-fix-round-51.log) · [Plants record](plants.md#round-5-placement-follow-up)
