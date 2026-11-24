@@ -290,12 +290,17 @@ describe("workflow canvas in-process selection and navigation", () => {
     if (edge === undefined || edge === null || review === undefined || publish === undefined || transform === undefined || transform === null) {
       throw new Error("The real SVG connection and its two measured cards must be present");
     }
-    const start = edge.getPointAtLength(0).matrixTransform(transform);
-    const end = edge.getPointAtLength(edge.getTotalLength()).matrixTransform(transform);
+    const sourcePoint = edge.getPointAtLength(0);
+    const destinationPoint = edge.getPointAtLength(edge.getTotalLength());
+    const start = sourcePoint.matrixTransform(transform);
+    const end = destinationPoint.matrixTransform(transform);
     expect(start.x).toBeCloseTo(review.right, 0);
     expect(start.y).toBeCloseTo((review.top + review.bottom) / 2, 0);
     expect(end.x).toBeCloseTo(publish.left, 0);
     expect(end.y).toBeCloseTo((publish.top + publish.bottom) / 2, 0);
+    const route = edge.getBBox();
+    expect(route.x).toBeCloseTo(Math.min(sourcePoint.x, destinationPoint.x), 0);
+    expect(route.x + route.width).toBeCloseTo(Math.max(sourcePoint.x, destinationPoint.x), 0);
     expect(canvas.layout).toEqual(layout);
     expect(canvas.viewport).toEqual({ x: 83, y: -22, scale: 1.25 });
     expect(requests).toEqual([]);
@@ -518,6 +523,8 @@ describe("workflow canvas in-process selection and navigation", () => {
     const cardBounds = card.getBoundingClientRect();
     const mapBounds = map.getBoundingClientRect();
     expect(edgeBounds.right, "the loop exposes a visible arc outside the opaque step card").toBeGreaterThan(cardBounds.right + 5);
+    expect(edgeBounds.height).toBeGreaterThan(5);
+    expect(edgeBounds.right).toBeLessThan(cardBounds.right + cardBounds.height);
     expect(edgeBounds.right).toBeLessThan(mapBounds.right);
     expect(edgeBounds.top).toBeGreaterThan(mapBounds.top);
     expect(edgeBounds.bottom).toBeLessThan(mapBounds.bottom);
