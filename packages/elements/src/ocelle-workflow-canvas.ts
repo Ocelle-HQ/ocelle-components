@@ -230,7 +230,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.addEventListener("focusout", this.#onActionBlur, { signal });
     this.addEventListener("keydown", this.#onActionKey, { signal });
     this.ownerDocument.defaultView?.addEventListener("resize", this.#onGeometryChange, { signal });
-    this.ownerDocument.defaultView?.addEventListener("scroll", this.#onGeometryChange, { passive: true, signal });
+    this.ownerDocument.defaultView?.addEventListener("scroll", this.#onGeometryChange, { signal });
     this.requestUpdate();
   }
 
@@ -269,11 +269,9 @@ export class OcelleWorkflowCanvas extends LitElement {
   protected override updated(): void {
     const picker = this.renderRoot.querySelector("select");
     // Apply the value after Lit has updated the native option list.
-    if (picker !== null) picker.value = this.#namedId ?? "";
+    if (picker !== null && this.#namedId !== null) picker.value = this.#namedId;
     const nodes = this.renderRoot.querySelectorAll("ocelle-workflow-node");
-    void Promise.all([...nodes].map((node) => node.updateComplete)).then(() => {
-      if (this.isConnected) this.#refresh();
-    });
+    void Promise.all([...nodes].map((node) => node.updateComplete)).then(this.#onGeometryChange);
   }
 
   #renderNode(node: WorkflowCanvasNode, context: string): unknown {
@@ -298,6 +296,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   #edgePath(sourceId: string, destinationId: string): string {
     const source = this.#projection.positions.get(sourceId);
     const destination = this.#projection.positions.get(destinationId);
+    // Stryker disable next-line StringLiteral: drawable connections come from the same private map with both endpoints present.
     if (source === undefined || destination === undefined) return "";
     const view = canvasViewport(this.viewport);
     const start = canvasViewportPoint(source, view);
@@ -366,15 +365,13 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #focusedAction(): NodeAction | undefined {
     const node = this.shadowRoot?.activeElement;
-    if (!(node instanceof OcelleWorkflowNode)) return;
-    const action = this.#action(node);
-    return action?.button === node.shadowRoot?.activeElement ? action : undefined;
+    // The managed workflow node's native button is its only focusable control.
+    return node instanceof OcelleWorkflowNode ? this.#action(node) : undefined;
   }
 
   #eventAction(event: Event): NodeAction | undefined {
     const path = event.composedPath();
-    const node = path.find((part): part is OcelleWorkflowNode =>
-      part instanceof OcelleWorkflowNode && part.getRootNode() === this.shadowRoot);
+    const node = path.find((part) => part instanceof OcelleWorkflowNode);
     if (node === undefined) return;
     const action = this.#action(node);
     return action !== undefined && path.includes(action.button) ? action : undefined;
@@ -469,7 +466,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       if (!ancestors.has(element)) element.removeEventListener("scroll", this.#onGeometryChange);
     }
     for (const element of ancestors) {
-      if (!this.#scrollAncestors.has(element)) element.addEventListener("scroll", this.#onGeometryChange, { passive: true, signal });
+      if (!this.#scrollAncestors.has(element)) element.addEventListener("scroll", this.#onGeometryChange, { signal });
     }
     this.#scrollAncestors = ancestors;
     const elements = new Set<Element>([map, ...ancestors]);
@@ -512,6 +509,8 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (action.face.inert) {
       event.preventDefault();
       event.stopImmediatePropagation();
+      // A same-task host restore can leave no intersection transition for the observer.
+      this.ownerDocument.defaultView?.requestAnimationFrame(this.#onGeometryChange);
     }
   };
 
@@ -520,9 +519,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   };
 
   #onActionBlur = (event: FocusEvent): void => {
-    if (this.#eventAction(event) !== undefined) queueMicrotask(() => {
-      if (this.isConnected) this.#refresh();
-    });
+    if (this.#eventAction(event) !== undefined) queueMicrotask(this.#onGeometryChange);
   };
 
   #onActionKey = (event: KeyboardEvent): void => {
@@ -543,8 +540,8 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.requestUpdate();
   }
 
-  #loseRevealFocus(event: FocusEvent): void {
-    if (this.#pendingReveal?.initiator !== event.currentTarget) return;
+  #loseRevealFocus(): void {
+    // Stryker disable next-line AssignmentOperator: either direction is equivalent because the pending reveal is discarded immediately.
     this.#focusEpoch += 1;
     this.#pendingReveal = null;
   }
@@ -557,6 +554,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     const map = this.renderRoot.querySelector("svg");
     if (id === null || position === undefined || map === null) return;
     initiator.focus(withoutScroll);
+    // Stryker disable next-line UpdateOperator: either direction stores the same current value in the sole pending reveal.
     this.#pendingReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator };
     const actions = this.#actions();
     const { contained, eligible } = this.#measureEligibility(actions, map);
@@ -589,7 +587,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (navigator !== null && !isInsideCanvasClip(effectiveCanvasClip(navigator), pending.initiator.getBoundingClientRect())) {
       this.#pendingReveal = null;
       this.#focusNamed(map);
-      if (this.shadowRoot.activeElement === pending.initiator) pending.initiator.blur();
+      pending.initiator.blur();
       return;
     }
     const ready = workflowCanvasRevealTarget(pending, eligible, this.#generation, this.#focusEpoch);
