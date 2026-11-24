@@ -2480,6 +2480,11 @@ and End navigate the visible steps in graph order. The named step picker include
 Reveal focuses the chosen step when its action is visible, or proposes a viewport when the positioned step is
 clipped. Names for unpositioned steps remain available in the picker.
 
+Use rectangular overflow or paint containment to clip the canvas. Supported CSS shapes on an unfragmented,
+axis-aligned HTML host include rounded `inset()`, `circle()`, `ellipse()` and simple straight-edge `polygon()`
+with pixel or percentage coordinates. Use positive scaling and translation through `transform`. Custom CSS
+paths and SVG clip references are tracked separately. [Custom clipping follow-up](https://github.com/Ocelle-HQ/ocelle-components/issues/95)
+
 Listen on the canvas for the existing `ocelle-workflow-node-select` request with `{ nodeId }` to apply a selection.
 Listen for `ocelle-workflow-canvas-viewport-request` with `{ viewport: { x, y, scale } }` to apply a view. Both requests
 bubble across shadow roots and leave the supplied state under host control. When the host accepts a view and the
