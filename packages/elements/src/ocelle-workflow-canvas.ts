@@ -566,7 +566,10 @@ export class OcelleWorkflowCanvas extends LitElement {
     }
     const action = actions.find(({ node }) => node.nodeId === id)?.button;
     const viewport = action === undefined ? null : canvasRevealViewport(canvasViewport(this.viewport), map, action);
-    if (viewport === null) return;
+    if (viewport === null) {
+      this.#pendingReveal = null;
+      return;
+    }
     this.dispatchEvent(new CustomEvent<WorkflowCanvasViewportRequestDetail>("ocelle-workflow-canvas-viewport-request", {
       detail: { viewport },
       bubbles: true,
