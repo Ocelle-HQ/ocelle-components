@@ -6060,6 +6060,177 @@
     {
       "declarations": [
         {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A host-controlled workflow map with native step selection and named navigation.",
+          "events": [
+            {
+              "description": "A proposal to reveal a named step in the viewport.",
+              "name": "ocelle-workflow-canvas-viewport-request",
+              "type": {
+                "text": "CustomEvent<WorkflowCanvasViewportRequestDetail>"
+              }
+            },
+            {
+              "description": "The original bubbling request from the native node action.",
+              "name": "ocelle-workflow-node-select",
+              "type": {
+                "text": "CustomEvent<{nodeId: string}>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "default": "{ nodes: [], connections: [] }",
+              "description": "Ordered workflow steps and their supplied outcome connections.",
+              "kind": "field",
+              "name": "graph",
+              "privacy": "public",
+              "type": {
+                "text": "WorkflowCanvasGraph"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Step locations in graph coordinates.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "type": {
+                "text": "readonly WorkflowCanvasLayoutEntry[]"
+              }
+            },
+            {
+              "default": "{ x: 0, y: 0, scale: 1 }",
+              "description": "The host's current pan and scale.",
+              "kind": "field",
+              "name": "viewport",
+              "privacy": "public",
+              "type": {
+                "text": "WorkflowCanvasViewport"
+              }
+            },
+            {
+              "default": "null",
+              "description": "The host's selected step ID.",
+              "kind": "field",
+              "name": "selectedNodeId",
+              "privacy": "public",
+              "type": {
+                "text": "string | null"
+              }
+            },
+            {
+              "default": "\"read-only\"",
+              "description": "Whether this view is authoring or read-only.",
+              "kind": "field",
+              "name": "mode",
+              "privacy": "public",
+              "type": {
+                "text": "WorkflowCanvasMode"
+              }
+            }
+          ],
+          "name": "OcelleWorkflowCanvas",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-workflow-canvas"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasConnection"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasConnection"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasGraph"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasGraph"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasLayoutEntry"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasLayoutEntry"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasMode"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasMode"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasNode"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasNode"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasOutcome"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasOutcome"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasPoint"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasPoint"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasViewport"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasViewport"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasViewportRequestDetail"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasViewportRequestDetail"
+        },
+        {
+          "declaration": {
+            "module": "src/ocelle-workflow-canvas.ts",
+            "name": "OcelleWorkflowCanvas"
+          },
+          "kind": "js",
+          "name": "OcelleWorkflowCanvas"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-workflow-canvas.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [
             {
               "default": "undefined",

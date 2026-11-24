@@ -507,6 +507,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-tooltip.ts",
       "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
+      "src/ocelle-workflow-canvas.ts",
       "src/ocelle-workflow-lane.ts",
       "src/ocelle-workflow-node.ts",
     ]);
