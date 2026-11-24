@@ -753,26 +753,32 @@ export class OcelleWorkflowCanvas extends LitElement {
     return this.#withLiveClip(map, (clip) => {
       const contained = new Set<string>();
       const eligible = new Set<string>();
-      const painted = actions.filter(({ node }) => this.#projection.positions.has(node.nodeId));
-      const footprints = painted.map(({ face }) => face.getBoundingClientRect());
-      const panel = map.previousElementSibling?.querySelector("details[open] .command-panel")?.getBoundingClientRect();
-      const bounds = new Map<string, CanvasBounds>();
       const transform = map.getScreenCTM();
-      painted.forEach(({ node, button, focusBounds }, index) => {
-        const covered = (outline: CanvasBounds) => (panel !== undefined && canvasBoundsOverlap(outline, panel))
-          || footprints.some((footprint, paintIndex) => paintIndex > index && canvasBoundsOverlap(outline, footprint));
-        const outline = canvasActionBounds(button, transform);
-        bounds.set(node.nodeId, outline);
+      const painted = actions.filter(({ node }) => this.#projection.positions.has(node.nodeId))
+        .map(({ node, face, button, focusBounds }) => ({
+          id: node.nodeId,
+          outline: canvasActionBounds(button, transform),
+          card: face.getBoundingClientRect(),
+          handle: focusBounds.nextElementSibling,
+        }));
+      const bounds = new Map(painted.map(({ id, outline }) => [id, outline]));
+      const panel = map.previousElementSibling?.querySelector("details[open] .command-panel")?.getBoundingClientRect();
+      const covering: CanvasBounds[] = panel === undefined ? [] : [panel];
+      const covered = (outline: CanvasBounds) => covering.some((box) => canvasBoundsOverlap(outline, box));
+      // Walk from front to back so only actually ready later handles cover earlier targets.
+      for (const { id, outline, card, handle } of painted.reverse()) {
         if (clip.contains(outline)) {
-          contained.add(node.nodeId);
-          if (!covered(outline)) eligible.add(node.nodeId);
+          contained.add(id);
+          if (!covered(outline)) eligible.add(id);
         }
-        const handle = focusBounds.nextElementSibling;
         if (handle?.matches(".move-handle") === true) {
           const handleBounds = handle.getBoundingClientRect();
-          handle.toggleAttribute("data-ready", eligible.has(node.nodeId) && clip.contains(handleBounds) && !covered(handleBounds));
+          const ready = eligible.has(id) && clip.contains(handleBounds) && !covered(handleBounds);
+          handle.toggleAttribute("data-ready", ready);
+          if (ready) covering.push(handleBounds);
         }
-      });
+        covering.push(card);
+      }
       return { contained, eligible, bounds };
     });
   }
