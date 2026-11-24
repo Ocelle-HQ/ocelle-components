@@ -601,6 +601,39 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it.each(["body", "documentElement"] as const)(
+    "respects focus explicitly claimed by the document %s during a graph update",
+    async (target) => {
+      const { canvas, requests } = await mount();
+      const review = action(canvas, "review");
+      const hostTarget = document[target];
+      const originalTabIndex = hostTarget.getAttribute("tabindex");
+      try {
+        hostTarget.tabIndex = -1;
+        review.focus();
+        expect(active()).toBe(review);
+        const host = {
+          hostUpdated: () => {
+            hostTarget.focus({ preventScroll: true });
+            expect(hostTarget.matches(":focus")).toBe(true);
+            canvas.removeController(host);
+          },
+        };
+        canvas.addController(host);
+        canvas.graph = { nodes: namedSteps.filter(({ id }) => id !== "review"), connections: [] };
+        await settle(canvas);
+
+        expect(getNode(canvas, "review")).toBeUndefined();
+        expect(active() === hostTarget, "explicit host focus remains outside the canvas").toBe(true);
+        expect(hostTarget.matches(":focus")).toBe(true);
+        expect(requests).toEqual([]);
+      } finally {
+        if (originalTabIndex === null) hostTarget.removeAttribute("tabindex");
+        else hostTarget.setAttribute("tabindex", originalTabIndex);
+      }
+    },
+  );
+
   it("rechecks map eligibility when the same canvas reconnects into a moved host", async () => {
     const { canvas, frame, after, requests } = await mount(true);
     const lifecycle: string[] = [];
