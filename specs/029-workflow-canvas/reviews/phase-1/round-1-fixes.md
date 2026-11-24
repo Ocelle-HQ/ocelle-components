@@ -10,4 +10,8 @@ The signed test-only commit `66d43d1f4d98494710275ea7ab7cbaeb6b5075f3` follows t
 
 The signed test-only commit `38fec580ab1cf5be0455b9a11ac8b4287fef9bdc` adds four cases in the Chromium project used by Stryker. The direct filtered run of that project failed on all four named assertions before the production change. The story runner continues to track the canonical built red as `fix-1`. [Supplemental Chromium red](check-review-fix-1-chromium-red.log)
 
-The integrated focused run passed 113 tests across all five workflow-canvas files, including 11 tests against the built aggregate in Chromium. Typecheck, scoped source lint, scoped test lint and the 43-element manifest gate passed. The local Plants selector selected 317 of 317. The full Plants judge and other hosted results, including strict mutation, remain pending on the exact fix candidate. [Plants record](plants.md)
+The initial integrated run passed 113 tests across all five workflow-canvas files, including 11 against the built aggregate in Chromium. Typecheck, scoped source lint, scoped test lint and the 43-element manifest gate passed.
+
+A local Stryker run exercised 231 mutations in the changed areas. Two survived. One let the picker take focus from the host when the reveal initiator never owned focus. The other let canvas navigation consume key input from a native non-node control in the map. Separate Chromium tests each failed on the corresponding isolated mutation and passed on the corrected source. The expanded focused suite passed 115 tests across the same five files.
+
+The local Plants selector selected 317 of 317. The full Plants judge and other hosted results, including strict mutation, remain pending on the exact fix candidate. [Plants record](plants.md)

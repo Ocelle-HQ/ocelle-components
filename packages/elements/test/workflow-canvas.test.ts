@@ -1151,6 +1151,29 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("leaves a non-node control in the map to handle its own key input", async () => {
+    const { canvas, requests } = await mount();
+    const map = canvas.shadowRoot?.querySelector("svg");
+    expect(map).toBeInstanceOf(SVGSVGElement);
+    if (map == null) throw new Error("The map is missing");
+
+    const wrapper = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    const face = document.createElement("div");
+    const controlHost = document.createElement("div");
+    const independent = control("Independent control");
+    controlHost.attachShadow({ mode: "open" }).append(independent);
+    face.append(controlHost);
+    wrapper.append(face);
+    map.append(wrapper, document.createElementNS("http://www.w3.org/2000/svg", "rect"));
+
+    const review = action(canvas, "review");
+    review.focus();
+    const key = new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, composed: true, cancelable: true });
+    expect(independent.dispatchEvent(key), "the canvas leaves key input to a native control outside its workflow nodes").toBe(true);
+    expect(active()).toBe(review);
+    expect(requests).toEqual([]);
+  });
+
   it("restores eligibility after a same-task attempt to focus a clipped node", async () => {
     const { canvas, frame, before, requests } = await mount(true);
     const publish = action(canvas, "publish");
