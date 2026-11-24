@@ -348,6 +348,29 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
+  it("restores supplied paint order and resets the picker when a raised node is removed", async () => {
+    const { canvas, requests } = await mount();
+    canvas.layout = [{ nodeId: "review", x: 40, y: 20 }, { nodeId: "publish", x: 40, y: 20 }];
+    await settle(canvas);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    await askReveal(canvas, "review");
+    await settle(canvas);
+    expect(active()).toBe(action(canvas, "review"));
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id !== "review"), connections: [] };
+    await settle(canvas);
+    expect(revealControls(canvas).picker.value).toBe("publish");
+    expect(active()).toBe(action(canvas, "publish"));
+
+    canvas.graph = initialGraph;
+    await settle(canvas);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    expect(active()).toBe(action(canvas, "publish"));
+    expect(revealControls(canvas).picker.value).toBe("publish");
+    expect(requests).toEqual([]);
+  });
+
   it("draws the supplied branching graph, carrying the labels and source outcomes into the existing node controls", async () => {
     const { canvas, requests } = await mount();
     const rendered = [...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []];
