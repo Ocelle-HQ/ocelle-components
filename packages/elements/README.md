@@ -2486,9 +2486,17 @@ with pixel or percentage coordinates. Use positive scaling and translation throu
 paths and SVG clip references are tracked separately. [Custom clipping follow-up](https://github.com/Ocelle-HQ/ocelle-components/issues/95)
 
 Listen on the canvas for the existing `ocelle-workflow-node-select` request with `{ nodeId }` to apply a selection.
-Listen for `ocelle-workflow-canvas-viewport-request` with `{ viewport: { x, y, scale } }` to apply a view. Both requests
-bubble across shadow roots and leave the supplied state under host control. When the host accepts a view and the
-target becomes visible, the canvas moves focus if the Reveal control still holds focus.
+Listen for `ocelle-workflow-canvas-viewport-request` with `{ viewport: { x, y, scale } }` to apply a view. Drag the map
+background to pan or open Canvas controls to pan in each direction, zoom around the map center, or fit the supplied
+graph. Zoom changes the spacing between steps while controls retain their screen sizes. When the host accepts a
+Reveal view and the target becomes visible, the canvas moves focus if the Reveal control still holds focus.
+
+In author mode, drag the handle beside a visible step or choose a step and enter its absolute X and Y coordinates in
+Canvas controls. Press Move step to send `ocelle-workflow-canvas-position-request` with
+`{ nodeId, position: { x, y } }`. A host inspector can provide the same absolute-coordinate operation and replace the
+matching `layout` entry on acceptance. The request events bubble across shadow roots. A declined request leaves the
+supplied layout or view in place. Escape or a changed enclosing frame clears a captured preview. Read-only mode
+keeps selection, navigation and viewport controls available.
 
 ## `ocelle-workflow-node`
 

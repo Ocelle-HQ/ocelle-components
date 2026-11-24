@@ -437,3 +437,59 @@ export function canvasRevealViewport(
   return allFinite([delta.x, delta.y])
     ? { x: view.x + delta.x, y: view.y + delta.y, scale: view.scale } : null;
 }
+
+export interface CanvasGestureFrame {
+  readonly inverse: DOMMatrix;
+  readonly width: number;
+  readonly height: number;
+}
+
+export function canvasGestureFrame(map: SVGSVGElement): CanvasGestureFrame | null {
+  const inverse = canvasScreenInverse(map);
+  const width = map.clientWidth;
+  const height = map.clientHeight;
+  return inverse === null || width === 0 || height === 0 ? null : { inverse, width, height };
+}
+
+export function sameCanvasGestureFrame(first: CanvasGestureFrame, map: SVGSVGElement): boolean {
+  const next = canvasGestureFrame(map);
+  if (next === null || first.width !== next.width || first.height !== next.height) return false;
+  const values = next.inverse.toFloat64Array();
+  return first.inverse.toFloat64Array().every((value, index) => value === values[index]);
+}
+
+export function canvasGesturePoint(frame: CanvasGestureFrame, event: PointerEvent): DOMPoint {
+  return new DOMPoint(event.clientX, event.clientY).matrixTransform(frame.inverse);
+}
+
+export function canvasZoomViewport(view: WorkflowCanvasViewport, width: number, height: number, factor: number): WorkflowCanvasViewport {
+  const x = width / 2;
+  const y = height / 2;
+  return { x: x - (x - view.x) * factor, y: y - (y - view.y) * factor, scale: view.scale * factor };
+}
+
+interface CanvasFitNode extends WorkflowCanvasPoint {
+  readonly width: number;
+  readonly height: number;
+}
+
+export function canvasFitViewport(nodes: readonly CanvasFitNode[], width: number, height: number, padding: number): WorkflowCanvasViewport | null {
+  if (nodes.length === 0) return null;
+  const left = Math.min(...nodes.map(({ x }) => x));
+  const top = Math.min(...nodes.map(({ y }) => y));
+  const roomX = width - 2 * padding;
+  const roomY = height - 2 * padding;
+  let scale = 1;
+  for (const node of nodes) {
+    if (node.width > roomX || node.height > roomY) return null;
+    // At positive scale the first origin stays first. Each footprint independently limits that scale.
+    if (node.x > left) scale = Math.min(scale, (roomX - node.width) / (node.x - left));
+    if (node.y > top) scale = Math.min(scale, (roomY - node.height) / (node.y - top));
+  }
+  if (!(scale > 0)) return null;
+  const spanX = Math.max(...nodes.map(({ x, width }) => (x - left) * scale + width));
+  const spanY = Math.max(...nodes.map(({ y, height }) => (y - top) * scale + height));
+  const x = (width - spanX) / 2 - left * scale;
+  const y = (height - spanY) / 2 - top * scale;
+  return allFinite([x, y, scale]) ? { x, y, scale } : null;
+}

@@ -233,10 +233,11 @@ async function openCommands(canvas: OcelleWorkflowCanvas): Promise<void> {
   if (summary === undefined || summary === null) throw new Error("Canvas controls missing");
   summary.focus({ preventScroll: true });
   await commands.press("Enter");
+  await expect.poll(() => canvas.shadowRoot?.querySelector("details[open] button")).toBeInstanceOf(HTMLButtonElement);
 }
 
 function mapOf(canvas: OcelleWorkflowCanvas): SVGSVGElement {
-  const map = canvas.shadowRoot?.querySelector("svg.map");
+  const map = canvas.shadowRoot?.querySelector<SVGSVGElement>("svg.map");
   if (map === null || map === undefined) throw new Error("Workflow map missing");
   return map;
 }
@@ -255,7 +256,7 @@ function displayedOrigin(canvas: OcelleWorkflowCanvas, id: string): readonly [nu
 }
 
 function alignedIncidents(canvas: OcelleWorkflowCanvas): void {
-  const edges = [...mapOf(canvas).querySelectorAll("path.edge")];
+  const edges = [...mapOf(canvas).querySelectorAll<SVGPathElement>("path.edge")];
   const face = getNode(canvas, "publish")?.parentElement;
   const object = face?.parentElement;
   if (!(object instanceof SVGForeignObjectElement)) throw new Error("Workflow face missing");

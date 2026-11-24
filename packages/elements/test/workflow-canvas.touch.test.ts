@@ -74,6 +74,7 @@ async function disclose(canvas: OcelleWorkflowCanvas): Promise<void> {
   summary.addEventListener("pointerdown", (event) => { input.push(event.pointerType); }, { once: true });
   await tap(summary);
   expect(input).toEqual(["touch"]);
+  await expect.poll(() => canvas.shadowRoot?.querySelector("details[open] button")).toBeInstanceOf(HTMLButtonElement);
 }
 
 afterEach(() => { document.body.replaceChildren(); });
@@ -151,6 +152,7 @@ describe("workflow canvas real touch arranging", () => {
     canvas.mode = "read-only";
     await settle(canvas);
     expect(move.isConnected).toBe(false);
+    await disclose(canvas);
     await tap(command(canvas, "Pan right"));
     expect(requests).toEqual([moved, request(viewport, { viewport: { x: 82, y: 24, scale: 1 } })]);
     expect(canvas.graph).toBe(graph);

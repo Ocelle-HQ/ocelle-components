@@ -3,6 +3,7 @@ import "../../packages/elements/src/ocelle-workflow-canvas.ts";
 import type {
   WorkflowCanvasGraph,
   WorkflowCanvasLayoutEntry,
+  WorkflowCanvasPositionRequestDetail,
   WorkflowCanvasViewportRequestDetail,
 } from "../../packages/elements/src/ocelle-workflow-canvas.ts";
 
@@ -81,6 +82,26 @@ function workflow(narrow: boolean): HTMLElement {
 }
 
 export const Branching: StoryObj = { render: () => workflow(false) };
+
+export const Arranging: StoryObj = {
+  render: () => {
+    const frame = workflow(false);
+    const canvas = frame.querySelector("ocelle-workflow-canvas");
+    if (canvas === null) throw new Error("The arranging fixture requires a workflow canvas");
+    canvas.mode = "author";
+    canvas.viewport = { x: 18, y: 20, scale: 0.8 };
+    canvas.layout = [
+      { nodeId: review.id, x: 36, y: 52 },
+      { nodeId: publish.id, x: 490, y: 10 },
+      { nodeId: revise.id, x: 490, y: 146 },
+    ];
+    canvas.addEventListener("ocelle-workflow-canvas-position-request", (event) => {
+      const { nodeId, position } = (event as CustomEvent<WorkflowCanvasPositionRequestDetail>).detail;
+      canvas.layout = canvas.layout.map((entry) => entry.nodeId === nodeId ? { nodeId, ...position } : entry);
+    });
+    return frame;
+  },
+};
 
 export const NarrowFocus: StoryObj = {
   name: "Narrow focus",
