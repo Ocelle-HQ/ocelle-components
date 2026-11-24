@@ -220,6 +220,111 @@ async function axButtons(): Promise<string[]> {
 afterEach(() => { document.body.replaceChildren(); });
 
 describe("workflow canvas in-process selection and navigation", () => {
+  it("starts with the documented host-owned inputs and an available named navigator", async () => {
+    await driver.mount("");
+    const canvas = document.createElement(tag) as OcelleWorkflowCanvas;
+    expect(canvas.graph).toEqual({ nodes: [], connections: [] });
+    expect(canvas.layout).toEqual([]);
+    expect(canvas.viewport).toEqual(initialViewport);
+    expect(canvas.selectedNodeId).toBeNull();
+    expect(canvas.mode).toBe("read-only");
+    document.body.append(canvas);
+    await settle(canvas);
+
+    const { picker, button } = revealControls(canvas);
+    expect(picker.disabled).toBe(false);
+    expect(picker.value).toBe("");
+    expect([...picker.options]).toEqual([]);
+    expect(button.disabled).toBe(true);
+  });
+
+  it("keeps the name of an unpositioned node and reflects every supplied node state once positioned", async () => {
+    const { canvas, requests } = await mount();
+    const [review, publish] = namedSteps;
+    if (review === undefined || publish === undefined) throw new Error("The fixture needs two steps");
+    canvas.graph = {
+      nodes: [{ ...review, waiting: true, invalid: true, status: "Waiting for an approval" }, { ...publish, invalid: false }],
+      connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "publish" }],
+    };
+    canvas.layout = [{ nodeId: "publish", x: 321, y: 20 }];
+    canvas.selectedNodeId = "review";
+    await settle(canvas);
+
+    const named = revealControls(canvas);
+    expect(named.picker.selectedOptions[0]?.textContent.trim()).toBe("Initial review");
+    expect(named.picker.value).toBe("review");
+    expect(named.button.disabled).toBe(true);
+    expect(await axButtons()).not.toContain("Initial review");
+    expect(canvas.shadowRoot?.querySelectorAll("svg path")).toHaveLength(0);
+    expect(getNode(canvas, "review")?.closest("foreignObject")?.hasAttribute("hidden")).toBe(true);
+
+    canvas.layout = [{ nodeId: "review", x: 30, y: 20 }, ...canvas.layout];
+    await settle(canvas);
+
+    const card = getNode(canvas, "review");
+    expect(card).toMatchObject({ waiting: true, invalid: true, selected: true });
+    expect(getNode(canvas, "publish")).toMatchObject({ waiting: false, invalid: false, selected: false });
+    expect(card?.querySelector('[slot="status"]')?.textContent).toBe("Waiting for an approval");
+    expect(await axButtons()).toContain("Initial review");
+    expect(named.button.disabled).toBe(false);
+    expect(canvas.shadowRoot?.querySelectorAll("svg path")).toHaveLength(1);
+    expect(action(canvas, "review").getAttribute("aria-pressed")).toBe("true");
+    expect(requests).toEqual([]);
+  });
+
+  it("anchors the rendered connection at both measured cards after a translated viewport update", async () => {
+    const { canvas, requests } = await mount();
+    canvas.graph = { ...initialGraph, connections: [
+      { sourceId: "review", outcomeId: "approved", destinationId: "publish" },
+    ] };
+    const layout = [{ nodeId: "review", x: 30, y: 40 }, { nodeId: "publish", x: 275, y: 90 }];
+    canvas.layout = layout;
+    canvas.viewport = { x: 83, y: -22, scale: 1.25 };
+    await settle(canvas);
+
+    const map = canvas.shadowRoot?.querySelector("svg");
+    const edge = map?.querySelector("path");
+    const review = getNode(canvas, "review")?.getBoundingClientRect();
+    const publish = getNode(canvas, "publish")?.getBoundingClientRect();
+    const transform = map?.getScreenCTM();
+    if (edge === undefined || edge === null || review === undefined || publish === undefined || transform === undefined || transform === null) {
+      throw new Error("The real SVG connection and its two measured cards must be present");
+    }
+    const start = edge.getPointAtLength(0).matrixTransform(transform);
+    const end = edge.getPointAtLength(edge.getTotalLength()).matrixTransform(transform);
+    expect(start.x).toBeCloseTo(review.right, 0);
+    expect(start.y).toBeCloseTo((review.top + review.bottom) / 2, 0);
+    expect(end.x).toBeCloseTo(publish.left, 0);
+    expect(end.y).toBeCloseTo((publish.top + publish.bottom) / 2, 0);
+    expect(canvas.layout).toEqual(layout);
+    expect(canvas.viewport).toEqual({ x: 83, y: -22, scale: 1.25 });
+    expect(requests).toEqual([]);
+  });
+
+  it("handles only unmodified navigation keys from a native node action", async () => {
+    const { canvas, requests } = await mount();
+    const review = action(canvas, "review");
+    const publish = action(canvas, "publish");
+    const keydown = (target: HTMLElement, key: string, modifiers: KeyboardEventInit = {}) => target.dispatchEvent(
+      new KeyboardEvent("keydown", { key, bubbles: true, composed: true, cancelable: true, ...modifiers }),
+    );
+    review.focus();
+    for (const modifiers of [{ altKey: true }, { ctrlKey: true }, { metaKey: true }, { shiftKey: true }]) {
+      expect(keydown(review, "ArrowRight", modifiers)).toBe(true);
+      expect(active()).toBe(review);
+    }
+    expect(keydown(review, "PageDown")).toBe(true);
+    expect(active()).toBe(review);
+    expect(keydown(review, "ArrowRight")).toBe(false);
+    expect(active()).toBe(publish);
+
+    const { picker } = revealControls(canvas);
+    picker.focus();
+    expect(keydown(picker, "Home")).toBe(true);
+    expect(active()).toBe(picker);
+    expect(requests).toEqual([]);
+  });
+
   it("draws the supplied branching graph, carrying the labels and source outcomes into the existing node controls", async () => {
     const { canvas, requests } = await mount();
     const rendered = [...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []];

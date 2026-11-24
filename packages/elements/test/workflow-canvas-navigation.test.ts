@@ -58,6 +58,13 @@ describe("workflow canvas navigation", () => {
     expect(navigateWorkflowCanvas(order, eligible, "revise", "End")).toBe("archive");
   });
 
+  it("ignores traversal from an action that is no longer eligible", () => {
+    const eligible = new Set(["review", "revise"]);
+
+    expect(navigateWorkflowCanvas(order, eligible, "publish", "ArrowRight")).toBeNull();
+    expect(navigateWorkflowCanvas(order, eligible, "publish", "Home")).toBeNull();
+  });
+
   it("retains the same eligible focused action on host reorder", () => {
     const reordered = new Set(["close", "archive", "publish", "revise", "review"]);
 
@@ -68,6 +75,12 @@ describe("workflow canvas navigation", () => {
     const remaining = new Set(["close", "archive", "review"]);
 
     expect(recoverWorkflowCanvasFocus(order, remaining, "publish")).toBe("archive");
+  });
+
+  it("leaves recovery to the named controls when the focused ID has no prior position", () => {
+    const eligible = new Set(["close", "review"]);
+
+    expect(recoverWorkflowCanvasFocus(order, eligible, "unknown")).toBeNull();
   });
 
   it("recovers to the nearest eligible predecessor when clipping rules out successors", () => {
