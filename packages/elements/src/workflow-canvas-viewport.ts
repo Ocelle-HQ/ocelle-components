@@ -7,7 +7,8 @@ export interface CanvasBounds {
   readonly bottom: number;
 }
 
-const clippingOverflow = new Set(["auto", "clip", "hidden", "overlay", "scroll"]);
+// Computed overflow reports the legacy `overlay` keyword as `auto`.
+const clippingOverflow = new Set(["auto", "clip", "hidden", "scroll"]);
 
 export function* composedAncestors(element: Element): Generator<Element> {
   let current: Element = element;
@@ -80,12 +81,16 @@ export function canvasViewportPoint(point: WorkflowCanvasPoint, view: WorkflowCa
   return { x: point.x * view.scale + view.x, y: point.y * view.scale + view.y };
 }
 
+function allFinite(values: readonly number[] | Float64Array): boolean {
+  return values.find((value) => !Number.isFinite(value)) === undefined;
+}
+
 export function canvasScreenInverse(map: SVGSVGElement): DOMMatrix | null {
   const transform = map.getScreenCTM();
   if (transform === null || map.getClientRects().length === 0) return null;
   // The legacy SVG matrix can throw when a host transform temporarily has zero scale.
   const inverse = DOMMatrix.fromMatrix(transform).invertSelf();
-  return inverse.toFloat64Array().every(Number.isFinite) ? inverse : null;
+  return allFinite(inverse.toFloat64Array()) ? inverse : null;
 }
 
 export function canvasRevealViewport(
@@ -106,6 +111,6 @@ export function canvasRevealViewport(
     0,
     0,
   ).matrixTransform(inverse);
-  return Number.isFinite(delta.x) && Number.isFinite(delta.y)
+  return allFinite([delta.x, delta.y])
     ? { x: view.x + delta.x, y: view.y + delta.y, scale: view.scale } : null;
 }
