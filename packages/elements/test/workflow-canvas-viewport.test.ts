@@ -128,6 +128,16 @@ describe("workflow canvas viewport geometry", () => {
     expect(effectiveCanvasClip(map)).toEqual({ left: 162, top: 134, right: 342, bottom: 309.5 });
   });
 
+  it("measures padding-box inset percentages from the padding edge with nonzero padding", () => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
+      padding: 3px 5px 7px 11px; transform: scale(2, 3); transform-origin: top left;
+      overflow: visible; clip-path: inset(10% 20% 25% 5%) padding-box;`;
+    map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 141.6, top: 128, right: 345.6, bottom: 323 });
+  });
+
   it("preserves the real overflow clip of an inline SVG viewport", () => {
     const host = document.createElement("div");
     host.style.cssText = "position: absolute; left: 120px; top: 80px;";
@@ -174,6 +184,13 @@ describe("workflow canvas viewport geometry", () => {
     const { map, pane } = viewportFixture(0, 0);
     pane.style.transform = "scale(2, 3)";
     pane.style.transformOrigin = "top left";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 120, top: 80, right: 120, bottom: 80 });
+  });
+
+  it("keeps a collapsed overflow pane with a zero inset finite", () => {
+    const { map, pane } = viewportFixture(0, 0);
+    pane.style.clipPath = "inset(0)";
 
     expect(effectiveCanvasClip(map)).toEqual({ left: 120, top: 80, right: 120, bottom: 80 });
   });
