@@ -348,6 +348,30 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
+  it.each([
+    ["a hidden map", "display: none"],
+    ["a singular host transform", "transform: scaleX(0)"],
+  ])("does not transfer focus after an unavailable reveal through %s", async (_description, style) => {
+    const { canvas, frame, sheet, requests } = await mount();
+    const { picker, button } = revealControls(canvas);
+    picker.value = "revise";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    sheet.replaceSync(`${fixtureStyles(760)}\n#canvas-frame.temporarily-unavailable { ${style}; }`);
+    frame.addEventListener("click", () => { frame.classList.add("temporarily-unavailable"); }, { capture: true, once: true });
+    frame.addEventListener("click", () => { frame.classList.remove("temporarily-unavailable"); }, { once: true });
+    button.focus({ preventScroll: true });
+    await commands.press("Enter");
+    expect(active()).toBe(button);
+    expect(requests).toEqual([]);
+
+    canvas.viewport = { x: -540, y: 0, scale: 1 };
+    await settle(canvas);
+    expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
+    expect(active(), "an unrelated host viewport change cannot complete an unavailable reveal").toBe(button);
+    expect(requests).toEqual([]);
+  });
+
   it("restores supplied paint order and resets the picker when a raised node is removed", async () => {
     const { canvas, requests } = await mount();
     canvas.layout = [{ nodeId: "review", x: 40, y: 20 }, { nodeId: "publish", x: 40, y: 20 }];
