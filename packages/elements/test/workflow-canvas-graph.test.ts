@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { projectWorkflowCanvasGraph } from "../src/workflow-canvas-graph.ts";
 import type {
   WorkflowCanvasGraph,
   WorkflowCanvasLayoutEntry,
   WorkflowCanvasNode,
   WorkflowCanvasOutcome,
 } from "../src/workflow-canvas-types.ts";
+
+type GraphModule = typeof import("../src/workflow-canvas-graph.ts");
+
+// Pre-scaffold replay can collect the cases before the source module exists.
+const graph = import.meta.glob<GraphModule>("../src/workflow-canvas-graph.ts", { eager: true })["../src/workflow-canvas-graph.ts"];
+
+function projectWorkflowCanvasGraph(...input: Parameters<GraphModule["projectWorkflowCanvasGraph"]>) {
+  const project = graph?.projectWorkflowCanvasGraph;
+  expect(typeof project, "the graph module exports projectWorkflowCanvasGraph").toBe("function");
+  if (project === undefined) throw new Error("Graph projection unavailable");
+  return project(...input);
+}
 
 function step(
   id: string,

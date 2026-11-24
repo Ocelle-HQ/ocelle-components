@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
-import { OcelleWorkflowCanvas } from "../src/ocelle-workflow-canvas.ts";
+import type { OcelleWorkflowCanvas } from "../src/ocelle-workflow-canvas.ts";
 import { OcelleWorkflowNode } from "../src/ocelle-workflow-node.ts";
 import type { WorkflowCanvasGraph, WorkflowCanvasLayoutEntry, WorkflowCanvasNode, WorkflowCanvasViewport, WorkflowCanvasViewportRequestDetail } from "../src/workflow-canvas-types.ts";
 import { inProcessDriver } from "./in-process.ts";
 
 const tag = "test-workflow-canvas";
-customElements.define(tag, class extends OcelleWorkflowCanvas {});
+// With no source module on the phase base, mount the same unregistered tag.
+const canvasModule = import.meta.glob<typeof import("../src/ocelle-workflow-canvas.ts")>(
+  "../src/ocelle-workflow-canvas.ts", { eager: true },
+)["../src/ocelle-workflow-canvas.ts"];
+if (canvasModule !== undefined) customElements.define(tag, class extends canvasModule.OcelleWorkflowCanvas {});
 
 const driver = inProcessDriver();
 const initialViewport = { x: 0, y: 0, scale: 1 };
