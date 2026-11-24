@@ -1,0 +1,9 @@
+Independent exact built Chromium Phase 2 overlap probe under strict CSP
+9f1e073512aa3b6b694f62e3b2b8147ba077ed5d
+Review is earlier in graph and SVG paint order. Publish is later.
+Publish card ends left of the Review focus outline. The live pointer-only Publish rect overlays the Review button.
+Hit tested at Review left plus 10px and vertical center. Focused the visible Reveal button, used trusted Tab and Enter.
+before {"names":["Initial review","Publish"],"action":[355,206,497,250],"outline":[350,201,502,255],"publishCard":[171,206,347,341],"publishMoveHandle":[347,206,391,250],"publishMoveHandleReady":true,"hit":{"element":"rect","name":"publish","moveHandle":true},"reviewInert":false,"actualFocus":null,"reviewTabIndex":0,"requests":[],"scroll":[0,0]}
+after-tab {"names":["Initial review","Publish"],"action":[355,206,497,250],"outline":[350,201,502,255],"publishCard":[171,206,347,341],"publishMoveHandle":[347,206,391,250],"publishMoveHandleReady":true,"hit":{"element":"rect","name":"publish","moveHandle":true},"reviewInert":false,"actualFocus":"review","reviewTabIndex":0,"requests":[],"scroll":[0,0]}
+after-enter {"names":["Initial review","Publish"],"action":[355,206,497,250],"outline":[350,201,502,255],"publishCard":[171,206,347,341],"publishMoveHandle":[347,206,391,250],"publishMoveHandleReady":true,"hit":{"element":"rect","name":"publish","moveHandle":true},"reviewInert":false,"actualFocus":"review","reviewTabIndex":0,"requests":[{"type":"ocelle-workflow-node-select","detail":{"nodeId":"review"}}],"scroll":[0,0]}
+diagnostics {"violations":[],"outside":[],"failed":[],"console":[]}
