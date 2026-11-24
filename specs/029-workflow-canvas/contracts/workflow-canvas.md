@@ -29,6 +29,18 @@ All four request kinds are synchronous, bubbling, composed and noncancelable cus
 
 The graph, layout, viewport and selected ID are independent. An input update is how the host may change multiple values after handling a request. An unchanged host snapshot retains the same committed display. Displayed drag and connection previews end on completion or cancellation. Focus changes, canceled gestures, no-op connection edits and stale connection submissions give the host an empty request stream.
 
+## Host clipping
+
+Use a rectangular overflow or paint-containment pane, or one of these CSS clip paths on an HTML host pane.
+
+- `inset()` with pixel or percentage offsets, including a linear combination of pixels and percentages. Rounded corners and the border, padding, content and margin reference boxes are supported.
+- `circle()` and `ellipse()` with numeric pixel or percentage radii and centers in the default border box.
+- A simple straight-edge `polygon()` with pixel or percentage vertices in the default border box.
+
+Keep the shaped host pane in one unfragmented box and its HTML ancestor chain axis-aligned. Use translation and positive scaling through the CSS `transform` property. A wrapper with `display: contents` has no clipping box.
+
+Custom CSS outlines such as `path()` and shapes supplied through SVG clip references are follow-up work. Use a supported host clip when placing the canvas inside a clipped panel.
+
 ## Keyboard, touch and host inspector
 
 Tab or Shift+Tab enters the node group at the eligible selected node or the first eligible node in graph order. An eligible action and its focus inset are fully visible through the map and its enclosing panes and free from overlap. Unavailable map actions are excluded from focus, assistive-technology navigation and user activation. Find their names in the visible named navigator. Left and Up reach the previous eligible action, Right and Down reach the next, and Home and End reach the ends. These motions stop at the bounds. Tab or Shift+Tab from the currently active node action leaves the group. Host reorder retains the same eligible action's focus when the canvas owns the focus loss.
