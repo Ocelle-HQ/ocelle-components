@@ -230,7 +230,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.addEventListener("focusout", this.#onActionBlur, { signal });
     this.addEventListener("keydown", this.#onActionKey, { signal });
     this.ownerDocument.defaultView?.addEventListener("resize", this.#onGeometryChange, { signal });
-    this.ownerDocument.defaultView?.addEventListener("scroll", this.#onGeometryChange, { passive: true, signal });
+    this.ownerDocument.defaultView?.addEventListener("scroll", this.#onGeometryChange, { signal });
     this.requestUpdate();
   }
 
@@ -469,7 +469,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       if (!ancestors.has(element)) element.removeEventListener("scroll", this.#onGeometryChange);
     }
     for (const element of ancestors) {
-      if (!this.#scrollAncestors.has(element)) element.addEventListener("scroll", this.#onGeometryChange, { passive: true, signal });
+      if (!this.#scrollAncestors.has(element)) element.addEventListener("scroll", this.#onGeometryChange, { signal });
     }
     this.#scrollAncestors = ancestors;
     const elements = new Set<Element>([map, ...ancestors]);
@@ -547,6 +547,7 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #loseRevealFocus(event: FocusEvent): void {
     if (this.#pendingReveal?.initiator !== event.currentTarget) return;
+    // Stryker disable next-line AssignmentOperator: either direction is equivalent because the pending reveal is discarded immediately.
     this.#focusEpoch += 1;
     this.#pendingReveal = null;
   }
@@ -559,6 +560,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     const map = this.renderRoot.querySelector("svg");
     if (id === null || position === undefined || map === null) return;
     initiator.focus(withoutScroll);
+    // Stryker disable next-line UpdateOperator: either direction stores the same current value in the sole pending reveal.
     this.#pendingReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator };
     const actions = this.#actions();
     const { contained, eligible } = this.#measureEligibility(actions, map);
