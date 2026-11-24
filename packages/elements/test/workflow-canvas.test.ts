@@ -723,6 +723,8 @@ describe("workflow canvas in-process selection and navigation", () => {
     const observeClip = vi.spyOn(IntersectionObserver.prototype, "observe");
     const releaseClip = vi.spyOn(IntersectionObserver.prototype, "unobserve");
     const disconnectClip = vi.spyOn(IntersectionObserver.prototype, "disconnect");
+    const watchAttributes = vi.spyOn(MutationObserver.prototype, "observe");
+    const disconnectAttributes = vi.spyOn(MutationObserver.prototype, "disconnect");
     try {
       const { canvas, frame, pane, requests } = await mount(true);
       const map = canvas.shadowRoot?.querySelector("svg");
@@ -768,7 +770,10 @@ describe("workflow canvas in-process selection and navigation", () => {
       expect(releaseClip.mock.calls.map(([target]) => target)).toEqual(expect.arrayContaining([face, removedAction, marker]));
       expect(requests).toEqual([]);
 
+      const attributesObserver = watchAttributes.mock.contexts[watchAttributes.mock.calls.findIndex(([target]) => target === pane)];
+      expect(attributesObserver).toBeInstanceOf(MutationObserver);
       canvas.remove();
+      expect(disconnectAttributes.mock.contexts).toContain(attributesObserver);
       expect(signal.aborted).toBe(true);
       expect(disconnectSize.mock.contexts).toContain(resizeObserver);
       expect(disconnectClip.mock.contexts).toContain(intersectionObserver);
@@ -788,7 +793,7 @@ describe("workflow canvas in-process selection and navigation", () => {
       expect(newSignal?.aborted).toBe(false);
       expect(requests).toEqual([]);
     } finally {
-      for (const spy of [listen, observeSize, releaseSize, disconnectSize, observeClip, releaseClip, disconnectClip, listenOnWindow]) spy.mockRestore();
+      for (const spy of [listen, observeSize, releaseSize, disconnectSize, observeClip, releaseClip, disconnectClip, watchAttributes, disconnectAttributes, listenOnWindow]) spy.mockRestore();
     }
   });
 
@@ -850,6 +855,17 @@ describe("workflow canvas in-process selection and navigation", () => {
       expect(canvas.assignedSlot).toBe(secondSlot);
       expect(stopFirst.mock.calls.find(([type]) => type === "scroll")?.[1]).toBe(scrollHandler);
       expect(listenSecond.mock.calls.find(([type]) => type === "scroll")?.[1]).toBe(scrollHandler);
+      await settle(canvas);
+      const map = canvas.shadowRoot?.querySelector("svg");
+      if (map === null || map === undefined) throw new Error("The slotted canvas is missing its map");
+      const measure = vi.spyOn(map, "getBoundingClientRect");
+      try {
+        first.setAttribute("data-previous-pane", "");
+        await Promise.resolve();
+        expect(measure, "attributes on the abandoned pane cannot refresh the canvas").not.toHaveBeenCalled();
+      } finally {
+        measure.mockRestore();
+      }
       expect(requests).toEqual([]);
     } finally {
       listenFirst.mockRestore();
@@ -1136,6 +1152,37 @@ describe("workflow canvas in-process selection and navigation", () => {
     button.click();
     expect(active()).toBe(publish);
     expect(requests).toEqual([]);
+    expect(hit((left + right) / 2, (top + bottom) / 2), "the browser probe leaves the actual native action hittable").toBe(true);
+    await click(publish);
+    expect(requests).toEqual([selectRequest("publish")]);
+
+    await settle(canvas);
+    pane.classList.remove("open");
+    await expect.poll(() => focusId(canvas), { message: "an idle host class change recomputes a corner-only clip" }).toBe("review");
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(requests).toEqual([selectRequest("publish")]);
+  });
+
+  it("probes only host insets and remains keyboard-accessible when a host disables pointer input", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    const root = canvas.shadowRoot;
+    if (root === null) throw new Error("The canvas is missing its shadow root");
+    const pointQuery = vi.spyOn(root, "elementFromPoint");
+    try {
+      const review = action(canvas, "review");
+      review.focus({ preventScroll: true });
+      expect(active()).toBe(review);
+      expect(pointQuery, "a plain host does not need contour hit tests").not.toHaveBeenCalled();
+      sheet.insertRule("#canvas-pane.pointer-off { clip-path: inset(0 round 4px); pointer-events: none; }");
+      pane.classList.add("pointer-off");
+      await settle(canvas);
+      expect(active()).toBe(review);
+      expect(getNode(canvas, "review")?.parentElement?.inert).toBe(false);
+      expect(pointQuery).toHaveBeenCalled();
+      expect(requests).toEqual([]);
+    } finally {
+      pointQuery.mockRestore();
+    }
   });
 
   it.each([

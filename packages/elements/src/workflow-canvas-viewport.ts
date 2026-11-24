@@ -10,7 +10,7 @@ export interface CanvasBounds {
 // Computed overflow reports the legacy `overlay` keyword as `auto`.
 const clippingOverflow = new Set(["auto", "clip", "hidden", "scroll"]);
 // Computed CSS keeps percentages and combines mixed pixel/percentage lengths as calc().
-const rectangularInset = /inset\(((?:[\d.%px -]|calc\(-?[\d.]+% [+-] [\d.]+px\))+)\)(?: (padding-box|content-box))?/;
+const rectangularInset = /inset\(((?:[\d.%px -]|calc\(-?[\d.]+% [+-] [\d.]+px\))+)\)(?: (padding-box|content-box|margin-box))?/;
 const insetValues = /calc\([^)]+\)|[^ ]+/g;
 
 function screenInset(value: string, span: number, scale: number): number {
@@ -38,6 +38,14 @@ function insetAxis(start: number, end: number, near: string, far: string, scale:
 
 function insetReferenceBox(pane: CanvasBounds, style: CSSStyleDeclaration, box: string | undefined, scaleX: number, scaleY: number): CanvasBounds {
   if (box === undefined) return pane;
+  if (box === "margin-box") {
+    return {
+      left: pane.left - parseFloat(style.marginLeft) * scaleX,
+      right: pane.right + parseFloat(style.marginRight) * scaleX,
+      top: pane.top - parseFloat(style.marginTop) * scaleY,
+      bottom: pane.bottom + parseFloat(style.marginBottom) * scaleY,
+    };
+  }
   const content = box === "content-box";
   return {
     left: pane.left + scaleX * (parseFloat(style.borderLeftWidth) + (content ? parseFloat(style.paddingLeft) : 0)),
@@ -58,13 +66,14 @@ export function* composedAncestors(element: Element): Generator<Element> {
   }
 }
 
-export function effectiveCanvasClip(element: Element): CanvasBounds {
+export function canvasClipping(element: Element): { readonly bounds: CanvasBounds; readonly hasInset: boolean } {
   const rect = element.getBoundingClientRect();
   const viewport = element.ownerDocument.documentElement;
   let left = Math.max(0, rect.left);
   let top = Math.max(0, rect.top);
   let right = Math.min(viewport.clientWidth, rect.right);
   let bottom = Math.min(viewport.clientHeight, rect.bottom);
+  let hasInset = false;
   for (const ancestor of composedAncestors(element)) {
     const style = getComputedStyle(ancestor);
     if (style.display === "contents") continue;
@@ -77,8 +86,12 @@ export function effectiveCanvasClip(element: Element): CanvasBounds {
     const clipsX = clipsPaint || (hasOverflowBox && clippingOverflow.has(style.overflowX));
     const clipsY = clipsPaint || (hasOverflowBox && clippingOverflow.has(style.overflowY));
     const clipPath = style.clipPath;
-    const inset = rectangularInset.exec(clipPath);
-    const offsets = inset?.[0] === clipPath ? inset[1] : undefined;
+    hasInset ||= clipPath.startsWith("inset(");
+    // Resolve the outer rectangle for the viewport proposal. Chromium tests the actual rounded corners.
+    const rounding = clipPath.indexOf(" round ");
+    const square = rounding === -1 ? clipPath : clipPath.slice(0, rounding) + clipPath.slice(clipPath.lastIndexOf(")"));
+    const inset = rectangularInset.exec(square);
+    const offsets = inset?.[0] === square ? inset[1] : undefined;
     const referenceBox = inset?.[2];
     if (!clipsX && !clipsY && offsets === undefined) continue;
     const pane = ancestor.getBoundingClientRect();
@@ -106,7 +119,11 @@ export function effectiveCanvasClip(element: Element): CanvasBounds {
       bottom = Math.min(bottom, clipBottom);
     }
   }
-  return { left, top, right, bottom };
+  return { bounds: { left, top, right, bottom }, hasInset };
+}
+
+export function effectiveCanvasClip(element: Element): CanvasBounds {
+  return canvasClipping(element).bounds;
 }
 
 export function isInsideCanvasClip(clip: CanvasBounds, target: CanvasBounds): boolean {

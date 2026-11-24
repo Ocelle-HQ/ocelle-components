@@ -65,3 +65,14 @@ The full hosted judge for corrected candidate `4278d47e82c3f9a7276ca6a34d1f4d459
 ```text
 plants: 317 plants of 17 gates and the registry judged, every plant as expected
 ```
+
+## Round 4 fix
+
+The local affected selector exited 0 and listed all 317 Plants for the hosted judge.
+
+```text
+$ pnpm run gate:plants -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+$ node gates/bin/plants.ts -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
+```
