@@ -9,6 +9,7 @@ export interface CanvasBounds {
 
 // Computed overflow reports the legacy `overlay` keyword as `auto`.
 const clippingOverflow = new Set(["auto", "clip", "hidden", "scroll"]);
+const paintContainment = new Set(["paint", "content", "strict"]);
 
 export function* composedAncestors(element: Element): Generator<Element> {
   let current: Element = element;
@@ -30,8 +31,11 @@ export function effectiveCanvasClip(element: Element): CanvasBounds {
   let bottom = Math.min(viewport.clientHeight, rect.bottom);
   for (const ancestor of composedAncestors(element)) {
     const style = getComputedStyle(ancestor);
-    const clipsX = clippingOverflow.has(style.overflowX);
-    const clipsY = clippingOverflow.has(style.overflowY);
+    // Boxless and non-atomic inline wrappers do not establish a paint clip.
+    const clipsPaint = style.display !== "contents" && style.display !== "inline"
+      && style.contain.split(" ").some((token) => paintContainment.has(token));
+    const clipsX = clipsPaint || clippingOverflow.has(style.overflowX);
+    const clipsY = clipsPaint || clippingOverflow.has(style.overflowY);
     if (!clipsX && !clipsY) continue;
     const pane = ancestor.getBoundingClientRect();
     const scaleX = ancestor instanceof HTMLElement && ancestor.offsetWidth > 0 ? pane.width / ancestor.offsetWidth : 1;
