@@ -1,0 +1,66 @@
+Phase 1 review round 5 local verification
+
+$ .specify/extensions/story/scripts/red.sh 1 fix-5
+sha: efc45e614bdee8284be6e8658e6096e3fc5548ee
+tests_only: true, red: true, recorded: true, expected test exit_code: 1
+18 named assertion failures across the five selected canvas files in 30.307s. See red-fix-5.log.
+
+$ pnpm exec vitest run --project elements --project elements-browser packages/elements/test/{workflow-canvas.test.ts,browser/workflow-canvas.test.ts,workflow-canvas-graph.test.ts,workflow-canvas-navigation.test.ts,workflow-canvas-viewport.test.ts}
+Test Files 5 passed (5)
+Tests 221 passed (221)
+Duration 50.21s alongside the local mutation run
+
+The supplemental Chromium geometry cases confirm that a singular axis falls back to the ordinary map bounds and that the browser still supplies native convex containment for an inset with an SVG reference box.
+
+The built strict-CSP cases accepted these exact viewport proposals with no pane scroll and restored focus to the original native Publish action.
+Translated notch: {x:-58,y:-90,scale:1}
+Ellipse: {x:-58,y:-172.5,scale:1}
+Circle: {x:-170,y:-168.5,scale:1}
+
+The Review placement is a later verified candidate when the center of the proposed aperture is in a notch. Its accepted viewport is {x:-306,y:-222,scale:1}.
+The navigator fallback fixture verifies Step misses Chromium's hit test and Reveal hits after the capture-time clip. Actual focus is on Reveal with zero requests and unchanged host scroll.
+
+$ pnpm -r run build
+All workspace packages built, including the browser aggregate and Storybook.
+
+$ pnpm run gate:typecheck
+typecheck: no type error in the files of tsconfig.json
+$ pnpm run gate:lint
+lint: 651 files checked, no finding
+$ pnpm run gate:test-lint
+test-lint: 490 files checked, no finding
+$ pnpm run gate:style-lint
+style-lint: 76 files checked, no finding
+$ pnpm run gate:csp
+csp: 81 files checked, no finding
+$ pnpm run gate:manifest
+manifest: 43 elements checked, no finding
+$ pnpm run gate:prefix
+prefix: 750 files checked, no finding
+$ pnpm run gate:pins
+pins: 5 manifests checked, no finding
+$ pnpm run gate:contrast
+contrast: 207 pairs checked in light, 215 in dark (196 required per theme)
+$ pnpm run gate:brand-rules
+brand-rules: 7 rules checked
+$ pnpm run gate:config-copies
+config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical
+
+Phase-base and CI-base strict selectors agree byte for byte.
+mutation: plan: 37 shards, 36 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+
+The first raw focused run found five surviving viewport mutants. The singular-axis and inset geometry-box tests distinguish three of them. Removing two redundant conditional parser dispatches preserves lazy parsing and removes the other two mutants.
+
+Raw Stryker used the standard elements mutation project restricted to the four in-process canvas files and exports test. The TypeScript checker included both mutated files. The break threshold remained 100. The changed ranges cover all 30 source hunks, with full moved implementation blocks and style ranges crossing the official cuts.
+
+packages/elements/src/ocelle-workflow-canvas.ts:24-31,84-195,416-478,574-581,627-681
+packages/elements/src/workflow-canvas-viewport.ts:1-119,150-232,281-308
+
+Initial test run succeeded. Ran 180 tests.
+Instrumented 590 mutants. 431 killed, 156 compile errors, 2 detected infinite-loop hit limits, 1 previously documented equivalent ignore, 0 survived, 0 with no coverage.
+Final mutation score 100.00 met break threshold 100. Exit 0 in 8m12s.
+The hit limits were the ancestor generator without its loop body and the reveal completion branch forced true. The existing ignored generation counter mutant stores the same value as the sole pending reveal in either direction.
+
+The inset guard was retested against the final replay-compatible test import. Its four exact-source mutants finished at 100%, with three killed and one rejected by the TypeScript checker. Duration 34s.
+
+R5-03 requires the next candidate's 18 required checks, including passing exact Unit artifacts for gates/test/integration/visual.test.ts and gates/test/integration/axe.test.ts, all 37 strict Mutation shards and aggregate, and the complete Plants result. The cited older receipts apply to their earlier trees.

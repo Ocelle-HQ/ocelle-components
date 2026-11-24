@@ -175,8 +175,34 @@ describe("workflow canvas viewport geometry", () => {
     expect(effectiveCanvasClip(map)).toEqual({ left: 170, top: 80, right: 210, bottom: 110 });
   });
 
+  it("uses the default ellipse center through positive scaled ancestry", () => {
+    const { map, pane } = viewportFixture(250, 170);
+    const host = document.createElement("section");
+    document.body.append(host);
+    host.append(pane);
+    host.style.cssText = "transform: scale(2, 1.5); transform-origin: top left;";
+    pane.style.cssText += "overflow: visible; clip-path: ellipse(50px 30px);";
+    const { left, top } = pane.getBoundingClientRect();
+
+    expect(effectiveCanvasClip(map)).toEqual({
+      left: left + 150, top: top + 82.5, right: left + 350, bottom: top + 172.5,
+    });
+  });
+
+  it("keeps the measured map bounds when an ellipse uses unresolved radius keywords", () => {
+    const { map, pane } = viewportFixture(250, 170);
+    pane.style.cssText += "overflow: visible; clip-path: ellipse(closest-side farthest-side at 50% 40%);";
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+
+    expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
+  });
+
   it.each([
-    ["transform", "rotate(10deg)"], ["rotate", "10deg"], ["scale", "1.25"],
+    ["transform", "rotate(10deg)"], ["transform", "translateZ(1px)"],
+    ["transform", "skewX(10deg)"], ["transform", "skewY(10deg)"],
+    ["transform", "scaleX(-1)"], ["transform", "scaleY(-1)"],
+    ["transform", "scaleX(0)"], ["transform", "scaleY(0)"],
+    ["rotate", "10deg"], ["scale", "1.25"],
     ["perspective", "900px"], ["offset-path", 'path("M 10 20 L 50 60")'], ["zoom", "1.25"],
   ])("uses the ordinary map bounds when polygon reference ancestry has %s", (property, value) => {
     const { map, pane } = viewportFixture(250, 170);
@@ -203,6 +229,17 @@ describe("workflow canvas viewport geometry", () => {
     const { left, top, right, bottom } = map.getBoundingClientRect();
 
     expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
+  });
+
+  it("retains native convex testing when the inset uses an SVG geometry box", async () => {
+    const { canvasClipping } = await import("../src/workflow-canvas-viewport.ts");
+    const { map, pane } = viewportFixture(250, 170);
+    const clipPath = "inset(2px 4px 75% 20px) fill-box";
+    pane.style.cssText += `overflow: visible; clip-path: ${clipPath};`;
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+
+    expect(getComputedStyle(pane).clipPath).toBe(clipPath);
+    expect(canvasClipping(map)).toEqual({ bounds: { left, top, right, bottom }, hasConvexClip: true, contours: [] });
   });
 
   it("leaves an SVG clip reference to the browser's SVG geometry", () => {
