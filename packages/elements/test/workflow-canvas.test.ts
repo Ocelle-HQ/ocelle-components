@@ -1285,6 +1285,74 @@ describe("workflow canvas in-process selection and navigation", () => {
   });
 
   it.each([
+    { name: "a translated polygon", style: "transform: translateX(1px);", path: "polygon(0 0, 100% 0, 100% 318px, 394px 318px, 394px 328px, 100% 328px, 100% 100%, 0 100%)", viewX: -58, viewY: -90 },
+    { name: "an ellipse", style: "", path: "ellipse(440px 150px at 300px 115px)", viewX: -58, viewY: -172.5 },
+    { name: "a circle", style: "", path: "circle(268px at 228px 5px)", viewX: -170, viewY: -168.5 },
+  ])("guards live native focus and accepts an exact named reveal through $name", async ({ style, path, viewX, viewY }) => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible; ${style} }`, sheet.cssRules.length);
+    sheet.insertRule(`#canvas-pane.round-five-clip { clip-path: ${path}; }`, sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
+    await document.fonts.ready;
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    publish.focus({ preventScroll: true });
+    expect(active()).toBe(publish);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    pane.classList.add("round-five-clip");
+    const nativeClick = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(nativeClick), "live clipping blocks this action before a geometry callback").toBe(false);
+    expect(active()).toBe(action(canvas, "review"));
+    expect(requests).toEqual([]);
+
+    const reveal = await askReveal(canvas, "publish");
+    const proposed = { x: viewX, y: viewY, scale: 1 };
+    const proposal = { type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false };
+    expect(requests).toEqual([proposal]);
+    expect(active()).toBe(reveal);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(publish);
+    expect(action(canvas, "publish")).toBe(publish);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([proposal]);
+  });
+
+  it("skips the polygon-clipped Step control and focuses the painted Reveal fallback", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    const { picker, button } = revealControls(canvas);
+    const publish = action(canvas, "publish");
+    const root = canvas.shadowRoot;
+    if (root === null) throw new Error("The canvas is missing its shadow root");
+    const paneBounds = pane.getBoundingClientRect();
+    const step = picker.getBoundingClientRect();
+    const reveal = button.getBoundingClientRect();
+    const left = step.left - paneBounds.left - 2;
+    const right = step.right - paneBounds.left + 2;
+    const cut = step.bottom - paneBounds.top + 2;
+    const bottom = Math.max(step.bottom, reveal.bottom) - paneBounds.top + 8;
+    sheet.insertRule(`#canvas-pane.fallback-notch { clip-path: polygon(0 0, ${left}px 0, ${left}px ${cut}px, ${right}px ${cut}px, ${right}px 0, 100% 0, 100% ${bottom}px, 0 ${bottom}px); }`);
+    await settle(canvas);
+    publish.focus({ preventScroll: true });
+    expect(active()).toBe(publish);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    pane.classList.add("fallback-notch");
+    const hit = (element: HTMLElement) => {
+      const { left, right, top, bottom } = element.getBoundingClientRect();
+      return element.contains(root.elementFromPoint((left + right) / 2, (top + bottom) / 2));
+    };
+    expect([hit(picker), hit(button)]).toEqual([false, true]);
+    expect(picker.disabled).toBe(false);
+    expect(button.disabled).toBe(false);
+    const nativeClick = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(nativeClick)).toBe(false);
+    expect(active(), "only the painted named control can receive fallback focus").toBe(button);
+    expect(requests).toEqual([]);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
+  it.each([
     { key: "ArrowLeft", capture: "keydown" },
     { key: "Enter", capture: "click" },
   ] as const)("uses the first native $key after the host reveals an inert action", async ({ key, capture }) => {
