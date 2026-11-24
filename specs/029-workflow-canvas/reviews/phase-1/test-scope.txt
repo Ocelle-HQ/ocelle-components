@@ -4,4 +4,3 @@ packages/elements/test/workflow-canvas-navigation.test.ts
 packages/elements/test/workflow-canvas.test.ts
 ci-only gates/test/integration/axe.test.ts
 ci-only gates/test/integration/visual.test.ts
-packages/elements/test/plants.test.ts

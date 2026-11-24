@@ -371,6 +371,54 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("rechecks map eligibility when the same canvas reconnects into a moved host", async () => {
+    const { canvas, frame, after, requests } = await mount(true);
+    const lifecycle: string[] = [];
+    canvas.addController({
+      hostConnected: () => { lifecycle.push("connected"); },
+      hostDisconnected: () => { lifecycle.push("disconnected"); },
+    });
+    const review = action(canvas, "review");
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(false);
+
+    canvas.remove();
+    frame.classList.add("move-away");
+    after.focus();
+    frame.append(canvas);
+    await settle(canvas);
+    expect(lifecycle).toEqual(["connected", "disconnected", "connected"]);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    expect(getNode(canvas, "review")?.parentElement?.getAttribute("aria-hidden")).toBe("true");
+    expect(active()).toBe(after);
+
+    frame.classList.remove("move-away");
+    await expect.poll(() => getNode(canvas, "review")?.parentElement?.inert).toBe(false);
+    expect(getNode(canvas, "review")?.parentElement?.getAttribute("aria-hidden")).toBeNull();
+    expect(action(canvas, "review")).toBe(review);
+    expect(active()).toBe(after);
+    expect(requests).toEqual([]);
+    await click(review);
+    expect(requests).toEqual([selectRequest("review")]);
+  });
+
+  it("recovers clipped focus synchronously on an enclosing pane's own scroll event", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.replaceSync(fixtureStyles(400));
+    await settle(canvas);
+    const review = action(canvas, "review");
+    review.focus();
+    expect(active()).toBe(review);
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(false);
+
+    pane.scrollLeft = 260;
+    pane.dispatchEvent(new Event("scroll"));
+    expect(getNode(canvas, "review")?.parentElement?.inert).toBe(true);
+    expect(active()).toBe(action(canvas, "publish"));
+    expect(pane.scrollLeft).toBe(260);
+    expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([]);
+  });
+
   it("draws the supplied branching graph, carrying the labels and source outcomes into the existing node controls", async () => {
     const { canvas, requests } = await mount();
     const rendered = [...canvas.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []];
