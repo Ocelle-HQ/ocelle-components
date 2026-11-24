@@ -1103,6 +1103,77 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([selectRequest("publish")]);
   });
 
+  it.each([
+    { key: "ArrowLeft", capture: "keydown" },
+    { key: "Enter", capture: "click" },
+  ] as const)("uses the first native $key after the host reveals an inert action", async ({ key, capture }) => {
+    const { canvas, frame, pane, sheet, requests } = await mount(true);
+    const review = action(canvas, "review");
+    const face = getNode(canvas, "review")?.parentElement;
+    const initiator = key === "ArrowLeft" ? action(canvas, "publish") : revealControls(canvas).button;
+    sheet.insertRule("#canvas-frame.shifted { transform: translateX(-80px); }");
+    frame.classList.add("shifted");
+    await expect.poll(() => face?.inert).toBe(true);
+    initiator.focus({ preventScroll: true });
+    expect(active()).toBe(initiator);
+    const inputs: { trusted: boolean; exposed: boolean; inert: boolean | undefined }[] = [];
+    canvas.addEventListener(capture, (event) => {
+      frame.classList.remove("shifted");
+      inputs.push({ trusted: event.isTrusted, exposed: review.getBoundingClientRect().left > pane.getBoundingClientRect().left, inert: face?.inert });
+    }, { capture: true, once: true });
+
+    await commands.press(key);
+    expect(inputs).toEqual([{ trusted: true, exposed: true, inert: true }]);
+    expect(requests).toEqual([]);
+    expect(active(), `the native ${key} reaches the newly exposed Review action without a second input`).toBe(review);
+  });
+
+  it("leaves native key handling on an unmanaged light-DOM workflow node alone", async () => {
+    const { canvas, requests } = await mount();
+    const review = action(canvas, "review");
+    const foreign = document.createElement("ocelle-workflow-node");
+    foreign.nodeId = "review";
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const wrapper = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    const face = document.createElement("div");
+    face.append(foreign);
+    wrapper.append(face);
+    svg.append(wrapper, document.createElementNS("http://www.w3.org/2000/svg", "rect"));
+    canvas.append(svg);
+    await foreign.updateComplete;
+    const foreignButton = foreign.shadowRoot?.querySelector("button");
+    if (foreignButton == null) throw new Error("The external workflow node action is missing");
+    review.focus();
+
+    const key = new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, composed: true, cancelable: true });
+    expect(foreignButton.dispatchEvent(key), "the canvas does not consume input from a foreign action using the same stable ID").toBe(true);
+    expect(active()).toBe(review);
+    expect(requests).toEqual([]);
+  });
+
+  it("leaves a non-node control in the map to handle its own key input", async () => {
+    const { canvas, requests } = await mount();
+    const map = canvas.shadowRoot?.querySelector("svg");
+    expect(map).toBeInstanceOf(SVGSVGElement);
+    if (map == null) throw new Error("The map is missing");
+
+    const wrapper = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    const face = document.createElement("div");
+    const controlHost = document.createElement("div");
+    const independent = control("Independent control");
+    controlHost.attachShadow({ mode: "open" }).append(independent);
+    face.append(controlHost);
+    wrapper.append(face);
+    map.append(wrapper, document.createElementNS("http://www.w3.org/2000/svg", "rect"));
+
+    const review = action(canvas, "review");
+    review.focus();
+    const key = new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, composed: true, cancelable: true });
+    expect(independent.dispatchEvent(key), "the canvas leaves key input to a native control outside its workflow nodes").toBe(true);
+    expect(active()).toBe(review);
+    expect(requests).toEqual([]);
+  });
+
   it("restores eligibility after a same-task attempt to focus a clipped node", async () => {
     const { canvas, frame, before, requests } = await mount(true);
     const publish = action(canvas, "publish");
@@ -1355,6 +1426,50 @@ describe("workflow canvas in-process selection and navigation", () => {
 
     await expect.poll(() => active(), { message: "the visible picker receives focus when idle host translation clips the pending reveal button" }).toBe(picker);
     expect({ width: frame.offsetWidth, height: frame.offsetHeight, scroll: pane.scrollLeft, viewport: canvas.viewport }).toEqual(before);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+  });
+
+  it("focuses the native picker when removing the only pending reveal destination disables its button", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id === "revise"), connections: [] };
+    sheet.insertRule("#canvas-pane { block-size: 390px; }", sheet.cssRules.length);
+    pane.scrollTop = 4;
+    await document.fonts.ready;
+    await settle(canvas);
+    const reveal = await askReveal(canvas, "revise");
+    const { picker } = revealControls(canvas);
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(reveal);
+    expect(pane.scrollTop).toBe(4);
+
+    canvas.graph = { nodes: [], connections: [] };
+    await settle(canvas);
+    expect(reveal.disabled).toBe(true);
+    expect(pane.scrollTop).toBe(4);
+    expect(canvas.viewport).toEqual(initialViewport);
+    expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+    expect(active(), "the named picker receives focus after the last pending destination is removed").toBe(picker);
+  });
+
+  it("preserves external focus when removing a destination whose reveal never acquired focus", async () => {
+    const { canvas, before, requests } = await mount();
+    canvas.graph = { nodes: namedSteps.filter(({ id }) => id === "revise"), connections: [] };
+    await settle(canvas);
+    const { picker, button } = revealControls(canvas);
+    before.focus();
+
+    canvas.inert = true;
+    button.click();
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(before);
+
+    canvas.inert = false;
+    canvas.graph = { nodes: [], connections: [] };
+    await settle(canvas);
+    expect(button.disabled).toBe(true);
+    expect(picker.disabled).toBe(false);
+    expect(active(), "focus stays with the host when the reveal initiator never owned it").toBe(before);
+    expect(canvas.viewport).toEqual(initialViewport);
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
