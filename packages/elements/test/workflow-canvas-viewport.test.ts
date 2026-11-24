@@ -151,6 +151,31 @@ describe("workflow canvas viewport geometry", () => {
   });
 
   it.each([
+    ["translateX(1px)", { left: 146, top: 90, right: 308.5, bottom: 216 }],
+    ["scale(2, 1.25)", { left: 170, top: 92.5, right: 495, bottom: 250 }],
+  ] as const)("resolves absolute and percentage polygon vertices through %s", (transform, expected) => {
+    const { map, pane } = viewportFixture(250, 170);
+    pane.style.cssText += `overflow: visible; transform: ${transform}; transform-origin: top left;
+      clip-path: polygon(25px 10px, 75% 10px, 75% 80%, 25px 80%);`;
+
+    expect(effectiveCanvasClip(map)).toEqual(expected);
+  });
+
+  it("bounds a resolved ellipse using its scaled radii and center", () => {
+    const { map, pane } = viewportFixture(250, 170);
+    pane.style.cssText += "overflow: visible; clip-path: ellipse(40% 50px at 50% 70px);";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 145, top: 100, right: 345, bottom: 200 });
+  });
+
+  it("resolves a percent circle radius against the unscaled reference diagonal", () => {
+    const { map, pane } = viewportFixture(140, 20);
+    pane.style.cssText += "overflow: visible; transform: scale(2, 1.5); transform-origin: top left; clip-path: circle(10% at 25% 50%);";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 170, top: 80, right: 210, bottom: 110 });
+  });
+
+  it.each([
     ["transform", "rotate(10deg)"], ["rotate", "10deg"], ["scale", "1.25"],
     ["perspective", "900px"], ["offset-path", 'path("M 10 20 L 50 60")'], ["zoom", "1.25"],
   ])("uses the ordinary map bounds when polygon reference ancestry has %s", (property, value) => {

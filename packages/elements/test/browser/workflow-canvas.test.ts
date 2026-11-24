@@ -223,7 +223,7 @@ async function setUpPaintPane(canvas: Locator, clipped: boolean): Promise<void> 
   }, clipped);
 }
 
-type PaneClip = "inset" | "calculated" | "margin-box" | "rounded" | "corner" | "notched" | "overflow" | "contents" | "ordinary";
+type PaneClip = "inset" | "calculated" | "margin-box" | "rounded" | "corner" | "notched" | "transformed-notch" | "ellipse" | "circle" | "fallback-notch" | "overflow" | "contents" | "ordinary";
 
 async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true): Promise<void> {
   await canvas.evaluate(async (element: OcelleWorkflowCanvas, { mode, clipped }) => {
@@ -240,7 +240,10 @@ async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true
       #pane.rounded.clipped { clip-path: inset(0 0 220px 0 round 4px); }
       #pane.rounded.clipped.reopened { clip-path: inset(0 round 4px); }
       #pane.corner.clipped { clip-path: inset(0 255px 72px 0 round 100px); }
-      #pane.notched.clipped {
+      #pane.transformed-notch { transform: translateX(1px); }
+      #pane.ellipse.clipped { clip-path: ellipse(440px 150px at 300px 115px); }
+      #pane.circle.clipped { clip-path: circle(268px at 228px 5px); }
+      #pane.notched.clipped, #pane.transformed-notch.clipped {
         clip-path: polygon(0 0, 100% 0, 100% 318px, 394px 318px, 394px 328px, 100% 328px, 100% 100%, 0 100%);
       }
       #pane.overflow { block-size: 250px; overflow: clip; }
@@ -259,6 +262,56 @@ async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true
     await document.fonts.ready;
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   }, { mode, clipped });
+}
+
+async function watchRoundFiveCapture(action: Locator, fallback: boolean): Promise<void> {
+  await action.evaluate(async (button, fallback) => {
+    const root = button.getRootNode() as ShadowRoot;
+    const canvas = (root.host.getRootNode() as ShadowRoot).host;
+    const canvasRoot = canvas.shadowRoot;
+    const pane = canvas.parentElement;
+    const step = canvasRoot?.querySelector("select");
+    const reveal = canvasRoot?.querySelector("button");
+    if (pane === null || canvasRoot === null || step == null || reveal == null) throw new Error("The clipping fixture is missing its controls");
+    const hitControl = (control: HTMLElement) => {
+      const box = control.getBoundingClientRect();
+      return control.contains(canvasRoot.elementFromPoint((box.left + box.right) / 2, (box.top + box.bottom) / 2));
+    };
+    let observed: number | undefined;
+    await new Promise<void>((resolve) => {
+      const observer = new IntersectionObserver(([entry]) => { observed = entry?.intersectionRatio; resolve(); });
+      observer.observe(button);
+      document.addEventListener("click", (event) => {
+        const { left, right, top, bottom } = button.getBoundingClientRect();
+        const center = (left + right) / 2;
+        const points: readonly (readonly [number, number])[] = [
+          [center, (top + bottom) / 2], [left + 4, top + 4], [right - 4, top + 4],
+          [left + 4, bottom - 4], [right - 4, bottom - 4], [center, top + 10],
+        ];
+        const hits = () => points.map(([x, y]) => button.contains(root.elementFromPoint(x, y)));
+        const before = hits();
+        if (fallback) {
+          const paneBounds = pane.getBoundingClientRect();
+          const pickerBounds = step.getBoundingClientRect();
+          const revealBounds = reveal.getBoundingClientRect();
+          const left = pickerBounds.left - paneBounds.left - 2;
+          const right = pickerBounds.right - paneBounds.left + 2;
+          const cut = pickerBounds.bottom - paneBounds.top + 2;
+          const bottom = Math.max(pickerBounds.bottom, revealBounds.bottom) - paneBounds.top + 8;
+          const sheet = new CSSStyleSheet();
+          sheet.replaceSync(`#pane.clipped { clip-path: polygon(0 0, ${left}px 0, ${left}px ${cut}px, ${right}px ${cut}px, ${right}px 0, 100% 0, 100% ${bottom}px, 0 ${bottom}px); }`);
+          const host = pane.getRootNode() as ShadowRoot;
+          host.adoptedStyleSheets = [...host.adoptedStyleSheets, sheet];
+        }
+        pane.classList.add("clipped");
+        canvas.setAttribute("data-round-five-input", JSON.stringify({
+          trusted: event.isTrusted, native: event.composedPath().includes(button), observed, before, after: hits(),
+          namedHits: [hitControl(step), hitControl(reveal)],
+        }));
+        observer.disconnect();
+      }, { capture: true, once: true });
+    });
+  }, fallback);
 }
 
 async function canvasActionNames(page: Page): Promise<string[]> {
@@ -1015,6 +1068,111 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     await page.keyboard.press("Enter");
     expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);
     expect(await finish()).toEqual(clean);
+  });
+
+  it.each([
+    { mode: "transformed-notch", ratio: 1 },
+    { mode: "ellipse", ratio: 0 },
+    { mode: "circle", ratio: 0 },
+  ] as const)("keeps the action clipped by $mode out of native traversal and selection", async ({ mode, ratio }) => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, mode);
+    const publish = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    const reveal = page.getByRole("button", { name: "Reveal step" });
+    expect(await observeClipping(publish)).toEqual({ intersectionRatio: ratio, hasPaneBox: true, insidePaneBox: true });
+    const before = await controlledState(canvas);
+    await reveal.focus();
+    await page.keyboard.press("Tab");
+    expect(await focusedId(page)).toBe("review");
+    await page.keyboard.press("ArrowRight");
+    const afterArrow = await focusedId(page);
+    expect(await requests(page)).toEqual([]);
+    await page.keyboard.press("Enter");
+
+    expect({
+      afterArrow, actualFocus: await focusedId(page), names: await canvasActionNames(page),
+      recorded: await requests(page), state: await controlledState(canvas), diagnostics: await finish(),
+    }, "native traversal and selection use the browser-painted clip").toEqual({
+      afterArrow: "review", actualFocus: "review", names: ["Initial review"],
+      recorded: [{ type: selection, detail: { nodeId: "review" } }], state: before, diagnostics: clean,
+    });
+  });
+
+  it.each([
+    { mode: "transformed-notch", ratio: 1, viewX: -58, viewY: -90 },
+    { mode: "ellipse", ratio: 0, viewX: -58, viewY: -172.5 },
+    { mode: "circle", ratio: 0, viewX: -170, viewY: -168.5 },
+  ] as const)("proposes a usable $mode reveal and awaits the host before focusing Publish", async ({ mode, ratio, viewX, viewY }) => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, mode);
+    const publish = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    const original = await publish.elementHandle();
+    const reveal = page.getByRole("button", { name: "Reveal step" });
+    expect(await observeClipping(publish)).toEqual({ intersectionRatio: ratio, hasPaneBox: true, insidePaneBox: true });
+    const before = await controlledState(canvas);
+    const picker = page.getByRole("combobox", { name: "Step" });
+    expect(await picker.getByRole("option", { name: "Publish" }).count()).toBe(1);
+    await picker.selectOption("publish");
+    await picker.focus();
+    await page.keyboard.press("Tab");
+    expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+    expect(await requests(page)).toEqual([]);
+    await page.keyboard.press("Enter");
+
+    const proposed = { x: viewX, y: viewY, scale: 1 };
+    const proposal = { type: viewport, detail: { viewport: proposed } };
+    expect({
+      recorded: await requests(page), focused: await reveal.evaluate((button) => button.matches(":focus")),
+      names: await canvasActionNames(page), state: await controlledState(canvas),
+    }, "Reveal requests one actually usable viewport while the host owns focus handoff").toEqual({
+      recorded: [proposal], focused: true, names: ["Initial review"], state: before,
+    });
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, accepted) => {
+      element.viewport = accepted;
+      await element.updateComplete;
+    }, proposed);
+    await expect.poll(() => focusedId(page)).toBe("publish");
+    expect(await original.evaluate((button) => button.isConnected && button.matches(":focus"))).toBe(true);
+    expect(await observeClipping(publish)).toEqual({ intersectionRatio: 1, hasPaneBox: true, insidePaneBox: true });
+    expect(await controlledState(canvas)).toEqual({ ...before, viewport: proposed });
+    expect(await requests(page)).toEqual([proposal]);
+    await page.keyboard.press("Enter");
+    expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);
+    expect(await finish()).toEqual(clean);
+  });
+
+  it.each([
+    { mode: "transformed-notch", hits: [true, true, true, true, true, false], namedHits: [true, true], names: ["Initial review"], focus: "review", reveal: false },
+    { mode: "ellipse", hits: [false, false, false, false, false, false], namedHits: [true, true], names: ["Initial review"], focus: "review", reveal: false },
+    { mode: "circle", hits: [false, false, false, false, false, false], namedHits: [true, true], names: ["Initial review"], focus: "review", reveal: false },
+    { mode: "fallback-notch", hits: [false, false, false, false, false, false], namedHits: [false, true], names: [], focus: null, reveal: true },
+  ] as const)("uses the live $mode clip for a trusted click and its focus recovery", async (scenario) => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, scenario.mode, false);
+    const publish = page.getByRole("button", { name: "Publish" });
+    const reveal = page.getByRole("button", { name: "Reveal step" });
+    await reveal.focus();
+    await page.keyboard.press("Tab");
+    expect(await focusedId(page)).toBe("publish");
+    expect(await requests(page)).toEqual([]);
+    const before = await controlledState(canvas);
+    await watchRoundFiveCapture(publish, scenario.mode === "fallback-notch");
+    await page.keyboard.press("Enter");
+    expect(JSON.parse(await canvas.getAttribute("data-round-five-input") ?? "null") as unknown).toEqual({
+      trusted: true, native: true, observed: 1, before: [true, true, true, true, true, true],
+      after: scenario.hits, namedHits: scenario.namedHits,
+    });
+
+    expect({
+      focus: await focusedId(page), reveal: await reveal.evaluate((button) => button.matches(":focus")),
+      names: await canvasActionNames(page), recorded: await requests(page),
+      state: await controlledState(canvas), diagnostics: await finish(),
+    }, "the stale observer cannot admit a clipped action or a clipped named fallback").toEqual({
+      focus: scenario.focus, reveal: scenario.reveal, names: scenario.names, recorded: [], state: before, diagnostics: clean,
+    });
   });
 
   it.each([
