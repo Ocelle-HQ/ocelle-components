@@ -541,6 +541,54 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([]);
   });
 
+  it("switches scroll subscriptions when the host assigns the canvas to a different slotted pane", async () => {
+    const { canvas } = await mount();
+    const host = document.createElement("section");
+    const requests: string[] = [];
+    for (const type of requestTypes) host.addEventListener(type, (event) => { requests.push(event.type); });
+    const shadow = host.attachShadow({ mode: "open" });
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    const firstSlot = document.createElement("slot");
+    const secondSlot = document.createElement("slot");
+    firstSlot.name = "first";
+    secondSlot.name = "second";
+    second.id = "narrow";
+    first.append(firstSlot);
+    second.append(secondSlot);
+    const layout = new CSSStyleSheet();
+    layout.replaceSync("div { overflow: auto; inline-size: 760px; block-size: 440px; } #narrow { inline-size: 400px; }");
+    shadow.adoptedStyleSheets = [layout];
+    shadow.append(first, second);
+    document.body.replaceChildren(host);
+
+    const listenFirst = vi.spyOn(first, "addEventListener");
+    const stopFirst = vi.spyOn(first, "removeEventListener");
+    const listenSecond = vi.spyOn(second, "addEventListener");
+    try {
+      canvas.slot = "first";
+      host.append(canvas);
+      await settle(canvas);
+      expect(canvas.assignedSlot).toBe(firstSlot);
+      expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+      const scrollHandler = listenFirst.mock.calls.find(([type]) => type === "scroll")?.[1];
+      expect(scrollHandler).toBeInstanceOf(Function);
+      window.dispatchEvent(new Event("resize"));
+      expect(listenFirst.mock.calls.filter(([type]) => type === "scroll")).toHaveLength(1);
+
+      canvas.slot = "second";
+      await expect.poll(() => getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+      expect(canvas.assignedSlot).toBe(secondSlot);
+      expect(stopFirst.mock.calls.find(([type]) => type === "scroll")?.[1]).toBe(scrollHandler);
+      expect(listenSecond.mock.calls.find(([type]) => type === "scroll")?.[1]).toBe(scrollHandler);
+      expect(requests).toEqual([]);
+    } finally {
+      listenFirst.mockRestore();
+      stopFirst.mockRestore();
+      listenSecond.mockRestore();
+    }
+  });
+
   it("remeasures edge anchors when the host enlarges fully visible node controls", async () => {
     const { canvas, sheet, requests } = await mount(true);
     const card = getNode(canvas, "review");
