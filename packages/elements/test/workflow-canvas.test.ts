@@ -34,7 +34,8 @@ const initialLayout: readonly WorkflowCanvasLayoutEntry[] = [
 
 const selection = "ocelle-workflow-node-select";
 const viewport = "ocelle-workflow-canvas-viewport-request";
-const requestTypes = [selection, viewport, "ocelle-workflow-canvas-position-request", "ocelle-workflow-canvas-connection-request"];
+const position = "ocelle-workflow-canvas-position-request";
+const requestTypes = [selection, viewport, position, "ocelle-workflow-canvas-connection-request"];
 
 interface Request {
   readonly type: string;
@@ -218,6 +219,307 @@ async function axButtons(): Promise<string[]> {
 }
 
 afterEach(() => { document.body.replaceChildren(); });
+
+function commandButton(canvas: OcelleWorkflowCanvas, name: string): HTMLButtonElement {
+  const button = [...canvas.shadowRoot?.querySelectorAll("button") ?? []].find((candidate) => candidate.textContent.trim() === name);
+  expect(button, `the canvas exposes the native ${name} command`).toBeInstanceOf(HTMLButtonElement);
+  if (button === undefined) throw new Error("Canvas command missing");
+  return button;
+}
+
+async function openCommands(canvas: OcelleWorkflowCanvas): Promise<void> {
+  const summary = canvas.shadowRoot?.querySelector("summary");
+  expect(summary?.textContent.trim(), "the native disclosure provides Canvas controls").toBe("Canvas controls");
+  if (summary === undefined || summary === null) throw new Error("Canvas controls missing");
+  summary.focus({ preventScroll: true });
+  await commands.press("Enter");
+}
+
+function mapOf(canvas: OcelleWorkflowCanvas): SVGSVGElement {
+  const map = canvas.shadowRoot?.querySelector("svg.map");
+  if (map === null || map === undefined) throw new Error("Workflow map missing");
+  return map;
+}
+
+function moveHandle(canvas: OcelleWorkflowCanvas, nodeId: string): SVGRectElement {
+  const handle = mapOf(canvas).querySelector(`rect.move-handle[data-node-id="${nodeId}"]`);
+  expect(handle, "the visible node has its own pointer-only layout affordance").toBeInstanceOf(SVGRectElement);
+  if (!(handle instanceof SVGRectElement)) throw new Error("Workflow move handle missing");
+  return handle;
+}
+
+function displayedOrigin(canvas: OcelleWorkflowCanvas, id: string): readonly [number, number] {
+  const object = getNode(canvas, id)?.parentElement?.parentElement;
+  if (!(object instanceof SVGForeignObjectElement)) throw new Error("Workflow face missing");
+  return [object.x.baseVal.value, object.y.baseVal.value];
+}
+
+function alignedIncidents(canvas: OcelleWorkflowCanvas): void {
+  const edges = [...mapOf(canvas).querySelectorAll("path.edge")];
+  const face = getNode(canvas, "publish")?.parentElement;
+  const object = face?.parentElement;
+  if (!(object instanceof SVGForeignObjectElement)) throw new Error("Workflow face missing");
+  const [x, y] = displayedOrigin(canvas, "publish");
+  const incoming = edges[0]?.getPointAtLength(edges[0].getTotalLength());
+  const outgoing = edges[2]?.getPointAtLength(0);
+  expect(incoming?.x).toBeCloseTo(x);
+  expect(incoming?.y).toBeCloseTo(y + object.height.baseVal.value / 2);
+  expect(outgoing?.x).toBeCloseTo(x + object.width.baseVal.value);
+  expect(outgoing?.y).toBeCloseTo(y + object.height.baseVal.value / 2);
+}
+
+function presentationRequest(type: string, detail: unknown): Request {
+  return { type, detail, bubbles: true, composed: true, cancelable: false };
+}
+
+async function arranging(): Promise<Fixture> {
+  const fixture = await mount(true);
+  const { canvas } = fixture;
+  canvas.graph = {
+    ...initialGraph, connections: [...initialGraph.connections, { sourceId: "publish", outcomeId: "approved", destinationId: "revise" }],
+  };
+  canvas.layout = [
+    { nodeId: "review", x: 25, y: 35 },
+    { nodeId: "publish", x: 135, y: 35 },
+    { nodeId: "revise", x: 245, y: 35 },
+  ];
+  canvas.viewport = { x: 18, y: 24, scale: 2 };
+  await settle(canvas);
+  return fixture;
+}
+
+function elementCenter(element: Element) {
+  const { left, top, width, height } = element.getBoundingClientRect();
+  return { x: left + width / 2, y: top + height / 2 };
+}
+
+async function previewMove(fixture: Fixture) {
+  const { canvas } = fixture;
+  const map = mapOf(canvas);
+  const handle = moveHandle(canvas, "publish");
+  let pointerId = -1;
+  handle.addEventListener("pointerdown", (event) => { pointerId = event.pointerId; }, { once: true });
+  const down = elementCenter(handle);
+  const end = { x: down.x + 40, y: down.y - 20 };
+  await commands.pointerPath([{ ...down, down: true }, end]);
+  await settle(canvas);
+  expect(map.hasPointerCapture(pointerId), "real pointer capture is active during the visible preview").toBe(true);
+  expect(displayedOrigin(canvas, "publish")).toEqual([328, 74]);
+  alignedIncidents(canvas);
+  return { end, map, pointerId };
+}
+
+describe("workflow canvas arranging in process", () => {
+  it.each([
+    { name: "selected and synchronously accepted", selected: "publish", accept: true, displayed: [328, 74] },
+    { name: "unselected and withheld", selected: "review", accept: false, displayed: [288, 94] },
+  ])("drags a $name step at a translated scale of two", async ({ selected, accept, displayed }) => {
+    const fixture = await arranging();
+    const { canvas, requests, pane } = fixture;
+    canvas.selectedNodeId = selected;
+    await settle(canvas);
+    const originalGraph = canvas.graph;
+    const originalLayout = canvas.layout;
+    const originalNode = action(canvas, "publish");
+    const expected = { nodeId: "publish", position: { x: 155, y: 25 } };
+    pane.addEventListener(position, () => {
+      if (accept) canvas.layout = originalLayout.map((node) => node.nodeId === expected.nodeId ? { ...node, ...expected.position } : node);
+    });
+
+    const { end } = await previewMove(fixture);
+    expect(canvas.layout).toBe(originalLayout);
+    expect(requests).toEqual([]);
+    await commands.pointerPath([{ ...end, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([presentationRequest(position, expected)]);
+    expect(displayedOrigin(canvas, "publish")).toEqual(displayed);
+    alignedIncidents(canvas);
+    expect(action(canvas, "publish")).toBe(originalNode);
+    expect(canvas.graph).toBe(originalGraph);
+    expect(canvas.selectedNodeId).toBe(selected);
+    expect(canvas.viewport).toEqual({ x: 18, y: 24, scale: 2 });
+  });
+
+  it.each(["scroll", "mode", "Escape", "layout"] as const)("clears a captured move before further pointer input after %s", async (cause) => {
+    const fixture = await arranging();
+    const { canvas, pane, sheet, requests } = fixture;
+    sheet.insertRule("#canvas-pane { block-size: 330px; }", sheet.cssRules.length);
+    await settle(canvas);
+    const originalGraph = canvas.graph;
+    const { end, map, pointerId } = await previewMove(fixture);
+    if (cause === "scroll") pane.scrollTop = 28;
+    if (cause === "mode") canvas.mode = "read-only";
+    if (cause === "Escape") await commands.press("Escape");
+    if (cause === "layout") canvas.layout = [...canvas.layout];
+    await expect.poll(() => displayedOrigin(canvas, "publish")).toEqual([288, 94]);
+    expect(map.hasPointerCapture(pointerId)).toBe(false);
+    alignedIncidents(canvas);
+    expect(pane.scrollTop).toBe(cause === "scroll" ? 28 : 0);
+    expect(requests).toEqual([]);
+    await commands.pointerPath([{ ...end, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([]);
+    expect(canvas.graph).toBe(originalGraph);
+  });
+
+  it("checks read-only at the native release while the old handle is still painted", async () => {
+    const fixture = await arranging();
+    const { canvas, requests, pane } = fixture;
+    const { end } = await previewMove(fixture);
+    pane.addEventListener("pointerup", () => { canvas.mode = "read-only"; }, { capture: true, once: true });
+    await commands.pointerPath([{ ...end, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([]);
+    expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
+    expect(mapOf(canvas).querySelectorAll(".move-handle")).toHaveLength(0);
+  });
+
+  it("pans the read-only map background and previews only presentation", async () => {
+    const { canvas, requests } = await arranging();
+    const graph = canvas.graph;
+    const layout = canvas.layout;
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const { right, bottom } = mapOf(canvas).getBoundingClientRect();
+    const down = { x: right - 45, y: bottom - 55 };
+    const end = { x: down.x - 32, y: down.y + 24 };
+    await commands.pointerPath([{ ...down, down: true }, end]);
+    await settle(canvas);
+    expect(displayedOrigin(canvas, "publish"), "the pannable background paints its temporary viewport").toEqual([256, 118]);
+    expect(requests).toEqual([]);
+    await commands.pointerPath([{ ...end, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: { x: -14, y: 48, scale: 2 } })]);
+    expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
+    expect(canvas.graph).toBe(graph);
+    expect(canvas.layout).toBe(layout);
+  });
+
+  it("uses native keyboard pan, zoom and Fit commands with exact host-owned requests", async () => {
+    const { canvas, requests, pane, sheet } = await arranging();
+    sheet.insertRule(`#canvas-pane, #canvas-frame, ${tag} { inline-size: 430px; }`, sheet.cssRules.length);
+    canvas.layout = [
+      { nodeId: "review", x: 25, y: 20 }, { nodeId: "publish", x: 435, y: 30 }, { nodeId: "revise", x: 260, y: 180 },
+    ];
+    canvas.viewport = { x: 18, y: 24, scale: 1 };
+    const graph = canvas.graph;
+    const layout = canvas.layout;
+    pane.addEventListener(viewport, (event) => {
+      canvas.viewport = (event as CustomEvent<WorkflowCanvasViewportRequestDetail>).detail.viewport;
+    });
+    await settle(canvas);
+    await openCommands(canvas);
+    const map = mapOf(canvas);
+    const anchor = { x: map.clientWidth / 2, y: map.clientHeight / 2 };
+    const poses = [
+      { name: "Pan left", view: { x: -46, y: 24, scale: 1 } },
+      { name: "Pan right", view: { x: 18, y: 24, scale: 1 } },
+      { name: "Pan up", view: { x: 18, y: -40, scale: 1 } },
+      { name: "Pan down", view: { x: 18, y: 24, scale: 1 } },
+      { name: "Zoom in", view: { x: anchor.x - (anchor.x - 18) * 1.25, y: anchor.y - (anchor.y - 24) * 1.25, scale: 1.25 } },
+      { name: "Zoom out", view: { x: 18, y: 24, scale: 1 } },
+    ];
+    const baseline = action(canvas, "review").getBoundingClientRect();
+    for (const [index, { name, view }] of poses.entries()) {
+      const button = commandButton(canvas, name);
+      button.focus({ preventScroll: true });
+      await commands.press("Enter");
+      await settle(canvas);
+      const { width, height } = button.getBoundingClientRect();
+      const minimum = Number.parseFloat(getComputedStyle(button).minBlockSize);
+      expect(Math.min(width, height)).toBeGreaterThanOrEqual(minimum);
+      expect(active()).toBe(button);
+      expect(requests).toEqual(poses.slice(0, index + 1).map(({ view }) => presentationRequest(viewport, { viewport: view })));
+      expect(canvas.viewport).toEqual(view);
+      expect(action(canvas, "review").getBoundingClientRect().height).toBe(baseline.height);
+    }
+    const fit = commandButton(canvas, "Fit graph");
+    fit.focus({ preventScroll: true });
+    await commands.press("Enter");
+    await settle(canvas);
+    const fitted = lastViewport(requests);
+    expect(requests).toEqual([...poses.map(({ view }) => presentationRequest(viewport, { viewport: view })),
+      presentationRequest(viewport, { viewport: fitted })]);
+    const clip = map.getBoundingClientRect();
+    for (const id of ["review", "publish", "revise"]) {
+      const painted = action(canvas, id).getBoundingClientRect();
+      expect(painted.left).toBeGreaterThan(clip.left);
+      expect(painted.top).toBeGreaterThan(clip.top);
+      expect(painted.right).toBeLessThan(clip.right);
+      expect(painted.bottom).toBeLessThan(clip.bottom);
+      expect(painted.height).toBe(baseline.height);
+    }
+    const visibleFocus = active()?.getBoundingClientRect();
+    expect(visibleFocus?.width).toBeGreaterThan(0);
+    expect(visibleFocus?.height).toBeGreaterThan(0);
+    expect(canvas.graph).toBe(graph);
+    expect(canvas.layout).toBe(layout);
+  });
+
+  it("moves the named step without dragging and preserves the supplied layout after rejection", async () => {
+    const { canvas, requests, pane } = await arranging();
+    const graph = canvas.graph;
+    const { picker } = revealControls(canvas);
+    picker.value = "publish";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    await openCommands(canvas);
+    const submit = commandButton(canvas, "Move step");
+    const x = canvas.shadowRoot?.querySelector('input[name="x"]');
+    const y = canvas.shadowRoot?.querySelector('input[name="y"]');
+    expect(x, "the named step exposes a native absolute X input").toBeInstanceOf(HTMLInputElement);
+    expect(y, "the named step exposes a native absolute Y input").toBeInstanceOf(HTMLInputElement);
+    if (!(x instanceof HTMLInputElement) || !(y instanceof HTMLInputElement)) throw new Error("Position fields missing");
+    expect([x.value, y.value]).toEqual(["135", "35"]);
+    const first = { nodeId: "publish", position: { x: 150, y: 45 } };
+    pane.addEventListener(position, () => {
+      canvas.layout = canvas.layout.map((node) => node.nodeId === first.nodeId ? { ...node, ...first.position } : node);
+    }, { once: true });
+    x.value = "150";
+    y.value = "45";
+    submit.focus({ preventScroll: true });
+    await commands.press("Enter");
+    await settle(canvas);
+    expect(displayedOrigin(canvas, "publish")).toEqual([318, 114]);
+    const accepted = canvas.layout;
+    x.value = "161";
+    y.value = "50";
+    await commands.press("Enter");
+    await settle(canvas);
+    expect(requests).toEqual([presentationRequest(position, first),
+      presentationRequest(position, { nodeId: "publish", position: { x: 161, y: 50 } })]);
+    expect(displayedOrigin(canvas, "publish")).toEqual([318, 114]);
+    expect(canvas.layout).toBe(accepted);
+    expect(canvas.graph).toBe(graph);
+    alignedIncidents(canvas);
+  });
+
+  it.each([
+    { name: "the surviving subject", nodeId: "publish", hidden: [], expected: "publish" },
+    { name: "the preceding visible step", nodeId: "revise", hidden: ["revise"], expected: "publish" },
+    { name: "the named fallback", nodeId: "publish", hidden: ["review", "publish", "revise"], expected: null },
+  ])("recovers to $name when leaving authoring with a focused Move step control", async ({ nodeId, hidden, expected }) => {
+    const { canvas, requests, pane } = await arranging();
+    canvas.layout = canvas.layout.map((node) => hidden.includes(node.nodeId) ? { ...node, x: 1100 } : node);
+    await settle(canvas);
+    const { picker } = revealControls(canvas);
+    picker.value = nodeId;
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    await openCommands(canvas);
+    const move = commandButton(canvas, "Move step");
+    move.focus({ preventScroll: true });
+    expect(active()).toBe(move);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    canvas.mode = "read-only";
+    await settle(canvas);
+    expect(active()).toBe(expected === null ? picker : action(canvas, expected));
+    expect(mapOf(canvas).querySelectorAll(".move-handle")).toHaveLength(0);
+    expect([...canvas.shadowRoot?.querySelectorAll("button") ?? []].some((button) => button.textContent.trim() === "Move step")).toBe(false);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([]);
+  });
+});
 
 describe("workflow canvas in-process selection and navigation", () => {
   it("starts with the documented host-owned inputs and an available named navigator", async () => {
