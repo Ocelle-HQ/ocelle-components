@@ -223,7 +223,7 @@ async function setUpPaintPane(canvas: Locator, clipped: boolean): Promise<void> 
   }, clipped);
 }
 
-type PaneClip = "inset" | "calculated" | "margin-box" | "rounded" | "corner" | "overflow" | "contents" | "ordinary";
+type PaneClip = "inset" | "calculated" | "margin-box" | "rounded" | "corner" | "notched" | "overflow" | "contents" | "ordinary";
 
 async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true): Promise<void> {
   await canvas.evaluate(async (element: OcelleWorkflowCanvas, { mode, clipped }) => {
@@ -240,6 +240,9 @@ async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true
       #pane.rounded.clipped { clip-path: inset(0 0 220px 0 round 4px); }
       #pane.rounded.clipped.reopened { clip-path: inset(0 round 4px); }
       #pane.corner.clipped { clip-path: inset(0 255px 72px 0 round 100px); }
+      #pane.notched.clipped {
+        clip-path: polygon(0 0, 100% 0, 100% 318px, 394px 318px, 394px 328px, 100% 328px, 100% 100%, 0 100%);
+      }
       #pane.overflow { block-size: 250px; overflow: clip; }
       #pane.contents { display: contents; overflow: hidden; }
     `);
@@ -918,6 +921,100 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
       beforeCanvas: { trusted: true, inert: true, before: false, after: false },
       focused: true, recorded: [], diagnostics: clean,
     });
+  });
+
+  it("keeps Review available while a polygon notch blocks a trusted Publish click", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, "notched", false);
+    const publish = page.getByRole("button", { name: "Publish" });
+    await page.getByRole("button", { name: /^Reveal / }).focus();
+    await page.keyboard.press("Tab");
+    expect(await focusedId(page)).toBe("publish");
+    await page.keyboard.press("Enter");
+    const publishRequest = { type: selection, detail: { nodeId: "publish" } };
+    expect(await requests(page)).toEqual([publishRequest]);
+    expect(await observeClipping(publish)).toEqual({ intersectionRatio: 1, hasPaneBox: true, insidePaneBox: true });
+
+    await publish.evaluate((button) => {
+      const root = button.getRootNode() as ShadowRoot;
+      const canvas = (root.host.getRootNode() as ShadowRoot).host;
+      const pane = canvas.parentElement;
+      if (pane === null) throw new Error("The polygon fixture is missing its pane");
+      document.addEventListener("click", (event) => {
+        const { left, right, top, bottom } = button.getBoundingClientRect();
+        const middle = (left + right) / 2;
+        const points: readonly (readonly [number, number])[] = [
+          [middle, (top + bottom) / 2], [left + 4, top + 4], [right - 4, top + 4],
+          [left + 4, bottom - 4], [right - 4, bottom - 4], [middle, top + 10],
+        ];
+        pane.classList.add("clipped");
+        canvas.setAttribute("data-polygon-input", JSON.stringify({
+          trusted: event.isTrusted, nativeTarget: event.composedPath().includes(button),
+          hits: points.map(([x, y]) => button.contains(root.elementFromPoint(x, y))),
+        }));
+      }, { capture: true, once: true });
+    });
+
+    await page.keyboard.press("Enter");
+    expect(JSON.parse(await canvas.getAttribute("data-polygon-input") ?? "null") as unknown).toEqual({
+      trusted: true, nativeTarget: true, hits: [true, true, true, true, true, false],
+    });
+    const afterCapture = await requests(page);
+    const recovered = await focusedId(page);
+    await page.keyboard.press("ArrowRight");
+    const afterArrow = await focusedId(page);
+    const afterNavigation = await requests(page);
+    await page.keyboard.press("Enter");
+    expect({
+      afterCapture, recovered, afterArrow, afterNavigation,
+      names: await canvasActionNames(page), recorded: await requests(page), diagnostics: await finish(),
+    }, "the notch excludes only Publish and the next native Enter selects Review").toEqual({
+      afterCapture: [publishRequest], recovered: "review", afterArrow: "review",
+      afterNavigation: [publishRequest], names: ["Initial review"],
+      recorded: [publishRequest, { type: selection, detail: { nodeId: "review" } }], diagnostics: clean,
+    });
+  });
+
+  it("proposes a named reveal for a notched action and focuses it after acceptance clears the contour", async () => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    await setUpClippingPane(canvas, "notched");
+    const nativeAction = canvas.locator("ocelle-workflow-node").nth(1).locator("button");
+    const handle = await nativeAction.elementHandle();
+    expect(await observeClipping(nativeAction)).toEqual({ intersectionRatio: 1, hasPaneBox: true, insidePaneBox: true });
+
+    const picker = page.getByRole("combobox", { name: "Step" });
+    const reveal = page.getByRole("button", { name: /^Reveal / });
+    expect(await picker.getByRole("option", { name: "Publish" }).count()).toBe(1);
+    await picker.selectOption("publish");
+    await picker.focus();
+    await page.keyboard.press("Tab");
+    expect(await reveal.evaluate((button) => button.matches(":focus"))).toBe(true);
+    expect(await requests(page)).toEqual([]);
+    const before = await controlledState(canvas);
+    await page.keyboard.press("Enter");
+
+    const proposed = { x: -58, y: -90, scale: 1 };
+    const proposal = { type: viewport, detail: { viewport: proposed } };
+    expect({
+      recorded: await requests(page), names: await canvasActionNames(page),
+      focused: await reveal.evaluate((button) => button.matches(":focus")),
+      state: await controlledState(canvas),
+    }, "the browser-painted notch requires one proposal and retains visible Reveal focus").toEqual({
+      recorded: [proposal], names: ["Initial review"], focused: true, state: before,
+    });
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, accepted) => {
+      element.viewport = accepted;
+      await element.updateComplete;
+    }, proposed);
+    await expect.poll(() => focusedId(page)).toBe("publish");
+    expect(await handle.evaluate((button) => button.isConnected && button.matches(":focus"))).toBe(true);
+    expect(await controlledState(canvas)).toEqual({ ...before, viewport: proposed });
+    expect(await requests(page)).toEqual([proposal]);
+    await page.keyboard.press("Enter");
+    expect(await requests(page)).toEqual([proposal, { type: selection, detail: { nodeId: "publish" } }]);
+    expect(await finish()).toEqual(clean);
   });
 
   it.each([

@@ -1185,6 +1185,31 @@ describe("workflow canvas in-process selection and navigation", () => {
     }
   });
 
+  it("keeps the fully visible node eligible where only its neighbor intersects a polygon boundary", async () => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    sheet.insertRule("#canvas-pane { block-size: 445px; overflow: visible; }", sheet.cssRules.length);
+    sheet.insertRule("#canvas-pane.notched { clip-path: polygon(0 0, 100% 0, 100% 318px, 394px 318px, 394px 328px, 100% 328px, 100% 100%, 0 100%); }", sheet.cssRules.length);
+    canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    const review = action(canvas, "review");
+    publish.focus({ preventScroll: true });
+    pane.classList.add("notched");
+    const { left, right, top, bottom } = publish.getBoundingClientRect();
+    const root = publish.getRootNode() as ShadowRoot;
+    const center = (left + right) / 2;
+    expect(publish.contains(root.elementFromPoint(center, (top + bottom) / 2))).toBe(true);
+    expect(publish.contains(root.elementFromPoint(center, top + 10))).toBe(false);
+
+    const nativeClick = new MouseEvent("click", { bubbles: true, composed: true, cancelable: true });
+    expect(publish.dispatchEvent(nativeClick), "the contour crossing makes Publish unavailable in the same input turn").toBe(false);
+    expect(active()).toBe(review);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(requests).toEqual([]);
+    await click(review);
+    expect(requests).toEqual([selectRequest("review")]);
+  });
+
   it.each([
     { key: "ArrowLeft", capture: "keydown" },
     { key: "Enter", capture: "click" },
