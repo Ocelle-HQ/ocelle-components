@@ -89,6 +89,74 @@ describe("workflow canvas viewport geometry", () => {
     expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
   });
 
+  it.each(["contents", "inline"])("ignores overflow: hidden on a %s wrapper that does not establish an overflow clip", (display) => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText = `display: ${display}; overflow: hidden; width: 120px; height: 90px;`;
+    map.style.cssText = "display: inline-block; width: 400px; height: 300px;";
+    const { left, top, right, bottom } = map.getBoundingClientRect();
+
+    expect(effectiveCanvasClip(map)).toEqual({ left, top, right, bottom });
+  });
+
+  it.each([
+    ["inset(5px)", { left: 130, top: 95, right: 374, bottom: 377 }],
+    ["inset(0 10%)", { left: 146.4, top: 80, right: 357.6, bottom: 392 }],
+    ["inset(0 0 calc(100% - 20px) 0)", { left: 120, top: 80, right: 384, bottom: 140 }],
+    ["inset(calc(25% + 3px) calc(25% - 2px) -5px 8px)", { left: 136, top: 167, right: 322, bottom: 407 }],
+    ["inset(5px 20px 7px)", { left: 160, top: 95, right: 344, bottom: 371 }],
+    ["inset(10% 20px 25% 8px)", { left: 136, top: 111.2, right: 344, bottom: 314 }],
+    ["inset(5px 20px 7px 8px) padding-box", { left: 144, top: 113, right: 328, bottom: 347 }],
+    ["inset(50% 75% 150% 125%)", { left: 285, top: 158, right: 285, bottom: 158 }],
+  ] as const)("clips to the computed rectangular %s on a scaled host pane with visible overflow", (inset, expected) => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
+      transform: scale(2, 3); transform-origin: top left; overflow: visible; clip-path: ${inset};`;
+    map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
+    const clipPath = getComputedStyle(pane).clipPath;
+
+    expect(clipPath).toMatch(/^inset\(/);
+    expect(effectiveCanvasClip(map)).toEqual(expected);
+  });
+
+  it("measures content-box inset percentages relative to the scaled content edges", () => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
+      padding: 3px 5px 7px 11px; transform: scale(2, 3); transform-origin: top left;
+      overflow: visible; clip-path: inset(10% 20% 25% 5%) content-box;`;
+    map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 162, top: 134, right: 342, bottom: 309.5 });
+  });
+
+  it("preserves the real overflow clip of an inline SVG viewport", () => {
+    const host = document.createElement("div");
+    host.style.cssText = "position: absolute; left: 120px; top: 80px;";
+    const pane = document.createElementNS(svg, "svg");
+    pane.style.cssText = "display: inline; vertical-align: top; width: 200px; height: 150px; overflow: hidden;";
+    const map = document.createElementNS(svg, "svg");
+    map.setAttribute("width", "400");
+    map.setAttribute("height", "300");
+    const face = document.createElementNS(svg, "rect");
+    face.setAttribute("width", "400");
+    face.setAttribute("height", "300");
+    map.append(face);
+    pane.append(map);
+    host.append(pane);
+    document.body.append(host);
+
+    expect(getComputedStyle(pane).display).toBe("inline");
+    expect(effectiveCanvasClip(map)).toEqual({ left: 120, top: 80, right: 320, bottom: 230 });
+  });
+
+  it("intersects a rectangular border-box inset with a real overflow clip at the client edge", () => {
+    const { map, pane } = viewportFixture(120, 90);
+    pane.style.cssText += `box-sizing: content-box; border: solid transparent; border-width: 6px 8px 8px 4px;
+      transform: scale(2, 3); transform-origin: top left; clip-path: inset(0 0 15px 6px);`;
+    map.style.cssText += "left: -20px; top: -15px; width: 220px; height: 180px;";
+
+    expect(effectiveCanvasClip(map)).toEqual({ left: 132, top: 98, right: 368, bottom: 347 });
+  });
+
   it("avoids a layout read for an ancestor that cannot clip either axis", () => {
     const { map, pane } = viewportFixture(250, 170);
     pane.style.overflow = "visible";
