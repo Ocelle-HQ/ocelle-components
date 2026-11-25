@@ -1,0 +1,8 @@
+storybook/test/integration/change-list-plan.test.ts
+storybook/test/integration/change-list-upgrade.test.ts
+storybook/test/integration/elements-stories.test.ts
+storybook/test/integration/render.test.ts
+gates/test/integration/storybook-build.test.ts
+gates/test/integration/plant-repo.test.ts
+ci-only gates/test/integration/visual.test.ts
+ci-only gates/test/integration/axe.test.ts
