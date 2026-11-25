@@ -78,11 +78,36 @@ function splitFile(file: ChangedFile): Entry[] {
   return entries;
 }
 
-export function planShards(files: readonly ChangedFile[]): Shard[] {
+/** A candidate entry spans one contiguous pair without including any unchanged line. */
+function pairEntries(left: Entry, right: Entry): Entry | undefined {
+  const named = new Set([left.path]);
+  const first = readEntry(left.entry, named)?.window;
+  const second = readEntry(right.entry, named)?.window;
+  if (first === undefined || first.end + 1 !== second?.start) return undefined;
+  if (first.end - first.start + 1 !== left.lines || second.end - second.start + 1 !== right.lines) return undefined;
+  return { path: left.path, entry: `${left.path}:${String(first.start)}-${String(second.end)}`, lines: left.lines + right.lines };
+}
+
+function shadowEntries(file: ChangedFile): Entry[] {
+  const entries = splitFile(file);
+  if (!file.path.startsWith("packages/elements/src/")) return entries;
+  const grouped: Entry[] = [];
+  for (let i = 0; i < entries.length; i += 1) {
+    const left = entries[i];
+    const right = entries[i + 1];
+    if (left === undefined) break;
+    const pair = right === undefined ? undefined : pairEntries(left, right);
+    grouped.push(pair ?? left);
+    if (pair !== undefined) i += 1;
+  }
+  return grouped;
+}
+
+export function planShards(files: readonly ChangedFile[], shadowGrouped = false): Shard[] {
   const shards: { files: string[]; lines: number }[] = [];
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
   let lastPath: string | undefined;
-  for (const { entry, path, lines } of sorted.flatMap(splitFile)) {
+  for (const { entry, path, lines } of sorted.flatMap(shadowGrouped ? shadowEntries : splitFile)) {
     const last = shards.at(-1);
     // Entries come in path order, so the current shard holds an entry of this file only if its last entry is one.
     if (last !== undefined && path !== lastPath && last.files.length < maxEntries && last.lines + lines <= maxLines) {

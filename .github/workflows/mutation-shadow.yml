@@ -1,0 +1,136 @@
+name: Mutation planning shadow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+# Separate comparison on a bounded sample from the preserved #94 tree.
+env:
+  ORIGINAL_BASE: 183b20f9148e6fa0a402b23e367328f6a8683f97
+  ORIGINAL_HEAD: 99cef9887df8aded9be8e8721f38e08a4c4dac22
+  ORIGINAL_TREE: d493acae6a8b6e5d405cceddd2da870cecee9b4d
+  SOURCE: packages/elements/src/ocelle-workflow-canvas.ts
+
+jobs:
+  sample:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.body, '<!-- verify-mutation-shadow -->') &&
+      (github.event.action != 'edited' ||
+      (github.event.changes.body.from != null &&
+      !contains(github.event.changes.body.from, '<!-- verify-mutation-shadow -->')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arm: control-first
+            range: 61-90
+            shadow: false
+          - arm: control-second
+            range: 91-120
+            shadow: false
+          - arm: grouped
+            range: 61-120
+            shadow: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          path: comparison-94
+          ref: 99cef9887df8aded9be8e8721f38e08a4c4dac22
+          persist-credentials: false
+      - env:
+          RANGE: ${{ matrix.range }}
+          SHADOW: ${{ matrix.shadow }}
+        run: |
+          root="$GITHUB_WORKSPACE/comparison-94"
+          receipt="$RUNNER_TEMP/mutation-shadow"
+          mkdir "$receipt"
+          test "$(git -C "$root" rev-parse HEAD)" = "$ORIGINAL_HEAD"
+          test "$(git -C "$root" rev-parse 'HEAD^{tree}')" = "$ORIGINAL_TREE"
+          git -C "$root" merge-base --is-ancestor "$ORIGINAL_BASE" HEAD
+          pnpm --dir "$root" run setup:online
+
+          selector="$SOURCE:$RANGE"
+          flag=()
+          if [[ "$SHADOW" = true ]]; then flag+=(--shadow-grouped); fi
+          node gates/bin/mutation.ts --root "$root" --base "$ORIGINAL_BASE" --plan "${flag[@]}" > "$receipt/plan.json"
+          jq -e --arg selector "$selector" '[.[].files | split(",")[]] | index($selector) != null' "$receipt/plan.json"
+
+          code=0
+          node gates/bin/mutation.ts --root "$root" --base "$ORIGINAL_BASE" --shadow-grouped --files "$selector" \
+            > "$receipt/mutation.log" 2> "$receipt/diagnostics.log" || code=$?
+          cat "$receipt/mutation.log" "$receipt/diagnostics.log"
+          test "$code" = 0
+          sed -n 's/^mutation shadow receipt: //p' "$receipt/diagnostics.log" |
+            jq -e -s --arg selector "$selector" --arg base "$ORIGINAL_BASE" --arg head "$ORIGINAL_HEAD" --arg tree "$ORIGINAL_TREE" '
+              if length != 1 then error("expected one completed mutation receipt") else .[0] end
+              | if .ranges != [$selector] or .configuration != "stryker.elements.config.json" then error("wrong mutation inputs") else . end
+              | if (.baseline.tests // 0) < 1 or (.baseline.elapsedMs // 0) <= 0 or .totalMs < .baseline.elapsedMs then error("missing mutation timings") else . end
+              | . + { base: $base, head: $head, tree: $tree }
+            ' > "$receipt/receipt.json"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-shadow-${{ matrix.arm }}
+          path: ${{ runner.temp }}/mutation-shadow
+          if-no-files-found: error
+
+  compare:
+    name: Compare mutation shadow receipts
+    needs: sample
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: mutation-shadow-*
+          path: ${{ runner.temp }}/mutation-shadow-receipts
+      - run: |
+          data="$RUNNER_TEMP/mutation-shadow-receipts"
+          jq -e -s --arg base "$ORIGINAL_BASE" --arg head "$ORIGINAL_HEAD" --arg tree "$ORIGINAL_TREE" --arg source "$SOURCE" '
+            def identity: [.path, .location, .mutatorName, .replacement];
+            def verified:
+              .base == $base and .head == $head and .tree == $tree
+              and .configuration == "stryker.elements.config.json"
+              and all(.mutants[]; .path == $source and (.status | IN("Killed", "CompileError", "Ignored")));
+            if length != 3 or any(.[]; verified | not) then error("incomplete or inconclusive mutation comparison") else . end
+            | if map(.ranges) != [[$source + ":61-90"], [$source + ":91-120"], [$source + ":61-120"]] then error("wrong comparison ranges") else . end
+            | if (map(.baseline.tests) | unique | length) != 1 then error("different baseline test counts") else . end
+            | . as $runs
+            | ([.[0].mutants[], .[1].mutants[]]) as $standard
+            | .[2].mutants as $grouped
+            | if ($standard | length) == 0 then error("standard sample contains no mutants") else . end
+            | ($standard | map(identity)) as $keys
+            | ($grouped | map(select(identity as $key | any($keys[]; . == $key)))) as $shared
+            | ($grouped | map(select(identity as $key | all($keys[]; . != $key)))) as $extra
+            | if ($shared | sort_by([identity, .status])) != ($standard | sort_by([identity, .status]))
+              then error("missing or changed standard mutant verdict")
+              else .
+              end
+            | if any($extra[]; .location.start.line > 90 or .location.end.line <= 90)
+              then error("new mutant outside the standard cut")
+              else .
+              end
+            | { standardMutants: ($standard | length), cutSpanningMutants: $extra,
+                timings: [$runs[] | {ranges, baseline, totalMs}] }
+          ' "$data/mutation-shadow-control-first/receipt.json" \
+            "$data/mutation-shadow-control-second/receipt.json" \
+            "$data/mutation-shadow-grouped/receipt.json" | tee "$RUNNER_TEMP/mutation-shadow-comparison.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-shadow-comparison
+          path: ${{ runner.temp }}/mutation-shadow-comparison.json
+          if-no-files-found: error
