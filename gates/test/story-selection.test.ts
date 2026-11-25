@@ -104,10 +104,35 @@ describe("exact proof scope", () => {
 
 describe("CI-only collateral scope", () => {
   const visual = { project: "gates-integration", file: "gates/test/integration/visual.test.ts" };
+  const splitVisual = ["findings", "cli", "capture"].map((suite) => ({
+    ...visual, file: `gates/test/integration/visual-${suite}.test.ts`,
+  }));
+  const visualHelper = "gates/test/integration/visual-fixture.ts";
   const axe = { project: "gates-integration", file: "gates/test/integration/axe.test.ts" };
   const build = { project: "gates-integration", file: "gates/test/integration/storybook-build.test.ts" };
   const withCollateral = [...inventory, visual, axe, build];
   const proof = { ...browser, test: "accepts a paragraph via Tab" };
+
+  it.each(splitVisual)("defers the explicitly named split Visual suite $file", (suite) => {
+    const result = selectStoryTests([...withCollateral, suite], scope({
+      ciOnly: [suite.file], changed: [...changed, suite.file], expected: [proof],
+    }));
+    expect(result).toEqual(baseSelection);
+  });
+
+  it.each(splitVisual)("requires the registered CI project for the split Visual suite $file", (suite) => {
+    const result = selectStoryTests([...withCollateral, { ...suite, project: "different-gate" }], scope({
+      ciOnly: [suite.file], changed: [...changed, suite.file],
+    }));
+    expect(result).toEqual({ problem: "ci-only test was not discovered in its registered project: " + suite.file });
+  });
+
+  it("keeps the shared Visual helper ineligible even when discovered as a test", () => {
+    const result = selectStoryTests([...withCollateral, { ...visual, file: visualHelper }], scope({
+      ciOnly: [visualHelper], changed: [...changed, visualHelper],
+    }));
+    expect(result).toEqual({ problem: "test is ineligible for ci-only scope: " + visualHelper });
+  });
 
   it("leaves the phase proof and extra consumers local while deferring named changed maintenance suites", () => {
     const result = selectStoryTests(withCollateral, scope({

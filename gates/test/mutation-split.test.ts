@@ -55,6 +55,32 @@ const zeroStryker: FakeStryker = (_mutate, files, config) => {
 };
 const survives = configuredStryker(() => "Survived");
 
+describe("mutation gate: a grouped element invocation", () => {
+  it("reports a survivor in a paired bucket and excludes a mutant beyond the selected lines", async () => {
+    const writesMutants: FakeStryker = (selected, files, configuration) => {
+      const mutants = selected.includes(`${elementFile}:1-60`) && configuration === "stryker.elements.config.json"
+        ? [mutant("first", 3, "Killed"), mutant("second", 44, "Survived"), mutant("outside", 61, "Survived")]
+        : [];
+      files.set(elementsReportPath, strykerReport({ [elementFile]: mutants }));
+      return { exitCode: 1, stdout: "", stderr: "" };
+    };
+    const result = await gate(tools({ [elementFile]: 100 }, writesMutants), ["--shadow-grouped", "--files", `${elementFile}:1-60`]);
+    expect(result.code, "the selected grouped range retains the survivor verdict").toBe(1);
+    expect(result.out).toContain(`${elementFile}:44: mutation: ConditionalExpression: Survived: replaced by true`);
+    expect(result.out).not.toContain(`${elementFile}:61: mutation: ConditionalExpression: Survived: replaced by true`);
+  });
+
+  it("reports a missing grouped report even when a previous report is present", async () => {
+    const previous = strykerReport({ [elementFile]: [mutant("old", 3, "Killed")] });
+    const noReport: FakeStryker = () => ({ exitCode: 1, stdout: "", stderr: "" });
+    const result = await gate(tools({ [elementFile]: 60 }, noReport, { [elementsReportPath]: previous }), [
+      "--shadow-grouped", "--files", `${elementFile}:1-60`,
+    ]);
+    expect(result.code).toBe(2);
+    expect(result.err[0], "the grouped invocation must produce its own usable report").toContain("Stryker wrote no report");
+  });
+});
+
 describe("the split of the mutation gate (005 research.md R-12)", () => {
   it("runs an element-only change under the elements configuration: its mutant is killed and the gate passes, not 'nothing to mutate' (pass-element-source)", async () => {
     expect(await gate(tools({ [elementFile]: 2 }, killed))).toEqual({

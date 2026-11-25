@@ -147,6 +147,30 @@ Run `$S/units.sh`. For each unit, in order:
 4. When every unit is done: `$S/summary.sh --commit`. **Gate "feature"**: show the summary path and its totals.
    Options: `approve`, `reject`.
 
+### Parallel tasks within one phase
+
+1. Select open `[P]` tasks with completed prerequisites and disjoint write paths. Assign each shared file and
+   generated result to one owner. The integration owner pins the clean feature HEAD, prepares any common
+   scaffold, and starts one clean local worktree per worker from the same pin. Give each worker the phase,
+   task ID, worktree, pin, exact paths, and test or implementation assignment. Workers return signed-off
+   commits and focused results.
+2. As each worker returns, run the return checker with the canonical worktree, base pin, worker worktree and
+   assigned paths. Use `--worker` between assignments to verify the complete group's disjointness.
+
+   ```sh
+   tooling/speckit/bin/worktree-return-check.sh "$repo" "$pin" "$first" "$first_file" \
+     --worker "$second" "$second_file"
+   ```
+
+   Require exit zero and `ok: true`. Keep the receipt and stage only its verified `head` from each worker.
+   Run the normal role scope check as part of the delegation. A failed handoff leaves the proposal in its
+   worktree and the integration owner continues from the last verified checkpoint.
+3. Stage the verified commits in a separate local worktree. Combine the test drafts into one signed-off
+   test-only red commit and run the normal phase red proof before dispatching implementation from the new pin.
+   Run focused checks against the combined implementation before promotion. Preserve the combined phase
+   replay, Plants, independent review, and fold decision. Promote by fast-forward when the feature branch is
+   still clean at the group's pin.
+
 ## Resume
 
 Work out where the flow stands from the records, in this order, and ask the operator to confirm before continuing:

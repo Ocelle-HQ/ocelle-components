@@ -163,13 +163,31 @@ local `reports/story-evidence/` directory. The check logs say which project and 
 whether evidence was reused. Remove that local directory for a fresh execution.
 
 Use `ci-only <repository-relative path>` in the same file to run a changed collateral integration test in required
-CI. The eligible suites are `gates/test/integration/visual.test.ts` and `gates/test/integration/axe.test.ts`, each
-discovered in `gates-integration`. Use this for maintenance of existing assertions such as exact story or baseline
+CI. The eligible suites in the `gates-integration` project are:
+
+- `gates/test/integration/visual.test.ts`
+- `gates/test/integration/visual-findings.test.ts`
+- `gates/test/integration/visual-cli.test.ts`
+- `gates/test/integration/visual-capture.test.ts`
+- `gates/test/integration/axe.test.ts`
+
+Use this for maintenance of existing assertions such as exact story or baseline
 counts. A suite with a recorded red assertion or helper, a build or browser behavior proof, or a suite also listed
 as a local consumer must stay local. At least one changed runnable test must remain in the focused head run.
 The phase report lists the deferred project/file identities in `tdd-check.json` under `deferred_ci`. The reviewer verifies each against
 the successful required `Unit tests` inventory and shard results for the same candidate and checks the corresponding
 required visual or accessibility job before approval.
+
+Start the review handoff when the tested merge revision and Unit inventory artifact are available. Include the
+revision, project, file and shard for each deferred suite. Reviewers can inspect the implementation and completed
+receipt artifacts as the matching shards finish. Record approval after the exact required Unit and dedicated gate
+results pass. Collect evidence changes before the final fold, then run all required checks on the final revision.
+
+For an approved parallel task group, run
+`tooling/speckit/bin/worktree-return-check.sh REPO BASE WORKTREE PATH... [--worker WORKTREE PATH...]`
+as each worker returns and again for the group before staging. Use the exact returned head from a successful JSON
+receipt. The check verifies the common repository, pin, clean return, signed commits, historical paths and disjoint
+ownership. Record worker return and staging times with the combined red or green receipt.
 
 The required GitHub `Unit tests` check verifies the complete discovered inventory across isolated runners, with timing-sensitive
 projects retaining their Vitest settings. The local `pnpm test` command still runs the complete suite. To compare both paths

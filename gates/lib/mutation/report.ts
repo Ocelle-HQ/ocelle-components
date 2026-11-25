@@ -68,7 +68,7 @@ interface Mutant {
   readonly statusReason?: string;
   readonly location: {
     readonly start: { readonly line: number; readonly column: number };
-    readonly end: { readonly line: number };
+    readonly end: { readonly line: number; readonly column: number };
   };
 }
 
@@ -166,6 +166,63 @@ function checkerFailure(path: string, mutants: readonly Mutant[]): Diagnostic | 
   );
 }
 
+interface ShadowMutant {
+  readonly path: string;
+  readonly location: Mutant["location"];
+  readonly mutatorName: string;
+  readonly replacement: string | undefined;
+  readonly status: string;
+}
+
+function validPosition(position: Mutant["location"]["start"] | null | undefined): boolean {
+  return position !== undefined && position !== null &&
+    Number.isSafeInteger(position.line) && position.line > 0 &&
+    Number.isSafeInteger(position.column) && position.column >= 0;
+}
+
+function validShadowMutant(input: unknown): boolean {
+  if (input === null || typeof input !== "object") return false;
+  const { id, mutatorName, status, replacement, statusReason, location } = input as
+    Partial<Omit<Mutant, "location">> & { readonly location?: Mutant["location"] | null };
+  return typeof id === "string" && typeof mutatorName === "string" && typeof status === "string" &&
+    (replacement === undefined || typeof replacement === "string") &&
+    (statusReason === undefined || typeof statusReason === "string") &&
+    location !== undefined && location !== null &&
+    validPosition(location.start) && validPosition(location.end) &&
+    location.start.line <= location.end.line;
+}
+
+function validShadowReport(files: unknown): boolean {
+  return files !== null && typeof files === "object" && !Array.isArray(files) && Object.values(files).every((file: unknown) =>
+    file !== null && typeof file === "object" && "mutants" in file && Array.isArray(file.mutants) && file.mutants.every(validShadowMutant),
+  );
+}
+
+/** Record the exact stable identities of completed mutants in the selected ranges. */
+export function shadowMutantInventory(run: StrykerRun, changed: readonly RunEntry[]):
+  { readonly ok: true; readonly mutants: readonly ShadowMutant[] } | { readonly ok: false; readonly cause: string } {
+  const files = run.report === undefined ? undefined : filesOf(run.report);
+  if (files !== undefined && !validShadowReport(files)) {
+    return { ok: false, cause: "mutation shadow: malformed Stryker mutants" };
+  }
+  const verdict = classifyMutants(run, changed);
+  if (!verdict.ok) return verdict;
+  if (files === undefined || (run.exitCode !== 0 && run.exitCode !== 1)) {
+    return { ok: false, cause: "mutation shadow: Stryker did not complete with a report" };
+  }
+  const mutants = changed.flatMap(({ path, ranges }) =>
+    mutantsOnChanged(files, path, ranges).map(({ location, mutatorName, replacement, status }) =>
+      ({ path, location, mutatorName, replacement, status })),
+  );
+  return { ok: true, mutants };
+}
+
+function mutantsOnChanged(files: Files, path: string, ranges: ChangedFile["ranges"]): Mutant[] {
+  return (files[path]?.mutants ?? []).filter(({ location: { start, end } }) =>
+    ranges.some((range) => start.line <= range.end && end.line >= range.start),
+  );
+}
+
 export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): MutantVerdict {
   const unread = unreadEntries(run.output);
   if (unread.length > 0) {
@@ -187,9 +244,7 @@ export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): 
   const zeroEntries: string[] = [];
   let mutants = 0;
   for (const file of changed) {
-    const onChanged = (files[file.path]?.mutants ?? []).filter(({ location: { start, end } }) =>
-      file.ranges.some((range) => start.line <= range.end && end.line >= range.start),
-    );
+    const onChanged = mutantsOnChanged(files, file.path, file.ranges);
     if (onChanged.length === 0) zeroEntries.push(file.entry ?? file.path);
     const rejected = checkerFailure(file.path, onChanged);
     if (rejected !== undefined) {
