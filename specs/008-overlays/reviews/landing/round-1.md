@@ -71,7 +71,7 @@ There are two blocking findings.
 
 ## Checks run
 
-At `225e724` in `/home/user/ocelle-components`, with `OCELLE_CHROMIUM_PATH` and `OCELLE_VISUAL_ENGINE=auto` set and
+At `225e724` in `<repo>`, with `OCELLE_CHROMIUM_PATH` and `OCELLE_VISUAL_ENGINE=auto` set and
 `CI` / `GITHUB_ACTIONS` unset:
 
 | Check | Result |

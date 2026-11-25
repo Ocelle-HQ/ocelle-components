@@ -55,10 +55,16 @@ describe("governance files (SC-006)", () => {
     expect(codeowners()).toEqual([["*", "@MOES-Media"]]);
   });
 
-  it("SECURITY.md names GitHub private vulnerability reporting and the CODEOWNERS owner @MOES-Media (FR-032)", () => {
+  // FR-032 as amended by op 023 (#60; operator Q1 (a) and Q3 (a), triage/decisions/023-q1-q3-security-scope.md): the
+  // repository is public and private vulnerability reporting is on, so it is the only channel; no owner handle, no
+  // "until then" contact and no switch-on at 1.0.0 remain, and no public issue is asked for.
+  it("SECURITY.md names GitHub private vulnerability reporting as the only channel, with no owner handle and no later switch-on (FR-032, op 023)", () => {
     const security = text("SECURITY.md");
-    expect(security).toContain("GitHub private vulnerability reporting");
-    expect(security).toContain("@MOES-Media");
+    expect({
+      channel: security.includes("Use GitHub private vulnerability reporting: \"Report a vulnerability\" on the repository's Security tab."),
+      noPublicIssue: security.includes("Do not open a public issue"),
+      left: ["@MOES-Media", "Until then", "Once the repository is public", "1.0.0"].filter((phrase) => security.toLowerCase().includes(phrase.toLowerCase())),
+    }).toEqual({ channel: true, noPublicIssue: true, left: [] });
   });
 
   it("SECURITY.md promises an acknowledgement within 3 working days and a status update within 10 (FR-032)", () => {

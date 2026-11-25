@@ -157,6 +157,9 @@ in this feature depends on it.
    (switched on when the repository goes public) and `@MOES-Media` as the private contact until then, says what to
    include in a report, promises an acknowledgement within 3 working days and a status update within 10 working
    days, and does not ask for public issues (FR-032).
+   - **Amendment, 2026-11-20 (op 023, #60, FR-032 as amended below):** the repository is public and private
+     vulnerability reporting is switched on, so `SECURITY.md` names GitHub private vulnerability reporting as the only
+     channel and names no owner handle and no contact "until then". The rest of this scenario stands.
 4. **Given** `THIRD_PARTY_NOTICES`, **When** it is read, **Then** it lists every third-party asset that ships in a
    package and no asset that does not.
 
@@ -349,6 +352,11 @@ in this feature depends on it.
   check on built output (FR-021), the prefix check (FR-022), the configuration-copies check (FR-006), the
   install-and-pins check (FR-027) and the sign-off check (FR-023). Each gate checks exactly the files FR-028 gives it.
   The plant job (FR-025) MUST run on every pull request as its own named check, alongside these gates.
+  - **Amendment, 2026-11-20 (op 023, #60, `ops/023-public-repo-hygiene/` FR-002 to FR-004):** the gates of this
+    requirement and of later features gain an eighteenth gate, `sandbox-paths` (check `Sandbox paths`): no tracked file
+    of the checkout but the four allowed files of `gates/lib/sandbox-paths.ts` may hold a line that matches the
+    sandbox-path rule of op 023, `gates/plants/` and `gates/test/fixtures/` included. So there are eighteen gate ids and,
+    with the plant job, nineteen required check names. The rest stands.
 - **FR-021**: The content-security check MUST fail on any of these in the packages' built output (every JavaScript,
   CSS and HTML file the package build produces): an inline `<script>` element, a `<style>` element or `style`
   attribute, an event handler attribute (`on*=`), each in markup (HTML files and HTML templates inside JavaScript),
@@ -499,6 +507,12 @@ in this feature depends on it.
   an issue (operator decision, 2026-11-02). It MUST say what to include in a report and MUST promise an
   acknowledgement within 3 working days and a status update within 10 working days of a report (operator decision,
   2026-11-02). It MUST NOT ask for public issues.
+  - **Amendment, 2026-11-20 (op 023, #60, `ops/023-public-repo-hygiene/` FR-009; operator answers Q1 (a) and Q3 (a),
+    `triage/decisions/023-q1-q3-security-scope.md`):** the repository is public and GitHub private vulnerability
+    reporting is switched on (Q3 (a)). `SECURITY.md` MUST name it ("Report a vulnerability" on the repository's
+    Security tab) as the only reporting channel, and MUST NOT name `@MOES-Media` or any other contact, an "until then"
+    route, or a switch-on at 1.0.0 (Q1 (a)). What to include, the 3 and 10 working days and "do not ask for public
+    issues" stand.
 - **FR-033**: `THIRD_PARTY_NOTICES` MUST list every third-party asset that ships in a package with its licence, and
   only those.
 - **FR-034**: No file of this feature MAY contain a secret, credential or access token, or personal data. This is
@@ -572,6 +586,9 @@ in this feature depends on it.
   sign-off rule (`Signed-off-by`, `git commit -s`), that `CODEOWNERS` exists and names `@MOES-Media` as the only
   owner of every path (FR-035), and that `SECURITY.md` contains the reporting route and response times of FR-032
   (GitHub private vulnerability reporting, the owner handle from `CODEOWNERS`, 3 working days and 10 working days).
+  - **Amendment, 2026-11-20 (op 023, #60, FR-032 as amended above):** `SECURITY.md` contains GitHub private
+    vulnerability reporting, 3 working days and 10 working days, and no owner handle; the owner handle stays in
+    `CODEOWNERS` (FR-035). The rest stands.
 
 ## Assumptions
 

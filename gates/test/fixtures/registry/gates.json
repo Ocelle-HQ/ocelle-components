@@ -138,5 +138,13 @@
     "plantCommand": "node gates/bin/axe.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "sandbox-paths",
+    "check": "Sandbox paths",
+    "command": "pnpm run gate:sandbox-paths",
+    "plantCommand": "node gates/bin/sandbox-paths.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]
