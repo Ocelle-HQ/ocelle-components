@@ -21,3 +21,9 @@ Options:
 
   The 008 point stays open: the tooltip reads `event.target`, not its own slot. It goes to the orchestrator as a triage item for 008, and this run does not touch GitHub.
 - **R1-04: in fix-1.** The fix round corrects the comment at ocelle-pill-tag.ts:72-73 and CHANGELOG.md:130: the module now defines `ocelle-tooltip` too.
+
+## Q-F1: the README sentence on the slotchange stop (round 1 fix)
+
+The README now says that in button and link mode a forwarded slot's `slotchange` stops at the pill (R1-05). No README test pins that sentence. Fix-1's red commit had already been recorded when the gap was found.
+
+**Decision: (c) defer to phase 7's T063** (README and CHANGELOG). The pin is added there, test-first, in that phase's red commit.
