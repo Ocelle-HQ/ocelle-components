@@ -7,7 +7,9 @@ in_scope: []
 out_of_scope: [35, 42, 73, 75, 76]
 semver: none
 spec_prompt: "Op requested by the operator (triage/030-ci-critical-path.md): shorten the path to verified green through measured element mutation startup and grouped selectors, independent Visual integration files in the existing Unit planner, exact-revision review evidence before landing, and verified handoff of ready worktree tasks from Op 028. Compare the candidate process with standard CI on the recorded #94 mutation scope and the #75 discovery pilot. Preserve all tests, mutations, Plants, review and required checks. Require matching evidence on both paths before promoting the candidate process."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-25T20:04:29Z
 ---
 
 # Triage 030 — Shorten the CI and review path
