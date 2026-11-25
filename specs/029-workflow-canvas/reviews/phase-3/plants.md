@@ -106,3 +106,54 @@ pass-reordered: pass as planted (0 exact findings)
 ```
 
 The full hosted Plants verdict on the exact Phase 3 candidate is pending.
+
+## Corrected local affected run
+
+The corrected run exited 0. All 16 available selected cases matched their expected verdicts. The Axe repository Plant took 1143.5s while other local checks were running.
+
+```text
+$ node gates/bin/plants.ts -- --affected 786dbb41d487540d38be3710d0aff799f2f53171 --skip-container
+note: affected: contrast/repository-values, by packages/elements/custom-elements.json
+note: affected: brand-rules/repository-values, by packages/elements/custom-elements.json
+note: affected: manifest/break-missing, by packages/elements/custom-elements.json
+note: affected: manifest/break-not-json, by packages/elements/custom-elements.json
+note: affected: manifest/fail-lost-attribute, by gates/plants/manifest/fail-lost-attribute/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-stale-property, by packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-attribute, by gates/plants/manifest/fail-undescribed-attribute/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-css-part, by gates/plants/manifest/fail-undescribed-css-part/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-css-property, by gates/plants/manifest/fail-undescribed-css-property/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-event, by gates/plants/manifest/fail-undescribed-event/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-property, by gates/plants/manifest/fail-undescribed-property/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-slot, by gates/plants/manifest/fail-undescribed-slot/tree/packages/elements/custom-elements.json
+note: affected: manifest/pass-reordered, by gates/plants/manifest/pass-reordered/tree/packages/elements/custom-elements.json
+note: affected: manifest/pass-repository, by packages/elements/custom-elements.json
+note: affected: storybook-build/pass-repository, by packages/elements/custom-elements.json
+note: affected: visual/fail-missing-baseline, by packages/elements/custom-elements.json
+note: affected: visual/fail-one-pixel, by packages/elements/custom-elements.json
+note: affected: visual/fail-same-pixels-other-bytes, by packages/elements/custom-elements.json
+note: affected: visual/fail-token-changed, by gates/plants/visual/fail-token-changed/plant.json
+note: affected: visual/pass-repository, by packages/elements/custom-elements.json
+note: affected: axe/pass-repository, by packages/elements/custom-elements.json
+note: plant time: brand-rules/repository-values: 0.5 s
+note: plant time: manifest/break-missing: 0.8 s
+note: plant time: manifest/break-not-json: 1.0 s
+note: plant time: manifest/fail-lost-attribute: 2.2 s
+note: plant time: manifest/fail-stale-property: 2.4 s
+note: plant time: manifest/fail-undescribed-attribute: 4.0 s
+note: plant time: manifest/fail-undescribed-css-part: 4.2 s
+note: plant time: manifest/fail-undescribed-css-property: 5.7 s
+note: plant time: manifest/fail-undescribed-event: 5.7 s
+note: plant time: manifest/fail-undescribed-property: 7.2 s
+note: plant time: manifest/fail-undescribed-slot: 7.2 s
+note: plant time: contrast/repository-values: 7.7 s
+note: plant time: manifest/pass-reordered: 8.7 s
+note: plant time: manifest/pass-repository: 9.2 s
+note: plant time: storybook-build/pass-repository: 3.6 s
+note: plant time: axe/pass-repository: 1143.5 s
+plants: skipped (no container): gates/plants/visual/fail-missing-baseline
+plants: skipped (no container): gates/plants/visual/fail-one-pixel
+plants: skipped (no container): gates/plants/visual/fail-same-pixels-other-bytes
+plants: skipped (no container): gates/plants/visual/fail-token-changed
+plants: skipped (no container): gates/plants/visual/pass-repository
+plants: affected since 786dbb41d487540d38be3710d0aff799f2f53171: 16 of 317 plants judged, every plant as expected; not the Plants check; partial run: 5 visual plants not run
+```
