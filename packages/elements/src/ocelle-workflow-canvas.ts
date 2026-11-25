@@ -1439,7 +1439,11 @@ export class OcelleWorkflowCanvas extends LitElement {
   #continueReveal(pending: CanvasReveal, map: SVGSVGElement): void {
     const { nodeId: id, relationship, initiator } = pending;
     if (relationship !== null) {
-      if (this.#pendingReveal !== pending || this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship)) return;
+      if (this.#pendingReveal !== pending) return;
+      if (this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship)) {
+        this.#pendingReveal = null;
+        return;
+      }
       if (this.#renderedViewport !== this.viewport) {
         void this.updateComplete.then(() => { this.#continueReveal(pending, map); });
         return;
