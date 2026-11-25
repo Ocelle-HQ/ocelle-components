@@ -3221,16 +3221,16 @@ function checkConnectionEndpoint(edge: SVGPathElement, x: number): void {
   expect(edge.getPointAtLength(edge.getTotalLength()).x).toBeCloseTo(x);
 }
 
-function connectionHandles(canvas: OcelleWorkflowCanvas): SVGRectElement {
-  const handle = mapOf(canvas).querySelector('rect.outcome-handle[data-node-id="review"][data-outcome-id="approved"]');
+function connectionHandles(canvas: OcelleWorkflowCanvas, outcomeId = "approved"): SVGRectElement {
+  const handle = mapOf(canvas).querySelector(`rect.outcome-handle[data-node-id="review"][data-outcome-id="${outcomeId}"]`);
   expect(handle, "the named outcome has a pointer-only handle").toBeInstanceOf(SVGRectElement);
   if (!(handle instanceof SVGRectElement)) throw new Error("Outcome handle missing");
   return handle;
 }
 
-async function beginConnectionDrag(fixture: Fixture, id: string) {
+async function beginConnectionDrag(fixture: Fixture, id: string, outcomeId = "approved") {
   const { canvas } = fixture;
-  const handle = connectionHandles(canvas);
+  const handle = connectionHandles(canvas, outcomeId);
   const down = elementCenter(handle);
   const end = elementCenter(action(canvas, id));
   const map = mapOf(canvas);
@@ -3277,6 +3277,7 @@ describe("workflow canvas named outcome editing in process", () => {
     const source = choice(canvas, "source", "review");
     expect(source.getAttribute("aria-pressed")).toBe("false");
     expect(choice(canvas, "source", "backup").textContent).toContain("backup");
+    expect(await axButtons()).toContain("Decision (Reviewer, Approval, backup)");
     await commands.press("Tab");
     expect(active()).toBe(source);
     await commands.press("Enter");
@@ -3370,8 +3371,13 @@ describe("workflow canvas named outcome editing in process", () => {
     await settle(canvas);
     expect(source.getAttribute("aria-pressed")).toBe("false");
     expect(canvas.shadowRoot?.querySelector("button[data-outcome-id]")).toBeNull();
-    expect(choice(canvas, "source", "backup")).toBeInstanceOf(HTMLButtonElement);
-    await keyboardActivate(source);
+    const backup = choice(canvas, "source", "backup");
+    await keyboardActivate(backup);
+    await settle(canvas);
+    expect(await axButtons()).toEqual(expect.arrayContaining(["Approved", "Rejected"]));
+    await keyboardActivate(backup);
+    await settle(canvas);
+    await keyboardActivate(choice(canvas, "source", "review"));
     await settle(canvas);
     await keyboardActivate(choice(canvas, "outcome", "approved"));
     await settle(canvas);
@@ -3538,6 +3544,22 @@ describe("workflow canvas named outcome editing in process", () => {
     await settle(canvas);
     expect(requests).toEqual([connected]);
     expect(captured.map.querySelector("path.connection-preview")).toBeNull();
+  });
+
+  it("drags the second of two identically labelled outcomes through its own visible pointer target", async () => {
+    const fixture = await editingFixture();
+    const { canvas, requests } = fixture;
+    const approved = connectionHandles(canvas);
+    const alternate = connectionHandles(canvas, "alternate");
+    const first = approved.getBoundingClientRect();
+    const second = alternate.getBoundingClientRect();
+    expect(first.right).toBeLessThan(second.left);
+    expect(alternate.querySelector("title")?.textContent).toBe("Connect Approved (alternate)");
+    const { end } = await beginConnectionDrag(fixture, "publish", "alternate");
+    await commands.pointerPath([{ ...end, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([presentationRequest(connection, { operation: "connect", sourceId: "review", outcomeId: "alternate", destinationId: "publish" })]);
+    displayedConnection(canvas);
   });
 
   it.each(["read-only", "clip", "dangling connection"] as const)("refuses the original outcome target when host capture changes its %s admission", async (reason) => {
