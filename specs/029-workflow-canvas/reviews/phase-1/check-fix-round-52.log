@@ -1,0 +1,40 @@
+Phase 1 review round 5 local curved placement verification
+
+$ .specify/extensions/story/scripts/red.sh 1 fix-52
+sha: a00a989a56d42742661deb731f964b960b709a65
+tests_only: true, red: true, recorded: true, expected test exit_code: 1
+5 named assertion failures in 35.619s. See red-fix-52.log.
+
+The old translated ellipse proposed {x:-93,y:-246.5,scale:1}. The old translated circle proposed {x:-93,y:-244.5,scale:1}. The complete focus outline missed the native clip after either view was accepted.
+Both fixed fixtures emit {x:-218,y:-248,scale:1}. The new y places the focus outline at the map's top boundary. The independently demonstrated review trial at y:-247 was also valid.
+
+$ pnpm --filter @ocelle/elements run build
+The elements module and browser aggregate built successfully.
+$ pnpm exec vitest run --project elements --project elements-browser packages/elements/test/{workflow-canvas.test.ts,browser/workflow-canvas.test.ts,workflow-canvas-graph.test.ts,workflow-canvas-navigation.test.ts,workflow-canvas-viewport.test.ts}
+Test Files 5 passed (5)
+Tests 242 passed (242)
+Duration 45.61s alongside the mutation run
+
+For both built cap fixtures, there is no eligible map action at the outset. A trusted Enter on Reveal emits exactly one proposal. Focus and scroll stay fixed while the host holds the original view. After the host accepts the actual event payload, the original native action receives focus and one trusted Enter emits exactly one Publish selection. CSP, outside requests, failed requests and console diagnostics are clean.
+
+The geometry checks cover rectangles that truncate the top or bottom of an ellipse, a tangent single common row of two ellipse sections, and a domain beyond every feasible row. In-process Chromium accepts the actual request through the narrow overlap of two independently clipping ancestors. A separate built Chromium run applies the same issued view, {x:-192.75041091470626,y:-248,scale:1}, and verifies the original native action, one selection and unchanged scroll. The polygon C, off-center, diagonal and exact-fit controls continue to pass.
+
+A mixed ellipse and polygon hides the otherwise usable ellipse center. Both in-process Chromium and a separate built run verify that the proposal uses the exposed region to the right of the polygon edge and that acceptance focuses the original action. The built run accepted {x:-201.37520545735313,y:-247.7526512258667,scale:1}, with one selection, unchanged scroll and clean diagnostics.
+
+TypeScript, ESLint, test lint, style lint, built CSP scan and manifest passed.
+
+Raw strict mutation used the standard in-process elements Chromium project and a TypeScript checker for both changed production files. The following intervals cover all 19 changed hunks and span the applicable official shard boundaries.
+
+packages/elements/src/ocelle-workflow-canvas.ts:440-473
+packages/elements/src/workflow-canvas-viewport.ts:11-28,112-123,162-247,324-415
+
+Initial dry run: 196 tests passed. All-range run: 363 mutants, 276 killed, 84 TypeScript rejections, 1 previously documented equivalent, 2 survivors, 0 timeouts, 0 uncovered. Duration 7m24s.
+The latest tests kill both actual survivors with the production source fixed at the all-range run's version. The model verifies the projected horizontal reach with the center below the map. The mixed fixture proves why the proposed center must pass the live clip before it can be returned. File, source location, mutator and replacement match both mutants in the raw reports.
+
+Final focused mutation interval: packages/elements/src/workflow-canvas-viewport.ts:336-415
+Initial dry run: 198 tests passed. 92 mutants, 70 killed, 21 TypeScript rejections, 1 previously documented equivalent, 0 survivors, 0 timeouts, 0 uncovered.
+Final focused score 100.00 met break threshold 100. Exit 0 in 1m21s.
+
+The phase-base and CI-base plans match byte for byte.
+mutation: plan: 42 shards, 41 cuts within files
+plants: 317 of 317 selected for the exact hosted judge

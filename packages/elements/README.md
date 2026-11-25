@@ -1,7 +1,7 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-seven elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-eight elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
@@ -9,6 +9,7 @@ a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab 
 `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
 `ocelle-workflow-node`, a selectable workflow step with descriptive outcomes,
+`ocelle-workflow-canvas`, a branching workflow map with named navigation,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
@@ -43,6 +44,7 @@ of the host's own.
 | `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-workflow-canvas.js` | `dist/ocelle-workflow-canvas.js` | `ocelle-workflow-canvas` and the `ocelle-workflow-node` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-node.js` | `dist/ocelle-workflow-node.js` | `ocelle-workflow-node` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
@@ -2603,6 +2605,54 @@ default slot, the lane's content, such as cards.
 - **Title.** A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not
   widen for it, and the count stays visible.
 - `ocelle-workflow-lane` has no event, CSS part or CSS custom property.
+
+## `ocelle-workflow-canvas`
+
+Set the canvas's `graph`, `layout`, `viewport`, `selectedNodeId` and `mode` JavaScript properties independently.
+The defaults are an empty graph and layout, `{ x: 0, y: 0, scale: 1 }`, no selection and `"read-only"`.
+Use unique nonempty step IDs and outcome IDs unique within each source step. Provide graph-space locations as
+`{ nodeId, x, y }` entries. Connections identify the source, its outcome and the destination by ID.
+
+Tab enters the visible map actions at the eligible selected step or the first eligible step. Arrow keys, Home
+and End navigate the visible steps in graph order. The named step picker includes clipped and unpositioned steps.
+Reveal focuses the chosen step when its action is visible, or proposes a viewport when the positioned step is
+clipped. Names for unpositioned steps remain available in the picker.
+
+Both modes show the supplied source, outcome and destination in the Outcome connections list. Follow moves to the
+destination through the same reveal operation. A valid destination without a layout position remains named in the
+list with Follow unavailable, and its edge appears when the host supplies the endpoint positions. Follow proposes a
+viewport only when the destination needs revealing and leaves selection to the native step action. An empty graph
+announces No workflow steps through the Step control, which remains the named focus destination.
+
+Use rectangular overflow or paint containment to clip the canvas. Supported CSS shapes on an unfragmented,
+axis-aligned HTML host include rounded `inset()`, `circle()`, `ellipse()` and simple straight-edge `polygon()`
+with pixel or percentage coordinates. Use positive scaling and translation through `transform`. Custom CSS
+paths and SVG clip references are tracked separately. [Custom clipping follow-up](https://github.com/Ocelle-HQ/ocelle-components/issues/95)
+
+Listen on the canvas for the existing `ocelle-workflow-node-select` request with `{ nodeId }` to apply a selection.
+Listen for `ocelle-workflow-canvas-viewport-request` with `{ viewport: { x, y, scale } }` to apply a view. Drag the map
+background to pan or open Canvas controls to pan in each direction, zoom around the map center, or fit the supplied
+graph. Zoom changes the spacing between steps while controls retain their screen sizes. When the host accepts a
+Reveal view and the target becomes visible, the canvas moves focus if the Reveal control still holds focus.
+
+In author mode, drag the handle beside a visible step or choose a step and enter its absolute X and Y coordinates in
+Canvas controls. Press Move step to send `ocelle-workflow-canvas-position-request` with
+`{ nodeId, position: { x, y } }`. A host inspector can provide the same absolute-coordinate operation and replace the
+matching `layout` entry on acceptance. The request events bubble across shadow roots. A declined request leaves the
+supplied layout or view in place. Escape or a changed enclosing frame clears a captured preview. Read-only mode
+keeps selection, navigation and viewport controls available.
+
+To edit an outcome in author mode, drag its arrow-shaped handle onto a visible step, or open Edit connection in
+Canvas controls. Choose a named source, outcome and destination, then press Apply connection. Use Disconnect
+connection to remove the supplied connection. The named controls work by keyboard, mouse and separate taps, and
+their destination choices include off-map steps. The editor identifies duplicate labels with their context and IDs.
+
+Listen for `ocelle-workflow-canvas-connection-request` with `{ operation, sourceId, outcomeId, destinationId }`.
+A connect or reassign proposes the new target ID. A disconnect names the supplied target ID. A host inspector can
+offer the same named choices and use that tuple for its own policy. To accept an edit, replace the corresponding
+relation in `graph.connections` and supply the new graph. Keeping the graph retains the supplied route. Escape,
+invalidated inputs and leaving author mode cancel edits and clear previews. A canceled or unchanged edit emits no
+request.
 
 ## `ocelle-workflow-node`
 

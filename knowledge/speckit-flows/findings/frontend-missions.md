@@ -203,6 +203,12 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   default option). Set the form value from the light-DOM state at connection, and test a submit and a reset before the
   first update.
 
+## Workflow canvas 029
+
+- Assert a trusted pointer hit and native capture before checking a silent gesture. A layout change can move the intended background out from under a fixed test coordinate while every negative assertion still passes. [Phase 4 review](../../../specs/029-workflow-canvas/reviews/phase-4/round-1.md)
+- Keep one visible relationship phrase in one text run when it is rendered as continuous text. In Chromium, separate text runs led Axe to report incomplete contrast near clipped SVG node controls. The single phrase preserved the visible names and geometry and cleared all the actual story-theme checks. [Phase 4 evidence](../../../specs/029-workflow-canvas/reviews/phase-4/implementation.md)
+- Exercise each native action that moves focus before measuring a controlled graph or viewport. In a trusted click, a host focus callback can remove a step, replace its position, accept a new viewport or redirect focus. Test that the action uses the rendered state, avoids a duplicate request, and preserves host focus. Cover scripted activation separately when it can request a viewport without taking focus. [Landing review](../../../specs/029-workflow-canvas/reviews/landing/round-1.md)
+
 # Candidates for a frontend profile or lens
 
 - **A `browser` lens for the plan squad.** It measures every CSS and accessibility claim in a real browser before

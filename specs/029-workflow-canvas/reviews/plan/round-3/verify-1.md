@@ -1,0 +1,9 @@
+# Squad round 3: verify 1
+
+| ID | Status | Reason |
+| --- | --- | --- |
+| PLAN-FRESH-3-001 | resolved | The [plan](../../../plan.md#rendering-and-input-boundaries) observes idle transitions into and out of full containment for active and inert actions, then recalculates eligibility against live clipping and paint order. It captures focus before demotion and checks live geometry on native focus entry, before programmatic handoff and during capture before selection dispatch. The [data model](../../../data-model.md#local-interaction-state) and [consumer contract](../../../contracts/workflow-canvas.md#keyboard-touch-and-host-inspector) preserve keyed action identity and name lookup across a host-only reposition. The [verification guide](../../../quickstart.md#exercise-a-controlled-host) covers the move out and back, native Tab, accessibility-tree membership, the pending-observer race and exact request counts. |
+
+I independently reproduced the original failure in pinned Chromium 156.0.8078.4 under strict CSP. Native Tab reached the translated action while its right edge was at −250 CSS pixels. Resize and scroll counts stayed at three initial entries and zero events. A separate scratch probe exercised the planned observer and activation guard on a representative HTML action in an SVG wrapper. The intersection ratios and native accessibility button counts each changed from one to zero and back to one. Tab skipped the inert action. A synchronous activation before the observer ran emitted no selection. Returning the pane restored the same action and a later native Enter produced one selection. The probes exercise browser behavior and the design mechanism.
+
+The approved specification is byte-identical to the reviewed revision. The two Phase 1 worker assignments still have disjoint source and test paths.

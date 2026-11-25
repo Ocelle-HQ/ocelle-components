@@ -1,0 +1,82 @@
+Independent Phase 1 round 6 hosted receipt verification
+Canonical reviewer input 43fae2f1394c2932c69239ad65219fbaf0956ad7 (phase evidence only since candidate)
+Candidate b380398313474026f949af38ee549bc486b778fe
+Tested merge 48cf346274ca48c3dfd3d3d212e846827d554ea5 with parents 7c081d129fa4892cea08f6f1b7c83d82ed685de0, b380398313474026f949af38ee549bc486b778fe
+Identical tested and candidate tree 186aac17136683e7ad32fb64a6e309800ee596af
+Run 45419174274 attempt 1 completed successfully in 58m 54s (2026-11-24T14:53:37Z to 2026-11-24T15:52:31Z)
+All 147 per-attempt jobs accounted for in five pages
+
+Required checks, matched to gates/gates.json and Plants
+138533632180 success Accessibility
+138533632462 success Brand rules
+138533631391 success Code lint
+138533632011 success Content security
+138533632005 success Contrast
+138533631940 success Custom-elements manifest
+138533631673 success Install and pins
+138573945782 success Mutation testing
+138547670433 success Plants
+138533631959 success Prefix
+138533632831 success Sign-off
+138533631934 success Story config copies
+138533631872 success Storybook build
+138533631740 success Style lint
+138533631944 success Test lint
+138533631763 success Typecheck
+138566960712 success Unit tests
+138533632406 success Visual regression
+
+Receipt lines and deferred Unit files on the tested merge
+2026-11-24T15:42:31.6826079Z Unit tests: 11118 tests passed in 331 files across 6 shards
+2026-11-24T15:06:31.0594059Z visual: 674 captures match their baselines (docker+podman)
+2026-11-24T15:00:13.6747822Z axe: 674 story-theme runs, 0 serious or critical; 58 notes (0 incomplete, 58 excepted)
+2026-11-24T15:14:29.9199077Z plants: 317 plants of 17 gates and the registry judged, every plant as expected
+unit-test-shard-0: gates-integration gates/test/integration/visual.test.ts, 11 cases passed, zero shard/file errors
+unit-test-shard-1: gates-integration gates/test/integration/axe.test.ts, 4 cases passed, zero shard/file errors
+
+The phase-base and CI-base strict plans are byte-identical.
+The five truncated GitHub job names each match one distinct full plan entry.
+138533632565 success Mutation plan
+138534107510 success Mutation shard (packages/elements/src/browser.ts,packages/elements/src/index.ts,packages/elements/src/ocelle-workflow-canvas.ts:1-30, 43)
+138534107321 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:121-150, 30)
+138534107413 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:151-180, 30)
+138534107419 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:181-210, 30)
+138534107306 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:211-240, 30)
+138534107465 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:241-270, 30)
+138534107351 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:271-300, 30)
+138534107242 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:301-330, 30)
+138534107444 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:31-60, 30)
+138534107323 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:331-360, 30)
+138534107476 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:361-390, 30)
+138534107402 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:391-420, 30)
+138534107423 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:421-450, 30)
+138534107677 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:451-480, 30)
+138534107472 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:481-510, 30)
+138534107471 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:511-540, 30)
+138534107406 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:541-570, 30)
+138534107539 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:571-600, 30)
+138534107504 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:601-630, 30)
+138534107289 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:61-90, 30)
+138534107957 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:631-660, 30)
+138534107507 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:661-690, 30)
+138534107495 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:691-692,packages/elements/src/workflow-canvas-graph.ts:1-30, 32)
+138534107328 success Mutation shard (packages/elements/src/ocelle-workflow-canvas.ts:91-120, 30)
+138534107590 success Mutation shard (packages/elements/src/workflow-canvas-graph.ts:31-47,packages/elements/src/workflow-canvas-navigation.ts:1-30, 47)
+138534107461 success Mutation shard (packages/elements/src/workflow-canvas-navigation.ts:31-60, 30)
+138534107422 success Mutation shard (packages/elements/src/workflow-canvas-navigation.ts:61-70,packages/elements/src/workflow-canvas-types.ts:1-30, 40)
+138534107762 success Mutation shard (packages/elements/src/workflow-canvas-types.ts:31-54,packages/elements/src/workflow-canvas-viewport.ts:1-30, 54)
+138534107600 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:121-150, 30)
+138534107773 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:151-180, 30)
+138534107447 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:181-210, 30)
+138534107515 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:211-240, 30)
+138534107518 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:241-270, 30)
+138534107545 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:271-300, 30)
+138534107454 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:301-330, 30)
+138534107467 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:31-60, 30)
+138534107616 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:331-360, 30)
+138534107741 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:361-390, 30)
+138534107566 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:391-420, 30)
+138534109263 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:421-439, 19)
+138534107538 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:61-90, 30)
+138534107540 success Mutation shard (packages/elements/src/workflow-canvas-viewport.ts:91-120, 30)
+138573945782 success Mutation testing aggregate

@@ -1,0 +1,92 @@
+Phase 1 round 3 independent local checks
+Review head 623b295be23e72a1c881d6a7a6bf05cdd8d7b095
+Hosted and TDD implementation candidate a5a70a5e9c25728ec96ea34ae71ab19a8173a745
+
+$ pnpm run gate:typecheck
+$ node gates/bin/typecheck.ts
+typecheck: no type error in the files of tsconfig.json
+exit: 0
+
+$ pnpm run gate:lint
+$ node gates/bin/lint.ts
+lint: 651 files checked, no finding
+exit: 0
+
+$ pnpm run gate:test-lint
+$ node gates/bin/test-lint.ts
+test-lint: 490 files checked, no finding
+exit: 0
+
+$ pnpm run gate:style-lint
+$ node gates/bin/style-lint.ts
+style-lint: 76 files checked, no finding
+exit: 0
+
+$ pnpm run gate:manifest
+$ node gates/bin/manifest.ts
+manifest: 43 elements checked, no finding
+exit: 0
+
+$ pnpm run gate:contrast
+$ node gates/bin/contrast.ts
+contrast: 207 pairs checked in light, 215 in dark (196 required per theme)
+exit: 0
+
+$ pnpm run gate:brand-rules
+$ node gates/bin/brand-rules.ts
+brand-rules: 7 rules checked
+exit: 0
+
+$ pnpm run gate:pins
+$ node gates/bin/pins.ts
+pins: 5 manifests checked, no finding
+exit: 0
+
+$ pnpm run gate:config-copies
+$ node gates/bin/config-copies.ts
+config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical
+exit: 0
+
+$ pnpm run gate:storybook-build
+storybook-build: built 337 stories
+exit: 0
+
+$ pnpm -r build
+Tokens, styles, elements and Storybook production builds completed.
+exit: 0
+
+$ pnpm run gate:csp
+csp: 81 files checked, no finding
+exit: 0
+
+$ pnpm run gate:prefix
+prefix: 750 files checked, no finding
+exit: 0
+
+$ pnpm run gate:unit-tests packages/elements/test/workflow-canvas-graph.test.ts packages/elements/test/workflow-canvas-navigation.test.ts packages/elements/test/workflow-canvas-viewport.test.ts packages/elements/test/workflow-canvas.test.ts packages/elements/test/browser/workflow-canvas.test.ts
+unit-tests: 125 tests passed in 5 files
+exit: 0
+
+$ pnpm run gate:signoff -- --range 3515d2757508bd523fa55c6615af4f3996f842aa..HEAD
+signoff: 76 commits checked, no finding
+exit: 0
+
+$ pnpm run gate:plants -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
+exit: 0
+
+$ pnpm --silent run gate:mutation -- --base 3515d2757508bd523fa55c6615af4f3996f842aa --plan
+mutation: plan: 29 shards, 28 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+$ pnpm --silent run gate:mutation -- --base 7c081d129fa4892cea08f6f1b7c83d82ed685de0 --plan
+mutation: plan: 29 shards, 28 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+Local phase and CI base plans and the recorded hosted planning input are byte-identical.
+Plan SHA-256 8fd527479a1cea9787412d0295437042a5cb7ac7e9ea59c0e2ef78865fb8fb53
+All 29 mutation shards in the latest job-identity set conclude success.
+Required Mutation testing aggregate 138288821092 concludes success for a5a70a5e9c25728ec96ea34ae71ab19a8173a745.
+
+All 18 required hosted checks conclude success on the exact candidate.
+Synthetic merge edb5442014c3ebffd7bcc0e213c72de17415c506 records tree e0defe370f9d03668832332f5e636198a4b17952, matching the local candidate tree.
+Both Unit shard artifacts name the revision edb5442014c3ebffd7bcc0e213c72de17415c506 and contain zero shard errors.
+Shard 0 gates-integration gates/test/integration/visual.test.ts passes all 11 cases, with zero file errors.
+Shard 1 gates-integration gates/test/integration/axe.test.ts passes all 4 cases, with zero file errors.
