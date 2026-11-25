@@ -11,3 +11,11 @@ The independently reviewed local candidate for the stacked pilot is `b44317210a4
 Implementation dispatch followed the common red pin at 2026-11-25T20:24:47.734Z. The signed story commits were recorded at 2026-11-25T21:25:36+01:00 and 2026-11-25T21:25:54+01:00. The candidate verifier accepted both signed disjoint returns, and staging began at 2026-11-25T20:27:39.689Z. The combined built-Storybook run passed six tests in 5.22 seconds. The static build reported 394 stories.
 
 The matched hosted candidate uses Op 030 head `ac68285db926983c7372d47c11b7d7bf0be4981a` (tree `405ea488fa9d5a5ebcba90a49ba0946ef440b86c`). The candidate replay base `a992a37390b4572a49a42f9f070776a2a6a576a7` combines that exact workflow with the control pre-implementation tree. Both measured arms use identical stories, layout, browser tests, Plant expectations and pinned baseline images. The original worker-return receipt remains tied to the original candidate that verified the two signed returns.
+
+The normal focused evidence runner accepts a pathspec argument. Here the two reviewed Storybook fixtures are the behavior under test. The local replay uses the repository test pathspec with the two fixture paths explicitly excluded, so a replay against the old source cannot install the missing story implementations as test overlays. Its changed browser tests and collateral scope stay intact.
+
+```sh
+node gates/bin/story-evidence.ts check specs/031-change-list-discovery 1 \
+  'pnpm run setup:offline' \
+  ':(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts :(exclude)storybook/stories/change-list-plan.stories.ts :(exclude)storybook/stories/change-list-upgrade.stories.ts'
+```
