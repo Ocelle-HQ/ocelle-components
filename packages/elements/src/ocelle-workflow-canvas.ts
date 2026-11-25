@@ -489,15 +489,15 @@ export class OcelleWorkflowCanvas extends LitElement {
       if (this.#namedId === null || !ids.has(this.#namedId)) {
         this.#namedId = this.#projection.nodes[0]?.id ?? null;
       }
+      this.#recoverUnavailableFollow(previousControl);
       const pending = this.#pendingReveal;
       if (pending !== null) {
-        const latest = pending.relationship === null ? pending.nodeId : this.#relationshipDestination(pending.relationship);
-        const available = latest !== null && this.#projection.positions.has(latest);
-        if (latest !== pending.nodeId || !available) {
+        const available = pending.relationship === null
+          ? this.#projection.positions.has(pending.nodeId) : this.#canFollow(pending.relationship);
+        if (!available) {
           this.#pendingReveal = null;
-          if (this.shadowRoot?.activeElement === pending.initiator) {
-            if (pending.relationship !== null && !available) this.#focusNamed(this.renderRoot.querySelector(".navigator"));
-            else if (pending.relationship === null && !this.#canRevealNamed) this.#focusNamed(pending.initiator.parentElement, "select");
+          if (pending.relationship === null && !this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
+            this.#focusNamed(pending.initiator.parentElement, "select");
           }
         }
       }
@@ -682,7 +682,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       const context = nameContext(node);
       return context === "" ? node.label : `${node.label} ${context}`;
     };
-    return html`<ul class="relationships" role="list" aria-label="Outcome connections">
+    return html`<ul class="relationships" role="list" aria-label="Outcome connections" @scroll=${this.#onGeometryChange}>
       ${repeat(relationships, ({ source, outcome }) => JSON.stringify([source.id, outcome.id]), (relationship) => {
         const { source, outcome, destination } = relationship;
         const sourceName = name(source);
@@ -692,8 +692,9 @@ export class OcelleWorkflowCanvas extends LitElement {
         return html`<li class="relationship">
           <span>${sourceName} · ${outcomeName} → ${destinationName}</span>
           <button class="control" type="button" aria-label=${`Follow ${destinationName} from ${sourceName} via ${outcomeName}`}
+            data-follow-source=${source.id} data-follow-outcome=${outcome.id}
             ?disabled=${!positions.has(destination.id)} @blur=${this.#loseRevealFocus}
-            @click=${(event: MouseEvent) => { this.#followRelationship(event, relationship); }}>Follow</button>
+            @click=${(event: MouseEvent) => { this.#revealNamed(event, destination.id, relationship); }}>Follow</button>
         </li>`;
       })}
     </ul>`;
@@ -1394,16 +1395,24 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#pendingReveal = null;
   }
 
-  #relationshipDestination({ source, outcome }: WorkflowCanvasRelationship): string | null {
-    return startWorkflowCanvasEdit(this.graph, source.id, outcome.id)?.currentDestinationId ?? null;
+  #relationshipDestination(sourceId: string, outcomeId: string): string | null {
+    return startWorkflowCanvasEdit(this.graph, sourceId, outcomeId)?.currentDestinationId ?? null;
   }
 
-  #followRelationship(event: MouseEvent, relationship: WorkflowCanvasRelationship): void {
-    const id = relationship.destination.id;
-    if (this.#relationshipDestination(relationship) === id
-      && this.layout.some(({ nodeId, x, y }) => nodeId === id && Number.isFinite(x) && Number.isFinite(y))) {
-      this.#revealNamed(event, id, relationship);
-    }
+  #recoverUnavailableFollow(control: Element | null | undefined): void {
+    if (!(control instanceof HTMLButtonElement)) return;
+    const { followSource, followOutcome } = control.dataset;
+    if (followSource === undefined || followOutcome === undefined) return;
+    const id = this.#relationshipDestination(followSource, followOutcome);
+    if (id !== null && this.#projection.positions.has(id)) return;
+    this.#focusNamed(this.renderRoot.querySelector(".navigator"));
+    control.blur();
+  }
+
+  #canFollow({ source, outcome, destination }: WorkflowCanvasRelationship): boolean {
+    const position = this.#projection.positions.get(destination.id);
+    return position !== undefined && this.#relationshipDestination(source.id, outcome.id) === destination.id
+      && this.layout.some(({ nodeId, x, y }) => nodeId === destination.id && x === position.x && y === position.y);
   }
 
   #revealNamed(event: MouseEvent, id = this.#namedId, relationship: WorkflowCanvasRelationship | null = null): void {
@@ -1412,7 +1421,10 @@ export class OcelleWorkflowCanvas extends LitElement {
     const position = id === null ? undefined : this.#projection.positions.get(id);
     const map = this.renderRoot.querySelector("svg");
     if (id === null || position === undefined || map === null) return;
+    if (relationship !== null && !this.#canFollow(relationship)) return;
     initiator.focus(withoutScroll);
+    // Focus listeners can synchronously replace the graph, layout or focused control.
+    if (relationship !== null && (this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship))) return;
     // Stryker disable next-line UpdateOperator: either direction stores the same current value in the sole pending reveal.
     this.#pendingReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator, relationship };
     const actions = this.#actions();
@@ -1440,7 +1452,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   ): void {
     const pending = this.#pendingReveal;
     if (pending === null || this.shadowRoot?.activeElement !== pending.initiator) return;
-    if (pending.relationship !== null && this.#relationshipDestination(pending.relationship) !== pending.nodeId) return;
+    if (pending.relationship !== null && !this.#canFollow(pending.relationship)) return;
     const navigator = pending.initiator.parentElement;
     if (navigator !== null && !this.#withLiveClip(navigator, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
       this.#pendingReveal = null;
