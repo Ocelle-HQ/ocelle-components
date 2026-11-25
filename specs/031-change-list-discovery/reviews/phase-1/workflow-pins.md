@@ -12,7 +12,7 @@ Implementation dispatch followed the common red pin at 2026-11-25T20:24:47.734Z.
 
 An early matched candidate pinned `ac68285d`. Its scoped replay reproduced all six named failures against the old source and passed at `ad472926` through the focused runner with explicit pathspec exclusions. That run passed dedicated Visual and Accessibility. The paired drafts exposed an issue in browser test lint and an empty-index Plant fixture omission. Both arms contain the same fixes. [Early hosted candidate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45699064888)
 
-The final paired candidate uses Op 030 head `30480950ec09029e2c839432870ff37be7791e5f` (tree `9fdda4a9df21e3da8262bd06c16d58aa2ab4f6a9`). Its phase base `4540180a205582ed8856f54edcaba85bd9534d47` places that workflow on the pre-implementation tree. Both arms use identical stories, layout, browser tests, Plant expectations and pinned baseline bytes. The original worker-return receipt stays tied to the workflow that verified both signed returns.
+The final paired candidate uses Op 030 head `b5688a9f736bb548952740f78535a6b0ec2677c7` (tree `29e51e02f288f884df97313621275621da861321`). Its phase base `43b1a5d3167a1cdf7ff3bd3073a8b2a59065cf63` places that workflow on the pre-implementation tree. Both arms use identical stories, layout, browser tests, Plant expectations and pinned baseline bytes. The original worker-return receipt stays tied to the workflow that verified both signed returns.
 
 The standard focused replay consumes the two reviewed `implementation-story` declarations in this phase's scope. It keeps each requested story at the tested revision while preserving the six named assertions and existing collateral tests.
 
@@ -20,3 +20,5 @@ The standard focused replay consumes the two reviewed `implementation-story` dec
 SPECIFY_FEATURE_DIRECTORY=specs/031-change-list-discovery \
   ./tooling/speckit/extensions/story/scripts/tdd-check.sh 1
 ```
+
+The control Unit receipt exposed a stale negative Axe total. The test adds an unlabelled-button story to the 394 built stories, so both workflows now require exactly 790 story-theme runs, the same two critical findings and exit 1 in that fixture. [First control failure](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45700773081/job/139510218425)
