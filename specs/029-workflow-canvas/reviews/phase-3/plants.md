@@ -105,7 +105,7 @@ fail-undescribed-slot: fail as planted (1 exact findings)
 pass-reordered: pass as planted (0 exact findings)
 ```
 
-The full hosted Plants verdict on the exact Phase 3 candidate is pending.
+The full hosted Plants verdict passed on signed Phase 3 candidate `c428227faba54ce5ca57b56710d8cbd63c5bbc93`. The tested merge shared the same tree. All 317 Plants matched their expected verdicts across 77 shards, including the five pinned Visual cases deferred locally. [Exact hosted Plants verdict](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45600078245/job/139185252207)
 
 ## Corrected local affected run
 
