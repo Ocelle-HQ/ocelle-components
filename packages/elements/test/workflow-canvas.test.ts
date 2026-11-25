@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { commands } from "vitest/browser";
+import { commands, page } from "vitest/browser";
 import type { OcelleWorkflowCanvas } from "../src/ocelle-workflow-canvas.ts";
 import { OcelleWorkflowNode } from "../src/ocelle-workflow-node.ts";
 import type { WorkflowCanvasGraph, WorkflowCanvasLayoutEntry, WorkflowCanvasNode, WorkflowCanvasViewport, WorkflowCanvasViewportRequestDetail } from "../src/workflow-canvas-types.ts";
@@ -3147,6 +3147,177 @@ afterEach(async () => {
 });
 
 const connection = "ocelle-workflow-canvas-connection-request";
+
+function followAction(name: RegExp): HTMLButtonElement {
+  const actions = page.getByRole("button", { name }).elements();
+  expect(actions, `the named relationship exposes one native action matching ${String(name)}`).toHaveLength(1);
+  const action = actions[0];
+  expect(action).toBeInstanceOf(HTMLButtonElement);
+  if (!(action instanceof HTMLButtonElement)) throw new Error("Native relationship action missing");
+  return action;
+}
+
+function visibleRelationship(canvas: OcelleWorkflowCanvas, labels: readonly string[], follow?: HTMLButtonElement): HTMLElement | undefined {
+  return [...canvas.shadowRoot?.querySelectorAll("*") ?? []].reverse().find((element): element is HTMLElement => (
+    element instanceof HTMLElement && element.closest("svg, select, [hidden], [aria-hidden=true]") === null
+    && element.querySelector("svg, select") === null && element.getClientRects().length > 0
+    && getComputedStyle(element).visibility === "visible" && (follow === undefined || element.contains(follow))
+    && labels.every((label) => element.innerText.includes(label))
+  ));
+}
+
+describe("workflow canvas named run inspection in process", () => {
+  it("follows the swapped clipped destination by keyboard while the host owns viewport and selection", async () => {
+    const { canvas, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const visible = visibleRelationship(canvas, ["Initial review", "Approved", "Publish"]);
+    expect(visible, "the read-only navigator presents the supplied source, outcome and destination together").toBeInstanceOf(HTMLElement);
+    await keyboardActivate(followAction(/\b(?:follow|reveal)\b.*\bPublish\b/i));
+    await settle(canvas);
+    expect(focusId(canvas), "following a visible destination focuses its existing node action").toBe("publish");
+    expect(requests).toEqual([]);
+
+    canvas.graph = { ...canvas.graph, connections: [
+      { sourceId: "review", outcomeId: "approved", destinationId: "revise" },
+      { sourceId: "review", outcomeId: "rejected", destinationId: "publish" },
+    ] };
+    await settle(canvas);
+    const graph = canvas.graph;
+    const layout = canvas.layout;
+    const supplied = canvas.viewport;
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    const otherFollow = followAction(/\b(?:follow|reveal)\b.*\bPublish\b/i);
+    const swapped = visibleRelationship(canvas, ["Initial review", "Approved", "Revise"], follow);
+    const other = visibleRelationship(canvas, ["Initial review", "Rejected", "Publish"], otherFollow);
+    expect(swapped, "the same outcome now names and follows Revise").toBeInstanceOf(HTMLElement);
+    expect(other, "the alternate outcome now names and follows Publish").toBeInstanceOf(HTMLElement);
+    expect(swapped?.contains(otherFollow)).toBe(false);
+    expect(other?.contains(follow)).toBe(false);
+    expect(await axButtons()).not.toContain("Revise");
+    await keyboardActivate(follow);
+    await settle(canvas);
+    const proposed = lastViewport(requests);
+    const reveal = presentationRequest(viewport, { viewport: proposed });
+    expect(requests).toEqual([reveal]);
+    expect(canvas.viewport).toBe(supplied);
+    expect(active()).toBe(follow);
+
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(focusId(canvas)).toBe("revise");
+    expect(getComputedStyle(action(canvas, "revise")).outlineStyle).toBe("solid");
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(canvas.selectedNodeId).toBe("publish");
+    expect(requests).toEqual([reveal]);
+    await commands.press("Enter");
+    expect(requests).toEqual([reveal, selectRequest("revise")]);
+    expect(canvas.selectedNodeId).toBe("publish");
+    canvas.selectedNodeId = "revise";
+    await settle(canvas);
+    expect(action(canvas, "revise").getAttribute("aria-pressed")).toBe("true");
+    expect(canvas.graph).toBe(graph);
+    expect(canvas.layout).toBe(layout);
+    expect(requests).toEqual([reveal, selectRequest("revise")]);
+  });
+
+  it("keeps the latest follow focused while an accepted earlier viewport exposes the former target", async () => {
+    const { canvas, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.graph = { ...canvas.graph, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "publish" }] };
+    canvas.layout = [
+      { nodeId: "review", x: 30, y: 20 }, { nodeId: "publish", x: 960, y: 20 }, { nodeId: "revise", x: 1740, y: 20 },
+    ];
+    await settle(canvas);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    const initial = canvas.viewport;
+    const former = followAction(/\b(?:follow|reveal)\b.*\bPublish\b/i);
+    await keyboardActivate(former);
+    const first = lastViewport(requests);
+    expect(active()).toBe(former);
+    expect(canvas.viewport).toBe(initial);
+
+    canvas.graph = { ...canvas.graph, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "revise" }] };
+    await settle(canvas);
+    const latest = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    await keyboardActivate(latest);
+    const second = lastViewport(requests);
+    expect(second.x).toBeLessThan(first.x);
+    const expected = [first, second].map((view) => presentationRequest(viewport, { viewport: view }));
+    expect(requests).toEqual(expected);
+    canvas.viewport = first;
+    await settle(canvas);
+    expect(await axButtons()).toContain("Publish");
+    expect(await axButtons()).not.toContain("Revise");
+    expect(active()).toBe(latest);
+    canvas.viewport = second;
+    await settle(canvas);
+    expect(focusId(canvas)).toBe("revise");
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual(expected);
+  });
+
+  it("names a valid relation whose unpositioned destination cannot be revealed until layout arrives", async () => {
+    const { canvas, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.graph = { ...canvas.graph, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "publish" }] };
+    canvas.layout = [{ nodeId: "review", x: 30, y: 20 }];
+    await settle(canvas);
+    expect(visibleRelationship(canvas, ["Initial review", "Approved", "Publish"]), "a valid destination stays named without a layout entry").toBeInstanceOf(HTMLElement);
+    expect(mapOf(canvas).querySelectorAll("path.edge")).toHaveLength(0);
+    const followName = /\b(?:follow|reveal)\b.*\bPublish\b/i;
+    const actions = page.getByRole("button", { name: followName }).elements();
+    expect(actions.filter((entry) => entry instanceof HTMLButtonElement && !entry.disabled)).toEqual([]);
+    const unavailable = actions[0];
+    if (unavailable instanceof HTMLButtonElement) unavailable.click();
+    expect(requests).toEqual([]);
+
+    canvas.mode = "author";
+    await settle(canvas);
+    expect(visibleRelationship(canvas, ["Initial review", "Approved", "Publish"]), "the persistent relation is also visible in author mode").toBeInstanceOf(HTMLElement);
+    canvas.mode = "read-only";
+
+    const suppliedGraph = canvas.graph;
+    canvas.layout = [...canvas.layout, { nodeId: "publish", x: 1020, y: 20 }];
+    await settle(canvas);
+    expect(mapOf(canvas).querySelectorAll("path.edge")).toHaveLength(1);
+    expect(requests).toEqual([]);
+    const available = followAction(followName);
+    await keyboardActivate(available);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: lastViewport(requests) })]);
+    expect(active()).toBe(available);
+    expect(canvas.graph).toBe(suppliedGraph);
+  });
+
+  it("names an empty run and gives entry and removal a predictable visible focus destination", async () => {
+    const { canvas, before, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    action(canvas, "review").focus({ preventScroll: true });
+    canvas.graph = { nodes: [], connections: [] };
+    canvas.layout = [];
+    await settle(canvas);
+    const names = (await commands.axTree("workflow-canvas-host", "subtree")).map(({ name }) => name);
+    expect(names.some((name) => /\b(?:empty (?:workflow|run|canvas)|no (?:workflow )?(?:steps|nodes))\b/i.test(name)),
+      "the empty graph presents a named state in Chromium's accessibility tree").toBe(true);
+    const recovered = active();
+    expect(recovered?.getRootNode()).toBe(canvas.shadowRoot);
+    expect(recovered?.getBoundingClientRect().height).toBeGreaterThan(0);
+    before.focus({ preventScroll: true });
+    await commands.press("Tab");
+    const entry = active();
+    expect(entry?.getRootNode()).toBe(canvas.shadowRoot);
+    expect(entry?.matches(":focus-visible")).toBe(true);
+    before.focus({ preventScroll: true });
+    await commands.press("Tab");
+    expect(active()).toBe(entry);
+    expect(mapOf(canvas).querySelectorAll("path.edge, rect.move-handle, rect.outcome-handle")).toHaveLength(0);
+    expect(revealControls(canvas).button.disabled).toBe(true);
+    await commands.press("Enter");
+    expect(requests).toEqual([]);
+  });
+});
 
 function connectionRequest(operation: "connect" | "reassign" | "disconnect", destinationId: string): Request {
   return presentationRequest(connection, { operation, sourceId: "review", outcomeId: "approved", destinationId });
