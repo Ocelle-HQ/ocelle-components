@@ -3453,15 +3453,16 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(active()).toBe(source);
   });
 
-  it.each(["current relation", "new relation", "source removed", "target removed", "outcome removed", "Escape", "read-only at release", "empty drop"] as const)(
+  it.each(["current relation", "new relation", "source removed", "target removed", "outcome removed", "Escape", "read-only at release", "empty drop", "layout change", "map frame change", "lost capture"] as const)(
     "clears a captured outcome preview with no request after %s",
     async (reason) => {
       const fixture = await editingFixture(reason === "new relation" ? undefined : "publish");
-      const { canvas, pane, requests } = fixture;
+      const { canvas, pane, requests, sheet } = fixture;
       const scroll = [pane.scrollLeft, pane.scrollTop];
       const captured = await beginConnectionDrag(fixture, "revise");
       const source = action(canvas, "review");
       const expectedFocus = reason === "source removed" ? action(canvas, "publish") : source;
+      const unrelatedLoss: boolean[] = [];
       let released = false;
       switch (reason) {
         case "current relation":
@@ -3489,8 +3490,21 @@ describe("workflow canvas named outcome editing in process", () => {
           released = true;
           break;
         }
+        case "layout change":
+          canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, y: entry.y + 3 } : entry);
+          break;
+        case "map frame change":
+          sheet.insertRule("#canvas-frame { transform: translateX(8px); }", sheet.cssRules.length);
+          break;
+        case "lost capture":
+          captured.map.dispatchEvent(new PointerEvent("lostpointercapture", { pointerId: captured.pointerId + 1 }));
+          unrelatedLoss.push(captured.map.hasPointerCapture(captured.pointerId));
+          captured.map.releasePointerCapture(captured.pointerId);
+          await commands.pointerPath([{ ...captured.end, x: captured.end.x + 1 }]);
+          break;
       }
       await settle(canvas);
+      expect(unrelatedLoss).toEqual(reason === "lost capture" ? [true] : []);
       expect(captured.map.hasPointerCapture(captured.pointerId)).toBe(false);
       expect(captured.map.querySelector("path.connection-preview")).toBeNull();
       if (!released) await commands.pointerPath([{ ...captured.end, up: true }]);
