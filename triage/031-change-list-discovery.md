@@ -7,7 +7,9 @@ in_scope: [75]
 out_of_scope: [7, 13, 14, 15, 72, 73, 74, 76, 93]
 semver: none
 spec_prompt: "Resolve #75 and triage/031-change-list-discovery.md with two runnable Storybook composition fixtures and an evidence-based recommendation. Show retention changing from 24 hours to one hour alongside an unchanged field, and compare pinned node digests with a removed outcome and an added outbound capability. Reuse facts, copy-field and notice with fictional host-owned diff and materiality. Prove explicit accessible text and reading order, narrow layout, long identifiers, keyboard copy, forced colors and the existing strict-CSP, Storybook, visual and accessibility checks. Record common inputs and divergent semantics, and recommend keeping the recipe or opening a bounded extraction follow-up for a future public element. Test-drive the reviewed verification and within-phase worktree procedure and capture exact proof and timings."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-25T20:04:29Z
 ---
 
 # Triage 031 for the change-list discovery
