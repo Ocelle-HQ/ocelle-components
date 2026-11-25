@@ -39,7 +39,7 @@ empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |
-| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` and the `ocelle-tooltip` it renders; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -1426,6 +1426,24 @@ focus afterwards, with the focus ring only if it showed before; a pill made stat
 loses focus as a removed element does, so move focus yourself before making a focused pill static; a pill that becomes
 interactive does not take focus. ARIA states written back to a pill made static (such as `aria-pressed`) stay on an
 element with no role: clear them (`removeAttribute`) once the pill is static, or before making it static.
+
+**Truncation and the full text.** An enabled interactive pill shows its text on one line; a text that does not fit is
+truncated with an ellipsis at the inline end, and `ocelle-tooltip` shows the full text (the default slot's text, trimmed
+and with its whitespace collapsed) on hover and on keyboard focus, with the tooltip's own delay, persistence and
+Escape. The inner control's accessible name stays the full text, or the name `aria-labelledby`, `aria-label` or `label`
+gives it, and the tooltip adds nothing to the accessibility tree. A pill whose text fits shows no tooltip; truncation
+follows the pill's inline size, its text and `disabled` whenever they change. A disabled interactive pill is never
+truncated: it wraps its text onto further lines inside the pill, breaking a long word anywhere, and shows no tooltip.
+Truncation needs a definite inline size: a flex or grid parent, a fixed table layout, or a cell or column width; in an
+auto-layout table cell the pill grows to its text instead. In a flex row a truncating pill shares the shrink with its
+siblings by their flex bases, so a sibling such as a mission name shrinks too, down to its longest word: give the
+sibling `flex: none` (or `flex-shrink: 0`) to keep its size. `flex: 1 1 0` on the pill also keeps the sibling's size,
+but it stretches the pill's visible box to the whole room left, a fitting pill included, since the inner control fills
+its host. On a touch screen a truncated pill shows no tooltip, as `ocelle-tooltip` shows none for touch; its full text
+stays its accessible name. A pill that becomes truncated while its inner control has keyboard focus shows its tooltip
+only once focus leaves it and comes back, or when the pointer rests on it. A late font load that turns an exactly
+fitting text into an overflowing one is seen at the next change of the pill's inline size or text. A truncated pill
+with a `title` shows the browser's own tooltip beside its own, which already shows its full text.
 
 An interactive pill also reads `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`,
 `--ocelle-color-disabled-bg`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`,

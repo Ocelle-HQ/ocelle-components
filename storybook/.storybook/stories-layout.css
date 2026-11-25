@@ -146,10 +146,21 @@
 }
 
 /*
- * The ocelle-pill-tag LongTextWraps story's narrow block (018 research.md R-12): 160 px, so each long pill in it wraps
- * onto further lines inside the pill.
+ * The ocelle-pill-tag LongTextWraps, Truncated and DisabledWraps stories' narrow block (018 research.md R-12): 160 px,
+ * so each long static or disabled pill in it wraps onto further lines inside the pill and each long enabled interactive
+ * pill truncates.
  */
 [data-story="pill-narrow"] {
   inline-size: calc(var(--ocelle-space-10) * 2.5);
   max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-pill-tag Truncated story's clipping container (018 research.md R-12, plan decision 16): as narrow as
+ * `pill-narrow` and `overflow: hidden`, so the focused truncated pill shows its focus ring whole inside it (R-07).
+ */
+[data-story="pill-clip"] {
+  inline-size: calc(var(--ocelle-space-10) * 2.5);
+  max-inline-size: 100%;
+  overflow: hidden;
 }

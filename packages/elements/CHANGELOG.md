@@ -32,6 +32,10 @@ attributes `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`,
 `ocelle-pill-tag-activate`, its custom states `pressed` and `current` and its part `control` are additions to the public
 surface: a minor change.
 
+An enabled interactive `ocelle-pill-tag` truncates a text that does not fit with an ellipsis and shows its full text in
+`ocelle-tooltip` on hover and keyboard focus, a disabled one wraps it, and the entry point
+`@ocelle/elements/ocelle-pill-tag.js` also defines `ocelle-tooltip`: a minor change.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative

@@ -2259,7 +2259,7 @@
           "slots": [
             {
               "name": "",
-              "description": "The text. A static pill wraps a text that does not fit onto further lines; it never truncates."
+              "description": "The text. A static or disabled pill wraps a text that does not fit onto further lines; an enabled interactive pill truncates it with an ellipsis and shows it whole in a tooltip on hover and keyboard focus."
             },
             {
               "name": "icon",
