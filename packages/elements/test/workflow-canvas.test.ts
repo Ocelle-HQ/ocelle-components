@@ -242,6 +242,11 @@ function mapOf(canvas: OcelleWorkflowCanvas): SVGSVGElement {
   return map;
 }
 
+function reserveFixtureMapHeight(canvas: OcelleWorkflowCanvas, sheet: CSSStyleSheet): void {
+  const relationships = canvas.shadowRoot?.querySelector(".relationships")?.getBoundingClientRect().height ?? 0;
+  sheet.insertRule(`#canvas-frame, ${tag} { block-size: ${String(430 + relationships)}px; }`, sheet.cssRules.length);
+}
+
 function moveHandle(canvas: OcelleWorkflowCanvas, nodeId: string): SVGRectElement {
   const handle = mapOf(canvas).querySelector(`rect.move-handle[data-node-id="${nodeId}"]`);
   expect(handle, "the visible node has its own pointer-only layout affordance").toBeInstanceOf(SVGRectElement);
@@ -1036,8 +1041,10 @@ describe("workflow canvas arranging in process", () => {
     const layout = canvas.layout;
     canvas.mode = "read-only";
     await settle(canvas);
-    const { right, bottom } = mapOf(canvas).getBoundingClientRect();
-    const down = { x: right - 45, y: bottom - 55 };
+    const map = mapOf(canvas);
+    const { right, bottom } = map.getBoundingClientRect();
+    const down = { x: right - 8, y: bottom - 55 };
+    expect(canvas.shadowRoot?.elementFromPoint(down.x, down.y)).toBe(map);
     const end = { x: down.x - 32, y: down.y + 24 };
     await commands.pointerPath([{ ...down, down: true }, end]);
     await settle(canvas);
@@ -1055,7 +1062,7 @@ describe("workflow canvas arranging in process", () => {
 
   it("uses native keyboard pan, zoom and Fit commands with exact host-owned requests", async () => {
     const { canvas, requests, pane, sheet } = await arranging();
-    sheet.insertRule(`#canvas-pane, #canvas-frame, ${tag} { inline-size: 430px; }`, sheet.cssRules.length);
+    sheet.insertRule(`#canvas-pane, #canvas-frame, ${tag} { inline-size: 430px; block-size: 560px; }`, sheet.cssRules.length);
     canvas.layout = [
       { nodeId: "review", x: 25, y: 20 }, { nodeId: "publish", x: 435, y: 30 }, { nodeId: "revise", x: 260, y: 180 },
     ];
@@ -2296,6 +2303,7 @@ describe("workflow canvas in-process selection and navigation", () => {
     { name: "a circle", style: "", path: "circle(268px at 228px 5px)", viewX: -170, viewY: -168.5 },
   ])("guards live native focus and accepts an exact named reveal through $name", async ({ style, path, viewX, viewY }) => {
     const { canvas, pane, sheet, requests } = await mount(true);
+    reserveFixtureMapHeight(canvas, sheet);
     sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible; ${style} }`, sheet.cssRules.length);
     sheet.insertRule(`#canvas-pane.round-five-clip { clip-path: ${path}; }`, sheet.cssRules.length);
     canvas.layout = [{ nodeId: "review", x: 24, y: 14 }, { nodeId: "publish", x: 330, y: 236 }];
@@ -2404,6 +2412,7 @@ describe("workflow canvas in-process selection and navigation", () => {
 
   it("proposes the empty C-shaped pane's lower arm and focuses the original action on acceptance", async () => {
     const { canvas, pane, sheet, requests } = await mount(true);
+    reserveFixtureMapHeight(canvas, sheet);
     sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible; transform: translateX(1px);
       clip-path: polygon(0 0, 100% 0, 100% 65px, 180px 65px, 180px 360px, 100% 360px, 100% 100%, 0 100%); }`, sheet.cssRules.length);
     canvas.layout = [{ nodeId: "review", x: 330, y: 160 }, { nodeId: "publish", x: 330, y: 236 }];
@@ -2560,6 +2569,7 @@ describe("workflow canvas in-process selection and navigation", () => {
 
   it("keeps the reveal pending when every exposed arm is too narrow for the focus outline", async () => {
     const { canvas, pane, sheet, requests } = await mount(true);
+    reserveFixtureMapHeight(canvas, sheet);
     sheet.insertRule(`#canvas-pane { block-size: 445px; overflow: visible;
       clip-path: polygon(0 0, 100% 0, 100% 65px, 100px 65px, 100px 412px, 100% 412px, 100% 100%, 0 100%); }`, sheet.cssRules.length);
     canvas.layout = [{ nodeId: "review", x: 330, y: 160 }, { nodeId: "publish", x: 330, y: 236 }];
@@ -3254,6 +3264,34 @@ describe("workflow canvas named run inspection in process", () => {
     canvas.viewport = second;
     await settle(canvas);
     expect(focusId(canvas)).toBe("revise");
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual(expected);
+  });
+
+  it.each(["relationship", "layout"] as const)("ignores a stale follow and recovers focus when the host removes its %s", async (removed) => {
+    const { canvas, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    await keyboardActivate(follow);
+    const proposed = lastViewport(requests);
+    const expected = [presentationRequest(viewport, { viewport: proposed })];
+    expect(active()).toBe(follow);
+    expect(requests).toEqual(expected);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    const { picker } = revealControls(canvas);
+
+    if (removed === "relationship") {
+      canvas.graph = { ...canvas.graph, connections: canvas.graph.connections.filter(({ destinationId }) => destinationId !== "revise") };
+    } else {
+      canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "revise");
+    }
+    expect(follow.isConnected).toBe(true);
+    follow.click();
+    expect(requests, "an outdated rendered Follow control cannot publish before Lit updates").toEqual(expected);
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(picker);
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
     expect(requests).toEqual(expected);
   });

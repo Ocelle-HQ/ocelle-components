@@ -1335,11 +1335,27 @@
       "rule": "differs"
     },
     {
+      "location": "elements-ocelle-workflow-canvas--combined-state/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-canvas--empty/light",
+      "rule": "differs"
+    },
+    {
       "location": "elements-ocelle-workflow-canvas--named-connections/light",
       "rule": "differs"
     },
     {
       "location": "elements-ocelle-workflow-canvas--narrow-focus/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-canvas--read-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-canvas--reduced-motion/light",
       "rule": "differs"
     },
     {

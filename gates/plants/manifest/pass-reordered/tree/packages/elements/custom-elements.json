@@ -6696,7 +6696,7 @@
               "description": "The original bubbling request from the native node action."
             }
           ],
-          "description": "A host-controlled workflow map with native selection, navigation and presentation controls.",
+          "description": "A host-controlled workflow map with native selection, navigation and named outcome inspection.",
           "customElement": true,
           "cssProperties": [],
           "cssParts": [],
