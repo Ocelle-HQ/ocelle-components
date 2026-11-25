@@ -12,7 +12,7 @@ Implementation dispatch followed the common red pin at 2026-11-25T20:24:47.734Z.
 
 An early matched candidate pinned `ac68285d`. Its scoped replay reproduced all six named failures against the old source and passed at `ad472926` through the focused runner with explicit pathspec exclusions. That run passed dedicated Visual and Accessibility. The paired drafts exposed an issue in browser test lint and an empty-index Plant fixture omission. Both arms contain the same fixes. [Early hosted candidate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45699064888)
 
-The final paired candidate uses Op 030 head `e934978ef7506db9ba65030e60146075e012ca48` (tree `8272f410d15cf0036a86f1b0590e67d9c60cf22c`). Its phase base `dbd2efce33e36816b81e49cc1a535adf2933e451` places that workflow on the pre-implementation tree. Both arms use identical stories, layout, browser tests, Plant expectations and pinned baseline bytes. The original worker-return receipt stays tied to the workflow that verified both signed returns.
+The final paired candidate uses Op 030 head `30480950ec09029e2c839432870ff37be7791e5f` (tree `9fdda4a9df21e3da8262bd06c16d58aa2ab4f6a9`). Its phase base `4540180a205582ed8856f54edcaba85bd9534d47` places that workflow on the pre-implementation tree. Both arms use identical stories, layout, browser tests, Plant expectations and pinned baseline bytes. The original worker-return receipt stays tied to the workflow that verified both signed returns.
 
 The standard focused replay consumes the two reviewed `implementation-story` declarations in this phase's scope. It keeps each requested story at the tested revision while preserving the six named assertions and existing collateral tests.
 
