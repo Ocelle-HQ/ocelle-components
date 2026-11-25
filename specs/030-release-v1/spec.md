@@ -56,6 +56,11 @@ install the three packages from the public npm registry instead of a workspace l
   (PLAN-FRESH-2-001 (a), FR-027); the dry-run path runs the release workflow's whole pre-approval job graph on every
   pull request (PLAN-FRESH-2-002 (a), FR-027); the history-reading tests run with full history in the unit-test jobs
   (PLAN-FRESH-2-004 (a), FR-044).
+- Plan squad round 3 (2026-11-25, operator fork decisions in `reviews/plan/round-3/refute.md`): the release run
+  mutates only what `main` has not already proven (the tagged commit's own changes, or from the first-release base
+  for 1.0.0), the dry run mutates the pull request's own range and a newer push cancels an older dry run
+  (PLAN-FRESH-3-001 (a), FR-027, Assumptions); the dry run's check is a verdict that fails when any of its jobs
+  failed or was skipped, and it shows the pre-publish steps only when its gates pass (PLAN-FRESH-3-002 (b), FR-027).
 - Already done by the operator: the npm org `ocelle` is claimed (O1). Private vulnerability reporting is on per op
   023's decision Q3 (a) (O2, re-confirmed at release).
 
@@ -150,7 +155,8 @@ nobody can skip the approval.
 it runs once per release.
 
 **Independent Test**: the dry-run path (FR-027, operator answer to SPEC-1-04), started by a pull request (the
-start the plan chose, research.md R-10), runs every pre-publish step on its commit and ends without publishing, because it has no publish
+start the plan chose, research.md R-10), runs every pre-publish step on its commit when its gates pass, reports a
+failing check when any of its jobs failed or was skipped, and ends without publishing, because it has no publish
 job and no job in it can request an identity token; the release path's publish job permissions, environment and
 pinned actions are as FR-021 says; a static check of the workflow files fails on each planted misconfiguration,
 including a dry-run path that gains a publish step, an environment binding or an identity-token permission.
@@ -173,9 +179,12 @@ including a dry-run path that gains a publish step, an environment binding or an
    other than the publish job may request an identity token, if the default token permissions exceed read-only
    contents, if the publish job is not bound to the protected environment, if any action is referenced by anything
    other than a full commit SHA, if a checkout keeps credentials, or if the workflow reads a long-lived npm token.
-7. **Given** a pull request (the dry run's start, FR-027), **When** the dry-run path runs, **Then** it runs
-   every pre-publish step of FR-022 and reports the result, contains no publish job, binds no job to the protected
-   environment, grants no job an identity-token permission and writes nothing to any registry.
+7. **Given** a pull request (the dry run's start, FR-027) whose gates pass, **When** the dry-run path runs, **Then**
+   it runs every pre-publish step of FR-022 and reports the result, contains no publish job, binds no job to the
+   protected environment, grants no job an identity-token permission and writes nothing to any registry.
+8. **Given** a pull request whose dry-run gates fail (for example readiness not ready, or one duplicated gate job
+   failing), **When** the dry-run path runs, **Then** the pre-publish steps do not run and the dry run's check
+   reports failure, never skipped or passing (PLAN-FRESH-3-002 (b)).
 
 ---
 
@@ -362,10 +371,14 @@ of FR-040 to FR-045 against them.
   publish job uses (FR-025), so the dry run of FR-022 does not fail a re-run after a partial publish or a pull request
   after a release (PLAN-FRESH-2-001 (a)). It MUST run the same pre-approval jobs as the publish path (the gates
   through the same reusable call, the base computation and the tarball hand-off), not only the shared steps
-  (PLAN-FRESH-2-002 (a)). It MUST contain no publish job, bind no job to the protected environment and grant no job an
+  (PLAN-FRESH-2-002 (a)); its mutation gate covers the pull request's own range, not the range since the last
+  release, and a newer run for the same pull request cancels an older one (PLAN-FRESH-3-001 (a)). Its one reported
+  check MUST fail unless every one of its jobs succeeded, so a skipped step never shows as passing
+  (PLAN-FRESH-3-002 (b)). It MUST contain no publish job, bind no job to the protected environment and grant no job an
   identity-token permission, so that nothing started by it can publish. The plan states how the pre-publish steps
   are shared between the dry-run path and the publish path so both run the same steps. On today's `main` the
-  readiness step of a dry run reports not-ready by design (Story 2); the dry run still shows every other step.
+  readiness check reports not-ready by design (Story 2); the dry run then stops before its pre-publish steps, as the
+  release would, and its check reports failure. It shows the pre-publish steps only when its gates pass.
 
 **Post-publish install check (Story 4)**
 
@@ -455,7 +468,8 @@ consumer migrations; rewriting git history; automated version bumps or a release
 - **Release tag**: `v<version>` on a commit of `main`, protected by ruleset; its push is the only trigger of the
   release workflow's publish path.
 - **Dry-run path**: the run of every pre-publish step started by a pull request (FR-027 allows a manual dispatch
-  too; the plan chose the pull request only), with no publish job and no identity-token permission (FR-027).
+  too; the plan chose the pull request only), with no publish job and no identity-token permission, reported as one
+  check that passes only when every job of it succeeded (FR-027).
 - **Protected environment**: the GitHub environment the publish job runs in; its required reviewer is the human
   approval.
 - **Provenance attestation**: the registry's signed statement linking each published version to this repository,
@@ -486,9 +500,10 @@ consumer migrations; rewriting git history; automated version bumps or a release
 - **SC-008**: Before the `v1.0.0` tag is pushed, the install check's signature and provenance verification passes on
   1 of 1 pass case and fails on 3 of 3 planted failures (no attestation, another repository, another commit) on real
   registry inputs (FR-034).
-- **SC-009**: Every dry-run path run (FR-027) completes the pre-publish steps with zero registry writes, and the
-  static check fails on 100% of its planted dry-run misconfigurations (publish step, environment binding,
-  identity-token permission).
+- **SC-009**: Every dry-run path run (FR-027) makes zero registry writes, completes the pre-publish steps whenever
+  its gates pass and reports failure whenever any of its jobs failed or was skipped, and the static check fails on
+  100% of its planted dry-run misconfigurations (publish step, environment binding, identity-token permission, a
+  verdict that can pass over a skipped job).
 
 ## Assumptions
 
@@ -503,6 +518,9 @@ consumer migrations; rewriting git history; automated version bumps or a release
   manager or the npm CLI, and why.
 - "Every check" in #11 means the merge gates of spec 001 FR-020 plus this mission's new gates; the slow suites
   (mutation, visual) are trusted from the tagged commit's CI results when the plan shows that result cannot be
-  bypassed, and re-run otherwise.
+  bypassed, and re-run otherwise. Mutation over commits already merged to `main` is trusted from `main`'s required
+  mutation check, which each of them passed on its own pull request; the release run mutates only what the tagged
+  commit adds to its parent (for 1.0.0, what the release adds to the first-release base), and the dry run only the
+  pull request's own range (operator decision PLAN-FRESH-3-001 (a), research.md R-10).
 - The constitution amendment is MINOR (operator decision PLAN-CORRECTNESS-1-007 (b)): no principle is added or
   removed, but the peer-range exception materially expands the supply-chain guidance.

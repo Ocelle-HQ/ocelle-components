@@ -89,7 +89,9 @@ committed file holds a credential-shaped literal (R-08, FR-045).
 One line: the full SHA of the parent of this mission's squash commit on `main`. Committed in US3 with the `main`
 commit merged into this branch in Setup, so the dry run (which runs `release-step base`) has a base from its first
 run; the pre-tag pull request rewrites it to the exact parent (research.md R-10, R-15). `release-step base` uses it only when no earlier `v*` tag is reachable from the tagged commit's
-parent (research.md R-10).
+parent; otherwise the base is that parent itself, so the release run mutates only the pre-tag pull request's commit
+(operator decision PLAN-FRESH-3-001 (a), research.md R-10). Only `release.yml` passes the base to ci.yml; the dry run
+computes it but mutates the pull request's own range.
 
 ## Readiness report (stdout of the `release-readiness` gate)
 

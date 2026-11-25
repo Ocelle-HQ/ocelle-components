@@ -212,8 +212,8 @@ the operator confirms the date before merging it (R-15).
 
 - `gates/lib/release-steps.ts` with the process boundary `gates/bin/release-step.ts` (PLAN-TESTABILITY-1-005): the
   release logic that would otherwise be inline shell, unit-tested with an injected git and npm runner and in mutation
-  scope. Subcommands: `base` (the previous `v*` tag reachable from `<sha>^`, else the SHA in
-  `gates/release/first-release-base`), `check-tag` (the tag equals `v<version>` of all three manifests, and the commit
+  scope. Subcommands: `base` (`<sha>^`, the tagged commit's parent, when a `v*` tag is reachable from `<sha>^`, else
+  the SHA in `gates/release/first-release-base`; operator decision PLAN-FRESH-3-001 (a), below), `check-tag` (the tag equals `v<version>` of all three manifests, and the commit
   is an ancestor of `origin/main`; with `--no-tag`, used by the dry run, only the shared version and that `origin/main`
   resolves, saying that the tag and ancestor checks are skipped), `digest` (SHA-256 of each tarball, written as step
   outputs), `dry-run` (below) and `publish` (below). It imports only Node built-ins and other `gates/lib` modules with no package dependency (a unit test
@@ -234,7 +234,7 @@ the operator confirms the date before merging it (R-15).
      the pre-tag pull request (R-15) rewrites it to the exact parent.
   2. `gates` (needs `release-base`): `uses: ./.github/workflows/ci.yml` with `base: ${{
      needs.release-base.outputs.base }}` and `release: true`, so every merge gate runs on the tagged commit (#11 "run
-     every check"), the mutation gate over what the release adds.
+     every check"), the mutation gate over what `main` has not already proven (below).
   3. `prepare` (needs `gates`): checkout of the tag with full history, `persist-credentials: false`;
      `./.github/actions/setup`; `release-step check-tag`; the composite action with `tag: ${{ github.ref_name }}`; job outputs `sha256-tokens`, `sha256-styles`, `sha256-elements` from the
      action's outputs; uploads the tarballs (only) as the artifact `release-tarballs`.
@@ -247,10 +247,17 @@ the operator confirms the date before merging it (R-15).
      `./.github/actions/setup` (pinned Node, pnpm, dependencies, Playwright's browser), then the install check (R-11)
      against the public registry with the expected repository, workflow, ref and commit (PLAN-CORRECTNESS-1-010).
 - `.github/workflows/release-dry-run.yml` (operator decision PLAN-FRESH-2-002 (a)): `on: pull_request` only;
-  `permissions: contents: read`; no environment, no `id-token`. It runs **the same pre-approval job graph** as
-  `release.yml`: `release-base` (same steps), `gates` (`ci.yml` through `workflow_call` with the computed `base` and
-  `release: false`), and `prepare` (check **Release dry run**: setup, `release-step check-tag --no-tag`, the composite
-  action without its `tag` input, so readiness runs without `--tag`, with the tarball rehearsal and `install-check --rehearse`, and the same artifact upload).
+  `permissions: contents: read`; no environment, no `id-token`; `concurrency: { group: release-dry-run-${{
+  github.event.pull_request.number }}, cancel-in-progress: true }` (PLAN-FRESH-3-001 (a)). It runs **the same
+  pre-approval job graph** as `release.yml`: `release-base` (same steps; its output is computed but not passed on),
+  `gates` (`ci.yml` through `workflow_call` with `release: false` and **no** `base`, so the mutation gate covers the
+  pull request's own range; PLAN-FRESH-3-001 (a)), and `prepare` (no job name, as in `release.yml`: setup,
+  `release-step check-tag --no-tag`, the composite action without its `tag` input, so readiness runs without `--tag`,
+  with the tarball rehearsal and `install-check --rehearse`, and the same artifact upload). A fourth job, `verdict`
+  (check **Release dry run**; operator decision PLAN-FRESH-3-002 (b)), needs `release-base`, `gates` and `prepare`,
+  runs with `if: always()` and fails unless all three concluded `success`. A job whose `needs` failed is skipped, and
+  GitHub shows a skipped check as passing (the reason ci.yml's own `mutation` and `unit-tests` verdict jobs exist), so
+  without the verdict a failing `gates` would leave a green-looking dry run that packed and rehearsed nothing.
   So the reusable-workflow call, the `base` computation, the job outputs, the setup of every job and the artifact
   hand-off run on every pull request, not first on the real tag; the rule `dry-run-graph` (R-13) keeps the two
   graphs equal. What only the tag can run is the tag comparison and ancestor test of `check-tag` (unit-tested), the
@@ -259,8 +266,22 @@ the operator confirms the date before merging it (R-15).
   request's own dry run is the rehearsal on the release tree. It is a named check but **not required** (D5): its pack,
   contents and readiness parts are already required gates, its rehearsal reaches the public registry for reading,
   which a required check should not depend on, and the release path runs the same rehearsal before the approval.
-  Cost: its `gates` job runs every ci.yml job a second time on each pull request, the mutation gate over the release
-  range; being not required, it blocks no merge.
+  The pre-publish steps show only when `gates` passes: on today's `main` readiness is not ready by design, so
+  `gates` fails, `prepare` is skipped and **Release dry run** is red, as the release would stop (spec FR-027).
+  Cost: its `gates` job runs every ci.yml job a second time on each pull request, bounded by the pull request's own
+  size (mutation over its own changed lines, as in the required run); the concurrency group cancels a superseded run;
+  being not required, it blocks no merge.
+- **Mutation range in `workflow_call` runs** (operator decision PLAN-FRESH-3-001 (a)). Every commit on `main` came
+  through a pull request whose required **Mutation testing** check covered that pull request's changed lines, and
+  `main`'s ruleset requires that check (spec 001 FR-020); this is the spec Assumption's "trusted ... when the plan
+  shows that result cannot be bypassed". So the release run mutates only what `main` has not already proven:
+  `release-step base` returns the tagged commit's parent, so the range is the pre-tag pull request's own commit, and
+  for 1.0.0 (no earlier `v*` tag) `gates/release/first-release-base`, so the range is this mission's squash commit and
+  the pre-tag pull request. A probe of the repository's own `planShards` over real ranges of `main` found 43 to 80
+  shards for one element mission, 298 for eight missions and 743 for all of `main`, against GitHub Actions' limit of
+  256 matrix jobs per run and a 75-minute limit per element shard; a range since the last release would outgrow that
+  limit after a few element missions, and a rerun could not fix it. The narrowed range stays the size of one pull
+  request. The dry run passes no `base` at all, so it mutates the pull request's own range.
 
 **`release-step dry-run`** (operator decision PLAN-FRESH-2-001 (a)). From npm 11 on (checked in npm 11.21.3 and
 12.2.3, `lib/commands/publish.js`), `npm publish` without `--force` asks the registry for the package's versions and
@@ -310,7 +331,11 @@ Workflow-level `permissions: contents: read`; `concurrency: release` with `cance
 **Alternatives.** A bare `npm publish --dry-run` run only on `github.run_attempt == 1` and only while the version
 is not on the registry (PLAN-FRESH-2-001 (b), not chosen); an operator rehearsal with a pre-release tag such as
 `v1.0.0-rc.0` whose approval is rejected, instead of the dry run's full graph (PLAN-FRESH-2-002 (b), not chosen);
-rerun only the fast gates in the release (faster, but #11 says every check); require the dry run
+rerun only the fast gates in the release (faster, but #11 says every check); keep the full release range in the
+release run and fail `--plan` above 256 shards or batch shards over several matrix jobs (PLAN-FRESH-3-001 (b), not
+chosen: the run grows with every merge until the next release and only re-proves merged commits); a corrected FR-027
+plus an operator step to confirm the pre-tag dry run ran, without a verdict job (PLAN-FRESH-3-002 (a), not chosen: a
+skipped rehearsal would still look green); require the dry run
 (adds a registry dependency to merges); a sign-off exemption for commits committed by GitHub
 (PLAN-FRESH-1-001 (b), not chosen); a `SHA256SUMS` file inside the artifact (detects only transport corruption, since
 whoever can change the tarballs can change the file).
@@ -407,8 +432,9 @@ for nested `permissions`, `environment` and `with` blocks). Rules:
 - pinning and credentials: every `uses:` of a remote action is `owner/repo@<40 hex>`; every `actions/checkout` has
   `persist-credentials: false`; no expression reads `secrets.*` other than `secrets.GITHUB_TOKEN`, and no step sets
   `NODE_AUTH_TOKEN` or `NPM_TOKEN`; no step runs `npm unpublish`, `npm deprecate` or `npm dist-tag`;
-- job graph (PLAN-TESTABILITY-1-005, PLAN-FRESH-1-001): `gates` needs `release-base` and takes its `base` input only
-  from `needs.release-base.outputs.base` (`gates-inputs`); `prepare` needs `gates` (`prepare-needs-gates`);
+- job graph (PLAN-TESTABILITY-1-005, PLAN-FRESH-1-001): `gates` needs `release-base`; in `release.yml` it takes its
+  `base` input only from `needs.release-base.outputs.base`, in `release-dry-run.yml` it passes no `base`
+  (`gates-inputs`; PLAN-FRESH-3-001 (a)); `prepare` needs `gates` (`prepare-needs-gates`);
   `publish` needs `prepare` (`publish-needs-prepare`); `install-check` needs `publish`
   (`install-check-needs-publish`);
 - publish job: no build, pack or install step and no `pnpm` command (`publish-builds`); exactly one publishing step,
@@ -423,11 +449,17 @@ for nested `permissions`, `environment` and `with` blocks). Rules:
   `install-check --rehearse` (`rehearse-in-prepare`); its publish dry run is `release-step dry-run`, and no `run:` of
   the action runs `npm publish` (`dry-run-via-release-step`, PLAN-FRESH-2-001);
 - dry-run graph (PLAN-FRESH-2-002): `release-dry-run.yml` has the jobs `release-base`, `gates` and `prepare` with the
-  same `needs` and, step for step, the same steps as `release.yml`'s, except exactly three differences:
-  `gates`' `release: false` (`release.yml`: `true`), `prepare`'s `check-tag --no-tag` (`release.yml`: `check-tag`),
-  and `prepare`'s composite-action step without the `tag` input (`release.yml`: `with: tag: ${{ github.ref_name }}`);
-  any other difference, or a `with:` key other than `tag` that only one side has, is a finding; it has no other job
-  (`dry-run-graph`, PLAN-FRESH-2-002);
+  same `needs` and, step for step, the same steps as `release.yml`'s, except exactly four differences:
+  `gates`' `release: false` (`release.yml`: `true`), `gates` without the `base` input (`release.yml`: from
+  `needs.release-base.outputs.base`; PLAN-FRESH-3-001 (a)), `prepare`'s `check-tag --no-tag` (`release.yml`:
+  `check-tag`), and `prepare`'s composite-action step without the `tag` input (`release.yml`: `with: tag: ${{
+  github.ref_name }}`); any other difference, or a `with:` key other than `tag` and `base` that only one side has, is a
+  finding; its only other job is `verdict` (`dry-run-graph`, PLAN-FRESH-2-002, PLAN-FRESH-3-002 (b));
+- dry-run verdict (PLAN-FRESH-3-002 (b)): the `verdict` job is named "Release dry run", needs exactly
+  `release-base`, `gates` and `prepare`, has `if: always()`, and its step fails unless all three
+  `needs.<job>.result` are `success`; no other dry-run job carries that name (`dry-run-verdict`);
+- dry-run concurrency (PLAN-FRESH-3-001 (a)): `release-dry-run.yml`'s workflow-level `concurrency` has the group
+  `release-dry-run-${{ github.event.pull_request.number }}` and `cancel-in-progress: true` (`dry-run-concurrency`);
 - sign-off scope: `ci.yml`'s Sign-off job has no `if` other than `${{ !inputs.release }}` (`signoff-skip-scope`);
   the `release` input is declared only under `workflow_call` with default `false`; only `release.yml` passes `true`,
   `release-dry-run.yml` passes `false`, and no other file passes it (`release-input-caller`).
@@ -452,7 +484,9 @@ procedure below).
 
 - **Pre-tag pull request** (operator decision PLAN-FRESH-1-007 (b)): sets each package's `1.0.0` changelog date to
   the planned release day, empties "Unreleased", and for the first release writes `gates/release/first-release-base`
-  (R-10). The operator confirms the date before merging it, and pushes the tag (O7) on the merged commit; if the tag
+  (R-10). The operator confirms the date and that the pull request's **Release dry run** check is green (the
+  verdict of R-10, which is red when any dry-run job failed or was skipped; PLAN-FRESH-3-002 (b)) before merging it,
+  and pushes the tag (O7) on the merged commit; if the tag
   slips past that day, a new pre-tag pull request corrects the date first.
 - **Re-run after a partial publish** (R-10): "Re-run failed jobs"; "Re-run all jobs" only when the failed run's
   artifact has expired; with the reason.

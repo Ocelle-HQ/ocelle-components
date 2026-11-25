@@ -13,11 +13,13 @@ into this branch before the first red commit (the only merge of `main` during th
 Make the three packages publishable as `1.0.0` and publish them only through a reviewed, provenance-attested
 workflow. Three new merge gates (pack contents, release readiness, release workflow) with plants keep the packages
 releasable on every pull request; a tag-triggered `release.yml` computes the release range, runs every gate on the
-tagged commit, packs the tarballs and takes their digests at once, verifies them, proves the provenance check on
+tagged commit (mutation over what `main` has not already proven), packs the tarballs and takes their digests at once, verifies them, proves the provenance check on
 real registry inputs, waits for the operator's approval of the `npm-publish` environment, publishes the verified
 bytes with npm trusted publishing (OIDC, no token), and proves the result with a credential-free install under the
 strict CSP and a provenance check of repository, workflow, ref and commit. A dry-run workflow runs the same
-pre-approval job graph on every pull request, so everything but the publish is rehearsed before the tag exists. The first publish uses an operator-run
+pre-approval job graph on every pull request (mutation on the pull request's own range, one run per pull request),
+with a verdict check that is red when any of its jobs failed or was skipped, so everything but the publish is
+rehearsed before the tag exists. The first publish uses an operator-run
 placeholder bootstrap (research D1), so the workflow never reads a token. The constitution, READMEs and a new
 `RELEASING.md` say how releases work, with every operator-only step marked.
 
@@ -67,7 +69,7 @@ history), 2 plant-form changes (`commit-repo` files, new `pack-tree`), 1 root `N
 | V. Storybook | No story change. | pass |
 | VI. Consumer needs | Consumers named in the spec (kitty-mission-ui, Ocelle console); no code copied. | pass |
 | VII. Semver | First public release `1.0.0`; per-package changelog entries (FR-005, R-09). | pass |
-| VIII. Test-first, gates proven | Each new gate red-first with fail, pass and breaking plants, on plant forms planned for them (research R-17: `commit-repo` with files, `pack-tree`); no committed credential-shaped literal (R-08). The install check and the release steps live in `gates/lib` + `gates/bin`, in the mutation gate's scope; the install check is unit-tested offline on recorded real registry responses with an injected verifier, each test asserting its rule, and proven on real registry inputs by `--rehearse` (1 pass, 5 planted failures including no attestation) in the dry run and before the approval in `release.yml`; the publish loop (order, skip, retry, digests) is unit-tested with an injected npm runner, and so is the publish dry run (`release-step dry-run`: run when not on the registry, skipped when published); workflow YAML (job graph, publish job, digests, sign-off scope, pinned Node in every job, the dry run's graph equal to the release's) proven through the release-workflow gate's plants, and the pre-approval graph itself runs on every pull request in the dry run; the `ci.yml` change is red-first in `ci-workflow.test.ts`. Story 2's independent test and the own-history scan test are gates-integration tests run with full history; each first asserts a non-shallow clone in which `183b20f` resolves and fails, never skips, otherwise, so neither can pass vacuously. Docs and constitution phases are behaviour-free and claim the exemption in review. | pass |
+| VIII. Test-first, gates proven | Each new gate red-first with fail, pass and breaking plants, on plant forms planned for them (research R-17: `commit-repo` with files, `pack-tree`); no committed credential-shaped literal (R-08). The install check and the release steps live in `gates/lib` + `gates/bin`, in the mutation gate's scope; the install check is unit-tested offline on recorded real registry responses with an injected verifier, each test asserting its rule, and proven on real registry inputs by `--rehearse` (1 pass, 5 planted failures including no attestation) in the dry run and before the approval in `release.yml`; the publish loop (order, skip, retry, digests) is unit-tested with an injected npm runner, and so is the publish dry run (`release-step dry-run`: run when not on the registry, skipped when published); workflow YAML (job graph, publish job, digests, sign-off scope, pinned Node in every job, the dry run's graph equal to the release's, its verdict job and concurrency group) proven through the release-workflow gate's plants, and the pre-approval graph itself runs on every pull request in the dry run; the `ci.yml` change is red-first in `ci-workflow.test.ts`. Story 2's independent test and the own-history scan test are gates-integration tests run with full history; each first asserts a non-shallow clone in which `183b20f` resolves and fails, never skips, otherwise, so neither can pass vacuously. Docs and constitution phases are behaviour-free and claim the exemption in review. | pass |
 | Supply chain: "repository is internal until then and goes public with 1.0.0"; "npm publish token lives only in CI secrets"; "every dependency is pinned exactly" | False today / contradicted by Q2 (a) / the peer range of Q3 (a). Amended in this mission (Q1 (a), FR-040, research R-14), MINOR 1.3.1 → 1.4.0 (operator decision PLAN-CORRECTNESS-1-007 (b): the peer-range exception is an expansion, not a clarification). Until the amendment phase lands, the plan relies on the operator's Q1 and squad-round decisions. | pass, by amendment (recorded in Complexity Tracking) |
 | Supply chain: "No secrets, tokens ... in the repository, fixtures" | Secret-scan tests and plants assemble credential-shaped values at run time; no committed file matches a rule, checked by a test on this repository's own history (R-08, FR-045). | pass |
 | Workflow: gates listed | Three gates (pack contents, release readiness, release workflow) added to spec 001 FR-020 by amendment (FR-044), as op 023 did; spec FR-014, FR-044 and O6 name the readiness gate (operator decision PLAN-CORRECTNESS-1-006 (a)). | pass |
@@ -76,7 +78,10 @@ history), 2 plant-form changes (`commit-repo` files, new `pack-tree`), 1 root `N
 
 **Post-design re-check:** unchanged; the design adds no element, token or story, and no exception beyond the one
 below. Re-checked after plan squad round 2: principle VIII's row now covers the dry-run step, the dry-run graph and
-the full-history tests; no other row changes.
+the full-history tests; no other row changes. Re-checked after plan squad round 3: principle VIII's row now covers
+the dry run's verdict job and concurrency group (rules `dry-run-verdict`, `dry-run-concurrency` with plants); the
+narrowed mutation range of the release run relies on `main`'s required mutation check, an existing merge gate, so no
+principle is weakened and no row changes status.
 
 ## Project Structure
 
@@ -152,14 +157,17 @@ and share the gate CLI, finding format and plant job; release-only data sits in 
    the day the phase is implemented; the pre-tag pull request sets the release date later (R-15, operator decision
    PLAN-FRESH-1-007 (b)).
 3. **US3, P2 — workflows**: `yaml` dependency, release-workflow gate and plants first (red, including `node-pin`,
-   `dry-run-via-release-step` and `dry-run-graph`, whose only allowed differences are `release: false`, `check-tag
-   --no-tag` and the composite action's absent `tag` input), the `release-step` module and its unit tests (red, including
-   `dry-run` and `check-tag --no-tag`), `gates/release/first-release-base` (R-10); then `ci-workflow.test.ts` amended
+   `dry-run-via-release-step` and `dry-run-graph`, whose only allowed differences are `release: false`, the absent
+   `base` input of `gates`, `check-tag --no-tag`, the composite action's absent `tag` input and the one extra `verdict`
+   job, plus `dry-run-verdict` and `dry-run-concurrency`; PLAN-FRESH-3-001 (a), PLAN-FRESH-3-002 (b)), the
+   `release-step` module and its unit tests (red, including `dry-run`, `check-tag --no-tag` and `base` returning the
+   tagged commit's parent when an earlier `v*` tag is reachable, the first-release base otherwise), `gates/release/first-release-base` (R-10); then `ci-workflow.test.ts` amended
    first (red: the `inputs.base || ...` lines of `mutation-plan` and `mutation-shard`, the `workflow_call` trigger with
    inputs `base` and `release`, the Sign-off `if`; PLAN-FRESH-2-005), then `ci.yml`'s `workflow_call`, with spec 001
    `contracts/ci-checks.md`'s trigger, Sign-off and mutation lines amended in the same phase (FR-044); the composite
    action, `release.yml` (with `release-base`, every job on the pinned Node), `release-dry-run.yml` (the same
-   pre-approval job graph; operator decision PLAN-FRESH-2-002 (a)).
+   pre-approval job graph with no `base` for `gates`, the `verdict` job "Release dry run" and the per-pull-request
+   concurrency group; operator decisions PLAN-FRESH-2-002 (a), PLAN-FRESH-3-001 (a), PLAN-FRESH-3-002 (b)).
 4. **US4, P2 — install check**: unit tests on recorded real responses and the stub registry (red), the check in
    `gates/lib` + `gates/bin` (environment allow list, strict-CSP browser load, peer step, workflow and ref
    comparison), tarball rehearsal, provenance reference (with and without provenance) and `--rehearse`, wired into
@@ -183,7 +191,7 @@ rules to the agent permission settings (O5, research R-16), which no agent perfo
 | D2 | Peer `workspace:^1.0.0` in source, pins rule accepts it in peers only (R-03) | exact peer (Q3 (b)) |
 | D3 | Readiness is a required merge gate on every pull request (R-06); accepted by the operator, PLAN-CORRECTNESS-1-006 (a) | release-only script |
 | D4 | `release.yml` reuses `ci.yml` via `workflow_call` to run every gate on the tag (R-10) | rerun fast gates only |
-| D5 | The dry run is a named check, not required (R-10) | required |
+| D5 | The dry run is a named check ("Release dry run", its verdict job), not required (R-10) | required |
 | D6 | Own secret-scan rules, no gitleaks or trufflehog (R-08) | a scanner action |
 
 **Operator decisions, plan squad round 1** (`reviews/plan/round-1/refute.md`, Decision column):
@@ -207,6 +215,13 @@ rules to the agent permission settings (O5, research R-16), which no agent perfo
 | PLAN-FRESH-2-001 | (a) | `release-step dry-run`: dry run only for a version `npm view` answers `E404`, "already published, dry run skipped" otherwise; rule `dry-run-via-release-step`; RELEASING.md names "Re-run failed jobs" (R-10, R-13, R-15) |
 | PLAN-FRESH-2-002 | (a) | every release job on the pinned Node (rule `node-pin`); `release-dry-run.yml` runs the same pre-approval graph (`release-base`, `gates` with `release: false`, `prepare` with `check-tag --no-tag` and the composite action without its `tag` input), rule `dry-run-graph`; pull request trigger only; ci.yml's `head` input dropped, Sign-off keeps its pull-request range (R-10, R-13) |
 | PLAN-FRESH-2-004 | (a) | `fetch-depth: 0` on the unit-test shard and full checkouts, spec 001 ci-checks amended; the two history tests assert a non-shallow clone first (R-07, R-08) |
+
+**Operator decisions, plan squad round 3** (`reviews/plan/round-3/refute.md`, Decision column):
+
+| Finding | Option | Effect |
+|---|---|---|
+| PLAN-FRESH-3-001 | (a) | `release-step base` returns the tagged commit's parent (`first-release-base` for 1.0.0), so the release run mutates only what `main` has not already proven; the dry run passes no `base` (pull request's own range) and has a cancel-in-progress concurrency group per pull request; rules `gates-inputs`, `dry-run-graph`, `dry-run-concurrency`; spec Assumptions and FR-027 (R-10, R-13) |
+| PLAN-FRESH-3-002 | (b) | `verdict` job "Release dry run" in the dry run, `needs: [release-base, gates, prepare]`, `if: always()`, fails unless all three succeeded; `prepare` loses the check name; rule `dry-run-verdict`; FR-027's last sentence corrected, Story 3 scenario 8, SC-009 (R-10, R-13) |
 
 ## Complexity Tracking
 

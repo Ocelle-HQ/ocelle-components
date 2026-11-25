@@ -9,7 +9,8 @@ concurrency: { group: release, cancel-in-progress: false }
 jobs:
   release-base:  checkout tag, fetch-depth 0, persist-credentials false; uses ./.github/actions/setup;
                  node gates/bin/release-step.ts base   -> output base
-                 (previous v* tag reachable from <sha>^, else gates/release/first-release-base)
+                 (<sha>^, the tagged commit's parent, when a v* tag is reachable from <sha>^;
+                  else gates/release/first-release-base; operator decision PLAN-FRESH-3-001 (a))
   gates:         needs release-base; uses: ./.github/workflows/ci.yml
                  with: { base: needs.release-base.outputs.base, release: true }
   prepare:       needs gates; checkout tag, fetch-depth 0, persist-credentials false; uses ./.github/actions/setup;
@@ -76,34 +77,51 @@ view` error past the bound, a failing dry run; for `check-tag`: each tag-mode fa
 ## `.github/workflows/release-dry-run.yml`
 
 `on: pull_request` only (no `workflow_dispatch`: a dispatch has no pull-request range for ci.yml's Sign-off job);
-`permissions: contents: read`. The same pre-approval job graph as `release.yml` (operator decision PLAN-FRESH-2-002
-(a)), so every job up to the approval runs on every pull request before it runs on a real tag:
+`permissions: contents: read`; `concurrency: { group: release-dry-run-${{ github.event.pull_request.number }},
+cancel-in-progress: true }` (operator decision PLAN-FRESH-3-001 (a): a new push to the pull request cancels its
+older dry run). The same pre-approval job graph as `release.yml` (operator decision PLAN-FRESH-2-002 (a)), so every
+job up to the approval runs on every pull request before it runs on a real tag, plus one verdict job (operator
+decision PLAN-FRESH-3-002 (b)):
 
 ```text
 jobs:
   release-base:  as in release.yml (checkout with fetch-depth 0 of the pull request's merge commit, setup,
-                 release-step base -> output base)
+                 release-step base -> output base, computed but not passed on)
   gates:         needs release-base; uses: ./.github/workflows/ci.yml
-                 with: { base: needs.release-base.outputs.base, release: false }
-  prepare:       name "Release dry run" (the check; not required, research D5); needs gates; checkout with
+                 with: { release: false }   (no base: mutation runs on the pull request's own range)
+  prepare:       no name (its check shows as "prepare", as in release.yml); needs gates; checkout with
                  fetch-depth 0, persist-credentials false; uses ./.github/actions/setup;
                  node gates/bin/release-step.ts check-tag --no-tag
                  uses ./.github/actions/release-prepare (no tag input: readiness without --tag; tarball
                    rehearsal and install-check --rehearse)
                  the same outputs and the same "release-tarballs" artifact upload as release.yml
+  verdict:       name "Release dry run" (the check; not required, research D5);
+                 needs [release-base, gates, prepare]; if: always(); no checkout, no setup;
+                 one run: step that fails unless needs.release-base.result, needs.gates.result and
+                   needs.prepare.result are all "success" (a skipped or cancelled job fails it)
 ```
 
 No `publish` or `install-check` job, no `environment`, no `id-token`, no `npm publish` in any `run:`. With `release:
 false` ci.yml's Sign-off job runs on the pull request's own range, as in the `ci.yml` run (rule `signoff-skip-scope`
-unchanged). Cost: the `gates` job runs every ci.yml job again, the mutation gate over the release range (from the
-last release, or `gates/release/first-release-base`, to the pull request); the check is not required, so its
-duration blocks no merge.
+unchanged). With no `base` input, ci.yml's `mutation-plan` and `mutation-shard` fall back to
+`github.event.pull_request.base.sha`, so the dry run's mutation gate covers the pull request's own changed lines, as
+the required ci.yml run does, never the growing range since the last release (PLAN-FRESH-3-001 (a)). Cost: the
+`gates` job runs every ci.yml job a second time on each pull request, bounded by that pull request's own size; the
+concurrency group keeps at most one dry run per pull request; the check is not required, so its duration blocks no
+merge.
+
+The verdict job (PLAN-FRESH-3-002 (b)) exists because a job whose `needs` failed is skipped, and GitHub shows a
+skipped check as passing. Without it, a failing `gates` (a not-ready readiness, or a flaky duplicated job) would skip
+`prepare` and the dry run's check would look green although nothing was packed or rehearsed. With it, "Release dry
+run" is green only when the base computation, every gate and every pre-publish step ran and passed, in the style of
+ci.yml's `mutation` and `unit-tests` verdict jobs.
 
 ## `ci.yml` change
 
 Adds `on: workflow_call` with inputs `base` (string) and `release` (boolean, default `false`). The jobs that read
 `github.event.pull_request.base.sha` for a range base (`mutation-plan`, `mutation-shard`) read `inputs.base ||
-github.event.pull_request.base.sha`. The Sign-off job keeps its pull-request range (the pull request's base SHA to
+github.event.pull_request.base.sha`; only `release.yml` passes `base` (the tagged commit's parent, or
+`gates/release/first-release-base` for the first release), `release-dry-run.yml` passes none (PLAN-FRESH-3-001 (a)). The Sign-off job keeps its pull-request range (the pull request's base SHA to
 its head SHA, both from `github.event.pull_request`) and gets
 `if: ${{ !inputs.release }}` (operator decision PLAN-FRESH-1-001 (a)): on `pull_request` `inputs` is empty, so it always runs there; in `release-dry-run.yml` (`release: false`, a
 pull-request event) it runs on the pull request's range; it is skipped only when `release.yml` calls with `release:
@@ -128,16 +146,24 @@ plant form `repo-tree`; reads `release.yml`, `release-dry-run.yml`, `ci.yml` and
 `unpinned-action`, `persisted-credentials`, `secret-read`, `token-env`, `destructive-npm`, `gates-inputs`,
 `prepare-needs-gates`, `publish-needs-prepare`, `install-check-needs-publish`, `publish-builds`, `publish-order`,
 `publish-verifies-checksums`, `publish-node-pin`, `node-pin`, `digest-after-pack`, `rehearse-in-prepare`,
-`dry-run-via-release-step`, `dry-run-graph`, `signoff-skip-scope`, `release-input-caller`, `file-missing` (exit 2 if a
+`dry-run-via-release-step`, `dry-run-graph`, `dry-run-verdict`, `dry-run-concurrency`, `signoff-skip-scope`, `release-input-caller`, `file-missing` (exit 2 if a
 file does not parse). Rule meanings: research.md R-13. `dry-run-graph` compares `release-dry-run.yml`'s `release-base`,
-`gates` and `prepare` with `release.yml`'s step for step and allows exactly three differences: `gates`' `release:
-false` (`release.yml`: `true`), `check-tag --no-tag` (`release.yml`: `check-tag`), and the composite-action step
-without the `tag` input (`release.yml`: `with: tag: ${{ github.ref_name }}`); the planned pair of files passes it
-(`pass-repository`). Plants: one fail plant per rule (among them
+`gates` and `prepare` with `release.yml`'s step for step and allows exactly four differences: `gates`' `release:
+false` (`release.yml`: `true`), `gates` without the `base` input (`release.yml`: `base: ${{
+needs.release-base.outputs.base }}`; PLAN-FRESH-3-001 (a)), `check-tag --no-tag` (`release.yml`: `check-tag`), and
+the composite-action step without the `tag` input (`release.yml`: `with: tag: ${{ github.ref_name }}`); besides the
+three, the dry run has exactly one more job, `verdict` (PLAN-FRESH-3-002 (b)). `dry-run-verdict`: that job is named
+"Release dry run", needs exactly `release-base`, `gates` and `prepare`, has `if: always()`, and its step reads all
+three `needs.<job>.result` values against `success`; no other job of the dry run carries that name.
+`dry-run-concurrency`: the dry run's workflow-level `concurrency` has the group
+`release-dry-run-${{ github.event.pull_request.number }}` and `cancel-in-progress: true`. The planned pair of files
+passes them (`pass-repository`). Plants: one fail plant per rule (among them
 `fail-signoff-skipped-on-pr`: the Sign-off job with any other `if`; `fail-publish-rebuilds`: a build step in publish;
 `fail-digest-in-artifact`: publish reads digests from a file instead of `needs.prepare.outputs`;
 `fail-prepare-no-setup`: `prepare` runs `release-step` with no setup step before it; `fail-bare-dry-run`: the composite
 action runs `npm publish --dry-run` itself; `fail-dry-run-graph-drift`: `release-dry-run.yml`'s `prepare` lacks a step
 `release.yml`'s has; `fail-dry-run-graph-extra-input`: `release-dry-run.yml`'s composite-action step passes a `with:`
-key that `release.yml`'s lacks); pass: `pass-repository`, `pass-local-action` (`uses: ./...` is not a remote action); breaking:
+key that `release.yml`'s lacks; `fail-dry-run-gates-base`: the dry run's `gates` passes a `base`;
+`fail-dry-run-verdict-not-always`: the verdict job without `if: always()`; `fail-dry-run-verdict-partial-needs`: the
+verdict job does not need `prepare`; `fail-dry-run-no-concurrency`: the dry run without its concurrency group); pass: `pass-repository`, `pass-local-action` (`uses: ./...` is not a remote action); breaking:
 `break-not-yaml`.

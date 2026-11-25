@@ -31,11 +31,15 @@ pnpm run gate:release-workflow
 ```
 
 Expect exit 0. On the pull request, `release-dry-run.yml` runs the release's pre-approval job graph: `release-base`,
-`gates` (ci.yml through `workflow_call`, `release: false`), and `prepare` (check **Release dry run**):
+`gates` (ci.yml through `workflow_call`, `release: false`, no `base`, so mutation covers the pull request's own
+range), and `prepare`:
 `release-step check-tag --no-tag`, then the composite action without its `tag` input: build, readiness (without
 `--tag`), pack, the tarball digests,
 pack-contents on the tarballs, `release-step dry-run` (a dry run per tarball not yet on the registry, "already
-published, dry run skipped" otherwise), the tarball install rehearsal, and the provenance rehearsal.
+published, dry run skipped" otherwise), the tarball install rehearsal, and the provenance rehearsal. The check
+**Release dry run** is the `verdict` job: green only when `release-base`, `gates` and `prepare` all succeeded. On
+today's `main` readiness is not ready, so `gates` fails, `prepare` is skipped and the check is red; a newer push to
+the pull request cancels the older run.
 
 ## 4. Install check (Story 4)
 
@@ -55,11 +59,13 @@ Ocelle-HQ/ocelle-components --commit <tag sha>` (workflow and ref default to `re
    nor on the bypass list, and adds the agent-side deny rules (research.md R-16); adds the required checks Pack
    contents, Release readiness and Release workflow (O6) once this mission is merged.
 2. A pre-tag pull request sets each `1.0.0` changelog date to the release day, empties "Unreleased" and writes
-   `gates/release/first-release-base`; the **operator** confirms the date and merges it.
+   `gates/release/first-release-base`; the **operator** confirms the date and that its **Release dry run** check is
+   green (not red, not skipped), re-runs the failed jobs otherwise, and merges it.
 3. **Operator** runs the readiness gate with `--tag v1.0.0` on the release commit.
 4. **Operator** bootstraps and configures the trusted publishers (O3, research D1), then within 2 days pushes
    `v1.0.0` (O7).
-5. The release workflow runs release-base, gates, prepare (including the provenance rehearsal), then waits;
+5. The release workflow runs release-base, gates (mutation over the tagged commit's own changes, or for 1.0.0 from
+   `gates/release/first-release-base`), prepare (including the provenance rehearsal), then waits;
    **operator** approves the `npm-publish` deployment.
 6. Publish and install check run; **operator** completes O8 (deprecate the placeholder versions, confirm no
    credential remains, re-confirm the O4 and O5 settings, close #11).
