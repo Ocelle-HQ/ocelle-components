@@ -10,7 +10,7 @@ import {
   workflowCanvasEditRequest,
   type WorkflowCanvasEdit,
 } from "./workflow-canvas-edit.ts";
-import { projectWorkflowCanvasGraph } from "./workflow-canvas-graph.ts";
+import { projectWorkflowCanvasGraph, type WorkflowCanvasRelationship } from "./workflow-canvas-graph.ts";
 import {
   navigateWorkflowCanvas,
   recoverWorkflowCanvasFocus,
@@ -114,7 +114,7 @@ interface PresentationGesture {
 }
 
 /**
- * A host-controlled workflow map with native selection, navigation and presentation controls.
+ * A host-controlled workflow map with native selection, navigation and named outcome inspection.
  *
  * @tagname ocelle-workflow-canvas
  * @fires {CustomEvent<{nodeId: string}>} ocelle-workflow-node-select - The original bubbling request from the native node action.
@@ -164,7 +164,7 @@ export class OcelleWorkflowCanvas extends LitElement {
         background-color: var(--ocelle-color-sheet);
       }
 
-      .navigator > .clip-probe, .connection-editor .clip-probe {
+      .navigator > .clip-probe, .connection-editor .clip-probe, .relationship > .clip-probe {
         position: absolute;
         inset: 0;
         inline-size: 100%;
@@ -240,6 +240,35 @@ export class OcelleWorkflowCanvas extends LitElement {
         overflow: hidden;
         background-color: var(--ocelle-color-sheet);
         touch-action: none;
+      }
+
+      .relationships, .empty {
+        box-sizing: border-box;
+        margin: 0;
+        padding: var(--ocelle-space-2);
+        color: var(--ocelle-color-ink);
+        background-color: var(--ocelle-color-sheet);
+      }
+
+      .relationships {
+        display: flex;
+        flex-wrap: wrap;
+        flex: none;
+        gap: var(--ocelle-space-2);
+        max-block-size: calc(4 * var(--ocelle-target-min));
+        overflow: auto;
+        list-style: none;
+      }
+
+      .relationship {
+        position: relative;
+        display: flex;
+        flex: 1 1 calc(6 * var(--ocelle-target-min));
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--ocelle-space-2);
+        min-inline-size: 0;
+        overflow-wrap: anywhere;
       }
 
       .edge {
@@ -332,7 +361,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       }
 
       @media (forced-colors: active) {
-        .navigator, .map {
+        .navigator, .map, .relationships, .empty {
           color: CanvasText;
           background-color: Canvas;
         }
@@ -377,7 +406,10 @@ export class OcelleWorkflowCanvas extends LitElement {
   #namedId: string | null = null;
   #generation = 0;
   #focusEpoch = 0;
-  #pendingReveal: (WorkflowCanvasPendingReveal & { readonly initiator: HTMLButtonElement }) | null = null;
+  #pendingReveal: (WorkflowCanvasPendingReveal & {
+    readonly initiator: HTMLButtonElement;
+    readonly relationship: WorkflowCanvasRelationship | null;
+  }) | null = null;
   #retainedFocus: { readonly id: string; readonly order: readonly string[] } | null = null;
   #watched = new Set<Element>();
   #onGeometryChange = (): void => { this.#refresh(); };
@@ -458,10 +490,15 @@ export class OcelleWorkflowCanvas extends LitElement {
         this.#namedId = this.#projection.nodes[0]?.id ?? null;
       }
       const pending = this.#pendingReveal;
-      if (pending !== null && !this.#projection.positions.has(pending.nodeId)) {
-        this.#pendingReveal = null;
-        if (!this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
-          this.#focusNamed(pending.initiator.parentElement, "select");
+      if (pending !== null) {
+        const latest = pending.relationship === null ? pending.nodeId : this.#relationshipDestination(pending.relationship);
+        const available = latest !== null && this.#projection.positions.has(latest);
+        if (latest !== pending.nodeId || !available) {
+          this.#pendingReveal = null;
+          if (this.shadowRoot?.activeElement === pending.initiator) {
+            if (pending.relationship !== null && !available) this.#focusNamed(this.renderRoot.querySelector(".navigator"));
+            else if (pending.relationship === null && !this.#canRevealNamed) this.#focusNamed(pending.initiator.parentElement, "select");
+          }
         }
       }
       for (const id of this.#sizes.keys()) {
@@ -637,6 +674,31 @@ export class OcelleWorkflowCanvas extends LitElement {
     </div>`;
   }
 
+  #renderRelationships(nameContext: (node: WorkflowCanvasNode) => string): unknown {
+    const { nodes, positions, relationships } = this.#projection;
+    if (nodes.length === 0) return html`<p class="empty" id="empty-label" role="status">No workflow steps</p>`;
+    if (relationships.length === 0) return nothing;
+    const name = (node: WorkflowCanvasNode) => {
+      const context = nameContext(node);
+      return context === "" ? node.label : `${node.label} ${context}`;
+    };
+    return html`<ul class="relationships" role="list" aria-label="Outcome connections">
+      ${repeat(relationships, ({ source, outcome }) => JSON.stringify([source.id, outcome.id]), (relationship) => {
+        const { source, outcome, destination } = relationship;
+        const sourceName = name(source);
+        const destinationName = name(destination);
+        const repeated = source.outcomes.some(({ id, label }) => id !== outcome.id && label === outcome.label);
+        const outcomeName = repeated ? `${outcome.label} (${outcome.id})` : outcome.label;
+        return html`<li class="relationship">
+          <span>${sourceName} · ${outcomeName} → ${destinationName}</span>
+          <button class="control" type="button" aria-label=${`Follow ${destinationName} from ${sourceName} via ${outcomeName}`}
+            ?disabled=${!positions.has(destination.id)} @blur=${this.#loseRevealFocus}
+            @click=${(event: MouseEvent) => { this.#followRelationship(event, relationship); }}>Follow</button>
+        </li>`;
+      })}
+    </ul>`;
+  }
+
   protected override render(): unknown {
     const { nodes, drawableConnections } = this.#projection;
     const labelCounts = new Map<string, number>();
@@ -650,7 +712,7 @@ export class OcelleWorkflowCanvas extends LitElement {
         <div class="navigator">
           ${this.#renderCommands(nameContext)}
           <label>Step
-            <select class="control" @change=${this.#chooseNamed}>
+            <select class="control" aria-describedby=${nodes.length === 0 ? "empty-label" : nothing} @change=${this.#chooseNamed}>
               ${nodes.map((node) => html`<option value=${node.id}>
                 ${node.label} ${nameContext(node)}
               </option>`)}
@@ -668,6 +730,7 @@ export class OcelleWorkflowCanvas extends LitElement {
           </g>
           ${repeat(painted, ({ id }) => id, (node) => this.#renderNode(node, nameContext(node)))}
         </svg>
+        ${this.#renderRelationships(nameContext)}
       </div>`;
   }
 
@@ -1331,16 +1394,27 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#pendingReveal = null;
   }
 
-  #revealNamed(event: MouseEvent): void {
+  #relationshipDestination({ source, outcome }: WorkflowCanvasRelationship): string | null {
+    return startWorkflowCanvasEdit(this.graph, source.id, outcome.id)?.currentDestinationId ?? null;
+  }
+
+  #followRelationship(event: MouseEvent, relationship: WorkflowCanvasRelationship): void {
+    const id = relationship.destination.id;
+    if (this.#relationshipDestination(relationship) === id
+      && this.layout.some(({ nodeId, x, y }) => nodeId === id && Number.isFinite(x) && Number.isFinite(y))) {
+      this.#revealNamed(event, id, relationship);
+    }
+  }
+
+  #revealNamed(event: MouseEvent, id = this.#namedId, relationship: WorkflowCanvasRelationship | null = null): void {
     const initiator = event.currentTarget;
     if (!(initiator instanceof HTMLButtonElement)) return;
-    const id = this.#namedId;
     const position = id === null ? undefined : this.#projection.positions.get(id);
     const map = this.renderRoot.querySelector("svg");
     if (id === null || position === undefined || map === null) return;
     initiator.focus(withoutScroll);
     // Stryker disable next-line UpdateOperator: either direction stores the same current value in the sole pending reveal.
-    this.#pendingReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator };
+    this.#pendingReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator, relationship };
     const actions = this.#actions();
     const { contained, eligible, bounds } = this.#measureEligibility(actions, map);
     if (contained.has(id)) {
@@ -1366,10 +1440,11 @@ export class OcelleWorkflowCanvas extends LitElement {
   ): void {
     const pending = this.#pendingReveal;
     if (pending === null || this.shadowRoot?.activeElement !== pending.initiator) return;
+    if (pending.relationship !== null && this.#relationshipDestination(pending.relationship) !== pending.nodeId) return;
     const navigator = pending.initiator.parentElement;
     if (navigator !== null && !this.#withLiveClip(navigator, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
       this.#pendingReveal = null;
-      this.#focusNamed(navigator);
+      this.#focusNamed(pending.relationship === null ? navigator : this.renderRoot.querySelector(".navigator"));
       pending.initiator.blur();
       return;
     }
