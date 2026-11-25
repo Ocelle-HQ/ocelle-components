@@ -158,3 +158,103 @@ describe("workflow canvas real touch arranging", () => {
     expect(canvas.graph).toBe(graph);
   });
 });
+
+function touchChoice(canvas: OcelleWorkflowCanvas, field: "source" | "outcome" | "destination", id: string): HTMLButtonElement {
+  const button = canvas.shadowRoot?.querySelector(`button[data-${field}-id="${id}"]`);
+  expect(button, `single taps can choose the named ${field}`).toBeInstanceOf(HTMLButtonElement);
+  if (!(button instanceof HTMLButtonElement)) throw new Error("Touch choice missing");
+  return button;
+}
+
+async function tapNative(button: HTMLButtonElement): Promise<void> {
+  const types: string[] = [];
+  button.addEventListener("pointerdown", (event) => { types.push(event.pointerType); }, { once: true });
+  await tap(button);
+  expect(types).toEqual(["touch"]);
+  const { width, height } = button.getBoundingClientRect();
+  const target = Number.parseFloat(getComputedStyle(button).minBlockSize);
+  expect(Math.min(width, height)).toBeGreaterThanOrEqual(target);
+}
+
+const connectionEvent = "ocelle-workflow-canvas-connection-request";
+
+function edit(operation: "connect" | "reassign" | "disconnect", destinationId: string): ObservedRequest {
+  return request(connectionEvent, { operation, sourceId: "review", outcomeId: "approved", destinationId });
+}
+
+describe("workflow canvas real touch editing", () => {
+  it("connects, rejects and accepts a reassignment, and disconnects through separate native taps", async () => {
+    const { canvas, host, requests } = await mount();
+    canvas.style.inlineSize = "575px";
+    const [review, publish] = canvas.graph.nodes;
+    if (review === undefined || publish === undefined) throw new Error("Canvas fixture missing steps");
+    canvas.graph = {
+      nodes: [
+        { ...review, outcomes: [{ id: "approved", label: "Approved" }, { id: "alternate", label: "Approved" }] },
+        { ...publish, label: "Destination" },
+        { ...publish, id: "revise", label: "Destination", kind: "Revise" },
+      ],
+      connections: [],
+    };
+    canvas.layout = [...canvas.layout, { nodeId: "revise", x: 1080, y: 65 }];
+    canvas.selectedNodeId = "review";
+    await settle(canvas);
+    const layout = canvas.layout;
+    const view = canvas.viewport;
+    const initial = canvas.graph;
+    let reject = false;
+    host.addEventListener(connectionEvent, (event) => {
+      if (reject) return;
+      const { operation, sourceId, outcomeId, destinationId } = (event as CustomEvent<{
+        operation: string; sourceId: string; outcomeId: string; destinationId: string;
+      }>).detail;
+      const other = canvas.graph.connections.filter((edge) => edge.sourceId !== sourceId || edge.outcomeId !== outcomeId);
+      canvas.graph = { ...canvas.graph, connections: operation === "disconnect" ? other : [...other, { sourceId, outcomeId, destinationId }] };
+    });
+    await disclose(canvas);
+    const touchOne = async (target: HTMLButtonElement) => {
+      await tapNative(target);
+      await settle(canvas);
+    };
+    const start = async () => {
+      await touchOne(command(canvas, "Edit connection"));
+      await touchOne(touchChoice(canvas, "source", "review"));
+      const approved = touchChoice(canvas, "outcome", "approved");
+      expect(approved.textContent).toContain("approved");
+      expect(touchChoice(canvas, "outcome", "alternate").textContent).toContain("alternate");
+      await touchOne(approved);
+    };
+
+    await start();
+    const publishChoice = touchChoice(canvas, "destination", "publish");
+    expect(publishChoice.textContent).toContain("publish");
+    expect(touchChoice(canvas, "destination", "revise").textContent).toContain("revise");
+    await touchOne(publishChoice);
+    expect(requests).toEqual([]);
+    await touchOne(command(canvas, "Apply connection"));
+    const connect = edit("connect", "publish");
+    const reassign = edit("reassign", "revise");
+    expect(requests).toEqual([connect]);
+    expect(canvas.graph.connections.map((edge) => edge.destinationId)).toEqual(["publish"]);
+    reject = true;
+    await start();
+    await touchOne(touchChoice(canvas, "destination", "revise"));
+    await touchOne(command(canvas, "Apply connection"));
+    expect(requests).toEqual([connect, reassign]);
+    expect(canvas.graph.connections.map((edge) => edge.destinationId)).toEqual(["publish"]);
+    reject = false;
+    await start();
+    await touchOne(touchChoice(canvas, "destination", "revise"));
+    await touchOne(command(canvas, "Apply connection"));
+    expect(requests).toEqual([connect, reassign, reassign]);
+    expect(canvas.graph.connections.map((edge) => edge.destinationId)).toEqual(["revise"]);
+    await start();
+    await touchOne(command(canvas, "Disconnect connection"));
+    expect(requests).toEqual([connect, reassign, reassign, edit("disconnect", "revise")]);
+    expect(canvas.graph).toEqual(initial);
+    expect(canvas.layout).toBe(layout);
+    expect(canvas.viewport).toBe(view);
+    expect(canvas.selectedNodeId).toBe("review");
+    expect(canvas.shadowRoot?.querySelectorAll("path.edge")).toHaveLength(0);
+  });
+});
