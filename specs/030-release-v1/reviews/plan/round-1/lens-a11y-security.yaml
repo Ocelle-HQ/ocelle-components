@@ -1,0 +1,175 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Scope note: this mission changes no element, token, story or stylesheet, so the WCAG, shadow-root, keyboard,
+# focus, target-size and reduced-motion parts of the lens have nothing to attack (plan § Constitution Check I-III,
+# V confirmed against plan § Source Code: no packages/*/src path is touched). Every finding below is about the
+# strict-CSP, I/O, and supply-chain parts of the lens and about the release's security barriers.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "The operator-only barriers rest on GitHub identity, but agent sessions hold a GitHub token and nothing stops an agent from creating a v* tag"
+    evidence:
+      - artifact: "spec.md § Operator-only steps: 'never performed by an agent'; O5 'only the operator may create, update or delete them'; SC-007 'none is performed by an agent'; Story 3 'Nobody else can create, move or delete a release tag, and nobody can skip the approval'"
+      - artifact: "data-model.md § Protected environment: 'Required reviewer: the operator'; research.md R-01 and quickstart § 5 never say which GitHub identity agents push with or that it must differ from the operator's"
+      - code: "Probe: in this agent session `env` has GH_TOKEN and GITHUB_TOKEN set (values not printed); the git remote is https://github.com/Ocelle-HQ/ocelle-components"
+      - code: ".claude/settings.json:43-66 deny list blocks pushes to main, --force, npm publish, pnpm publish, gh api and some gh issue/pr verbs, but has no rule for `git push origin v1.0.0`, `git push --tags`, `git push origin refs/tags/*`, `gh release create` (which creates a tag server-side and so triggers release.yml), `npm login`, `npm trust`, `npm token`, `npm deprecate`, `npm dist-tag`, `npm unpublish` (grep for tag|--tags|refs/tags|gh release|gh run|gh workflow: no match)"
+    claim: |
+      The plan's release safety is "only the operator may push v* (O5)" plus "the operator approves the npm-publish
+      environment (O4)". Both are GitHub identity checks. Agents in this repository already act on GitHub with a token
+      (GH_TOKEN), and commits show the operator's account and an agent identity side by side. If that token belongs to the
+      operator's account, or to an app or account on the tag ruleset's bypass list, the ruleset cannot tell an agent's
+      tag push from the operator's, and SC-007 ("none performed by an agent") is only a convention. The local permission
+      file, the only mechanical stop on the agent side, leaves tag pushes and `gh release create` open, and the plan
+      adds no rule for them. An accidental tag from an agent starts the `gates` and `prepare` jobs and puts a publish
+      waiting for approval; if the environment can be approved by the same identity (see 002), the barrier is gone.
+    remedies:
+      - "Add to the plan (US3 or US5) and to RELEASING.md's O4/O5: the identity agents use on GitHub MUST NOT be the operator's account, MUST NOT be on the v* tag ruleset's bypass list and MUST NOT be a required reviewer of npm-publish; O5/O4 record how the operator confirmed this. Add deny rules to .claude/settings.json for `git push * refs/tags/*`, `git push * v*`, `git push --tags`, `git push --follow-tags`, `git tag`, `gh release`, `gh workflow run release.yml`, and the npm verbs `login`, `adduser`, `token`, `trust`, `deprecate`, `dist-tag`, `unpublish`, `access`, `owner`, with a note in the plan that the guard hook is a convenience and the ruleset is the barrier."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 2
+    title: "O4 and O5 do not turn off the administrator bypasses, so 'nobody can skip the approval' is not configured"
+    evidence:
+      - artifact: "spec.md § User Story 3: 'nobody can skip the approval'; § Operator-only steps O4 'with a required reviewer and, if wanted, limited to release tags'"
+      - artifact: "data-model.md § Protected environment: 'Required reviewer: the operator. Deployment branches and tags: tags v* only (O4)' (no bypass setting); § Release tag: 'protected by a ruleset (O5)' (no bypass list)"
+      - code: "GitHub environment settings (Deployment protection rules) carry an 'Allow administrators to bypass configured protection rules' option, on by default, and a 'Prevent self-review' option; repository rulesets carry a bypass list. Recorded from GitHub's environment and ruleset settings documentation as known on 2026-11-25; the implementation re-checks the exact labels."
+    claim: |
+      With the default environment setting, a repository administrator can deploy to npm-publish without the required
+      reviewer, and any account or app on the tag ruleset's bypass list can create or move a v* tag. The plan lists the
+      reviewer and the tag filter but not these switches, and the spec still calls the tag limit optional ("if wanted"),
+      while the trusted publisher on npm trusts exactly that environment. Separately, if the operator turns on "Prevent
+      self-review" while being the only reviewer and the tag pusher, the release cannot be approved at all.
+    remedies:
+      - "In data-model.md § Protected environment and RELEASING.md's O4: deployment tags v* only (not optional; fix the spec's 'if wanted' wording), administrator bypass off, 'Prevent self-review' off with the reason (the operator is the only reviewer and the tag pusher), no environment secrets. In O5: the bypass list of the v* tag ruleset is empty (or names only the operator's account), and restrict creation, update, deletion and non-fast-forward. Each with how the operator confirms it in O8."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 3
+    title: "The secret-scan plants and tests need credential-shaped strings, the plan does not say where they live, and the repository's own history scan would find them"
+    evidence:
+      - artifact: "contracts/release-readiness-gate.md § Plants: fail-secret-npm, fail-secret-github, fail-secret-private-key, fail-secret-npmrc, fail-secret-deleted-later, pass-allowlisted; plant form commit-repo"
+      - artifact: "spec.md FR-045: 'No new file in this mission may contain ... a credential'; constitution § Technology, Licence and Supply Chain: 'No secrets, tokens or personal data in the repository, fixtures or stories'"
+      - code: "gates/lib/plant-repo.ts:3 'commit-repo builds a git history from a plant's commits.txt'; gates/plants/signoff/fail-no-trailer/commits.txt holds only an author and a message, so the form has no way today to put file contents into a commit"
+      - code: "research.md R-08: the gate scans `git log -p -m` of every commit reachable from HEAD; plant directories and gates/test/ are committed, so their npm_..., ghp_..., -----BEGIN ... PRIVATE KEY----- and _authToken= literals are added lines in this repository's history"
+    claim: |
+      To fail on a planted npm token, GitHub token, private key and .npmrc line, the plant files and unit-test fixtures
+      must contain strings that match the very patterns the gate scans for. Committed literally, the release-readiness
+      gate turns red on its own repository from the commit that adds them, and the only plan-level way out is to add
+      allow-list entries for the gate's own fixtures, which is the weakening the allow list should never need. Such
+      strings also look like credentials to GitHub secret scanning and push protection on a public repository, to
+      FR-045 and to the constitution's no-tokens-in-fixtures rule. The commit-repo form cannot express file contents,
+      so the plan also hides an unplanned extension of the plant builder.
+    remedies:
+      - "Specify in research.md R-08 and the readiness contract that every credential-shaped string used by a plant or test is assembled at run time from fragments that match no rule on their own (for example a commits.txt field `secretRule: npm` that the plant builder expands, or concatenation in the test), that no committed file matches any rule, and that the gate's run on this repository needs zero allow-list entries for its own fixtures. Extend the commit-repo form (files per record) test-first in US2 and name it in the plan's Source Code list."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "SHA256SUMS travels in the same artifact as the tarballs and is computed after third-party code runs, so the publish job's check proves nothing about tampering"
+    evidence:
+      - artifact: "research.md R-10: release-prepare runs 'build, readiness, pack, pack-contents gate on the tarballs, npm publish --dry-run, the tarball install rehearsal (R-12), and a SHA256SUMS of the tarballs'; prepare 'uploads the tarballs and SHA256SUMS as an artifact'; publish 'downloads the artifact and checks SHA256SUMS'"
+      - artifact: "research.md R-12: the rehearsal installs into a project with 'registry reads only for lit', i.e. lit's transitive dependencies resolved fresh from the registry with no lockfile"
+      - code: ".github/workflows/ci.yml:60,86,105 the reused ci.yml (release.yml job `gates`, research.md D4) also uploads artifacts in the same workflow run, from jobs that run the full dev-dependency tree"
+    claim: |
+      A checksum file stored beside the files it covers, by the same job, only detects transport corruption: whoever
+      can change the tarballs can change SHA256SUMS. And because the sums are taken last, after the install rehearsal
+      and the npm dry run, a tarball altered after the pack-contents gate passed would be summed as if it were the
+      verified one. FR-023 asks that the publish job publish "the tarballs the earlier job verified"; the plan's
+      mechanism does not establish that.
+    remedies:
+      - "Compute the SHA-256 of each tarball immediately after `pnpm pack`, before the pack-contents gate and before any other step, and pass the digests to the publish job as `prepare` job outputs (not inside the artifact); publish compares the downloaded files with `needs.prepare.outputs.*`. Run the install rehearsal on a copy (or in a separate job after upload). Add a release-workflow gate rule that publish verifies against job outputs, with a plant."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "The CSP and prefix gates check a different build from the one that is published"
+    evidence:
+      - artifact: "research.md R-10: job `gates` (ci.yml via workflow_call) builds and runs every gate; job `prepare` builds again in the composite action and packs that second build; publish uploads prepare's tarballs"
+      - code: ".github/workflows/ci.yml:218-236 jobs `csp` and `prefix` run `pnpm ... build && pnpm run gate:csp` / `gate:prefix` on their own runner's packages/*/dist; gates/bin/csp.ts:1-3 reads packages/<name>/dist, not a tarball"
+      - artifact: "sources/issue-11.md: 'Release workflow on tag: build, run every check (including the sk- prefix and no-monospace checks), publish'"
+    claim: |
+      Constitution IV (no inline script or style, no eval) and the no-sk-/no-monospace rule are proven on the bytes the
+      `gates` job built, while npm receives the bytes `prepare` built on another runner. Nothing in the plan shows the
+      two builds are byte-identical, so the strict-CSP evidence for the published 1.0.0 is inferred, not checked. The
+      pack-contents gate looks at file names, manifests and sandbox paths only.
+    remedies:
+      - "In release-prepare, after pack, extract the tarballs and run gate:csp and gate:prefix on the extracted package/dist trees (the gates take a --root or dist directory option, test-first), so the strict-CSP and prefix checks run on exactly the published bytes; list both in contracts/release-workflow.md and give the release-workflow gate a rule that prepare runs them."
+      - "Alternatively build once: `gates` uploads its dist trees and `prepare` packs those, with digests passed as job outputs (see 004)."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "The release-workflow gate has no rule against expression injection into run: steps"
+    evidence:
+      - artifact: "research.md R-13 and contracts/release-workflow.md § release-workflow gate list trigger, permissions, id-token, environment, unpinned-action, persisted-credentials, secret-read, token-env, destructive-npm; no rule about `${{ }}` inside `run:`"
+      - artifact: "contracts/release-workflow.md: release.yml passes the tag and commit to readiness --tag and install-check --version/--commit; release-dry-run.yml runs on pull_request, where github.head_ref and PR titles are author-controlled"
+      - code: ".github/workflows/ci.yml:194 comment 'Values reach the script through the environment, never pasted into it'; the repository already follows the rule by hand, but no gate enforces it"
+    claim: |
+      Git allows `$`, `(`, `)`, `;` and backticks in ref names, so a tag or a fork branch name pasted into a `run:`
+      script through `${{ github.ref_name }}` or `${{ github.head_ref }}` executes as shell. In release.yml the tag
+      ruleset narrows who can do this, but the prepare job builds the tarballs that get published, and the dry-run path
+      runs fork-controlled names. The plan writes these workflows new and its static gate is the place to keep the
+      repository's existing convention enforced.
+    remedies:
+      - "Add rule `expression-in-run` to the release-workflow gate: no `${{ ... }}` inside a `run:` value of release.yml, release-dry-run.yml or the release-prepare action (values go through `env:`); one fail plant (`${{ github.ref_name }}` in a run step) and a pass plant (the same value via env)."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "The provenance check compares repository and commit only, not the workflow, ref or runner the spec says the attestation names"
+    evidence:
+      - artifact: "spec.md Story 3 scenario 4: 'a provenance attestation that names this repository, the workflow and the tagged commit'; FR-031 checks only 'this repository and the tagged commit'"
+      - artifact: "research.md R-11 / contracts/install-check.md: 'check the SLSA provenance statement's source repository and commit'; rules repository-mismatch, commit-mismatch only"
+    claim: |
+      A provenance statement for a version published from any workflow file, any ref or a self-hosted runner in this
+      repository at the tagged commit passes the check. The attestation records the workflow path, the ref and the
+      runner environment, and these are what distinguish "published by release.yml from the protected tag on a
+      GitHub-hosted runner" from "published by some other workflow in this repository". Trusted publishing narrows
+      who can publish, but the install check is the consumer-facing proof and should check what Story 3 promises.
+    remedies:
+      - "Extend install-check (FR-031, contracts/install-check.md) to also require the workflow path `.github/workflows/release.yml`, the ref `refs/tags/v<version>` and a GitHub-hosted runner environment, with rules workflow-mismatch, ref-mismatch, runner-not-hosted, stub-registry unit tests for each, and extend the --rehearse planted failures with a wrong workflow path."
+
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 2
+    title: "The history scan misses public refs and the credential types this agent-run repository is most likely to leak"
+    evidence:
+      - artifact: "research.md R-08: patterns npm, GitHub, PEM, AWS, Slack, .npmrc auth; scan `git log -p -m <commit>` (reachable from the checked commit only); 'No generic high-entropy rule'"
+      - artifact: "sources/issue-11.md: 'the history contains no secrets'; spec.md Assumptions: 'The repository is public'"
+      - code: "Probe: `git log --format='%an <%ae>'` shows commits by an agent identity (Claude) alongside the operator; agent sessions run with API-key-bearing environments, and the repository's own .claude/settings.json denies Read(./.env) because such files exist in working trees"
+    claim: |
+      The repository is already public, so every pushed branch (many `claude/*` branches) and every pull-request head
+      is publicly readable, but the scan covers only commits reachable from the release commit. A secret committed on
+      an abandoned branch is public and never reported. The pattern set also has no rule for the keys an agent-driven
+      workflow handles: Anthropic (`sk-ant-`), OpenAI-style `sk-` project keys, Google API keys (`AIza`), and generic
+      `*_API_KEY=` / `*_TOKEN=` assignments with a literal value in env-style files. Dropping high-entropy matching is
+      reasonable; dropping these well-structured prefixes is not.
+    remedies:
+      - "Add rules for `sk-ant-` keys, `sk-proj-`/`sk-` keys of the documented shape, `AIza` + 35, and an env-file assignment rule (`[A-Z_]*(KEY|TOKEN|SECRET)=` followed by a literal, not `${...}`) to R-08, each with a fail plant. Give the readiness gate an `--all-refs` mode (scan `git log --all` of a fresh mirror clone, which includes refs/pull/*) that RELEASING.md's readiness step makes the operator run before O7, and state that the per-PR gate keeps the reachable-only scope."
+
+  - id: PLAN-A11Y-SECURITY-1-009
+    severity: 2
+    title: "The install check loads the published browser build without the strict CSP and without blocking the network, so the plan's Principle IV claim is unproven"
+    evidence:
+      - artifact: "plan.md § Constitution Check IV: 'the install check loads browser.js from the installed package with no network'"
+      - artifact: "research.md R-11 / contracts/install-check.md: 'load browser.js + tokens.css + base.css in Chromium and check ocelle-button is defined'; how the page is served, which headers it gets and whether requests are blocked is not stated"
+      - code: "packages/elements/test/browser/serve.ts:9-14 already serves fixtures on 127.0.0.1 with `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` and records CSP violations and requests; gates/lib/story-page.ts:269-279 routes and aborts requests"
+      - code: "Chromium does not load `<script type=module>` from file:// URLs (origin null, blocked by CORS), so the check must serve the files over http; the plan does not say so"
+    claim: |
+      The install check is the only place where the bytes consumers receive are run in a browser. As planned it
+      asserts only that `ocelle-button` is defined, which would also pass if the published build injected an inline
+      style, used eval, or fetched a font from a CDN. The repository already has a strict-CSP server and request
+      recorder; not using it here leaves Constitution IV ("Elements make no network requests", "no exception") proven
+      only on a separate build (see 005) and never on the released package.
+    remedies:
+      - "In R-11 and contracts/install-check.md: serve the installed files from 127.0.0.1 with the constitution's CSP header (reusing the existing strict-CSP fixture pattern), abort and record every request not to that origin, and add rules csp-violation and network-request that fail the check on any CSP violation report or off-origin request, with stub-registry unit tests (a planted tarball whose browser build has an inline style and one that fetches a remote URL)."
+
+  - id: PLAN-A11Y-SECURITY-1-010
+    severity: 1
+    title: "The install check's credential stripping names three variables but npm reads any npm_config_* variable, case-insensitively"
+    evidence:
+      - artifact: "contracts/install-check.md: 'npm_config_userconfig and npm_config_globalconfig set to empty temporary files, NODE_AUTH_TOKEN, NPM_TOKEN and npm_config__authToken removed'"
+      - code: "actions/setup-node with registry-url (used in the release job design, contracts/release-workflow.md) exports NPM_CONFIG_USERCONFIG in upper case and a NODE_AUTH_TOKEN placeholder; npm config also accepts keys such as `npm_config_//registry.npmjs.org/:_authToken` from the environment"
+    claim: |
+      FR-030 requires no token "in any user, project or environment configuration". Removing three named variables
+      and setting two lower-case ones leaves upper-case NPM_CONFIG_* and per-registry `_authToken` keys in the child
+      environment, and leaves which of two differently cased userconfig variables wins to npm. The proof of "installs
+      with no token" is then weaker than it reads.
+    remedies:
+      - "Build the child environment from an allow list (PATH, HOME set to the temporary directory, the two empty config files, proxy and CA variables if present) instead of removing named variables; drop every variable matching /^npm_config_/i, NODE_AUTH_TOKEN, NPM_TOKEN and GITHUB_TOKEN; add a unit test that a planted NPM_CONFIG_//registry...:_authToken in the parent does not reach the child."

@@ -1,0 +1,143 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 4
+    title: "release.yml's gates job reruns the Sign-off gate over main's squash-merge history, which always fails, so no release can ever reach the publish job"
+    evidence:
+      - artifact: "research.md § R-10 item 1: `gates`: `uses: ./.github/workflows/ci.yml` ... `base` is the previous release tag, or the commit before this mission's merge for the first release ... so the sign-off and mutation gates cover what the release adds"
+      - artifact: "contracts/release-workflow.md § ci.yml change: jobs read `inputs.base || github.event.pull_request.base.sha` (same for head). No other change"
+      - code: ".github/workflows/ci.yml (job signoff): `pnpm run gate:signoff -- --range \"$BASE..$HEAD\"`; gates/bin/signoff.ts checkCommits exempts only commits with more than one parent and the root commit"
+      - code: "git log --first-parent main: every commit on main is a single-parent squash merge, author `Jeroen Nouws <34285209+MOES-Media@users.noreply.github.com>`, committer `GitHub <noreply@github.com>`; 183b20f9 has no Signed-off-by line, 7c081d12 has only agent and other-email sign-offs"
+      - code: "probe: `node gates/bin/signoff.ts --range ff85ae56..183b20f9` -> `183b20f9...: signoff: no-signoff ...`, `7c081d12...: signoff: signoff-mismatch: Signed-off-by Triage Tara <codex@openai.com> does not match the author Jeroen Nouws <...noreply...>`, exit 1"
+      - code: "git tag -l: no tag exists, so for the first release there is no previous tag; release.yml is triggered by a tag push and has no inputs, and a reusable-workflow job (`uses:`) has no steps, so `base` must come from a hard-coded SHA or an earlier job's output; neither is in the planned job list (gates, prepare, publish, install-check)"
+    claim: |
+      The Sign-off gate (spec 001 FR-023) checks the pull request's branch commits. On main, the operator squash-merges
+      every pull request. The resulting commit is authored by the operator's GitHub noreply identity and has a single
+      parent, and its message either has no sign-off or carries the branch's sign-offs for other identities. Any range
+      that ends on a tag on main and starts at an earlier commit on main therefore holds at least one squash commit
+      (this mission's own merge, at minimum), and the gate reports it. The release workflow's `gates` job then fails on
+      every tag, `prepare` and `publish` never run, and #11 cannot ship. The plan also never says how a tag-triggered
+      workflow gets its `base` value. FR-022's "confirm ... passed on the tagged commit" cannot be met by looking it up,
+      because squash commits on main carry no check runs of their own (checks ran on the pull request's merge ref).
+    remedies:
+      - "State in research R-10 that, in a `workflow_call` run, the Sign-off job is skipped (with its reason: a pull-request history rule that main's squash merges cannot meet, already enforced on every PR before merge, and main's ruleset requires it) or runs with an explicit exemption for first-parent commits committed by `GitHub <noreply@github.com>`. Add a release-workflow gate rule and plant so the exemption cannot spread to pull-request runs, and say which of the two the release procedure relies on."
+      - "Add a `release-base` job before `gates` that computes `base` (the previous `v*` tag reachable from the tag, else a SHA recorded in a committed file the release procedure names) and passes it as a `needs` output to the `workflow_call` inputs. Have the release-workflow gate check that `gates` gets its inputs only from that job."
+
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "The secret allow list is keyed by commit SHA, but main squash-merges and the gate scans merges with -m, so this mission's own fixtures make Release readiness red on main after merge"
+    evidence:
+      - artifact: "data-model.md § Secret allow-list entry: `{ commit, path, rule, reason }` ... `commit` a full SHA. An entry that matches no hit is a finding (stale)"
+      - artifact: "research.md § R-08: `git log -p -m --no-color --no-ext-diff <commit>` ... scans added lines; plan D3: readiness is a required merge gate on every pull request"
+      - artifact: "contracts/release-readiness-gate.md § Plants: `fail-secret-npm`, `fail-secret-github`, `fail-secret-private-key`, `fail-secret-npmrc`, `fail-secret-deleted-later`; data-model.md § pack-contents plant `fail-npmrc`; the unit tests of gates/lib/secret-scan.ts need the same strings"
+      - code: "git log --first-parent main: every pull request lands as one new squash commit (committer GitHub), so no branch commit SHA is reachable from main after merge"
+      - code: "probe: `git log -p -m --no-color HEAD | grep '^+' | grep -E '_authToken=|_auth='` already hits this mission's own research.md line `(`_authToken=` or `_auth=` followed by a literal ...)`, where `_authToken=` is followed by a backtick, which is a literal"
+    claim: |
+      To prove that the scan fails, this mission must commit text that matches its own rules: plant inputs, unit-test
+      fixtures and the fake `.npmrc` of the pack-contents plant. The real gate scans the repository's whole history,
+      so it finds those files, and the only escape the plan offers is an allow-list entry that names the commit SHA.
+      That SHA does not exist until the commit is made, and every branch SHA disappears when the operator
+      squash-merges, so on main each entry goes stale (itself a finding) and the squash commit's hit has no entry.
+      `-m` adds further hits: when main is merged into a branch, the merge commit's diff against the branch parent
+      shows main's fixture files again under a new SHA. The result is that the required gate turns red on main, and on
+      every pull request after it, the moment this mission merges.
+    remedies:
+      - "Require every secret-shaped test and plant input to be assembled at run time (for example `'npm' + '_' + 'x'.repeat(36)` in tests, and a plant format that names the rule rather than storing the literal), add a test-lint-style rule or a readiness plant that proves a literal fixture is caught, and key any remaining allow-list entry by path, rule and a hash of the matched value rather than by commit."
+      - "Scan with `--first-parent`, or without `-m`, so that merges contribute no hits of their own, and state why a secret can then still not hide in a merge (an evil merge is the residual risk; name it)."
+
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "The plant forms named for the readiness and pack-contents gates cannot carry the inputs those plants need"
+    evidence:
+      - artifact: "contracts/release-readiness-gate.md: Plant form `commit-repo` (a plant is a small repository with history, as the sign-off gate's plants are, so the history scan has commits to read); inputs gap-rows.json, the gap-table source, manifests, changelogs, custom-elements.json, token source, styles CSS, specs/*/verification.md"
+      - code: "gates/lib/plant-repo.ts buildCommitRepo: every commit is made with `commit-tree` on the empty tree (`hash-object -t tree -w /dev/null`); commits.txt records carry only author, parent, merge and message headers (parseCommits rejects any other header)"
+      - code: "specs/001-repository-foundation/contracts/plants.md line 39: `commit-repo` (sign-off): an empty base commit, then one commit per record of commits.txt"
+      - artifact: "contracts/pack-contents-gate.md: Plant form `workspace` (the plant is a workspace tree with the three package directories; the gate builds and packs it); plants `fail-export-missing` ... `break-build-fails`"
+      - code: "gates/lib/plant-runner.ts plantValues: a `workspace` plant is only a copy of the plant directory (`{plant}`); pins plants such as gates/plants/pins/fail-workspace-caret hold package.json files and a lockfile, no sources and no node_modules"
+    claim: |
+      A `commit-repo` plant has commits but no files, so none of the readiness plants (`fail-secret-*` and
+      `fail-row-unmet`, which also need file content, plus `fail-changelog-*` and `fail-version-skew`) can be expressed
+      in it. A `workspace` plant is a bare copy with no `tsc`, `vite` or package sources, so a pack-contents plant that
+      the gate "builds and packs" stops at the build step: every fail plant exits 2 (could not run) instead of 1, and
+      the plant job reports it as a wrong verdict. Both gates need a new or extended plant form (files per commit for
+      readiness; prebuilt trees or tarballs for pack contents). That changes spec 001's plants contract, and neither
+      the plan's phases nor FR-044's amendment list includes the change.
+    remedies:
+      - "Readiness: extend `commit-repo` (in spec 001 contracts/plants.md, by amendment) so that a record can carry a `tree/` of files, or add a `history-tree` form. Plan its test-first change, with plant-repo integration tests, as a task in US2."
+      - "Pack contents: run the plants through `--tarballs` with committed prebuilt package trees that the plant runner packs (no build), keep one breaking plant for the build path, and name the form in contracts/pack-contents-gate.md."
+
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "The --rehearse proof omits FR-034's 'no provenance attestation' planted failure on real registry inputs"
+    evidence:
+      - artifact: "spec.md FR-034: fail ... on each planted failure: a package version with no provenance attestation, an attestation that names another repository, and an attestation that names a commit other than the expected one; SC-008: fails on 3 of 3 planted failures ... on real registry inputs"
+      - artifact: "contracts/install-check.md `--rehearse`: one run that must pass, one with another repository and one with another commit that must each fail; data-model.md § Provenance reference: one package `{ name, version, repository, commit }`"
+      - artifact: "research.md § R-11: the missing-attestation case is covered only by the stub-registry unit test"
+    claim: |
+      The rehearsal on real registry inputs covers two of FR-034's three planted failures. The missing-attestation
+      case is proven only against the stub, which FR-033 and FR-034 rule out as proof of FR-031 ("real registry
+      inputs"). SC-008's 3 of 3 cannot be reported. This is also the failure most likely to occur in practice: a
+      trusted publish that silently produced no attestation, or a publish made by the bootstrap path.
+    remedies:
+      - "Add a second reference to provenance-reference.json: a real public package version that has a registry signature and no provenance attestation. Have `--rehearse` require `attestation-missing` on it (a third must-fail run), and update SC-008's mapping in the plan."
+
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "`npm audit signatures` always initialises Sigstore TUF over the network, so the stub-registry unit tests are neither offline nor stub-only"
+    evidence:
+      - artifact: "research.md § R-11: unit tests with a stub registry (a Node http server in the test, no new dependency) cover: a pass, ... a bad registry signature (the stub's keys endpoint does not match ...)"
+      - code: "npm CLI lib/utils/verify-signatures.js (npm 10.9.9 bundled with Node 22 here): line 36 `await tufClient.initTUF({ cachePath: this.opts.tufCache, ... })` runs on every audit signatures; setKeys looks up `<host>/keys.json` in the Sigstore TUF repo first and falls back to `/-/npm/v1/keys`; pacote verifies provenance attestations against Sigstore's trust root"
+      - code: "package.json scripts: `setup:offline` exists (gates are expected to run without network once set up)"
+    claim: |
+      Each unit test that runs `npm audit signatures` against the stub reaches tuf-repo-cdn.sigstore.dev, so the tests
+      fail offline and are flaky in CI. A stub cannot produce a Sigstore-valid provenance bundle either, so the stub's
+      "pass with attestation" case cannot pass `npm audit signatures` at all. What the stub can honestly prove is the
+      registry-signature path, plus the plan's own decoding of the in-toto statement.
+    remedies:
+      - "Split the install check: inject the signature verifier (a real `npm audit signatures` adapter, covered by the --rehearse run against the public registry and recorded as a process boundary) and test the decision logic, the decoding and the stub's ECDSA key-mismatch case with a pre-seeded TUF cache or with the adapter replaced. State which network each test needs."
+
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "Story 4 scenario 4 (missing peer reported) is planned nowhere and does not hold for npm 7+ or pnpm's default auto-install-peers"
+    evidence:
+      - artifact: "spec.md User Story 4 scenario 4: Given @ocelle/elements installed without its peer, When the consumer's package manager resolves it, Then the peer requirement @ocelle/tokens@^1.0.0 is reported"
+      - artifact: "contracts/install-check.md: steps and rules (not-visible ... commit-mismatch) contain no peer check; research R-11 installs all three packages together"
+    claim: |
+      npm 7 and later installs missing peers automatically, and pnpm does too while `auto-install-peers` is at its
+      default of true. A consumer who adds only `@ocelle/elements` silently gets a `@ocelle/tokens` that satisfies
+      `^1.0.0`, and nothing is "reported". The scenario is untested as planned, and as worded it may be untestable.
+      What consumers actually need from it is that the packed peer range is right, and the pack-contents gate
+      (`peer-mismatch`) already proves that.
+    remedies:
+      - "Reword scenario 4 to an observable statement (the installed @ocelle/elements manifest declares peer @ocelle/tokens ^1.0.0, and installing @ocelle/elements alone with npm resolves @ocelle/tokens at 1.x). Add that as an install-check step and rule, `peer-unresolved`."
+
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "The 1.0.0 changelog date is fixed at US2 implementation time and ships, immutable, in the 1.0.0 tarballs"
+    evidence:
+      - artifact: "plan.md § Phases 2: the 1.0.0 changelog entries are written here (dated the day the phase is implemented; R-09 allows any date); research R-09: `## <version> - <YYYY-MM-DD>` heading, no relation to the tag date"
+      - artifact: "plan.md: the release itself (O3 to O8) happens after the mission's pull request is merged; the gates job, the review squad and the review rounds sit in between"
+      - code: ".specify/memory/constitution.md line 108: Every release has a changelog entry per package that names surface changes"
+    claim: |
+      The date in the heading claims a release day. With this plan it records the day an agent wrote the phase, which
+      can be weeks before the operator pushes `v1.0.0`, and a published version can never be corrected. `--tag` also
+      forces "Unreleased" to be empty, so a final pre-tag pull request is needed in any case. That pull request is the
+      natural place to set the date, but the plan never schedules it.
+    remedies:
+      - "Have `--tag` require the entry's date to be no earlier than the tagged commit's commit date (finding `changelog-date-stale`), and list in RELEASING.md a pre-tag pull request that sets the date and empties Unreleased."
+
+  - id: PLAN-FRESH-1-008
+    severity: 1
+    title: "The npm-publish environment must leave 'Prevent self-review' off, or the sole reviewer cannot approve their own tag push"
+    evidence:
+      - artifact: "data-model.md § Protected environment: Required reviewer: the operator; spec.md O7: push the v1.0.0 tag ... and approve the environment deployment"
+    claim: |
+      GitHub environments have a "Prevent self-review" option. The operator both triggers the run (by pushing the tag)
+      and is the only required reviewer, so with that option on, the deployment can never be approved, and the
+      2-day trusted-publisher window of D1 runs out. The plan's exact settings for O4 do not mention it.
+    remedies:
+      - "Name the setting in data-model.md § Protected environment and in RELEASING.md's O4: 'Prevent self-review' off (sole reviewer), with the reason."

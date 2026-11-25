@@ -1,0 +1,148 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The install check lives in gates/release/, which mutation testing never reaches"
+    evidence:
+      - artifact: "plan.md § Project Structure: 'gates/release/install-check.ts  # Story 4 (not a gate)'; contracts/install-check.md: 'node gates/release/install-check.ts'"
+      - code: "gates/lib/mutation/ranges.ts:27-43 scopePathspecs lists only packages/*, gates/bin, gates/lib, gates/visual, gates/eslint, gates/stylelint and storybook paths; ranges.ts:45 inScope regex `gates\\/(?:bin|lib|visual|eslint|stylelint)` excludes gates/release/. gates.json mutation scope: 'package source TypeScript and gate source changed since the base commit'."
+    claim: |
+      Constitution VIII requires changed source to be mutation-tested. The install check holds the most safety-relevant
+      new logic of the mission (provenance repository and commit comparison, retry bound, entry-point resolution,
+      the --rehearse self-judgement), yet a change under gates/release/ is not in the mutation gate's scope, so the
+      gate reports "nothing to mutate" for it and every surviving mutant there goes unseen. A comparison flipped to
+      always-equal would pass review.
+    remedies:
+      - "Put the install check's logic in gates/lib/install-check.ts (pure decisions: entry-point list, statement decode and compare, retry schedule, rehearse judgement) with a thin gates/bin/install-check.ts process boundary, as every other gate does; keep only data (JSON) in gates/release/. Update plan Project Structure, contracts/install-check.md and quickstart.md paths."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "The history secret scan will flag its own plants, fixtures and docs, and a commit-SHA allow list cannot survive squash merges"
+    evidence:
+      - artifact: "research.md § R-08: '.npmrc auth line (`_authToken=` or `_auth=` followed by a literal, not `${...}`)'; data-model.md § Secret allow-list entry: '{ commit, path, rule, reason }, all non-empty; commit a full SHA'; contracts/release-readiness-gate.md plants fail-secret-npm, fail-secret-github, fail-secret-private-key, fail-secret-npmrc"
+      - code: "Probe: `git grep -nE '_authToken=[^$]|_auth=[^$]' HEAD` hits specs/030-release-v1/research.md:124 (the rule's own description: '_authToken=` or ...'), i.e. the plan commit f2760d51 is already a finding under R-08's rule."
+      - code: "git log --oneline main: 183b20f9 'Mission 019 ... (#82)', 7c081d12 '(#72) (#81)', ff85ae56 '(#79)' are single squash commits, so branch commit SHAs do not reach main."
+    claim: |
+      The readiness gate scans every reachable commit on every pull request (D3). The plan commits literal npm,
+      GitHub, PEM and .npmrc credentials as plant and unit-test fixtures, and its own research text already matches
+      the .npmrc rule. Each needs an allow-list entry keyed by a full commit SHA, but the SHA is unknown until the
+      commit exists, changes on every amend or rebase of the branch, and does not exist on main after a squash
+      merge. Result: main turns red on merge (secret hits under new SHAs plus allowlist-stale), or the implementer
+      loosens the rules or the allow list to get green, which is exactly the vacuous gate Principle VIII forbids.
+      The plants cannot be written as planned without one of those outcomes.
+    remedies:
+      - "Never commit a literal credential: plant commits.txt (or the plant builder) and test fixtures assemble each secret at build/test time from split parts, so the repository history never holds a match; add a test that the repository's own history scans clean apart from the allow list. Narrow the .npmrc rule to files named .npmrc (or *.npmrc) so prose describing the rule is not a hit. Key allow-list entries by path, rule and blob hash (stable across rebase and squash), not by commit SHA, and update data-model.md and FR-011's wording in the plan accordingly."
+
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The chosen plant forms cannot build the planned plants"
+    evidence:
+      - artifact: "contracts/release-readiness-gate.md: 'Plant form commit-repo (a plant is a small repository with history, as the sign-off gate's plants are, so the history scan has commits to read)'; contracts/pack-contents-gate.md: 'Plant form workspace (the plant is a workspace tree with the three package directories; the gate builds and packs it)'; contracts/release-workflow.md: 'plant form repo-tree', pass plant pass-repository"
+      - code: "gates/lib/plant-repo.ts:640-650 buildCommitRepo: every commit is `git commit-tree <empty tree>`; no file content exists in any commit, so `git log -p` has no added line to scan and no gap-rows.json, manifest or changelog is in the checkout."
+      - code: "gates/bin/plants.ts:594 workspace form: `cp(plant, into)` only; no node_modules link, no repository files, so `pnpm --filter ./packages/* -r build` cannot run and every pack-contents plant would exit 2 (could not run)."
+      - code: "gates/lib/plant-repo.ts:35-107 configurationSet: root config files, package.json/tsconfig per package, token source, element src and manifest, storybook files; no .github/, gates/release/, specs/*/sources/, packages/*/CHANGELOG.md, packages/styles/src/*.css or specs/*/verification.md, so repo-tree pass-repository plants of release-workflow and release-readiness would see missing inputs."
+    claim: |
+      The plants are the only proof the three new gates can fail (SC-003, FR-006, FR-015, FR-026). As planned, the
+      readiness fail-secret-* and fail-secret-deleted-later plants have no file content to hold a secret, the
+      pack-contents fail plants all end in "could not run" instead of their named finding, and the release-workflow
+      and readiness pass-repository plants lack their inputs. None of the needed plant-form changes appear in the
+      plan's Project Structure (plant-repo.ts, plants.ts are not listed), so the implementer will either invent them
+      mid-phase or reshape the plants until they pass.
+    remedies:
+      - "Plan the plant-form work explicitly: (a) extend commit-repo so a commits.txt record can add, change and delete files (and readiness plants get a base tree with the gate's inputs), or add a new form; (b) make pack-contents plants run with `--tarballs <dir>` on committed small fixture package trees packed by the plant builder (no build), and prove the build path once in a gates-integration test; (c) add .github/workflows, .github/actions, gates/release/, the gap-table source, changelogs, styles src and verification.md files to the configuration set (or the gate's own plant tree). List plant-repo.ts, plants.ts and contracts/plants.md changes in the plan."
+
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "Provenance proof on real inputs omits the 'no attestation' planted failure and is never required to be green"
+    evidence:
+      - artifact: "spec.md FR-034 and SC-008: 'fails on 3 of 3 planted failures (no attestation, another repository, another commit) on real registry inputs'"
+      - artifact: "contracts/install-check.md --rehearse: 'one run that must pass, one with another repository and one with another commit that must each fail'; data-model.md Provenance reference holds one package only; research.md R-11 lists 'a missing attestation' only among stub-registry unit tests"
+      - artifact: "research.md R-10 / plan D5: the dry run is 'a named check but not required'; contracts/release-workflow.md prepare job runs 'install rehearsal from tarballs' but not --rehearse"
+    claim: |
+      The no-attestation case is exactly the one `npm audit signatures` does not catch on its own (a package with
+      no attestation passes it), so it is the one most in need of a real-input proof; the plan proves it only
+      against a stub whose response shape the test author invents. Moreover --rehearse judges its own outcomes in
+      one process (exit 0 if "all three behave") and runs only in a non-required check, so a red or skipped
+      rehearsal can merge, and release.yml never re-proves it before the approval; SC-008's "before the tag is
+      pushed" has no enforcement point.
+    remedies:
+      - "Add to provenance-reference.json a real public package version that has a registry signature but no provenance attestation, and make --rehearse require attestation-missing on it; have --rehearse print each case's expected and actual rule so the run is auditable; run --rehearse in release.yml's prepare job (before the environment approval) so a release cannot proceed without the proof on the day."
+      - "Alternatively make the provenance rehearsal a required check (accepting the registry-read dependency D5 avoided), and keep release.yml's prepare step as well."
+
+  - id: PLAN-TESTABILITY-1-005
+    severity: 3
+    title: "Publish ordering, gating and re-run safety live in untested workflow shell; the static gate has no rule that can fail on them"
+    evidence:
+      - artifact: "contracts/release-workflow.md publish job: 'for tokens, styles, elements: npm view name@v version && skip || npm publish tgz ...'; prepare job: 'ancestor-of-origin/main check; tag == v<version>' (inline steps)"
+      - artifact: "contracts/release-workflow.md gate rules: trigger, workflow-permissions, id-token-outside-publish, publish-not-in-environment, publish-extra-write, dry-run-can-publish, unpinned-action, persisted-credentials, secret-read, token-env, destructive-npm, file-missing. No rule on `needs`, artifact use, order, or the skip step."
+      - artifact: "spec.md US3 scenarios 1, 2, 4, 5; FR-022 'Any failure stops the workflow before the environment approval'; FR-023 'publish the tarballs the earlier job verified (not a rebuild), in the order'; FR-025"
+    claim: |
+      The properties that make the release safe are that publish cannot start unless prepare (and through it the
+      gates job) succeeded, that it publishes the downloaded verified tarballs in order without rebuilding, and that
+      a re-run skips already-published versions. As planned, a plant that deletes `needs: prepare`, adds a build
+      step to publish, reorders the loop or removes the skip would pass the release-workflow gate, and the
+      shell logic itself has no unit test and no mutation coverage. Scenarios 1, 2, 4 and 5 of US3 therefore have
+      no test that can fail before the one-shot release.
+    remedies:
+      - "Add gate rules with fail plants: publish-needs-prepare, prepare-needs-gates, install-check-needs-publish, publish-builds (no checkout/build/pack step in publish), publish-order (tokens, styles, elements), publish-verifies-checksums. Move the tag/version check, the ancestor check and the skip-or-publish loop into a gates/lib TypeScript module called from the workflow, unit-tested with an injected npm runner (already-published, partial, network error) and in mutation scope."
+
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "Story 2's independent test (exactly three unmet rows before mission 018) has no planned test, so the gap evidence can be vacuous"
+    evidence:
+      - artifact: "spec.md US2 Independent Test: 'run the readiness check on the current main (before mission 018 lands): it reports not-ready and names exactly three unmet gap-table rows ... #498 ... #509 ... #524 #526'"
+      - artifact: "data-model.md § Gap row: 'member, token and style-hook items are completed in the gap-rows task after main, with mission 018, is merged'; contracts/release-readiness-gate.md plant fail-row-unmet: '(an element removed from the manifest)' only; research.md R-06: 'the gate is green from its first commit on this branch'"
+      - code: "git cat-file -t 183b20f -> commit (the pre-018 main the data model names is in history, so it can be used as a fixture)."
+    claim: |
+      The evidence items are written after mission 018 has landed, by reading what exists, and the gate is green
+      from its first commit; no planned test ever runs the final gap-rows.json against a tree that lacks 018's
+      work. If row 6, 10 or 15 is given evidence that 018 did not add (for example only ocelle-progress for #498),
+      every planned test still passes and the readiness verdict proves nothing about #1's gaps. The spec's own
+      independent test is the check that would catch this, and the plan drops it.
+    remedies:
+      - "Add a gates-integration test (red first) that runs the readiness gap check with the committed gap-rows.json against the manifest, token source and stylesheets of 183b20f (git worktree or extracted fixture) and asserts exactly rows 6, 10 and 15 are reported gap-row-unmet, each naming the 018 evidence it expected, and every other row met."
+
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "FR-013's 'no public token missing from the changelogs' has no check that can fail"
+    evidence:
+      - artifact: "spec.md FR-013: 'finds no public element or token missing from the changelogs'; Edge Cases: 'the entries name every surface the manifest and token list contain'"
+      - artifact: "research.md R-09: 'Token names and base-style hooks are not compared one by one ... the tokens and styles entries must each be non-empty'"
+    claim: |
+      A token added after the changelog cut (the edge case the spec names) passes R-09 as long as the tokens entry
+      has any text, so no plant or test can fail for the token half of FR-013. Either the plan meets the requirement
+      with a comparison that can fail, or the spec must say tokens are not compared.
+    remedies:
+      - "Compare at a level that can fail: every token group (or name prefix) in source.ts must appear in packages/tokens/CHANGELOG.md, with a fail plant that adds a token in a new group not named there."
+      - "Operator amends FR-013 and the edge case to elements only, recording that tokens are covered by a non-empty entry."
+
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "Stub-registry tests define the attestation protocol themselves; real-shape coverage is thin"
+    evidence:
+      - artifact: "research.md R-11: 'Unit tests with a stub registry (a Node http server in the test, no new dependency) cover: a pass, a missing attestation, another repository, another commit, a bad registry signature'; contracts/install-check.md: '`npm audit signatures` (exit non-zero is a finding), then ... fetch the attestations and check the SLSA provenance statement'"
+    claim: |
+      The stub's packument, keys and attestations responses are written by the same author as the parser, so the
+      tests assert agreement with the author's model of npm, not with npm. If the stub advertises dist.attestations,
+      `npm audit signatures` tries to verify the sigstore bundle and fails for a reason other than the one under
+      test (repository-mismatch would surface as signature-invalid); if it does not, the tests exercise a shape the
+      real registry never serves. Either way a test can pass while the real check is wrong.
+    remedies:
+      - "Record real attestation responses (one with provenance, one without) from the registry as committed fixtures and test the pure decode-and-compare functions on them; have each stub test assert the specific rule line (repository-mismatch, commit-mismatch, attestation-missing, signature-invalid), not only a non-zero exit; state in research.md whether the stub advertises dist.attestations and how audit signatures is kept from masking the rule under test."
+
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "US4 scenario 4 (peer requirement reported) has no planned test and is not observable with npm"
+    evidence:
+      - artifact: "spec.md US4 scenario 4: 'Given @ocelle/elements installed without its peer, When the consumer's package manager resolves it, Then the peer requirement @ocelle/tokens@^1.0.0 is reported'"
+      - artifact: "contracts/install-check.md: installs all three packages with npm; no peer-absent case; plants of pack-contents check the packed peer value only"
+    claim: |
+      No test installs elements without tokens, and npm (7+) installs missing peers automatically rather than
+      reporting them, so the scenario as worded has no observable outcome under the planned tool. It will be
+      either skipped or 'tested' vacuously.
+    remedies:
+      - "Add an install-check rehearsal case that installs only the elements tarball with pnpm (strict peers) or `npm install --legacy-peer-deps` plus `npm ls` and asserts the reported missing peer @ocelle/tokens@^1.0.0; or reword the scenario to the packed peerDependencies value, which fail-peer-exact already proves."

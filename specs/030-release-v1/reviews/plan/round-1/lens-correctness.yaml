@@ -1,0 +1,188 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The provenance rehearsal omits FR-034's 'no attestation' planted failure, so SC-008 (3 of 3) cannot be met"
+    evidence:
+      - artifact: "spec.md FR-034: 'fail ... on each planted failure: a package version with no provenance attestation, an attestation that names another repository, and an attestation that names a commit other than the expected one'; SC-008: 'fails on 3 of 3 planted failures (no attestation, another repository, another commit) on real registry inputs'"
+      - artifact: "contracts/install-check.md `--rehearse`: 'one run that must pass, one with another repository and one with another commit that must each fail; exit 0 only if all three behave'; research.md R-11 'once with the right expectations (pass) and once each with a wrong repository and a wrong commit'; data-model.md provenance-reference.json holds one package only"
+      - code: "Plan, research and contracts searched for a real-registry input without an attestation: none. The only 'missing attestation' case is the stub-registry unit test (research.md R-11), which FR-034 does not accept ('on real registry inputs')."
+    claim: |
+      FR-034 and SC-008 need three planted failures on real registry inputs. The plan has two. A real registry version with
+      no provenance attestation is the case most likely to happen by accident (for example a publish without OIDC), and
+      it is the one the plan proves only against its own stub. SC-008 cannot be reported as met.
+    remedies:
+      - "Add a second reference to provenance-reference.json (a real public package version with no provenance attestation) and a third planted run to `--rehearse` that must fail with `attestation-missing`; update contracts/install-check.md, research.md R-11 and quickstart.md step 4."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 2
+    title: "Nothing makes the provenance proof (FR-034, SC-008) pass before the tag: it runs only in a non-required dry run"
+    evidence:
+      - artifact: "spec.md SC-008: 'Before the `v1.0.0` tag is pushed, the install check's signature and provenance verification passes ...'"
+      - artifact: "research.md R-10: the composite action release-prepare runs build, readiness, pack, pack-contents, `npm publish --dry-run`, the tarball rehearsal and SHA256SUMS (no `--rehearse`); `install-check --rehearse` runs only in release-dry-run.yml, which D5 makes 'not required'"
+    claim: |
+      The release path (release.yml prepare) never runs the provenance rehearsal, and the only workflow that does is a
+      check no merge waits for. A red rehearsal (for example the reference package's attestation format changed) can
+      sit on main unnoticed and the tag still goes out; SC-008 then has no evidence. The registry-dependency reason for
+      D5 is sound for merges but does not apply to the release, which reads the public registry anyway.
+    remedies:
+      - "Run `install-check --rehearse` in release.yml's prepare job (before the environment approval), so a failing proof stops the release; keep the dry run not required."
+      - "Keep the plan, but make RELEASING.md require a green 'Release dry run' run on the release commit as an explicit operator step before O7, and say so in research.md R-10."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "The planned plant forms cannot build the release-readiness and pack-contents plants the contracts list"
+    evidence:
+      - artifact: "contracts/release-readiness-gate.md: 'Plant form `commit-repo` (a plant is a small repository with history, as the sign-off gate's plants are, so the history scan has commits to read)'; plants fail-secret-npm, fail-secret-deleted-later, fail-row-unmet, fail-changelog-undated ..."
+      - code: "gates/lib/plant-repo.ts:634-656 buildCommitRepo: every commit is `git commit-tree <empty tree>`; parseCommits (:137-175) accepts only `author`, `parent`, `merge` headers and a message. A commit-repo plant has no files in any commit, so it cannot add a secret, a manifest, a changelog or gap-rows.json."
+      - artifact: "contracts/pack-contents-gate.md: 'Plant form `workspace` (the plant is a workspace tree with the three package directories; the gate builds and packs it)'; command takes `--root <dir>`"
+      - code: "gates/lib/plant-runner.ts:139-141 plantValues: a workspace plant gets only `{plant}` (a copy of the plant directory), never `{root}`; gates/gates.json pins uses `--plant {plant}`. specs/001-repository-foundation/contracts/plants.md:55 describes workspace plants as package.json(s), lockfile, pins files: no package source, no node_modules link for tsc and vite."
+    claim: |
+      Both gates' plant designs rest on plant forms that do not do what the contracts assume. The readiness gate needs
+      a working tree (manifest, token source, changelogs, gap rows) plus a history whose commits add file content;
+      commit-repo gives neither. The pack-contents gate needs a buildable workspace (tsc, vite, lit) and a `--root`
+      placeholder; the workspace form copies only the plant's own files and passes `{plant}`. Implementing either as
+      planned stalls at the first plant, or forces an unplanned change to spec 001's plant machinery mid-phase.
+    remedies:
+      - "Define the plant form each gate needs in the plan and in spec 001 contracts/plants.md (FR-044 amendment): e.g. extend commit-repo so a record can carry a `tree/` of files laid over the repo-tree configuration set; and either run pack-contents plants with `--tarballs` on fixture tarballs built at plant time, or add a form that lays package files over a full repository copy with node_modules linked and passes `--root`."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "The secret scan's own plants and test fixtures will be hits of the scan on this repository's history"
+    evidence:
+      - artifact: "research.md R-08: the gate scans every added line reachable from the commit for `npm_` + 36 alphanumerics, `gh[pousr]_` + 36, PEM private-key headers, ...; exceptions only by `{ commit, path, rule, reason }` with a full SHA (data-model.md secret allow-list entry); plants fail-secret-npm, fail-secret-github, fail-secret-private-key, fail-secret-npmrc"
+      - artifact: "spec.md FR-045: 'No new file in this mission may contain ... a credential'"
+      - code: "git log --merges main: 183b20f9, 7c081d12, ff85ae56 are merge commits, so branch commits (with their fixture files) stay reachable from main; CONTRIBUTING.md:22 asks contributors to `git rebase --signoff`, which rewrites SHAs."
+    claim: |
+      To prove the rules, plant files and gates/test fixtures must contain strings that match them. Committed to this
+      repository, they are added lines reachable from every later commit, so the required gate (D3) goes red on its own
+      fixtures on every pull request. The only way out the plan offers is per-commit allow-list entries, whose SHAs are
+      not known until the commit exists and change with every amend or `rebase --signoff` (then the entry is
+      'allowlist-stale' and the hit returns). The plan also does not say whether such fixtures count as a 'credential'
+      under FR-045, or how they pass GitHub's push protection.
+    remedies:
+      - "State in research.md R-08 that no fixture holds a matching literal: plants and tests build the token strings at run time from fragments (for example `'npm_' + 'A'.repeat(36)`), and add a test that the repository's own history scan passes; record this as the FR-045 reading."
+      - "Allow a path-scoped exception (`gates/plants/release-readiness/**`, `gates/test/**/secret-scan*`) in the allow list with a reason, and make the gate reject path exceptions elsewhere; amend data-model.md accordingly."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "The changelog comparison drops tokens, which FR-013 requires"
+    evidence:
+      - artifact: "spec.md FR-013: 'the plan's chosen comparison between the manifest and token list and the changelog finds no public element or token missing from the changelogs'; Edge Cases: 'the entries name every surface the manifest and token list contain'"
+      - artifact: "research.md R-09: 'Token names and base-style hooks are not compared one by one ... the tokens and styles entries must each be non-empty.'"
+    claim: |
+      The spec lets the plan choose how to compare, not whether to compare tokens. A non-empty tokens entry passes
+      even if a token family added by mission 018 or later is never named, which is the drift the edge case exists to
+      catch (constitution VII: token names are public surface). The plan contradicts FR-013 without saying so.
+    remedies:
+      - "Compare tokens at a level a hand-written changelog can meet: every token group/prefix in packages/tokens/src/source.ts (e.g. `--ocelle-color-*`, `--ocelle-space-*`) must appear in packages/tokens/CHANGELOG.md; add a plant `fail-changelog-missing-token-group`."
+      - "Keep R-09 and amend FR-013 and the edge case (spec change for the operator) to say tokens are checked for a non-empty entry only, with the reason."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "D3 makes readiness a third required gate, but the spec names two new gates and two new required checks"
+    evidence:
+      - artifact: "plan.md:66 'Three gates added to spec 001 FR-020 by amendment (FR-044)'; plan.md:140 D3 'Readiness is a required merge gate on every pull request'"
+      - artifact: "spec.md FR-044: 'gain the new gates (pack contents, release workflow static check)'; O6: 'Add the new required checks (FR-006, FR-026)'"
+    claim: |
+      The plan and the spec disagree on what the operator must add to the main ruleset and what spec 001 FR-020 gains.
+      If D3 is accepted, RELEASING.md written to FR-043/O6 omits 'Release readiness' from the required checks, and the
+      plant job's equal-sets rule then fails or the check is left optional.
+    remedies:
+      - "If the operator accepts D3, amend spec.md FR-044 and O6 (and FR-014's 'runnable ... in the release workflow' to add 'and as a pull-request gate') to name the readiness gate; otherwise drop the readiness entry from gates.json/ci.yml and plan.md:66."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "The constitution amendment adds a pin exception beyond FR-040 and Q1, yet Complexity Tracking cites Q1 as its approval"
+    evidence:
+      - artifact: "research.md R-14 / R-03: the amendment adds 'a peer range on a workspace package is the one exception to exact pins'; plan.md:149 lists 'exact pins for every dependency' under 'Approved: operator Q1 (a)'"
+      - code: "triage/decisions/030-q1-q6-release-design.md:5-6: Q1 covers 'goes public with 1.0.0' and 'publish token lives only in CI secrets' only; spec.md FR-040 lists the statements the amendment makes and the pin exception is not one of them; reviews/spec/check-1.md SPEC-1-09 raised this as a note and check-1-fixes.md does not address it."
+    claim: |
+      A new exception to a supply-chain rule is more than the PATCH clarification Q1 approved, and the spec's
+      Constitution-amendment requirement does not cover it. The plan presents it as already approved. Under the
+      governance section the exception needs the operator's approval and either FR-040 must name it or the version
+      bump must be argued (PATCH vs MINOR).
+    remedies:
+      - "Put the pin exception to the operator at the plan gate as its own decision; on approval, add it to FR-040's list and to Complexity Tracking with its own approval line, and state why it stays PATCH."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "release.yml has no way to give ci.yml its `base` input on a tag push"
+    evidence:
+      - artifact: "research.md R-10: 'gates: uses: ./.github/workflows/ci.yml ... `base` is the previous release tag, or the commit before this mission's merge for the first release (the release procedure names it)'"
+      - code: ".github/workflows/ci.yml mutation-plan, mutation-shard and signoff read `github.event.pull_request.base.sha` (BASE) and `head.sha`; on a push event these are empty."
+    claim: |
+      A `push: tags` run takes no inputs, and the release-workflow gate forbids `workflow_dispatch`, so a value 'named
+      by the release procedure' cannot reach the run. Without a computed base, the mutation and sign-off gates in the
+      release run get an empty base and either fail as 'could not run' (the release cannot proceed) or check the wrong
+      range. FR-022 ('every required merge-gate check ... or run them') depends on it.
+    remedies:
+      - "Add a first job in release.yml that computes `base` (the previous `v*` tag reachable from the commit via `git describe --tags --abbrev=0 <sha>^`, else a committed constant such as `gates/release/first-release-base`), outputs it, and pass `with: base: ${{ needs.<job>.outputs.base }}, head: ${{ github.sha }}`; add the rule to the release-workflow gate and contracts/release-workflow.md."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "The publish job has no bounded retry, and its skip test treats any registry error as 'not published'"
+    evidence:
+      - artifact: "spec.md Edge Cases: 'Registry outage or slow propagation. The publish job and the post-publish check retry for a bounded time and then fail with the package named; nothing is overwritten on re-run.'; FR-025; SC-005 'completes without an error from an already-published version'"
+      - artifact: "contracts/release-workflow.md:20 'npm view name@v version && skip || npm publish tgz ...'; research.md R-10 job 3 has no retry"
+      - code: "probe: `npm view lit@99.0.0 version` exits 1 (E404); a network or 5xx failure of `npm view` also exits non-zero, so the `||` branch publishes."
+    claim: |
+      Only the install check gets a retry bound. In the publish job, a transient `npm view` failure on a version that is
+      already on the registry leads to `npm publish`, which fails with 'cannot publish over the previously published
+      version': exactly the re-run failure FR-025 and SC-005 forbid. The edge case's retry for the publish job is not
+      planned at all.
+    remedies:
+      - "Specify in contracts/release-workflow.md that the publish step distinguishes E404 (publish) from other `npm view` failures (retry every 30 s up to a stated bound, then fail naming the package), and retries `npm publish` on a network error after re-checking with `npm view`; add a release-workflow gate or unit test of the publish script that covers it."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 1
+    title: "The publish and install-check jobs, as specified, lack what they need from the repository"
+    evidence:
+      - artifact: "contracts/release-workflow.md: publish 'no checkout; setup-node (pinned SHA, registry-url ...)'; install-check 'needs publish; permissions: contents: read; node gates/release/install-check.ts ...' with no checkout or setup step"
+      - code: ".github/actions/setup/action.yml takes Node from `node-version-file: .node-version` (26.13.0) and asserts it; without a checkout the publish job must hard-code the version, a second pin the pins gate does not check. install-check.ts lives in the repository and needs Playwright (a pinned devDependency) and its browser."
+    claim: |
+      The publish job would run an unpinned or duplicate-pinned Node (and so an unknown npm), and the install-check job
+      cannot run the script at all without a checkout and the setup action. Small, but the contracts are what the
+      release-workflow gate encodes.
+    remedies:
+      - "Publish job: sparse checkout of `.node-version` only (persist-credentials false) for setup-node, or a release-workflow rule that the hard-coded node-version equals .node-version. Install-check job: checkout (persist-credentials false) plus ./.github/actions/setup; write both into contracts/release-workflow.md."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "`release-readiness --commit <sha>` reads evidence from the working tree, not from that commit"
+    evidence:
+      - artifact: "contracts/release-readiness-gate.md: '`--commit` defaults to `HEAD`'; inputs are files on disk (gap-rows.json, the manifests, custom-elements.json, source.ts, styles, specs/*/verification.md)"
+      - artifact: "spec.md FR-010: 'repository evidence on the commit it checks'"
+    claim: |
+      With `--commit` other than HEAD, the history scan covers one commit and the gap rows, versions and changelogs are
+      read from another, so a 'ready' verdict can belong to no single commit.
+    remedies:
+      - "Drop `--commit` (the gate checks HEAD, the checkout), or read every input with `git show <commit>:<path>`; state which in the contract."
+
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 1
+    title: "Initial gap-row evidence names a wrong feature directory and spec items that cannot be met"
+    evidence:
+      - artifact: "data-model.md:57 row 1 (#492): 'spec 011 or the 008 feature dir'"
+      - code: "specs/008-overlays is the overlays feature (#16); #492 is owned by issue #8, met in specs/011-layout-headers. `ls specs/*/verification.md`: specs/003-base-styles has no verification.md, so a `spec` item for the base-style rows (14, 17) would be unmet."
+    claim: |
+      'Issue #8' was read as 'feature 008'. A `spec` evidence item pointing at 008, or at 003 for the prose and
+      identifier rows, makes those rows unmet (or met by the wrong record) and breaks SC-004's 17/17.
+    remedies:
+      - "Row 1: `spec` item `011-layout-headers` only. Rows 14 and 17: style-hook and token items only, or note that 003 has no verification.md."
+
+  - id: PLAN-CORRECTNESS-1-013
+    severity: 1
+    title: "Story 2 scenario 3 still lists a 'generic high-entropy secret the plan names'; the plan names none"
+    evidence:
+      - artifact: "spec.md:117 'a credential pattern (an npm token, a GitHub token, a private key block, or a generic high-entropy secret the plan names)'"
+      - artifact: "research.md:126 'No generic high-entropy rule: it would flag every baseline digest and lockfile integrity hash'"
+    claim: |
+      The plan's reason is sound, but the acceptance scenario now names a class of input the design will not detect.
+      A reviewer testing against the scenario would test it and file a finding.
+    remedies:
+      - "Reword the scenario to 'or a further pattern the plan names (research.md R-08: AWS key ids, Slack tokens, .npmrc auth literals)'."
