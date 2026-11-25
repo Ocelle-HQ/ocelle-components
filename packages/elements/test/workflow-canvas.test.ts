@@ -3240,7 +3240,14 @@ async function beginConnectionDrag(fixture: Fixture, id: string) {
   await commands.pointerPath([{ ...down, down: true }, end]);
   await settle(canvas);
   expect(map.hasPointerCapture(pointerId)).toBe(true);
-  expect(map.querySelector("path.connection-preview")).toBeInstanceOf(SVGPathElement);
+  const preview = map.querySelector("path.connection-preview");
+  const screenTransform = map.getScreenCTM();
+  expect(preview).toBeInstanceOf(SVGPathElement);
+  if (!(preview instanceof SVGPathElement) || screenTransform === null) throw new Error("Connection preview is not displayed");
+  const start = preview.getPointAtLength(0).matrixTransform(screenTransform);
+  const destination = preview.getPointAtLength(preview.getTotalLength()).matrixTransform(screenTransform);
+  expect(Math.hypot(start.x - down.x, start.y - down.y)).toBeLessThan(1);
+  expect(Math.hypot(destination.x - end.x, destination.y - end.y)).toBeLessThan(2);
   expect(fixture.requests).toEqual([]);
   return { end, map, pointerId };
 }
@@ -3262,20 +3269,37 @@ describe("workflow canvas named outcome editing in process", () => {
     const originalAction = action(canvas, "review");
 
     await openCommands(canvas);
-    await keyboardActivate(commandButton(canvas, "Edit connection"));
+    const trigger = commandButton(canvas, "Edit connection");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    await keyboardActivate(trigger);
     await settle(canvas);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
     const source = choice(canvas, "source", "review");
+    expect(source.getAttribute("aria-pressed")).toBe("false");
     expect(choice(canvas, "source", "backup").textContent).toContain("backup");
     await commands.press("Tab");
     expect(active()).toBe(source);
     await commands.press("Enter");
     await settle(canvas);
-    expect(choice(canvas, "outcome", "approved").textContent).toContain("approved");
+    expect(source.getAttribute("aria-pressed")).toBe("true");
+    const approved = choice(canvas, "outcome", "approved");
+    expect(approved.textContent).toContain("approved");
+    expect(approved.getAttribute("aria-pressed")).toBe("false");
     expect(choice(canvas, "outcome", "alternate").textContent).toContain("alternate");
-    await keyboardActivate(choice(canvas, "outcome", "approved"));
+    await keyboardActivate(approved);
     await settle(canvas);
+    expect(approved.getAttribute("aria-pressed")).toBe("true");
     assertNames(fixture);
     expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(true);
+    expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toBe("No connection");
+    expect(commandButton(canvas, "Apply connection").disabled).toBe(true);
+    const destination = choice(canvas, "destination", "publish");
+    expect(destination.getAttribute("aria-pressed")).toBe("false");
+    await chooseDestination(fixture, "publish");
+    expect(destination.getAttribute("aria-pressed")).toBe("true");
+    await chooseDestination(fixture, "publish");
+    expect(destination.getAttribute("aria-pressed")).toBe("false");
+    expect(commandButton(canvas, "Apply connection").disabled).toBe(true);
     await chooseDestination(fixture, "publish");
     expect(requests).toEqual([]);
     const connected = connectionRequest("connect", "publish");
@@ -3283,6 +3307,8 @@ describe("workflow canvas named outcome editing in process", () => {
     await keyboardActivate(commandButton(canvas, "Apply connection"));
     await settle(canvas);
     expect(requests).toEqual([connected]);
+    expect(active()).toBe(trigger);
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
     displayedConnection(canvas, "publish");
 
     const assigned = connectionRequest("reassign", "revise");
@@ -3293,6 +3319,7 @@ describe("workflow canvas named outcome editing in process", () => {
       await settle(canvas);
       await keyboardActivate(choice(canvas, "outcome", "approved"));
       await settle(canvas);
+      expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toContain("Connected to Destination");
       await chooseDestination(fixture, "revise");
       if (accept) canvas.addEventListener(connection, () => { acceptConnection(assigned, canvas); }, { once: true });
       await keyboardActivate(commandButton(canvas, "Apply connection"));
@@ -3307,6 +3334,7 @@ describe("workflow canvas named outcome editing in process", () => {
     await keyboardActivate(choice(canvas, "outcome", "approved"));
     await settle(canvas);
     await chooseDestination(fixture, "revise");
+    expect(commandButton(canvas, "Apply connection").disabled).toBe(true);
     await keyboardActivate(commandButton(canvas, "Apply connection"));
     expect(requests).toEqual([connected, assigned, assigned]);
     const disconnected = connectionRequest("disconnect", "revise");
@@ -3323,7 +3351,37 @@ describe("workflow canvas named outcome editing in process", () => {
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
   });
 
-  it.each(["current destination", "new relation", "removed outcome", "removed target", "removed source", "no visible survivor", "Escape", "read-only at dispatch"] as const)(
+  it("keeps named source, outcome and destination choices usable without positioned steps", async () => {
+    const fixture = await editingFixture();
+    const { canvas, requests } = fixture;
+    canvas.layout = [];
+    await settle(canvas);
+    const source = await startNamedEdit(fixture);
+    const approved = choice(canvas, "outcome", "approved");
+    await keyboardActivate(approved);
+    await settle(canvas);
+    expect(approved.getAttribute("aria-pressed")).toBe("false");
+    expect(canvas.shadowRoot?.querySelector("button[data-destination-id]")).toBeNull();
+    await keyboardActivate(source);
+    await settle(canvas);
+    expect(source.getAttribute("aria-pressed")).toBe("false");
+    expect(canvas.shadowRoot?.querySelector("button[data-outcome-id]")).toBeNull();
+    expect(choice(canvas, "source", "backup")).toBeInstanceOf(HTMLButtonElement);
+    await keyboardActivate(source);
+    await settle(canvas);
+    await keyboardActivate(choice(canvas, "outcome", "approved"));
+    await settle(canvas);
+    await chooseDestination(fixture, "revise");
+    await keyboardActivate(commandButton(canvas, "Apply connection"));
+    await settle(canvas);
+    expect(requests).toEqual([connectionRequest("connect", "revise")]);
+    displayedConnection(canvas);
+    canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.map((node) => ({ ...node, outcomes: [] })) };
+    await settle(canvas);
+    expect(canvas.shadowRoot?.querySelector("summary")).toBeNull();
+  });
+
+  it.each(["current destination", "new relation", "removed outcome", "removed target", "removed current destination", "removed source", "no visible survivor", "Escape", "read-only at dispatch"] as const)(
     "cancels a pending named edit with zero requests after %s",
     async (reason) => {
       const fixture = await editingFixture(reason === "new relation" ? undefined : "publish", reason !== "no visible survivor");
@@ -3349,6 +3407,9 @@ describe("workflow canvas named outcome editing in process", () => {
           break;
         case "removed target":
           canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "revise") };
+          break;
+        case "removed current destination":
+          canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
           break;
         case "removed source":
         case "no visible survivor":
@@ -3459,5 +3520,29 @@ describe("workflow canvas named outcome editing in process", () => {
     await settle(canvas);
     expect(requests).toEqual([connected]);
     expect(captured.map.querySelector("path.connection-preview")).toBeNull();
+  });
+
+  it.each(["read-only", "clip", "dangling connection"] as const)("refuses the original outcome target when host capture changes its %s admission", async (reason) => {
+    const { canvas, pane, requests, sheet } = await editingFixture("publish");
+    const map = mapOf(canvas);
+    const handle = connectionHandles(canvas);
+    const start = elementCenter(handle);
+    const end = elementCenter(action(canvas, "revise"));
+    const nativeHits: boolean[] = [];
+    const setCapture = vi.spyOn(map, "setPointerCapture");
+    pane.addEventListener("pointerdown", (event) => {
+      nativeHits.push(event.isTrusted && event.composedPath().includes(handle));
+      if (reason === "read-only") canvas.mode = "read-only";
+      else if (reason === "clip") sheet.insertRule("#canvas-pane { clip-path: inset(0 0 65% 0); }", sheet.cssRules.length);
+      else canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
+    }, { capture: true, once: true });
+    await commands.pointerPath([{ ...start, down: true }, end, { ...end, up: true }]);
+    const captures = setCapture.mock.calls;
+    setCapture.mockRestore();
+    await settle(canvas);
+    expect(nativeHits).toEqual([true]);
+    expect(captures).toEqual([]);
+    expect(requests).toEqual([]);
+    expect(map.querySelector("path.connection-preview")).toBeNull();
   });
 });
