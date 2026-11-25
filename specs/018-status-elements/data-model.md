@@ -93,15 +93,22 @@ Derived:
 - **observers** for truncation (`ResizeObserver` on the text span, the `.label` wrapper; a `MutationObserver` on the
   host; `slotchange` on the default slot) exist iff connected and mode ≠ static (R-09); the label read's observer
   above is separate.
-- **interactive host sheet** (the focus-ring clearance cap and margin; the host's `display: inline-grid` and the
-  `min-inline-size: 0` chain on host, control, `.icon-row` and text span; the disabled pill's `overflow-wrap:
-  anywhere`, R-07) is in `adoptedStyleSheets` iff mode ≠ static. While static the host is `inline-block` with no
-  `min-inline-size: 0` anywhere, so a flex row does not shrink it below its longest word, and the `.pill` (selected as
-  `.pill:not(.control)`) is `inline-size: fit-content; max-inline-size: 100%; box-sizing: border-box`, so a stretched
-  host does not stretch the visible pill (R-06). In every mode the text is in the slot convention's `.label` wrapper
-  and `iconSlotStyles` as merged aligns a labelled row on the label's first line (`.icon-row:not(.bare) > .label {
-  align-self: baseline }`), so a one-line pill sits on the surrounding baseline; the pill sets no row alignment of its
-  own (R-06, plan decision 15 as amended at the phase-1 recheck, Q2).
+- **interactive host sheet** (the focus-ring clearance cap and margin; the host's `display: inline-grid`; the enabled
+  text span's `white-space: nowrap; overflow: hidden; text-overflow: ellipsis` and the disabled one's `white-space:
+  normal; overflow: visible; text-overflow: clip`, R-07) is in `adoptedStyleSheets` iff mode ≠ static. The
+  `min-inline-size: 0` chain that lets a flex or grid parent shrink an enabled pill until it truncates is the merged
+  one, in every mode's styles: the text span's `min-inline-size: 0`, the `.icon-row`'s `max-inline-size: 100%`, and
+  the control's minimum `--ocelle-target-small` (FR-043), not 0; in Chromium the host's automatic minimum is then the
+  control's padding and border. A disabled pill's text keeps the merged `overflow-wrap: break-word`. The host's and
+  the `.icon-row`'s own `min-inline-size: 0` and the disabled text's `overflow-wrap: anywhere` are not written: no
+  Chromium layout tells them apart from the merged rules, and the flex-row, grid-track and long-word bodies pin the
+  behaviour (operator decision Q-P6-1 (a), reviews/phase-6/operator-decisions.md; reviews/phase-6/notes.md). While
+  static the host is `inline-block` with no `min-inline-size: 0` of its own, so a flex row does not shrink it below
+  its longest word, and the `.pill` (selected as `.pill:not(.control)`) is `inline-size: fit-content; max-inline-size:
+  100%; box-sizing: border-box`, so a stretched host does not stretch the visible pill (R-06). In every mode the text
+  is in the slot convention's `.label` wrapper and `iconSlotStyles` as merged aligns a labelled row on the label's
+  first line (`.icon-row:not(.bare) > .label { align-self: baseline }`), so a one-line pill sits on the surrounding
+  baseline; the pill sets no row alignment of its own (R-06, plan decision 15 as amended at the phase-1 recheck, Q2).
 
 Mode transitions (FR-035, R-08). Every passthrough step runs synchronously in the `interactive`/`href`
 `attributeChangedCallback` that changes the mode; rendering follows in Lit's update.

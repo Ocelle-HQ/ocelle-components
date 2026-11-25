@@ -1,0 +1,32 @@
+ RUN  v5.0.5 <worktree>
+ ❯ |elements-build| packages/elements/test/build/build.test.ts (31 tests | 1 failed) 4324ms
+   ❯ the module build of ocelle-pill-tag (018) (2)
+     × dist/ocelle-pill-tag.js imports lit, ./control.js, ./define.js, ./icon-slot.js, ./ocelle-tooltip.js and ./status.js, and no other element module nor the root, and dist/index.js imports it 20ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |elements-build| packages/elements/test/build/build.test.ts > the module build of ocelle-pill-tag (018) > dist/ocelle-pill-tag.js imports lit, ./control.js, ./define.js, ./icon-slot.js, ./ocelle-tooltip.js and ./status.js, and no other element module nor the root, and dist/index.js imports it
+AssertionError: expected { lit: true, …(2) } to deeply equal { lit: true, …(2) }
+- Expected
++ Received
+@@ -2,10 +2,9 @@
+    "lit": true,
+    "own": [
+      "./control.js",
+      "./define.js",
+      "./icon-slot.js",
+-     "./ocelle-tooltip.js",
+      "./status.js",
+    ],
+    "rootImportsIt": true,
+  }
+ ❯ packages/elements/test/build/build.test.ts:404:8
+    402|       own: imported.filter((specifier) => specifier.startsWith("./")),
+    403|       rootImportsIt: specifiers(read("index.js")).includes("./ocelle-p…
+    404|     }).toEqual({ lit: true, own: ["./control.js", "./define.js", "./ic…
+       |        ^
+    405|   });
+    406|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 38 passed (39)
+   Start at  16:12:23
+   Duration  15.22s (tests 97%, transform 2%, import 1%)

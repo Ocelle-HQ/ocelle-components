@@ -119,10 +119,14 @@ header too.
    `font-size-xs`, `line-height-snug`, `space-1` / `space-2`; `.icon-row` nested inside `.pill`, the icon scaled to
    `1lh`, so a pill with and without an icon has one height. A static pill's host is `inline-block`, its row capped
    and its text `overflow-wrap: break-word`, so a flex row does not shrink it below its longest word; the
-   `inline-grid` host and the `min-inline-size: 0` chain are the interactive host sheet's (operator decision on
-   PLAN-FRESH-2-002, (a); R-06, R-07). The static `.pill:not(.control)` is `inline-size: fit-content;
-   max-inline-size: 100%; box-sizing: border-box`, so a grid track or a flex column that stretches the host does not
-   stretch the visible pill (PLAN-FRESH-3-002); the interactive control still fills its host (012 FR-001).
+   `inline-grid` host is the interactive host sheet's (operator decision on PLAN-FRESH-2-002, (a); R-06, R-07), and an
+   interactive pill truncates through the merged `min-inline-size: 0` chain: the text span's `min-inline-size: 0`, the
+   row's `max-inline-size: 100%` and the control's `--ocelle-target-small` minimum (FR-043), with no `min-inline-size:
+   0` on the host, the control or the `.icon-row` and no `overflow-wrap: anywhere` on the disabled text (operator
+   decision Q-P6-1 (a): no Chromium layout tells them apart from the merged rules). The static `.pill:not(.control)`
+   is `inline-size: fit-content; max-inline-size: 100%; box-sizing: border-box`, so a grid track or a flex column that
+   stretches the host does not stretch the visible pill (PLAN-FRESH-3-002); the interactive control still fills its
+   host (012 FR-001).
 6. **Interactive looks** (R-07; operator decisions on PLAN-A11Y-SECURITY-1-005 (a) and -006 (a)): an interactive
    `pill` has a resting `color-accent-strong` border, a badge its status border; hover takes the status colour on a
    pill's border and the status ground as a badge's fill; active and pressed add an inset `bar-width` cue, and a pressed

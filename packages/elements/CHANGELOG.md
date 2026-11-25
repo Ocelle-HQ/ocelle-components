@@ -127,8 +127,8 @@ An enabled interactive `ocelle-pill-tag` truncates a text that does not fit with
   `data-ocelle-moved-*` mirrors, given back to the element when it becomes static; its methods `focus()` and `click()`;
   its event `ocelle-pill-tag-activate` (`detail` `{}`) before each activation's `click`; its custom states `pressed`
   and `current`; the token focus ring; a 24 px minimum target. Entry point `@ocelle/elements/ocelle-pill-tag.js`
-  (defines `ocelle-pill-tag` only). It reads the new tokens `--ocelle-line-height-snug` and `--ocelle-target-small` of
-  `@ocelle/tokens`.
+  (defines `ocelle-pill-tag`, and the `ocelle-tooltip` an interactive pill renders). It reads the new tokens
+  `--ocelle-line-height-snug` and `--ocelle-target-small` of `@ocelle/tokens`.
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer
