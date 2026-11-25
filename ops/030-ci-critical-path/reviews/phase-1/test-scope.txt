@@ -1,0 +1,11 @@
+gates/test/mutation-report.test.ts
+gates/test/mutation-shards.test.ts
+gates/test/mutation-split.test.ts
+gates/test/story-selection.test.ts
+gates/test/test-evidence-shards.test.ts
+gates/test/visual-timeout.test.ts
+gates/test/integration/test-workflow-evidence.test.ts
+ci-only gates/test/integration/visual.test.ts
+ci-only gates/test/integration/visual-findings.test.ts
+ci-only gates/test/integration/visual-cli.test.ts
+ci-only gates/test/integration/visual-capture.test.ts
