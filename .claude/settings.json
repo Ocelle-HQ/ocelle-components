@@ -31,6 +31,7 @@
       "Bash(.specify/extensions/squad/scripts/spec-status.sh:*)",
       "Bash(.specify/extensions/squad/scripts/status.sh:*)",
       "Bash(.specify/extensions/squad/scripts/analysis-status.sh:*)",
+      "Bash(tooling/speckit/bin/worktree-return-check.sh:*)",
       "Bash(pnpm install:*)",
       "Bash(pnpm test:*)",
       "Bash(pnpm run:*)",
