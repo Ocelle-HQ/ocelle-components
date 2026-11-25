@@ -2935,6 +2935,67 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(restoredNames.some((name) => name.startsWith("Revise"))).toBe(true);
   });
 
+  it.each(["no change", "removed step", "removed position", "redirected focus", "partial viewport", "revealing viewport"] as const)(
+    "revalidates a trusted Step reveal when its native focus listener supplies %s",
+    async (response) => {
+      const { canvas, pane, before, after, requests } = await mount(true);
+      const reveal = await askReveal(canvas, "revise");
+      const { picker } = revealControls(canvas);
+      const proposed = lastViewport(requests);
+      const proposal = presentationRequest(viewport, { viewport: proposed });
+      expect(requests).toEqual([proposal]);
+      expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(true);
+
+      const original = { graph: canvas.graph, layout: canvas.layout, viewport: canvas.viewport, selection: canvas.selectedNodeId };
+      const suppliedGraph = response === "removed step" ? { ...original.graph, nodes: original.graph.nodes.filter(({ id }) => id !== "revise") } : original.graph;
+      const suppliedLayout = response === "removed position" ? original.layout.filter(({ nodeId }) => nodeId !== "revise") : original.layout;
+      const suppliedViewport = response === "revealing viewport" ? proposed : response === "partial viewport"
+        ? { ...proposed, x: Math.trunc(proposed.x / 2), y: Math.trunc(proposed.y / 2) } : original.viewport;
+      const needsRequest = response === "no change" || response === "partial viewport";
+      const scroll = [pane.scrollLeft, pane.scrollTop];
+      const native: { event: string; trusted: boolean }[] = [];
+      before.focus({ preventScroll: true });
+      expect(active()).toBe(before);
+      pane.addEventListener("mousedown", (event) => {
+        if (event.composedPath()[0] === reveal) event.preventDefault();
+      }, { capture: true, once: true });
+      pane.addEventListener("click", (event) => {
+        if (event.composedPath()[0] === reveal) native.push({ event: "click", trusted: event.isTrusted });
+      }, { capture: true, once: true });
+      reveal.addEventListener("focus", (event) => {
+        native.push({ event: "focus", trusted: event.isTrusted });
+        canvas.graph = suppliedGraph;
+        canvas.layout = suppliedLayout;
+        canvas.viewport = suppliedViewport;
+        if (response === "redirected focus") after.focus({ preventScroll: true });
+      }, { once: true });
+      await click(reveal);
+      await settle(canvas);
+
+      expect(native).toEqual([{ event: "click", trusted: true }, { event: "focus", trusted: true }]);
+      const expected = needsRequest ? [proposal, proposal] : [proposal];
+      expect(requests, "the native Step activation uses the live host decision before requesting a viewport").toEqual(expected);
+      expect(canvas.graph).toBe(suppliedGraph);
+      expect(canvas.layout).toBe(suppliedLayout);
+      expect(canvas.viewport).toBe(suppliedViewport);
+      expect(canvas.selectedNodeId).toBe(original.selection);
+      const retained = response === "redirected focus" ? after : response === "removed step" || response === "removed position" ? picker : reveal;
+      if (response === "revealing viewport") expect(focusId(canvas)).toBe("revise");
+      else expect(active()).toBe(retained);
+      expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+
+      canvas.graph = original.graph;
+      canvas.layout = original.layout;
+      canvas.viewport = proposed;
+      await settle(canvas);
+      expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
+      if (needsRequest || response === "revealing viewport") expect(focusId(canvas)).toBe("revise");
+      else expect(active(), "a later host viewport cannot complete an abandoned Step reveal").toBe(retained);
+      expect(requests).toEqual(expected);
+      expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    },
+  );
+
   it.each([
     { name: "clipped enabled", offset: -1000, disabled: false, inView: false },
     { name: "visible disabled", offset: 0, disabled: true, inView: true },

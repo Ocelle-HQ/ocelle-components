@@ -518,6 +518,70 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     expect(await finish()).toEqual(clean);
   });
 
+  it.each(["removed position", "revealing viewport"] as const)("uses a focus-time host %s on a native Step reveal under strict CSP", async (response) => {
+    const { page, finish } = await mount(true);
+    const canvas = page.locator("#canvas");
+    const picker = page.getByRole("combobox", { name: "Step" });
+    const reveal = page.getByRole("button", { name: "Reveal step" });
+    await picker.selectOption("revise");
+    await reveal.focus();
+    await page.keyboard.press("Enter");
+    const initial = await requests(page) as readonly { type: string; detail: WorkflowCanvasViewportRequestDetail }[];
+    const proposal = initial[0]?.detail.viewport;
+    if (proposal === undefined) throw new Error("The initial native reveal needs one withheld viewport");
+    expect(initial).toEqual([{ type: viewport, detail: { viewport: proposal } }]);
+    expect(await focusedId(page)).toBeNull();
+    await page.getByRole("button", { name: "Before canvas" }).focus();
+    const original = await controlledState(canvas);
+
+    await reveal.evaluate((button, { response, proposal }) => {
+      const root = button.getRootNode();
+      const element = root instanceof ShadowRoot ? root.host : null;
+      if (element?.localName !== "ocelle-workflow-canvas" || element.parentElement === null) throw new Error("The host pane and Reveal are required");
+      const canvas = element as OcelleWorkflowCanvas;
+      const native: { event: string; trusted: boolean }[] = [];
+      element.parentElement.addEventListener("mousedown", (event) => {
+        if (event.composedPath()[0] === button) event.preventDefault();
+      }, { capture: true, once: true });
+      element.parentElement.addEventListener("click", (event) => {
+        if (event.composedPath()[0] === button) native.push({ event: "click", trusted: event.isTrusted });
+      }, { capture: true, once: true });
+      button.addEventListener("focus", (event) => {
+        native.push({ event: "focus", trusted: event.isTrusted });
+        canvas.dataset.nativeStepReveal = JSON.stringify(native);
+        if (response === "removed position") canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "revise");
+        else canvas.viewport = proposal;
+      }, { once: true });
+    }, { response, proposal });
+    await reveal.click();
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+      await element.updateComplete;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
+    });
+    expect(JSON.parse(await canvas.getAttribute("data-native-step-reveal") ?? "null") as unknown).toEqual([
+      { event: "click", trusted: true }, { event: "focus", trusted: true },
+    ]);
+    expect(await requests(page), "the built Step reveal does not send a stale viewport request during its own focus").toEqual(initial);
+    expect(await controlledState(canvas)).toEqual(response === "removed position"
+      ? { ...original, layout: original.layout.filter(({ nodeId }) => nodeId !== "revise") } : { ...original, viewport: proposal });
+
+    if (response === "removed position") {
+      expect(await picker.evaluate((element) => element.matches(":focus"))).toBe(true);
+      await canvas.evaluate(async (element: OcelleWorkflowCanvas, { layout, proposal }) => {
+        element.layout = layout;
+        element.viewport = proposal;
+        await element.updateComplete;
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
+      }, { layout: original.layout, proposal });
+      expect(await picker.evaluate((element) => element.matches(":focus"))).toBe(true);
+    } else {
+      expect(await focusedId(page)).toBe("revise");
+    }
+    expect(await requests(page)).toEqual(initial);
+    expect((await controlledState(canvas)).scroll).toEqual(original.scroll);
+    expect(await finish()).toEqual(clean);
+  });
+
   it("recovers focus to the visible named picker when the idle strict-CSP host clips the reveal button", async () => {
     const { page, finish } = await mount(true);
     const canvas = page.locator("ocelle-workflow-canvas");
