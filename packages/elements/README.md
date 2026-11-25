@@ -1443,7 +1443,10 @@ its host. On a touch screen a truncated pill shows no tooltip, as `ocelle-toolti
 stays its accessible name. A pill that becomes truncated while its inner control has keyboard focus shows its tooltip
 only once focus leaves it and comes back, or when the pointer rests on it. A late font load that turns an exactly
 fitting text into an overflowing one is seen at the next change of the pill's inline size or text. A truncated pill
-with a `title` shows the browser's own tooltip beside its own, which already shows its full text.
+with a `title` shows the browser's own tooltip beside its own, which already shows its full text. In button and link
+mode, where `ocelle-tooltip` wraps the inner control, a `slotchange` of the pill's slots stops at the pill, a forwarded
+slot's included: a host that forwards its own `<slot>` into an interactive pill hears that `slotchange` on the forwarded
+`<slot>` itself, not on an element or shadow root above the pill. A static pill lets it bubble on.
 
 An interactive pill also reads `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`,
 `--ocelle-color-disabled-bg`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`,

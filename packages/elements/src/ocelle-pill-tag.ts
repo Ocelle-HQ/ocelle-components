@@ -64,13 +64,15 @@
 //   (a `Range` over the slot's nodes) passing the span's inline end, re-measured in every `updated()` while interactive,
 //   by a `ResizeObserver` on the span (re-targeted when the render replaces it), by a `MutationObserver` on the element
 //   (`characterData`, `childList`, `subtree`) and on the default slot's `slotchange`; the observers end when the pill
-//   becomes static or is removed. The pill's own `slotchange` events stop at their slots: the tooltip would take them
-//   as a change of its trigger. The `min-inline-size: 0` chain is the merged one: the text span's own rule, the row's
-//   `max-inline-size: 100%`, the control's `--ocelle-target-small` minimum; in Chromium the host's automatic minimum is
-//   then the control's padding and border, and no rule of its own was observable (reviews/phase-6/notes.md).
+//   becomes static or is removed. While the pill is interactive its own `slotchange` events stop at their slots: the
+//   tooltip would take them as a change of its trigger (R-09; review round 1, R1-05). A static pill has no tooltip and
+//   lets them bubble, so a forwarded slot's `slotchange` reaches its host's shadow root. The `min-inline-size: 0` chain
+//   is the merged one: the text span's own rule, the row's `max-inline-size: 100%`, the control's
+//   `--ocelle-target-small` minimum; in Chromium the host's automatic minimum is then the control's padding and border,
+//   and no rule of its own was observable (reviews/phase-6/notes.md; operator decision Q-P6-1 (a)).
 // `status`, `variant` and `density` are attribute-backed accessors (R-02's pattern): an unknown value stays in the
-// attribute as written and the property reads the default. Importing this module defines `ocelle-pill-tag` and no
-// other element.
+// attribute as written and the property reads the default. Importing this module defines `ocelle-pill-tag` and the
+// `ocelle-tooltip` it renders around an interactive pill's control (FR-034), and no other element.
 import { LitElement, css, html, nothing } from "lit";
 import { MovedAttributes, controlState, controlStyles, guardHost, linkHref, resolveIds } from "./control.ts";
 import { define } from "./define.ts";
@@ -131,16 +133,6 @@ function overflow(span: Element, nodes: readonly Node[]): number {
   const text = range.getBoundingClientRect();
   const box = span.getBoundingClientRect();
   return getComputedStyle(span).direction === "rtl" ? box.left - text.left : text.right - box.right;
-}
-
-/**
- * Stops a `slotchange` of the pill's own slots where it is dispatched. The slots sit inside the inner control, which is
- * `ocelle-tooltip`'s trigger, and the tooltip takes any `slotchange` that reaches its own slot as a change of its trigger
- * (the first element assigned to the slot the event came from): a pill's text or icon changing would otherwise leave
- * the tooltip without its trigger, or with the icon as its trigger.
- */
-function stop(event: Event): void {
-  event.stopPropagation();
 }
 
 /** One constructed sheet of `interactiveStyles`, shared by every pill. */
@@ -631,11 +623,23 @@ export class OcellePillTag extends LitElement {
   }
 
   /**
+   * Stops a `slotchange` of the pill's own slots where it is dispatched while the pill is interactive (R-09; review
+   * round 1, R1-05). The slots then sit inside the inner control, which is `ocelle-tooltip`'s trigger, and the tooltip
+   * takes any `slotchange` that reaches its own slot as a change of its trigger (the first element assigned to the slot
+   * the event came from): a pill's text or icon changing would otherwise leave the tooltip without its trigger, or with
+   * the icon as its trigger. A static pill has no tooltip, so the event bubbles on, and a host that forwards its own
+   * `<slot>` into the pill hears it above the pill.
+   */
+  #stop(event: Event): void {
+    if (this.#modeNow() !== "static") event.stopPropagation();
+  }
+
+  /**
    * A change of the default slot: the label is read again and the truncation re-measured (a reassignment no observer
-   * records). The event stops at the slot, as the icon slot's does (`stop`).
+   * records). While the pill is interactive the event stops at the slot, as the icon slot's does (`#stop`).
    */
   #onSlotchange(event: Event): void {
-    event.stopPropagation();
+    this.#stop(event);
     this.#readLabel();
     this.#measure();
   }
@@ -714,7 +718,7 @@ export class OcellePillTag extends LitElement {
   protected override render(): unknown {
     const mode = this.#modeNow();
     const classes = `pill status-${this.status} variant-${this.variant} density-${this.density}`;
-    const row = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon" @slotchange=${stop}></slot></span><span class="label"><slot @slotchange=${this.#onSlotchange}></slot></span></span>`;
+    const row = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon" @slotchange=${this.#stop}></slot></span><span class="label"><slot @slotchange=${this.#onSlotchange}></slot></span></span>`;
     if (mode === "static") return html`<span part="pill" class=${classes}>${row}</span>`;
     const value = (name: string): string | typeof nothing => this.#moved.get(name) ?? nothing;
     if (mode === "link") {

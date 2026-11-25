@@ -245,8 +245,10 @@ PLAN-A11Y-SECURITY-1-001, not chosen.
 `min-inline-size: 0` is set on the static host or the `.pill`: a flex row's automatic minimum for the pill is then its
 longest word, so a one-word pill such as "Blocked" beside a long name keeps its word on one line (US3-8), while in a
 block container or a grid track the capped row lets a long unbroken word break inside the pill (Edge Cases). The
-`min-inline-size: 0` chain the interactive pill needs to truncate (host, control, `.icon-row`, text span) and its
-`display: inline-grid` live in the interactive host sheet (R-07). Squad round 2's probes on Chromium 153 (14 px text,
+interactive pill's `display: inline-grid` lives in the interactive host sheet (R-07); it truncates through the same
+merged rules (the text span's `min-inline-size: 0`, the row's cap, and the control's `--ocelle-target-small` minimum,
+FR-043), with no `min-inline-size: 0` on the host, the control or the `.icon-row` (R-07, operator decision Q-P6-1
+(a)). Squad round 2's probes on Chromium 153 (14 px text,
 4/12 padding): in a 220 px flex row beside "Refactor the mission scheduler pipeline", the round-1 box (the chain in
 every mode and `anywhere`) gave a 45 to 50 px host with "Blocked" over three or four lines; this box gives 76 px and one
 line. A 34-letter word in a 100 px block container or grid track breaks inside the pill over three lines; the same box
@@ -324,8 +326,9 @@ with `iconSlotStyles` (005, as amended by 012 decision 33); `bare` only while th
 is set on `.pill` (the convention's one resizing route), so the row's block padding is 0, the 1lh-tall `.icon-slot`
 holds an icon one line tall, and a pill with and without an icon has the same height; the scenarios pin each
 density's height from the token values. The `.icon-row` has `max-inline-size: 100%` and the text span
-`min-inline-size: 0` so the text can wrap inside a capped pill (static); in interactive modes the interactive host
-sheet adds `min-inline-size: 0` on the `.icon-row` so the text can truncate (R-07, R-09). Sizes, all tokens:
+`min-inline-size: 0` so the text can wrap inside a capped pill (static); in interactive modes the same two rules let
+the text truncate, and the interactive host sheet adds no `min-inline-size: 0` on the `.icon-row` (R-07, R-09;
+operator decision Q-P6-1 (a): its plant survived every body, reviews/phase-6/notes.md). Sizes, all tokens:
 
 | | default | compact |
 |---|---|---|
@@ -463,12 +466,20 @@ static), and the pill sets no host attribute or custom state for it (FR-031), so
 constructable stylesheet that the pill adds to `shadowRoot.adoptedStyleSheets` on entry to an interactive mode and
 removes on → static (adopted stylesheets, CSP-safe, constitution IV). Since squad round 2 (operator decision on
 PLAN-FRESH-2-002, (a)) the same sheet, added after the static styles so that it wins on equal specificity, also
-carries what only an interactive pill needs: `:host { display: inline-grid; min-inline-size: 0; }` and
-`min-inline-size: 0` on the control, its `.icon-row` and its text span (the chain that lets a flex or grid parent shrink
-an enabled pill until it truncates, R-09), and, for a disabled interactive pill, which wraps instead (FR-033), the text
-at `white-space: normal; overflow-wrap: anywhere`, so that a host shrunk below a word still shows every character inside
-the pill (US5-6). A disabled interactive pill in a flex row can therefore break a short word, as the round-1 static
-pill did; it is the interactive pill's chain, not a static pill's. The block axis is the host's: the README carries
+carries what only an interactive pill needs: `:host { display: inline-grid; }`, an enabled pill's text span at
+`white-space: nowrap; overflow: hidden; text-overflow: ellipsis`, and, for a disabled interactive pill, which wraps
+instead (FR-033), the text back at `white-space: normal; overflow: visible; text-overflow: clip`, with the merged
+`overflow-wrap: break-word`, so that a host shrunk below a word still shows every character inside the pill (US5-6).
+The chain that lets a flex or grid parent shrink an enabled pill until it truncates (R-09) is the merged one: the text
+span's `min-inline-size: 0`, the `.icon-row`'s `max-inline-size: 100%` and the control's minimum
+`--ocelle-target-small` (FR-043; not 0, which would break the 24 px target); in Chromium the host's automatic minimum
+is then the control's padding and border. A disabled interactive pill in a flex row can therefore break a short word,
+as the round-1 static pill did. **Amended by operator decision Q-P6-1 (a)** (reviews/phase-6/operator-decisions.md):
+the `min-inline-size: 0` this section first gave the host, the control and the `.icon-row`, and the disabled text's
+`overflow-wrap: anywhere`, are not written, because no Chromium layout tells them apart from the merged rules
+(reviews/phase-6/notes.md: the host's and the row's plants survived the flex-row and grid-track bodies, and
+`anywhere` gave the same box as `break-word` in 13 layouts); the flex-row, grid-track and long-word bodies pin the
+behaviour. The block axis is the host's: the README carries
 012's clearance rule for a container that clips in the block direction. A scenario focuses a truncated pill inside an
 `overflow: hidden` container and checks the ring's box lies inside it; the `Truncated` story shows a focused truncated
 pill in a clipping container.
@@ -538,11 +549,14 @@ would be unreachable and its mutant equivalent); a pill-owned copy of the guard 
 ## R-09 Truncation and the tooltip (FR-033, FR-034)
 
 **Decision**: in an enabled interactive pill the text span has `white-space: nowrap; overflow: hidden;
-text-overflow: ellipsis; min-inline-size: 0` and the control `max-inline-size: 100%` of the host, which is capped as
-R-07 says and has `min-inline-size: 0` (the interactive host sheet, R-07), so a flex or grid parent can shrink it to
-the room left and it truncates there; in a disabled interactive pill the text wraps (`white-space: normal;
-overflow-wrap: anywhere`, R-07). In an auto-layout table a cell
-grows to its content's max-content width, so a pill there does not truncate; the README says truncation needs a
+text-overflow: ellipsis` and the merged `min-inline-size: 0`, the `.icon-row` the merged `max-inline-size: 100%`, and
+the control, the stretched item of the host's inline grid, the minimum `--ocelle-target-small` (FR-043); the host is
+capped as R-07 says, and in Chromium its automatic minimum is then the control's padding and border, so a flex or grid
+parent can shrink it to the room left and it truncates there. In a disabled interactive pill the text wraps
+(`white-space: normal`, with the merged `overflow-wrap: break-word`, R-07). No `min-inline-size: 0` is set on the
+host, the control or the `.icon-row`, and no `overflow-wrap: anywhere` (operator decision Q-P6-1 (a): no Chromium
+layout tells them apart from the merged rules; the flex-row, grid-track and long-word bodies pin the behaviour). In an
+auto-layout table a cell grows to its content's max-content width, so a pill there does not truncate; the README says truncation needs a
 definite inline size (a fixed table layout, a cell or column width) and scenarios pin the flex row and the grid track.
 
 Siblings in a flex row (operator decision on PLAN-FRESH-2-003, (a)): flex shrink is weighted by flex basis, so a
@@ -607,6 +621,23 @@ Render: `<ocelle-tooltip text=${fullText} ?disabled=${!truncated}>${control}</oc
 contract shows; the pill imports `./ocelle-tooltip.js` (so the pill's entry point defines the tooltip too). The text in
 the control is the slotted text (the contract's snippet renders `${this.text}`; the interface used, `text` and
 `disabled` and no `describes`, is the same).
+
+The pill's own `slotchange` events and the tooltip (found while going green in phase 6; review round 1, R1-05,
+operator decision "interactive only, and recorded"): the pill's slots (the `.label` wrapper's default slot and the
+`icon` slot) sit inside the inner control, which is slotted into `ocelle-tooltip` as its trigger, so a `slotchange` on
+them bubbles through the tooltip's own slot. 008's tooltip (`ocelle-tooltip.ts` 387-396) then takes the first element
+assigned to `event.target`, the slot the event came from, as its new trigger, where 008's contract
+(specs/008-overlays/contracts/elements-overlays.md, the trigger is "the first assigned element" of its own default
+slot) means its own slot: after a button ↔ link switch a text-only slot leaves it with no trigger, and an icon change
+makes the icon the trigger. **Decision**: while the pill is interactive, it stops each of its own slots' `slotchange`
+at the slot (`stopPropagation()` in the slot's listener, the mode read when the event is dispatched); a static pill has
+no tooltip and stops nothing. `ocelle-tooltip` is not changed (a triage item for 008: ignore a `slotchange` whose
+target is not its own slot). Side effect, stated in the README: in button and link mode a host that forwards its own
+`<slot>` into the pill hears that slot's `slotchange` on the forwarded `<slot>` itself, not on an element or shadow
+root above the pill; a static pill lets it bubble, as a plain element does. The US4-10, mode-switch and icon bodies
+kill the stop's removal; the forwarded-slot `slotchange` body kills both its removal and its extension to static mode.
+Alternatives: stopping in every mode (the phase-6 green commit `a6200bc3`: a static pill swallowed a forwarded slot's `slotchange` for no
+reason); changing the tooltip (outside this feature).
 
 Moved `title` and the tooltip (check-1 note): 012's FR-004 applies a moved `title` to the inner control, so a
 truncated pill with a `title` would show both the native title and the tooltip. **Plan decision 8**: the moved `title`
