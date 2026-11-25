@@ -1,10 +1,10 @@
 ---
-analyzed_at: 2026-11-25T20:17:50Z
-head: faf84a8362b98a29be7cf170b72883cdab5506c2
+analyzed_at: 2026-11-25T20:19:29Z
+head: 4377fe9bf7cb313a51201f8e49007350ec6e14b2
 critical: 0
-high: 1
-medium: 2
-low: 1
+high: 0
+medium: 0
+low: 0
 coverage: 100
 ---
 
@@ -12,10 +12,15 @@ coverage: 100
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |---|---|---|---|---|---|
-| I1 | Inconsistency | HIGH | `plan.md` Workflow pilot checkpoint, `tasks.md` T001, T004 and T007 | The plan requires the exact reviewed workflow pin before the first worker-return check. T001 records setup and receipt fields, and T004 already verifies the two test returns. T007 first names pinning the active workflow after the two implementation returns. The task order can produce control-only handoff evidence without exercising the candidate at the planned checkpoint. | Make the reviewed candidate pin and matching verifier explicit prerequisites of the first candidate return check, and place that check before the corresponding stage. If test drafting and a control-only check begin earlier, label them as control evidence and task the later candidate comparison explicitly. |
-| I2 | Inconsistency | MEDIUM | `plan.md` Phase 1 ownership, Fixture behavior, `tasks.md` T005–T008 | The integration row expects both examples to pass the workers' assigned checks before shared CSS is added. The shared CSS supplies the bounded layout and hides the duplicated value in each Copy field. The full reading and geometry assertions can depend on that integration. | Name the worker-local acceptance that fits the owned story files and run the full layout, digest and focus assertions after the integration owner adds the shared CSS. Keep the canonical assertion expectations in the staged suite. |
-| U1 | Underspecification | MEDIUM | `spec.md` FR-004, `plan.md` Browser verification and focused scope, `tasks.md` T003 | T003 lists native Tab and focus continuation, while the approved plan also checks the actual accessible names and visible focus ring of each button at 320 CSS pixels. A keyboard test can exercise both payloads while leaving identical names or a clipped ring. | Carry the real role-and-name checks and the focus-ring visibility and bounds assertions for both controls into T003. |
-| I3 | Terminology | LOW | `spec.md` US2 and FR-002, `plan.md` Fixture behavior, `tasks.md` T003 | T003 uses Old/New for the digest labels. The spec and the approved plan use Previous/New. | Use Previous/New in the draft assertions and fixtures. |
+
+**Previous findings**
+
+| ID | Result | Evidence |
+|---|---|---|
+| I1 | Resolved | T001 records the control pin. T004 records the reviewed candidate before any candidate verification and labels early control checks as control evidence. T007 requires the reviewed pin before candidate behavior returns are verified, and T008 compares identical fixture code under the two workflows. |
+| I2 | Resolved | T007 assigns scope and sign-off checks before staging, then adds the shared layout and runs layout-dependent assertions on the integrated tree. Worker ownership stays with the two separate story files. |
+| U1 | Resolved | T003 names the actual Copy button labels, visible unclipped focus, both keyboard actions and focus continuation. The approved plan supplies the role, name and bounds oracles at 320 CSS pixels. |
+| I3 | Resolved | T003 uses Previous/New consistently with US2 and the approved plan. |
 
 **Coverage Summary Table**
 
@@ -24,7 +29,7 @@ coverage: 100
 | FR-001 | Yes | T002, T005, T007, T008 | Exact story IDs, prior and new values, and the explicit unchanged state. |
 | FR-002 | Yes | T003, T006, T007 | Named changes, digest pairs and reuse of the existing primitives. |
 | FR-003 | Yes | T002, T003, T007, T008 | Reading order, rendered text, narrow layout, light, dark and forced colors. |
-| FR-004 | Yes | T003, T006, T007, T008 | Canonical digest bytes, simulated host feedback and keyboard continuation. U1 makes two planned assertions explicit in the task. |
+| FR-004 | Yes | T003, T006, T007, T008 | Canonical digest bytes, named controls, visible focus, simulated host feedback and keyboard continuation. |
 | FR-005 | Yes | T002, T003, T005, T006 | Static host inputs, both materiality values for the same diff and same-origin browser behavior. |
 | FR-006 | Yes | T008 | Comparison of shared inputs, distinct host meanings and the recipe or extraction decision. |
 | SC-001 | Yes | T002, T003, T005, T006, T007, T008 | Both runnable fixtures communicate their meaning at 320 CSS pixels in forced colors. |
@@ -53,4 +58,4 @@ All eight tasks support a requirement or its phase evidence. T002 and T003 have 
 
 **Next Actions**
 
-Resolve I1 in the task list before the candidate worktree checks begin. Align the local and integrated check prerequisites in the same edit and name the focus assertions in T003. Re-run `/speckit-squad-analyze` against the amended task list before accepting its implementation gate.
+The analyzed task list is ready for the operator's tasks gate. Record the candidate pin and its review evidence before using the candidate for return verification. T004 permits an explicitly labeled control-only test draft and canonical red while the candidate is pending.
