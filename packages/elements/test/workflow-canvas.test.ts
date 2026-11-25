@@ -3158,8 +3158,8 @@ afterEach(async () => {
 
 const connection = "ocelle-workflow-canvas-connection-request";
 
-function followAction(name: RegExp): HTMLButtonElement {
-  const actions = page.getByRole("button", { name }).elements();
+function followAction(name: RegExp | string): HTMLButtonElement {
+  const actions = page.getByRole("button", { name, exact: typeof name === "string" }).elements();
   expect(actions, `the named relationship exposes one native action matching ${String(name)}`).toHaveLength(1);
   const action = actions[0];
   expect(action).toBeInstanceOf(HTMLButtonElement);
@@ -3260,7 +3260,7 @@ describe("workflow canvas named run inspection in process", () => {
     expect(requests).toEqual([proposal]);
 
     after.focus({ preventScroll: true });
-    const accepted = alreadyReveals ? suitable : { ...suitable, x: suitable.x / 10, y: suitable.y / 10 };
+    const accepted = alreadyReveals ? suitable : { ...suitable, x: Math.trunc(suitable.x / 10), y: Math.trunc(suitable.y / 10) };
     follow.addEventListener("focus", () => { canvas.viewport = accepted; }, { once: true });
     follow.click();
     expect(canvas.viewport).toBe(accepted);
@@ -3450,10 +3450,61 @@ describe("workflow canvas named run inspection in process", () => {
     expect(canvas.graph).toBe(suppliedGraph);
   });
 
+  it("preserves each outcome row across reorder and names repeated and unique endpoints precisely", async () => {
+    const { canvas, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.graph = {
+      nodes: [
+        { id: "review", label: "Decision", accountableRole: "Reviewer", kind: "Approval", outcomes: [
+          { id: "approved", label: "Ready" }, { id: "rejected", label: "Ready" }, { id: "archived", label: "Store" },
+        ] },
+        { id: "backup", label: "Decision", accountableRole: "Supervisor", kind: "Escalation", outcomes: [{ id: "approved", label: "Ready" }] },
+        { id: "publish", label: "Delivery", accountableRole: "Author", kind: "Publication", outcomes: [] },
+        { id: "revise", label: "Delivery", accountableRole: "Editor", kind: "Planning", outcomes: [] },
+        { id: "archive", label: "Archive", accountableRole: "Records", kind: "Storage", outcomes: [] },
+      ],
+      connections: [
+        { sourceId: "review", outcomeId: "approved", destinationId: "publish" },
+        { sourceId: "review", outcomeId: "rejected", destinationId: "revise" },
+        { sourceId: "review", outcomeId: "archived", destinationId: "archive" },
+        { sourceId: "backup", outcomeId: "approved", destinationId: "publish" },
+      ],
+    };
+    canvas.layout = [...canvas.layout, { nodeId: "archive", x: 400, y: 140 }];
+    await settle(canvas);
+    const rows = [
+      { source: "Decision (Reviewer, Approval, review)", outcome: "Ready (approved)", destination: "Delivery (Author, Publication, publish)" },
+      { source: "Decision (Reviewer, Approval, review)", outcome: "Ready (rejected)", destination: "Delivery (Editor, Planning, revise)" },
+      { source: "Decision (Reviewer, Approval, review)", outcome: "Store", destination: "Archive" },
+      { source: "Decision (Supervisor, Escalation, backup)", outcome: "Ready", destination: "Delivery (Author, Publication, publish)" },
+    ];
+    const names = rows.map(({ source, outcome, destination }) => `Follow ${destination} from ${source} via ${outcome}`);
+    const nativeNames = async () => (await axButtons()).filter((name) => name.startsWith("Follow "));
+    expect(await nativeNames()).toEqual(names);
+    const controls = names.map(followAction);
+    expect(controls.map((button) => button.closest("li")?.textContent.replace(/\s+/g, " ").trim())).toEqual(
+      rows.map(({ source, outcome, destination }) => `${source} · ${outcome} → ${destination} Follow`),
+    );
+
+    canvas.graph = { ...canvas.graph, connections: [...canvas.graph.connections].reverse() };
+    await settle(canvas);
+    expect(await nativeNames()).toEqual([...names].reverse());
+    for (const [index, name] of names.entries()) expect(followAction(name)).toBe(controls[index]);
+
+    canvas.graph = { ...canvas.graph, connections: [] };
+    await settle(canvas);
+    expect(page.getByRole("list", { name: "Outcome connections" }).elements()).toEqual([]);
+    expect(requests).toEqual([]);
+  });
+
   it("names an empty run and gives entry and removal a predictable visible focus destination", async () => {
     const { canvas, before, requests } = await mount(true);
+    canvas.id = "workflow-canvas-empty-inspection";
     canvas.mode = "read-only";
     await settle(canvas);
+    const stepDescription = async () => (await commands.axTree(canvas.id, "details"))
+      .find(({ role, name }) => role === "combobox" && name === "Step")?.description;
+    expect(await stepDescription()).toBe("");
     action(canvas, "review").focus({ preventScroll: true });
     canvas.graph = { nodes: [], connections: [] };
     canvas.layout = [];
@@ -3461,6 +3512,7 @@ describe("workflow canvas named run inspection in process", () => {
     const names = (await commands.axTree("workflow-canvas-host", "subtree")).map(({ name }) => name);
     expect(names.some((name) => /\b(?:empty (?:workflow|run|canvas)|no (?:workflow )?(?:steps|nodes))\b/i.test(name)),
       "the empty graph presents a named state in Chromium's accessibility tree").toBe(true);
+    expect(await stepDescription()).toBe("No workflow steps");
     const recovered = active();
     expect(recovered?.getRootNode()).toBe(canvas.shadowRoot);
     expect(recovered?.getBoundingClientRect().height).toBeGreaterThan(0);
