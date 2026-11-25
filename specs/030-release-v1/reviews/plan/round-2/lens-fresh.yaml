@@ -1,0 +1,125 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "`npm publish --dry-run` on npm 11 and 12 fails for a version already on the registry, so a full re-run after a partial publish stops in `prepare`, and the dry-run check is red on every pull request after 1.0.0"
+    evidence:
+      - artifact: "research.md § R-10 (line 207) and contracts/release-workflow.md § release-prepare (line 39): the shared composite action runs `npm publish <tgz> --dry-run` for each tarball, in both `release.yml`'s `prepare` and `release-dry-run.yml`"
+      - artifact: "spec.md FR-025, Story 3 scenario 5 and SC-005: a re-run after a partial publish skips each version already on the registry and 'completes without an error from an already-published version'"
+      - code: "probe: npm 11.21.3 and 12.2.3, packed from the public registry, lib/commands/publish.js lines 176-188 (12.2.3: 181-191): `if (!force) { const { highestVersion, versions } = await this.#registryVersions(...); if (versions.includes(manifest.version)) { throw new Error(`You cannot publish over the previously published versions: ${manifest.version}.`) } ... }`. The check runs before the `if (!dryRun)` publish branch, so `--dry-run` hits it too. npm 10.9.9 (lib/commands/publish.js) has no such check. Pinned Node 26.13.0 ships an npm newer than 11.5.1 (the plan asserts >= 11.5.1)"
+      - code: "the npm 11.21.3 `#registryVersions` (publish.js:254-279) excludes prerelease and deprecated versions, so the `0.0.0-bootstrap.0` placeholder of D1 does not trigger it, but `1.0.0` does once it is published"
+    claim: |
+      The plan treats the `npm publish --dry-run` step as a pure local rehearsal. On the npm the pinned Node ships, the
+      dry run asks the registry for the package's versions and throws when the tarball's version already exists.
+      This breaks two things the spec relies on:
+      1. Re-running the release. If `publish` fails after `@ocelle/tokens@1.0.0` is out and the operator chooses
+         "Re-run all jobs" (or any re-run that includes `prepare`), `prepare` fails on the tokens dry run before
+         `publish` is reached. FR-025's skip logic in `release-step publish` never runs, and SC-005 fails. Only
+         "Re-run failed jobs" works, and no artifact says so.
+      2. The dry run between releases. From the moment 1.0.0 is published until a pre-tag pull request bumps the
+         version, every pull request's "Release dry run" builds 1.0.0 tarballs, so the check fails on every pull
+         request. A permanently red check hides the real failures it exists to show (pack, rehearsal, provenance proof).
+      The unit tests of `release-step` use an injected npm runner, and the release-workflow gate is static, so neither
+      can show this before the real release.
+    remedies:
+      - "Move the dry run into `release-step` (for example a `dry-run` subcommand that reuses the publish loop's `npm view` classification): run `npm publish <tgz> --dry-run` only for a version that `npm view` answers `E404`, and report 'already published, dry run skipped' otherwise, with unit tests for both paths and a release-workflow rule that the composite action calls it instead of a bare `npm publish --dry-run`. State in RELEASING.md which re-run button the operator uses after a partial publish, and why."
+      - "Keep the bare dry run, but run it only in `release.yml`'s first attempt (`github.run_attempt == 1`) and in `release-dry-run.yml` only while the manifests' version is not on the registry. Add this to FR-027 and R-10 as an operator-approved narrowing of 'every pre-publish step'."
+
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "`release.yml`'s own jobs (release-base, the `workflow_call` of ci.yml, check-tag, the artifact hand-off, publish's sparse checkout and setup-node) first run on the real v1.0.0 tag, and release-base and prepare have no pinned Node"
+    evidence:
+      - artifact: "research.md § R-10 and contracts/release-workflow.md § release-dry-run.yml (lines 56-63): the dry run is 'one job running the composite action'. It has no `release-base`, does not call `ci.yml` through `workflow_call`, does not run `release-step check-tag`, and has no artifact upload or download and no publish-job setup"
+      - artifact: "contracts/release-workflow.md lines 10-11 and 15-16: `release-base: checkout tag, fetch-depth 0, persist-credentials false; node gates/bin/release-step.ts base` and `prepare: ... checkout ...; node gates/bin/release-step.ts check-tag; uses ./.github/actions/release-prepare`. Neither lists `./.github/actions/setup` or setup-node before running a `.ts` file. Only `publish` gets setup-node with `node-version-file` (rule `publish-node-pin`)"
+      - code: ".github/actions/setup/action.yml: every existing job gets Node from `.node-version` (26.13.0) through this action, which asserts `test \"$(node --version)\" = \"v$(cat .node-version)\"`. Without it, `node gates/bin/release-step.ts` runs on whatever Node the runner image ships"
+      - code: ".github/workflows/ci.yml has `on: pull_request` only, and every job is written for that event (e.g. lines 94, 120, 173, 196, 264). The `workflow_call` path with `release: true`, `inputs.base || ...` and a tag-push `github` context has never run"
+      - artifact: "R-13: the release-workflow gate checks the YAML's structure (needs, permissions, rules on steps); it never executes a job"
+    claim: |
+      The dry run proves the composite action, but everything around it in `release.yml` runs for the first time when
+      the operator pushes the protected `v1.0.0` tag. That includes computing `base` from git, calling ci.yml as a
+      reusable workflow from a tag push, `check-tag`'s ancestor test against `origin/main`, passing digests through job
+      outputs, the publish job's sparse checkout, setup-node and artifact download, and `release-step`'s import graph
+      in a sparse tree. A mistake there (a missing setup step is already visible in the contract) is found only after
+      the tag exists. Fixing it needs a new commit, so the protected tag has to move. That needs the operator's ruleset
+      bypass, and the plan describes no procedure for it (see PLAN-FRESH-2-003). D1's two-day trusted-publisher window
+      may also run out. The gates rehearse every other risky path before it matters (FR-033, FR-034). The release
+      path is the one that cannot be undone, and it gets no rehearsal.
+    remedies:
+      - "Give `release-base` and `prepare` the pinned setup (`./.github/actions/setup`, or setup-node with `node-version-file`) and extend rule `publish-node-pin` (or a new rule) to every job that runs `node`. Then make `release-dry-run.yml` run the same pre-approval job graph as `release.yml`: a `release-base` job, a `gates` job calling ci.yml with `workflow_call` (with `release: false`, so the Sign-off rule is unchanged), `prepare` with `check-tag` in a no-tag mode, and the artifact upload. Add a release-workflow rule that the two files' pre-approval jobs match, so the dry run exercises the real graph."
+      - "Add an operator rehearsal before O3/O7 in RELEASING.md: push a pre-release tag (for example `v1.0.0-rc.0`, allowed by the `v*` ruleset and the environment's tag filter) and reject the environment approval. `check-tag` and the readiness `--tag` check must then accept a pre-release tag whose core version equals the manifests' version. This runs every job up to the approval on the real trigger. State that the rejected run publishes nothing."
+
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "No defined recovery when a pushed v1.0.0 needs a code fix: the protected tag must move (unplanned), and after a partial publish, moving it splits the provenance commit across packages"
+    evidence:
+      - artifact: "research.md § R-15 (line 385) and spec.md FR-043: RELEASING.md lists 'failures and their remedies (a wrong tarball means `1.0.1`)'. No other failure remedy and no version-bump procedure are planned. The pre-tag pull request (R-15) only sets dates, empties Unreleased and writes `first-release-base`"
+      - artifact: "spec.md Story 3: 'Nobody else can create, move or delete a release tag'; O5: update and deletion restricted, bypass list the operator only; FR-020: the publish path checks out exactly the tagged commit"
+      - artifact: "spec.md FR-031 and contracts/install-check.md: one `--commit` for all three packages; any package whose attestation names another commit is `commit-mismatch`"
+      - artifact: "contracts/pack-contents-gate.md `peer-mismatch` and data-model.md § Pack manifest `peer`: the packed peer must be exactly `^<release version>`, so a 1.0.1 of one package forces lockstep 1.0.1 of all three, with peers `workspace:^1.0.1`"
+    claim: |
+      FR-025 covers a failure that a re-run fixes. It does not cover a failure that needs a code or data fix after the
+      tag push: a red gate in `gates`, a `check-tag` or workflow bug (PLAN-FRESH-2-002), a `--rehearse` reference
+      package that has disappeared, or a `release-step publish` bug after tokens is out. Before any publish, the
+      operator has to delete and re-push `v1.0.0` through the ruleset bypass, and nothing says that this is allowed or
+      how to record it. After a partial publish, re-tagging `v1.0.0` on a fixed commit publishes styles and elements
+      with provenance for commit B while tokens names commit A. The install check (one `--commit`) then fails with
+      `commit-mismatch` for good, and SC-002 can never be met for 1.0.0. The only clean path is lockstep 1.0.1, which
+      needs a version-bump pull request (three manifests, two peer ranges, three changelog entries, an unpublished
+      1.0.0 entry) that no artifact describes. The operator would be designing this procedure under time pressure,
+      at the one step that cannot be undone.
+    remedies:
+      - "Add to R-15 and FR-043's RELEASING.md content: (1) failure before any publish: the operator deletes the `v*` tag through the ruleset bypass, merges the fix, and re-tags the same version, recorded in the release issue; (2) failure after a partial publish that a re-run cannot fix: never re-tag that version; release lockstep `<x.y.z+1>` through a version-bump pull request whose exact contents are listed (manifests, `workspace:^` peers, changelog entries naming the unreleased version); (3) the same bump pull request is the procedure behind 'a wrong tarball means 1.0.1'."
+
+  - id: PLAN-FRESH-2-004
+    severity: 3
+    title: "The two new history-reading gates-integration tests (gap rows at 183b20f, own-history zero hits) run in CI's unit-test shards, whose checkout is shallow"
+    evidence:
+      - artifact: "research.md § R-07 (lines 121-126): 'runs the gap check ... of commit `183b20f` (read with `git show 183b20f:<path>` into a temporary tree)'; § R-08: 'A gates-integration test runs the history scan on this repository's own `HEAD` and asserts zero hits'; plan.md Source Code: both under `gates/test/integration/`"
+      - code: "vitest.config.ts:293-296: project `gates-integration` includes `gates/test/integration/**/*.test.ts`; ci.yml runs it in `unit-tests-shard` (lines 65-77), whose `actions/checkout` has no `fetch-depth`, so it uses checkout's default depth of 1 on the pull request's merge ref. Only `mutation-plan`, `mutation-shard` and `signoff` set `fetch-depth: 0` (ci.yml:169, 192, 261)"
+      - code: "probe: grep of gates/test/integration/*.test.ts for git use: every existing history test (fold-history, gates-root, plant-repo, plants) builds a temporary repository with `git init`. None reads this repository's own history, so the shallow checkout has never mattered before"
+      - artifact: "contracts/release-readiness-gate.md: the gate exits 2 on 'a shallow clone'; plan.md Phase 2 gives `fetch-depth: 0` to the readiness gate's own CI job only"
+    claim: |
+      In the unit-test shards, `183b20f` is not in the depth-1 clone, so `git show 183b20f:<path>` fails and Story 2's
+      independent test is red on every pull request, or is skipped if written defensively. The own-history test either
+      gets exit 2 from the shallow check, or, if it calls the scan function directly, scans one synthetic merge
+      commit and passes vacuously. That second case is exactly the kind of test that cannot fail, which Principle VIII
+      forbids. Locally, agents have full clones, so the tests pass where they are written and break or go hollow in
+      CI.
+    remedies:
+      - "State in R-07, R-08 and plan.md Phase 2 where these tests run with full history: either add `fetch-depth: 0` to the unit-test shard checkout (and amend spec 001 contracts/ci-checks.md), or tag them so they run in the Release readiness job (which already has `fetch-depth: 0`). In both cases, each test first asserts the repository is not shallow and that `183b20f` resolves, failing (not skipping) otherwise."
+
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "The ci.yml `workflow_call` change is planned as 'no other change', but it breaks ci-workflow.test.ts's exact-line assertions and contradicts spec 001 contracts/ci-checks.md, whose amendment is scheduled two phases later"
+    evidence:
+      - artifact: "contracts/release-workflow.md § ci.yml change (line 66): jobs that read `github.event.pull_request.base.sha` read `inputs.base || github.event.pull_request.base.sha` ... 'No other change; the pull-request behaviour is identical'; plan.md Phases 3 (US3 makes the ci.yml change) and 5 (US5: 'spec 001 amendment (FR-044: gates and plant forms)')"
+      - code: "gates/test/ci-workflow.test.ts:27 and :51 assert the exact lines `BASE: ${{ github.event.pull_request.base.sha }}` of the mutation-plan and mutation-shard jobs of the real ci.yml"
+      - code: "specs/001-repository-foundation/contracts/ci-checks.md:3 'Workflow `.github/workflows/ci.yml`, trigger `pull_request`'; :24 Sign-off runs `--range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}` with no condition; :39-40 the mutation commands with the same expressions"
+      - artifact: "spec.md FR-044 lists the amendment's content as 'the new gates' and 'the plant-form changes'. It does not include the new trigger, the inputs or the Sign-off condition"
+    claim: |
+      The US3 change to ci.yml makes the existing ci-workflow tests fail. The plan does not list updating them, so a
+      red-first ordering for the ci.yml change (test before workflow) is not planned. The change also makes ci.yml
+      disagree with spec 001's CI contract (trigger, Sign-off and mutation lines) from US3 until US5. FR-044's amendment
+      list does not include these lines at all, so the contract could stay wrong after the mission. A future
+      reviewer reading spec 001 would then see an unconditional Sign-off that the workflow no longer has. That
+      conditional skip is the very thing the round-1 decision (PLAN-FRESH-1-001 (a)) needs to be visible.
+    remedies:
+      - "Add to US3: amend gates/test/ci-workflow.test.ts first (red), asserting the `inputs.base || ...` lines, the `workflow_call` inputs and the Sign-off `if`, then change ci.yml. Widen FR-044 and the spec 001 amendment to cover the `workflow_call` trigger, its three inputs and the Sign-off condition, and land that contract change in the same phase as the ci.yml change."
+
+  - id: PLAN-FRESH-2-006
+    severity: 1
+    title: "NOTICE is to ship byte-identical in tokens and styles, but its text says only @ocelle/elements holds a copy, and styles would ship a NOTICE pointing to a THIRD_PARTY_NOTICES it does not contain"
+    evidence:
+      - code: "NOTICE:5-6 'The published @ocelle/elements package holds a copy.' and the last line 'Third-party assets and their licences are listed in THIRD_PARTY_NOTICES.'"
+      - artifact: "research.md § R-04: `@ocelle/styles`: `LICENSE`, `NOTICE` (no THIRD_PARTY_NOTICES); data-model.md § Pack manifest `identical`: the tarball's NOTICE must be byte-identical to the root's; spec.md FR-002: 'Licence files in the packages MUST be identical to the repository's'"
+    claim: |
+      Under the identical-file rule, the tokens and styles tarballs carry a NOTICE that names only @ocelle/elements as
+      a holder. Styles' copy also refers to a THIRD_PARTY_NOTICES that is not in that tarball. The plan schedules no
+      edit to the root NOTICE, so the first public release ships a legal notice that misdescribes its own
+      distribution.
+    remedies:
+      - "Add a root NOTICE edit to US1 (before the pack-contents gate freezes it by the `identical` rule): 'Each published @ocelle package holds a copy', and 'listed in THIRD_PARTY_NOTICES in this repository and in the @ocelle/tokens and @ocelle/elements packages'. Alternatively, ship THIRD_PARTY_NOTICES in styles too and add it to styles' `require` and `identical` lists."
