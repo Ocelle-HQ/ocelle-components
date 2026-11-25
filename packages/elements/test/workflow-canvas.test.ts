@@ -534,7 +534,17 @@ async function assertNonPanningPointerInputs(): Promise<void> {
   expect(released).toEqual([true]);
   expect(map.hasPointerCapture(pointerId)).toBe(false);
   expect(requests, "releasing the captured primary press at the same origin emits no presentation request").toEqual([]);
-  await commands.pointerPath([{ ...origin, down: true, button: "right" }, { x: origin.x - 32, y: origin.y + 24, up: true, button: "right" }]);
+
+  let rightPointerId = -1;
+  const rightDown: boolean[] = [];
+  map.addEventListener("pointerdown", (event) => {
+    rightPointerId = event.pointerId;
+    rightDown.push(event.isTrusted && event.button === 2 && event.composedPath()[0] === map);
+  }, { once: true });
+  await commands.pointerPath([{ ...origin, down: true, button: "right" }]);
+  expect(rightDown).toEqual([true]);
+  expect(map.hasPointerCapture(rightPointerId), "a trusted right press on the same background cannot acquire capture").toBe(false);
+  await commands.pointerPath([{ x: origin.x - 32, y: origin.y + 24, up: true, button: "right" }]);
   await settle(canvas);
   expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
   expect(requests).toEqual([]);
