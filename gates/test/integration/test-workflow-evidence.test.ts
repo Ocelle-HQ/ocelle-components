@@ -56,6 +56,172 @@ function node(root: string, ...args: string[]) {
   return spawnSync(process.execPath, args, { cwd: root, encoding: "utf8", timeout: 60_000 });
 }
 
+const storyFeature = "specs/006-story-implementation";
+const storyReviews = storyFeature + "/reviews/phase-1";
+const implementationStory = "storybook/stories/Workflow_Studio/plan.v2.stories.ts";
+const retiredStory = "storybook/stories/Workflow_Studio/retired.stories.ts";
+const supportStory = "storybook/stories/support.stories.ts";
+
+function prepareStoryWrappers(root: string): string {
+  for (const file of [...storyFiles, ".specify/scripts/bash/check-prerequisites.sh", ".specify/scripts/bash/common.sh"]) {
+    mkdirSync(dirname(join(root, file)), { recursive: true });
+    copyFileSync(join(repository, file), join(root, file));
+  }
+  const config = ".specify/extensions/story/story-config.yml";
+  write(root, config, readFileSync(join(root, config), "utf8").replace(/^setup_command:.*$/m,
+    'setup_command: "ln -s \"$OCELLE_EVIDENCE_MODULES\" node_modules"'));
+  write(root, storyFeature + "/plan.md", "# Implementation story proof\n");
+  write(root, storyFeature + "/tasks.md", "## Phase 1: Story behavior\n");
+  write(root, implementationStory, 'export const answer = "old";\n');
+  write(root, retiredStory, 'export const retired = "old";\n');
+  write(root, supportStory, 'export const support = "old";\n');
+  const base = commit(root, "story fixtures and default wrappers");
+  write(root, storyReviews + "/base.sha", base + "\n");
+  write(root, storyReviews + "/test-scope.txt",
+    "implementation-story " + implementationStory + "\nimplementation-story " + retiredStory + "\n");
+  return base;
+}
+
+function storyWrapper(root: string, script: "red" | "tdd-check", ...args: string[]) {
+  return spawnSync("bash", [".specify/extensions/story/scripts/" + script + ".sh", "1", ...args], {
+    cwd: root, encoding: "utf8", timeout: 60_000,
+    env: {
+      ...process.env,
+      SPECIFY_FEATURE_DIRECTORY: storyFeature,
+      SPECIFY_FEATURE_NO_PERSIST: "1",
+      OCELLE_EVIDENCE_MODULES: join(repository, "node_modules"),
+    },
+  });
+}
+
+function addStoryAssertion(root: string): void {
+  write(root, "test/story.test.ts", [
+    'import { existsSync } from "node:fs";',
+    'import { expect, it } from "vitest";',
+    'import { answer } from "../' + implementationStory + '";',
+    'import { support } from "../' + supportStory + '";',
+    'it("shows the revised plan with current supporting data", () => {',
+    '  expect(support).toBe("new");',
+    '  expect(answer).toBe("new");',
+    '});',
+    'it("removes the retired plan story", () => {',
+    '  expect(existsSync(new URL("../' + retiredStory + '", import.meta.url))).toBe(false);',
+    '});',
+  ].join("\n"));
+  write(root, supportStory, 'export const support = "new";\n');
+}
+
+it("replays declared implementation stories from the tested revision and overlays ordinary support stories", () => {
+  const root = fixture();
+  try {
+    const base = prepareStoryWrappers(root);
+    addStoryAssertion(root);
+    const red = commit(root, "record the failing assertion and ordinary test support");
+    const recorded = storyWrapper(root, "red", "phase");
+    expect({ status: recorded.status, stderr: recorded.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(recorded.stdout) as unknown).toMatchObject({
+      sha: red, tests_only: true, red: true, recorded: true,
+      evidence: { status: "red", assertions: [
+        { file: "test/story.test.ts", test: "shows the revised plan with current supporting data", source: { line: 7 } },
+        { file: "test/story.test.ts", test: "removes the retired plan story", source: { line: 10 } },
+      ] },
+    });
+
+    write(root, implementationStory, 'export const answer = "new";\n');
+    rmSync(join(root, retiredStory));
+    const head = commit(root, "implement the revised plan story");
+    const checked = storyWrapper(root, "tdd-check");
+    expect({ status: checked.status, stderr: checked.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(checked.stdout) as unknown).toMatchObject({
+      status: "pass", base, head, problems: [],
+      final_tests_on_base_exit: 1, head_exit: 0,
+      focused: {
+        base: { evidence: { status: "red", assertions: [
+          { file: "test/story.test.ts", source: { line: 7 } },
+          { file: "test/story.test.ts", source: { line: 10 } },
+        ] } },
+        head: { evidence: { status: "green" }, selected: [{ project: "fixture", file: "test/story.test.ts" }] },
+      },
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it("rejects a declared implementation story in a mixed red commit and in red history", () => {
+  const root = fixture();
+  try {
+    prepareStoryWrappers(root);
+    addStoryAssertion(root);
+    write(root, implementationStory, 'export const answer = "still old";\n');
+    const red = commit(root, "change the test and its declared implementation story");
+
+    const recorded = storyWrapper(root, "red", "phase");
+    expect({ status: recorded.status, stderr: recorded.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(recorded.stdout) as unknown).toMatchObject({
+      sha: red, tests_only: false, red: false, recorded: false,
+      problem: "red commit changes a declared implementation story: " + implementationStory,
+    });
+    expect(existsSync(join(root, storyReviews, "red-commits"))).toBe(false);
+
+    write(root, storyReviews + "/red-commits", "phase " + red + "\n");
+    const checked = storyWrapper(root, "tdd-check");
+    expect({ status: checked.status, stderr: checked.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(checked.stdout) as unknown).toMatchObject({
+      status: "fail", red_commits: [],
+      problems: expect.arrayContaining(["red commit phase changes a declared implementation story: " + implementationStory]),
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it.each([
+  { label: "an omitted path", path: "" },
+  { label: "an absolute path", path: "/storybook/stories/plan.stories.ts" },
+  { label: "an unrelated directory", path: "packages/storybook/stories/plan.stories.ts" },
+  { label: "a parent directory", path: "storybook/stories/../plan.stories.ts" },
+  { label: "a dot directory", path: "storybook/stories/./plan.stories.ts" },
+  { label: "an empty component", path: "storybook/stories//plan.stories.ts" },
+  { label: "a glob", path: "storybook/stories/*.stories.ts" },
+  { label: "a Git pathspec", path: ":(glob)storybook/stories/plan.stories.ts" },
+  { label: "a non-story extension", path: "storybook/stories/plan.test.ts" },
+  { label: "a Windows separator", path: "storybook/stories/sub\\plan.stories.ts" },
+])("rejects $label in an implementation-story declaration", ({ path }) => {
+  const root = fixture();
+  try {
+    prepareStoryWrappers(root);
+    write(root, storyReviews + "/test-scope.txt", "implementation-story " + path + "\n");
+    write(root, storyReviews + "/tdd-exempt.md", "Scope validation precedes exemption.\n");
+    const result = storyWrapper(root, "tdd-check");
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({
+      status: "fail", problems: ["implementation-story requires an exact .stories.ts path under storybook/stories/"],
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
+it.each([
+  { label: "a local test", declaration: implementationStory },
+  { label: "a CI-only test", declaration: "ci-only " + implementationStory },
+])("rejects a declared implementation story also listed as $label", ({ declaration }) => {
+  const root = fixture();
+  try {
+    prepareStoryWrappers(root);
+    write(root, storyReviews + "/test-scope.txt", declaration + "\nimplementation-story " + implementationStory + "\n");
+    write(root, storyReviews + "/tdd-exempt.md", "Scope validation precedes exemption.\n");
+    const result = storyWrapper(root, "tdd-check");
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({
+      status: "fail", problems: ["conflicting test scope for implementation story: " + implementationStory],
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
 it("executes a complete configured inventory and compares it with the full Vitest run", () => {
   const root = fixture();
   const output = mkdtempSync(join(tmpdir(), "ocelle-shards-output-"));
