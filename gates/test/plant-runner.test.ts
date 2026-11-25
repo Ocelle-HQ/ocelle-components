@@ -747,13 +747,14 @@ describe("plantShards and shardSize (plan decision 23)", () => {
     const others = plants.length - visualAndAxe.length;
     const shards = plantShards(plants, shardSize, otherShardSize);
     const otherShards = Math.ceil(others / 80);
-    expect({
+    const dealt = {
       counts: { visual: plants.filter((plant) => plant.startsWith("visual/")).length, axe: plants.filter((plant) => plant.startsWith("axe/")).length, others },
       shards: shards.length,
       otherSizes: shards.slice(0, otherShards).map((shard) => shard.length <= 80 && shard.every((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/"))),
       visualAndAxe: shards.slice(otherShards),
-    }).toEqual({
-      counts: { visual: 48, axe: 25, others: 252 },
+    };
+    expect(dealt).toEqual({
+      counts: { visual: 48, axe: 25, others: 253 },
       shards: 4 + 48 + 25,
       otherSizes: [true, true, true, true],
       visualAndAxe: [...visualAndAxe.filter((plant) => plant.startsWith("visual/")).sort(), ...visualAndAxe.filter((plant) => plant.startsWith("axe/")).sort()].map((plant) => [plant]),

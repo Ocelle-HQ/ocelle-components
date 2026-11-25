@@ -212,18 +212,20 @@ describe("gates/README.md (013 R-10, phase 3)", () => {
 });
 
 // Op 023 (#60, FR-010; plan.md *Plants*): the sandbox-paths gate in "The gates", with its check, its command and the
-// seven plants of gates/plants/sandbox-paths/.
+// eight plants of gates/plants/sandbox-paths/ (the eighth, fail-gitattributes-diff, from operator round 4, O4-02).
 describe("gates/README.md (op 023)", () => {
-  it("lists sandbox-paths in The gates with its check, its command and its seven plants", () => {
+  it("lists sandbox-paths in The gates with its check, its command and its eight plants", () => {
     const row = rows(section("The gates")).find((cells) => cells[0] === "`sandbox-paths`");
     const dir = new URL("../plants/sandbox-paths/", import.meta.url);
     const plants = existsSync(dir) ? readdirSync(dir).sort() : [];
-    expect({ cells: row?.slice(0, 3), plants, unlisted: plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``)) }).toEqual({
+    const listed = { cells: row?.slice(0, 3), plants, unlisted: plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``)) };
+    expect(listed).toEqual({
       cells: ["`sandbox-paths`", "Sandbox paths", "`pnpm run gate:sandbox-paths`"],
       plants: [
         "error-no-tracked-file",
         "fail-allowed-name-elsewhere",
         "fail-file-url-in-json",
+        "fail-gitattributes-diff",
         "fail-store-and-repo-root",
         "pass-allowed-files",
         "pass-binary-file",

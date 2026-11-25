@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { allowedFiles, grepArgs, parseGrep, sandboxPathRule, verdict } from "../lib/sandbox-paths.ts";
+import * as sandboxPaths from "../lib/sandbox-paths.ts";
 import { checkout, ruleTable, store } from "./sandbox-paths-table.ts";
 
 // The sandbox-paths gate's decisions, in process (op 023, #60; plan.md *Test approach* 1): the rule of FR-001 over the
@@ -42,6 +43,21 @@ describe("grepArgs", () => {
     expect({ repository: grepArgs(allowedFiles), other: grepArgs(["a b/*.md", "c"]) }).toEqual({
       repository: ["--no-color", "-z", "-n", "-I", "-E", "-e", sandboxPathRule, "--", ".", ...allowed.map((path) => `:(exclude,literal)${path}`)],
       other: ["--no-color", "-z", "-n", "-I", "-E", "-e", sandboxPathRule, "--", ".", ":(exclude,literal)a b/*.md", ":(exclude,literal)c"],
+    });
+  });
+});
+
+// Operator round 4, O4-02 (plan.md *The gate*, "Binary by content"): the git options that keep every .gitattributes out
+// of the scan, for the empty tree of the root's hash algorithm. Read through the module namespace, so that the test
+// fails on its assertion while the export is missing.
+describe("attributeFreeOptions", () => {
+  it("reads no attributes file of the user and takes the attributes from the given empty tree", () => {
+    const { attributeFreeOptions } = sandboxPaths as { attributeFreeOptions?: (emptyTree: string) => string[] };
+    const sha1 = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+    const sha256 = "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321";
+    expect({ sha1: attributeFreeOptions?.(sha1), sha256: attributeFreeOptions?.(sha256) }).toEqual({
+      sha1: ["-c", "core.attributesFile=/dev/null", `--attr-source=${sha1}`],
+      sha256: ["-c", "core.attributesFile=/dev/null", `--attr-source=${sha256}`],
     });
   });
 });

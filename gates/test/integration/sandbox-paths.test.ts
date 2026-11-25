@@ -93,6 +93,38 @@ describe("sandbox-paths (gates/bin/sandbox-paths.ts)", () => {
     timeout,
   );
 
+  // Operator round 4, O4-02 (plan.md *The gate*, "Binary by content"; spec.md FR-002): no .gitattributes can exempt a
+  // file, so binary is decided by content alone.
+  it.each([
+    { name: "-diff", attributes: { ".gitattributes": "*.log -diff\n" } },
+    { name: "binary", attributes: { ".gitattributes": "*.log binary\n" } },
+    { name: "-diff in a subdirectory's .gitattributes", attributes: { "notes/.gitattributes": "*.log -diff\n" } },
+  ])(
+    "exits 1 with exactly the finding of a text file that a committed .gitattributes marks $name",
+    async ({ attributes }) => {
+      const root = repository({ ...attributes, "notes/hidden.log": `Content-addressable store is at: ${store}\nplain\n`, "README.md": "plain\n" });
+      git(root, ["-c", "user.name=Plant Author", "-c", "user.email=plant@example.com", "commit", "-q", "-m", "base"]);
+      const ran = await gate(root);
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+        code: 1,
+        stdout: [`notes/hidden.log:1: sandbox-paths: sandbox-path: ${message}`, "sandbox-paths: 1 sandbox path in 1 tracked file"],
+        stderr: [],
+      });
+    },
+    timeout,
+  );
+
+  it(
+    "exits 0 when a sandbox path is only in a binary file (a NUL byte) that a committed .gitattributes marks text",
+    async () => {
+      const root = repository({ ".gitattributes": "*.bin text\n", "notes/blob.bin": Buffer.concat([Buffer.from([0]), Buffer.from(`\n${matching}`)]), "README.md": "plain\n" });
+      git(root, ["-c", "user.name=Plant Author", "-c", "user.email=plant@example.com", "commit", "-q", "-m", "base"]);
+      const ran = await gate(root);
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({ code: 0, stdout: [passed("3 tracked files")], stderr: [] });
+    },
+    timeout,
+  );
+
   it(
     "exits 0 on the near misses of the rule table, and 1 naming each matching line of the whole table",
     async () => {
