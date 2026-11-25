@@ -7,7 +7,9 @@ in_scope: [11]
 out_of_scope: [1, 2, 7, 59, 60, 73, 75, 76]
 semver: major
 spec_prompt: "Mission for #11 (triage/030-release-v1.md), spec directory specs/030-release-v1: make @ocelle/tokens, @ocelle/styles and @ocelle/elements publishable as 1.0.0 to the public npm registry with provenance, installable without a token: package metadata (no private flag, version, licence, repository with directory, public access, LICENSE and NOTICE in every package), the peer pin on @ocelle/tokens, changelog entries per package (constitution VII), a pack-contents gate with a plant, a tag-triggered publish workflow whose publish job runs in a protected GitHub environment with a required reviewer and least-privilege permissions, a post-publish install check from the registry with no token, and the constitution and doc updates the operator chooses at this record's questions; publishing waits until #7 (mission 018) and op 023 (#60) have landed and every gap row of #1 is met; every operator-only step stays an operator step."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-25T15:51:03Z
 ---
 
 # Triage 030: Release v1.0.0: publish the three packages to npm with provenance (#11)
