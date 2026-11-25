@@ -1507,6 +1507,33 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
   });
 
+  it.each(["removed position", "accepted viewport"] as const)("keeps external focus after a pending Step reveal and %s when the host intercepted blur", async (change) => {
+    const { canvas, pane, after, requests } = await mount(true);
+    const reveal = await askReveal(canvas, "revise");
+    const proposed = lastViewport(requests);
+    expect(active()).toBe(reveal);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    let intercepted = false;
+    const intercept = (event: FocusEvent) => {
+      if (event.composedPath()[0] !== reveal) return;
+      intercepted = event.isTrusted;
+      event.stopPropagation();
+    };
+    canvas.addEventListener("blur", intercept, { capture: true });
+    after.focus({ preventScroll: true });
+    canvas.removeEventListener("blur", intercept, { capture: true });
+    expect(intercepted).toBe(true);
+    expect(active()).toBe(after);
+
+    if (change === "removed position") canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "revise");
+    else canvas.viewport = proposed;
+    await settle(canvas);
+    expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(change === "removed position");
+    expect(active(), "a pending Step reveal cannot recover or hand off focus that belongs to the host").toBe(after);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposed })]);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
   it("keeps the pending reveal through a layout update that preserves its destination", async () => {
     const { canvas, requests } = await mount();
     const initiator = await askReveal(canvas, "revise");
@@ -1584,6 +1611,32 @@ describe("workflow canvas in-process selection and navigation", () => {
     expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
     expect(active()).toBe(before);
     expect(requests).toEqual([{ type: viewport, detail: { viewport: proposed }, bubbles: true, composed: true, cancelable: false }]);
+  });
+
+  it("keeps a scripted Step request while same-shadow focus stays on its picker, without arming a handoff", async () => {
+    const { canvas, pane, requests } = await mount(true);
+    const { picker, button } = revealControls(canvas);
+    picker.value = "revise";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(canvas);
+    picker.focus({ preventScroll: true });
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+
+    button.inert = true;
+    button.click();
+    expect(active()).toBe(picker);
+    expect(requests, "the scripted Step still proposes a viewport when focus remains on its picker").toHaveLength(1);
+    const proposed = lastViewport(requests);
+
+    button.inert = false;
+    button.focus({ preventScroll: true });
+    expect(active()).toBe(button);
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
+    expect(active(), "later focus on the initiator cannot arm the previous scripted request").toBe(button);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposed })]);
   });
 
   it("schedules one paint update when a covered named action is revealed", async () => {
@@ -2980,8 +3033,7 @@ describe("workflow canvas in-process selection and navigation", () => {
       expect(canvas.viewport).toBe(suppliedViewport);
       expect(canvas.selectedNodeId).toBe(original.selection);
       const retained = response === "redirected focus" ? after : response === "removed step" || response === "removed position" ? picker : reveal;
-      if (response === "revealing viewport") expect(focusId(canvas)).toBe("revise");
-      else expect(active()).toBe(retained);
+      expect(active()).toBe(response === "revealing viewport" ? action(canvas, "revise") : retained);
       expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
 
       canvas.graph = original.graph;
@@ -2989,8 +3041,8 @@ describe("workflow canvas in-process selection and navigation", () => {
       canvas.viewport = proposed;
       await settle(canvas);
       expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(false);
-      if (needsRequest || response === "revealing viewport") expect(focusId(canvas)).toBe("revise");
-      else expect(active(), "a later host viewport cannot complete an abandoned Step reveal").toBe(retained);
+      const expectedFocus = needsRequest || response === "revealing viewport" ? action(canvas, "revise") : retained;
+      expect(active(), "a later host viewport can only complete a current Step reveal").toBe(expectedFocus);
       expect(requests).toEqual(expected);
       expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
     },
