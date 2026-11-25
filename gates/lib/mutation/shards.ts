@@ -91,7 +91,7 @@ function groupAdjacentEntries(entries: readonly RangeEntry[]): RangeEntry[] {
     const first = entries[index];
     if (first === undefined) return grouped;
     const second = entries[index + 1];
-    if (second !== undefined && first.end + 1 === second.start
+    if (first.end + 1 === second?.start
       && first.end - first.start + 1 === first.lines && second.end - second.start + 1 === second.lines) {
       grouped.push({ start: first.start, end: second.end, lines: first.lines + second.lines });
       index += 2;
