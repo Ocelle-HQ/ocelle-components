@@ -3290,6 +3290,10 @@ describe("workflow canvas named outcome editing in process", () => {
     await settle(canvas);
     expect(approved.getAttribute("aria-pressed")).toBe("true");
     assertNames(fixture);
+    expect(await axButtons()).toEqual(expect.arrayContaining([
+      "Decision (Reviewer, Approval, review)", "Approved (approved)",
+      "Destination (Author, Publication, publish)", "Destination (Author, Planning, revise)",
+    ]));
     expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(true);
     expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toBe("No connection");
     expect(commandButton(canvas, "Apply connection").disabled).toBe(true);
