@@ -78,7 +78,9 @@ const surviving = new Set(["Survived", "NoCoverage"]);
 const passing = new Set(["Killed", "Timeout", "RuntimeError", "CompileError", "Ignored"]);
 const fix = "run pnpm test and check stryker.config.json";
 
-function cannotRun(cause: string): MutantVerdict {
+type ReportFailure = Extract<MutantVerdict, { ok: false }>;
+
+function cannotRun(cause: string): ReportFailure {
   return { ok: false, cause: `mutation: could not run: ${cause}` };
 }
 
@@ -88,10 +90,10 @@ function lastError(output: string): string | undefined {
   return messages.filter((message) => message !== undefined).at(-1);
 }
 
-function filesOf(report: string): Files | undefined {
+function filesOf(report: string | undefined): Files | undefined {
   let value: unknown;
   try {
-    value = JSON.parse(report);
+    value = JSON.parse(String(report));
   }
   // Stryker disable next-line BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
   catch {
@@ -181,8 +183,7 @@ function validPosition(position: Mutant["location"]["start"] | null | undefined)
 }
 
 function validShadowMutant(input: unknown): boolean {
-  if (input === null || typeof input !== "object") return false;
-  const { id, mutatorName, status, replacement, statusReason, location } = input as
+  const { id, mutatorName, status, replacement, statusReason, location } = (input ?? {}) as
     Partial<Omit<Mutant, "location">> & { readonly location?: Mutant["location"] | null };
   return typeof id === "string" && typeof mutatorName === "string" && typeof status === "string" &&
     (replacement === undefined || typeof replacement === "string") &&
@@ -192,22 +193,20 @@ function validShadowMutant(input: unknown): boolean {
     location.start.line <= location.end.line;
 }
 
-function validShadowReport(files: unknown): boolean {
-  return files !== null && typeof files === "object" && !Array.isArray(files) && Object.values(files).every((file: unknown) =>
-    file !== null && typeof file === "object" && "mutants" in file && Array.isArray(file.mutants) && file.mutants.every(validShadowMutant),
-  );
+function validShadowReport(files: Files): boolean {
+  return !Array.isArray(files) &&
+    Object.values(files).every((file) => Array.isArray(file?.mutants) && file.mutants.every(validShadowMutant));
 }
 
 /** Record the exact stable identities of completed mutants in the selected ranges. */
 export function shadowMutantInventory(run: StrykerRun, changed: readonly RunEntry[]):
-  { readonly ok: true; readonly mutants: readonly ShadowMutant[] } | { readonly ok: false; readonly cause: string } {
-  const files = run.report === undefined ? undefined : filesOf(run.report);
-  if (files !== undefined && !validShadowReport(files)) {
-    return { ok: false, cause: "mutation shadow: malformed Stryker mutants" };
-  }
-  const verdict = classifyMutants(run, changed);
+  { readonly ok: true; readonly mutants: readonly ShadowMutant[] } | ReportFailure {
+  const loaded = readReport(run, true);
+  if (!loaded.ok) return loaded;
+  const { files } = loaded;
+  const verdict = classifyFiles(files, changed);
   if (!verdict.ok) return verdict;
-  if (files === undefined || (run.exitCode !== 0 && run.exitCode !== 1)) {
+  if (run.exitCode !== 0 && run.exitCode !== 1) {
     return { ok: false, cause: "mutation shadow: Stryker did not complete with a report" };
   }
   const mutants = changed.flatMap(({ path, ranges }) =>
@@ -223,7 +222,11 @@ function mutantsOnChanged(files: Files, path: string, ranges: ChangedFile["range
   );
 }
 
-export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): MutantVerdict {
+function readReport(run: StrykerRun, shadow: boolean): { readonly ok: true; readonly files: Files } | ReportFailure {
+  const files = filesOf(run.report);
+  if (shadow && files !== undefined && !validShadowReport(files)) {
+    return { ok: false, cause: "mutation shadow: malformed Stryker mutants" };
+  }
   const unread = unreadEntries(run.output);
   if (unread.length > 0) {
     const skipped = "node_modules, .git, .next, .nuxt, .svelte-kit or .stryker-tmp, in any case";
@@ -235,9 +238,11 @@ export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): 
   if (run.report === undefined) {
     return cannotRun(`Stryker wrote no report (${lastError(run.output) ?? `Stryker exited ${String(run.exitCode)}`}); ${fix}`);
   }
-  const files = filesOf(run.report);
   if (files === undefined) return cannotRun(`the Stryker report is not a JSON object with files; ${fix}`);
+  return { ok: true, files };
+}
 
+function classifyFiles(files: Files, changed: readonly RunEntry[]): MutantVerdict {
   const findings: Finding[] = [];
   const timeouts: UndecidedMutant[] = [];
   const compileErrors: UndecidedMutant[] = [];
@@ -281,4 +286,9 @@ export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): 
     }
   }
   return { ok: true, findings, mutants, timeouts, compileErrors, zeroEntries };
+}
+
+export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): MutantVerdict {
+  const loaded = readReport(run, false);
+  return loaded.ok ? classifyFiles(loaded.files, changed) : loaded;
 }
