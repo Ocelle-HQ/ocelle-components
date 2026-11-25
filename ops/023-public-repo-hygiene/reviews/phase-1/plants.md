@@ -347,3 +347,37 @@ gates/plants/visual/fail-pointer-target-below-fold: plants: not-caught: expected
 plants: 1 problem in 324 plants (affected since ac12998241af8a86f9a88c043654457e41b14b53; not the Plants check)
 [ELIFECYCLE] Command failed with exit code 1.
 ```
+
+## Operator round 4 (fix-4): the `sandbox-paths` plants
+
+- command: `pnpm run gate:plants -- --affected 97868fd774f9280e0516bb021e302c510b9b58fd` (at 31607200)
+- exit: 0
+
+Operator constraint for this round (CI first): run the plants locally only for `sandbox-paths`; CI's Plants check
+judges the rest. `--affected` against the round's base selects every plant here, because `gates/lib/sandbox-paths.ts`
+is shared gate source. So the selection base is a scratch commit object, `97868fd`, made with `git commit-tree` from
+HEAD's tree without `gates/plants/sandbox-paths/` (parent `31607200`; on no branch, never pushed). Its diff to the work
+tree is exactly the eight `sandbox-paths` plants, and the gate code they run is HEAD's. All eight were as expected,
+`fail-gitattributes-diff` (new in this round) among them. The record above, of the phase's full run at `e7976dd`,
+stands under the operator decision of round 1.
+
+```text
+$ node gates/bin/plants.ts -- --affected 97868fd774f9280e0516bb021e302c510b9b58fd
+note: affected: sandbox-paths/error-no-tracked-file, by gates/plants/sandbox-paths/error-no-tracked-file/plant.json
+note: affected: sandbox-paths/fail-allowed-name-elsewhere, by gates/plants/sandbox-paths/fail-allowed-name-elsewhere/plant.json
+note: affected: sandbox-paths/fail-file-url-in-json, by gates/plants/sandbox-paths/fail-file-url-in-json/plant.json
+note: affected: sandbox-paths/fail-gitattributes-diff, by gates/plants/sandbox-paths/fail-gitattributes-diff/plant.json
+note: affected: sandbox-paths/fail-store-and-repo-root, by gates/plants/sandbox-paths/fail-store-and-repo-root/plant.json
+note: affected: sandbox-paths/pass-allowed-files, by gates/plants/sandbox-paths/pass-allowed-files/plant.json
+note: affected: sandbox-paths/pass-binary-file, by gates/plants/sandbox-paths/pass-binary-file/plant.json
+note: affected: sandbox-paths/pass-near-misses, by gates/plants/sandbox-paths/pass-near-misses/plant.json
+note: plant time: sandbox-paths/error-no-tracked-file: 0.2 s
+note: plant time: sandbox-paths/fail-gitattributes-diff: 0.2 s
+note: plant time: sandbox-paths/pass-binary-file: 0.3 s
+note: plant time: sandbox-paths/pass-near-misses: 0.3 s
+note: plant time: sandbox-paths/fail-store-and-repo-root: 0.4 s
+note: plant time: sandbox-paths/fail-allowed-name-elsewhere: 0.4 s
+note: plant time: sandbox-paths/fail-file-url-in-json: 0.5 s
+note: plant time: sandbox-paths/pass-allowed-files: 0.6 s
+plants: affected since 97868fd774f9280e0516bb021e302c510b9b58fd: 8 of 326 plants judged, every plant as expected; not the Plants check
+```
