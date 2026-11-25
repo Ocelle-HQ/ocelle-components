@@ -1,6 +1,6 @@
 # Plants of phase 6
 
-- base: c2731a36106984d8f27d29b9b0a0af52c15f70e3
+- base: 6d6d32998cfc5c33ed419e53a921faed0a51171d
 - command: `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected $(cat specs/018-status-elements/reviews/phase-6/base.sha)`
 - exit: 0
 - run: review round 1 fix (fix-1), on the fix's working tree
