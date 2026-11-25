@@ -1,0 +1,69 @@
+Independent Phase 1 round 6 local checks
+
+Canonical reviewer input 43fae2f1394c2932c69239ad65219fbaf0956ad7
+
+Tested production, tests, stories and gates match candidate b380398313474026f949af38ee549bc486b778fe
+
+Node 26.13.0, pnpm 12.16.1, existing pinned dependencies and Chromium
+
+Prerequisite lookup selected specs/029-workflow-canvas.
+
+Recursive workspace build exited 0.
+
+$ gate:storybook-build
+storybook-build: built 337 stories
+
+$ gate:csp
+csp: 81 files checked, no finding
+
+$ gate:typecheck
+typecheck: no type error in the files of tsconfig.json
+
+$ gate:lint
+lint: 651 files checked, no finding
+
+$ gate:test-lint
+test-lint: 490 files checked, no finding
+
+$ gate:style-lint
+style-lint: 76 files checked, no finding
+
+$ gate:prefix
+prefix: 750 files checked, no finding
+
+$ gate:pins
+pins: 5 manifests checked, no finding
+
+$ gate:contrast
+contrast: 207 pairs checked in light, 215 in dark (196 required per theme)
+
+$ gate:brand-rules
+brand-rules: 7 rules checked
+
+$ gate:manifest
+manifest: 43 elements checked, no finding
+
+$ gate:config-copies
+config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical
+
+$ gate:signoff
+signoff: 101 commits checked, no finding
+
+$ pnpm exec vitest run --project elements --project elements-browser packages/elements/test/{workflow-canvas.test.ts,browser/workflow-canvas.test.ts,workflow-canvas-graph.test.ts,workflow-canvas-navigation.test.ts,workflow-canvas-viewport.test.ts}
+
+RUN  v5.0.5 /workspace/work/ocelle-73-workflow-canvas
+
+Failed to resolve dependency: lit/directives/class-map.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/if-defined.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/live.js, present in client 'optimizeDeps.include'
+
+ Test Files  5 passed (5)
+      Tests  242 passed (242)
+   Start at  16:45:08
+   Duration  33.14s (worker 63%, tests 37%, import 1%)
+
+mutation: plan: 42 shards, 41 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+mutation: plan: 42 shards, 41 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+Mutation plan size: 42
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)

@@ -1,0 +1,6 @@
+packages/elements/test/browser/workflow-canvas.test.ts
+packages/elements/test/workflow-canvas-graph.test.ts
+packages/elements/test/workflow-canvas-navigation.test.ts
+packages/elements/test/workflow-canvas.test.ts
+ci-only gates/test/integration/axe.test.ts
+ci-only gates/test/integration/visual.test.ts

@@ -816,6 +816,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-workflow-canvas.js` | `dist/ocelle-workflow-canvas.js` | `ocelle-workflow-canvas` and the `ocelle-workflow-node` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-node.js` | `dist/ocelle-workflow-node.js` | `ocelle-workflow-node` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |",
@@ -1071,6 +1072,7 @@ describe("packages/elements/README.md", () => {
       "./ocelle-scroller.js",
       "./ocelle-workflow-board.js",
       "./ocelle-workflow-lane.js",
+      "./ocelle-workflow-canvas.js",
       "./ocelle-workflow-node.js",
       "./ocelle-list-detail.js",
       "./ocelle-dialog.js",
@@ -1697,10 +1699,10 @@ const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "oc
 describe("packages/elements/README.md overview (014 T110)", () => {
   const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
 
-  it("counts and names all forty-seven released elements", () => {
-    expect(overview).toContain("forty-seven elements");
+  it("counts and names all forty-eight released elements", () => {
+    expect(overview).toContain("forty-eight elements");
     const tags = ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, ...frameElements,
-      "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea", "ocelle-workflow-node", "ocelle-data-table",
+      "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea", "ocelle-workflow-node", "ocelle-workflow-canvas", "ocelle-data-table",
       "ocelle-event-timeline", "ocelle-timeline-event", "ocelle-evidence-chain", "ocelle-evidence-step"];
     for (const tag of tags) expect(overview).toContain(`\`${tag}\``);
   });

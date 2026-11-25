@@ -1,0 +1,59 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Phase 1 scaffold puts public wiring before the corresponding red proof"
+    evidence:
+      - artifact: "plan.md L47 and L52 put registration and standalone and aggregate compatibility changes in the test-free scaffold. L67 assigns exact inventory updates to the integration owner."
+      - code: ".claude/skills/speckit-story-implement/SKILL.md:36–50 requires inert signatures, with no existing wiring and no test file. .specify/extensions/story/scripts/scaffold.sh:17–21 refuses to record a commit that touches a test path."
+      - code: "packages/elements/test/exports.test.ts:19–23 asserts the exact runtime aggregate export set. The installed story configuration includes that file in test paths (.specify/extensions/story/story-config.yml:16). The normal strict-CSP fixture builds the current aggregate in packages/elements/test/browser/global-setup.ts:49–52."
+    claim: |
+      Wiring the canvas into the aggregate at the scaffold changes observable package behavior and breaks the existing exact export expectation. Updating that expectation in the scaffold makes its receipt fail. The red route needs to let source and built tests fail on a meaningful assertion with the public aggregate untouched, so introduction of the new public entry can still be proved red first.
+    remedies:
+      - "Keep the scaffold to inert importable modules. Name the direct source-test path and the independently runnable built-fixture red assertion before any driver requires the canvas action. Put public registration and exact inventory alignment in green, after the applicable test-only assertions."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 2
+    title: "The in-phase checkpoint has no exact passing focused command"
+    evidence:
+      - artifact: "plan.md L54–65 separates the two helper slices from serial canvas integration and times first combined focused green. quickstart.md L15 gives one focused command that includes workflow-canvas.test.ts."
+      - code: "The quickstart command reaches the complete named test files through gates/bin/test.ts:63–75. Op 028's ocelle-run instructions L175–188 require focused checks of an interim group's combined behavior and record any previously proved assertions tied to unfinished serial tasks."
+    claim: |
+      The canonical red contains real canvas tests as well as the two direct helper tests. At the end of the post-red parallel group the integration owner has yet to wire the helpers into the real canvas. Running the only documented command includes those deliberately still-red cases, so a valid group can appear to require serial fallback. The measured endpoint also needs to distinguish the two-helper checkpoint from whole-phase green.
+    remedies:
+      - "Document a two-file Unit command for the graph and navigation helper tests at the staged checkpoint, and a separate integrated verification command. Record the combined focused result and any known red serial assertion identities and tasks before promotion. Define that focused result as the parallel group's timing endpoint."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The read-only tests lack a clear red phase for each mutation path"
+    evidence:
+      - artifact: "plan.md L39 and L48–50 plans current-mode validation, first node moves in Phase 2, connection cancellation in Phase 3, and read-only suppression and mode-change recovery in Phase 4."
+      - artifact: "spec.md L48–52 already requires switching to read-only during a pending connection edit in User Story 3. L62 repeats that behavior in the read-only journey, and L86 applies zero requests to both node positions and semantic edits. The contract starts in read-only at contracts/workflow-canvas.md L7–15."
+      - code: ".claude/skills/speckit-story-implement/SKILL.md:33–50 requires every new test in a phase red to fail for the newly missing behavior."
+    claim: |
+      The first public authoring slices need their read-only suppression when they introduce their respective mutation events. The Phase 3 story already needs the mode-change cancellation and focus case. Reusing that case as new Phase 4 red would pass the phase base when Phase 3 is implemented correctly. Deferring the guards leaves a phase with edits available in the documented default mode.
+    remedies:
+      - "Put read-only suppression and mid-gesture mode changes in the first red for each authoring intent. Prove node-move suppression with Phase 2 and semantic cancellation and recovery with Phase 3. In Phase 4 retain those assertions as regressions and create new red assertions for its remaining inspection and display behavior."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "Deferred collateral requires hosted proof before the affected phase review"
+    evidence:
+      - artifact: "plan.md L63 and L71–75 allows Op 025 CI-only collateral during each phase, sets the phase-review boundary, and schedules full hosted checks for the final candidate. quickstart.md L16–17 describes the same timing."
+      - code: "gates/lib/story-selection.ts:38–49,61–67 removes eligible changed visual and axe suites from the local head selection. gates/bin/story-evidence.ts:456–467 can report pass on that local evidence while listing deferred_ci."
+      - code: ".claude/skills/speckit-story-review/SKILL.md:37–47 requires the exact candidate's successful Unit check, passing planned shard artifact for each deferred path and corresponding dedicated Visual regression or Accessibility check before approving that phase. Lines 70–73 describe the same-candidate substitution."
+    claim: |
+      Changing the Storybook inventory in an earlier phase can exercise the CI-only path. A focused local pass with deferred tests has not proven those files. Waiting for the final phase's hosted candidate cannot satisfy review of the earlier revision, and can delay the first worktree trial after its focused checks have finished.
+    remedies:
+      - "Keep collateral in the local head proof unless the exact candidate can reach hosted checks before its phase review. When deferring, name the phase candidate and record each deferred project and file in the passing Unit plan and shard evidence plus the corresponding dedicated check before review. Keep final hosted CI separately."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The plan should show renderer responsiveness on both measured sizes"
+    evidence:
+      - artifact: "spec.md L107 requires the plan review to compare a small branching and a larger representative graph for interaction responsiveness. research.md L13–21 describes trials at both sizes and reports update and frame measurements only for 96 nodes."
+      - code: "The scratch renderer result contains six 12-node runs. Their viewport update medians span 0.10–0.20 ms for SVG and 0.20–0.30 ms for Canvas2D, and all six also record drag and frame samples."
+    claim: |
+      The comparison already gathered the small-graph evidence. Retaining only the larger timing results makes the small-graph responsiveness claim unavailable to readers of the plan, including reviewers after the scratch run is gone.
+    remedies:
+      - "Record the measured small-graph update and frame results alongside the existing larger results in the research table, with the same caveat about prototype scope and fixture sizes."

@@ -512,8 +512,16 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-tooltip.ts",
       "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
+      "src/ocelle-workflow-canvas.ts",
       "src/ocelle-workflow-lane.ts",
       "src/ocelle-workflow-node.ts",
+    ]);
+    const [canvas] = modules.find((module) => module.path === "src/ocelle-workflow-canvas.ts")?.declarations ?? [];
+    expect(canvas?.events).toEqual([
+      { name: "ocelle-workflow-canvas-connection-request", description: "A proposed connection edit using stable step and outcome identifiers.", type: { text: "CustomEvent<WorkflowCanvasConnectionRequestDetail>" } },
+      { name: "ocelle-workflow-canvas-viewport-request", description: "A proposed pan, zoom, fit or named reveal viewport.", type: { text: "CustomEvent<WorkflowCanvasViewportRequestDetail>" } },
+      { name: "ocelle-workflow-canvas-position-request", description: "The requested absolute graph position of a step in author mode.", type: { text: "CustomEvent<WorkflowCanvasPositionRequestDetail>" } },
+      { name: "ocelle-workflow-node-select", description: "The original bubbling request from the native node action.", type: { text: "CustomEvent<{nodeId: string}>" } },
     ]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({

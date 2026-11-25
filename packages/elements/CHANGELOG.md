@@ -5,6 +5,15 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Branching workflow canvas (#73).** `ocelle-workflow-canvas` renders supplied steps and outcome connections,
+keeps clipped steps reachable through named navigation, and emits host-controlled selection and viewport requests.
+Authors can arrange a step by drag or numeric coordinates using `ocelle-workflow-canvas-position-request`.
+Both modes support pan, zoom and Fit while preserving the supplied graph and native control sizes.
+Authors can connect, reassign and disconnect named outcomes by mouse, keyboard or tap through
+`ocelle-workflow-canvas-connection-request`. The host supplies connection changes after accepting requests.
+Both modes show supplied outcome relationships, including named unpositioned destinations. Follow reuses host-owned
+reveal, and empty runs expose a named focus destination.
+
 **Responsive app frames and keyboard navigation are a MINOR addition (mission 015, #12).** Applications can share
 one shell across mission, project and personal screens. The shell measures its own width, presents the same
 destinations in a narrow drawer and supports a keyboard shortcut to the main content.

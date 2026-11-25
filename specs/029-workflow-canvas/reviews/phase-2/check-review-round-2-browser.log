@@ -1,0 +1,8 @@
+overlap {"names":["Publish"],"action":[355,206,497,250],"outline":[350,201,502,255],"publishCard":[171,206,347,341],"publishMoveHandle":[347,206,391,250],"publishMoveHandleReady":true,"hit":{"element":"rect","name":"publish","moveHandle":true},"reviewInert":true,"actualFocus":null,"reviewTabIndex":-1,"requests":[],"scroll":[0,0]}
+move-through-overlap [{"type":"ocelle-workflow-canvas-position-request","detail":{"nodeId":"publish","position":{"x":177,"y":126}}}]
+revealed {"names":["Initial review","Publish"],"action":[355,206,497,250],"outline":[350,201,502,255],"publishCard":[171,206,347,341],"publishMoveHandle":[347,206,391,250],"publishMoveHandleReady":false,"hit":{"element":"ocelle-workflow-node","name":null,"moveHandle":false},"reviewInert":false,"actualFocus":"review","reviewTabIndex":0,"requests":[{"type":"ocelle-workflow-canvas-position-request","detail":{"nodeId":"publish","position":{"x":177,"y":126}}}],"scroll":[0,0]}
+activated [{"type":"ocelle-workflow-canvas-position-request","detail":{"nodeId":"publish","position":{"x":177,"y":126}}},{"type":"ocelle-workflow-node-select","detail":{"nodeId":"review"}}]
+diagnostics {"violations":[],"outside":[],"failed":[],"console":[]}
+near-miss under translated fractional anisotropic transform {"point":[421.19848412871363,239.87401342689992],"fillGaps":[0.9945068359375,0.782012939453125],"cardGap":true,"handleReady":true,"hit":false,"inert":false,"requests":[]}
+stroke-only corner overlap {"point":[421.19848412871363,239.87401342689992],"fillGaps":[0.321746826171875,0.2530059814453125],"cardGap":true,"handleReady":true,"hit":true,"focus":"publish","inert":true,"requests":[]}
+diagnostics {"violations":[],"outside":[],"failed":[],"console":[]}
