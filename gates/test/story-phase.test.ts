@@ -452,6 +452,16 @@ describe("phase implementation story declarations", () => {
   const scopeFile = join(dir, "test-scope.txt");
   const scopeError = "implementation-story requires an exact .stories.ts path under storybook/stories/";
 
+  it("cannot exempt a phase that declares an implementation story", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.delete(join(dir, "red-commits"));
+    files.set(join(dir, "tdd-exempt.md"), "documentation only");
+    files.set(scopeFile, "implementation-story " + implementation);
+    await expect(checkPhase(request, tools)).rejects.toThrow("implementation-story scope requires recorded local proof");
+    expect(checks).toEqual([]);
+    expect(outputs).toEqual([]);
+  });
+
   it("keeps only ordinary changed and deleted stories in the overlay and runs the focused head", async () => {
     const { tools, files, checks, outputs } = fixture();
     files.set(scopeFile, "  implementation-story \t" + implementation + "\nimplementation-story " + removed + "\n" + file);
