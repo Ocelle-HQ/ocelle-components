@@ -16,6 +16,7 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 
 # Efficiency signals (where effort went to rework)
 
+- **031 Storybook discovery**: the empty-index Plant and negative Axe fixture both depend on the story inventory. Updating them when adding the stories would have saved reruns. The negative fixture adds one story in both themes. [Verification](../../../specs/031-change-list-discovery/verification.md)
 - **003 spec checks**: 3 checks with 10, 2 and 1 blocking findings. Most of them were browser facts (`rem` rescaling
   under a compact root, colour-only links, grid track behaviour, tab stops in scroll boxes) that a pitfall list given
   to the spec author would have prevented.

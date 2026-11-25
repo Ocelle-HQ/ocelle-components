@@ -1,5 +1,11 @@
 # Spec Kit Flows Diary
 
+## 2026-11-26
+
+* Mission 031 kept its Storybook implementations out of the test overlay. The declaration let the standard replay reproduce all six missing-story assertions while preserving ordinary support fixtures. [Landing verification](../../specs/031-change-list-discovery/verification.md)
+* Recurred (first: 2026-11-13). The stacked pilot carries merge commits that the history fold cannot rewrite. Retain the branch through the squash so the replay pins stay reachable. [Landing review](../../specs/031-change-list-discovery/reviews/landing/round-1.md)
+* The matched discovery runs verified the same Visual, Axe and browser cases. Comparing exact Unit receipts showed that distributing the Visual cases shortened the waiting time and increased combined Unit runner work. [Matched verification](../../specs/031-change-list-discovery/reviews/phase-1/verification.md)
+
 ## 2026-11-25
 
 * Mission 029 verified graph projection and keyboard navigation in disjoint worktrees, then joined them before testing the public canvas. A shared test-only commit and a passing integration checkpoint kept the two implementations tied to the same behavior. The timing record reports overlap and setup separately. [Worktree pilot](../../specs/029-workflow-canvas/reviews/phase-1/worktree-pilot.md)
