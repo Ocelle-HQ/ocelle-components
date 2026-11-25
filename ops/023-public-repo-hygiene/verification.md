@@ -4,13 +4,14 @@ The GitHub-side checks of this op's pull request. The orchestrator drafted this 
 during the landing pass. An item is done only when it is marked **done** and its evidence is filled in. The operator
 signs it off at the end.
 
-Pull request: https://github.com/Ocelle-HQ/ocelle-components/pull/80 (base `main` at `183b20f`, merged into the branch
+Pull request: https://github.com/Ocelle-HQ/ocelle-components/pull/80 (base `main` at `6a6d74c`, merged into the branch
 at landing; closes #60).
 
 ## 1. The nineteen checks green
 
-Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45675682015 (head `d016b93`, after landing review
-round 2): every job succeeded. These nineteen checks of `specs/001-repository-foundation/contracts/ci-checks.md` are
+Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45690468028 (head `3e5d75a`, after the second merge
+of `main` at `6a6d74c`, mission 029): every job succeeded. The run on `d016b93` (after landing review round 2,
+https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45675682015) was green too. These nineteen checks of `specs/001-repository-foundation/contracts/ci-checks.md` are
 green:
 
 1. Typecheck
@@ -33,13 +34,13 @@ green:
 18. Sandbox paths (new in this op)
 19. Plants
 
-The heads `98f5bbf`, `ac5bebc`, `4e0ba99` and `ee83aae` were green too. Two earlier heads were red on Unit test
+The heads `64875ee`, `95f094a`, `a47b214`, `98f5bbf`, `ac5bebc`, `4e0ba99` and `ee83aae` were green too. Two earlier heads were red on Unit test
 shard 4 only (`73c8ba1`, run 45625428767; `f829bcc`, run 45673036035). The artifact of run 45673036035 shows `main`'s
 browser test `packages/elements/test/list-detail.test.ts` failing to run in `elements (chromium)` and the seven
 chromium files after it never running. Op 023 changes nothing under `packages/`. The operator closed it without a
 fix (`triage/decisions/023-landing-shard4.md`); follow-up issue #97.
 
-Status: **done** on `d016b93`. Re-confirm on the final head before the merge.
+Status: **done** on `3e5d75a`. Re-confirm on the final head before the merge.
 
 ## 2. Required checks on `main`
 
