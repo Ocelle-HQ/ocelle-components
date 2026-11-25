@@ -4,7 +4,8 @@
 **Input**: triage `triage/023-public-repo-hygiene.md` (#60), with its rule stated exactly; the operator answers of
 `triage/decisions/023-q1-q3-security-scope.md` (Q1 (a), Q2 (a), Q3 (a)); the operator constraints of 2026-11-20
 (the story's tests in the red commit, a test-first gate with a plant, no history rewrite, CI first, sign-off); the
-operator decision on redaction at landing, `triage/decisions/023-landing-redaction.md` (2026-11-20).
+operator decision on redaction at landing, `triage/decisions/023-landing-redaction.md` (2026-11-20); operator round 4
+on phase 1, `reviews/phase-1/round-4.md` (2026-11-25, from landing review `reviews/landing/round-1.md`).
 
 ## Summary
 
@@ -17,7 +18,10 @@ The op has five parts in one phase:
   redacts the tracked files once, in a commit of its own;
 - `SECURITY.md` for the public repository, with the spec 001 amendments;
 - a verify mode of the redaction script, and the sanctioned landing step that uses it (added after the operator
-  decision of 2026-11-20; tasks T026 to T030).
+  decision of 2026-11-20; tasks T026 to T030);
+- operator round 4 (tasks T031 to T038, red label `fix-4`): the focused runner `gates/bin/story-evidence.ts`, which
+  main's op 025 made the configured path of `red.sh` and `tdd-check.sh`, redacts what it writes and prints (O4-01);
+  and the gate ignores `.gitattributes` when it decides what is binary (O4-02).
 
 ## Technical Context
 
@@ -63,6 +67,11 @@ The op has five parts in one phase:
 | `tooling/speckit/bin/redact-sandbox-paths.sh` (verify mode) | `--verify <rev>` and `--verify <from>..<to>`, as in *Verify mode*. The usage line and the header comment name the mode. The stdin and `--in-place` modes do not change. |
 | `.claude/skills/ocelle-land/SKILL.md` | The sanctioned step of *Landing redaction*: a new step 2.9, one sentence in step 2.3 for the `Sandbox paths` red, and one sentence in rule 8. Written by `implementer-ivan` (the planner's scope is `specs/*` and `ops/*` only). |
 | `.claude/skills/ocelle-run/SKILL.md` | Rule 6, "Never edit a review, verdict or check file a profile wrote", gains the exception: the sanctioned landing redaction of `/ocelle-land` (op 023) is not such an edit. Written by `implementer-ivan`. |
+| `gates/bin/story-evidence.ts` (round 4, O4-01) | See *Focused runner*: every log of `tools.writeLog` and every JSON record of `emitStoryReport` (the file and the printed line) passes through `tooling/speckit/bin/redact-sandbox-paths.sh`, after `safeLog`. A missing or failing script writes nothing and is exit 2. |
+| `gates/lib/sandbox-paths.ts`, `gates/bin/sandbox-paths.ts` (round 4, O4-02) | See *The gate*, "Binary by content": a pure export of the attribute-free git options for an empty-tree id, and the CLI runs `git grep` with them and with `GIT_ATTR_NOSYSTEM=1`. `grepArgs` is unchanged. |
+| `gates/plants/sandbox-paths/fail-gitattributes-diff/` (round 4, O4-02) | The eighth plant, in *Plants*. |
+| `gates/README.md`, `specs/001-repository-foundation/contracts/ci-checks.md`, `contracts/gate-cli.md`, `contracts/plants.md` (round 4) | Where they name the binary skip: binary by content alone, no `.gitattributes` exempts a file. The `sandbox-paths` row lists eight plants. |
+| `.claude/skills/ocelle-land/SKILL.md` (round 4) | Step 2.9's file list runs `git grep` with the gate's attribute-free options (*Landing redaction*, point 2). Written by `implementer-ivan`. |
 | `tooling/speckit/README.md` | The **Landing** paragraph names the step, after the history fold and the last merge of `main`. |
 | `gates/README.md` | The `sandbox-paths` row's fix names the landing step for branches in flight, and `--verify` as its proof. |
 | `ops/023-public-repo-hygiene/reviews/phase-1/**` | Evidence. Any line that matches the rule is redacted before it is committed (see *Own evidence*). |
@@ -79,13 +88,27 @@ the constitution, the four allowed files, every element, token, story and baseli
 `git grep` is the matcher, so the gate's rule is git's ERE. The in-process tests use the same source text with
 `new RegExp`. The integration test shows that both agree on the whole table (*Test approach* 1). The parser reads
 `-z` output, so a path with `:` is reported exactly. The `-I` flag skips binary files. The `:(exclude,literal)`
-pathspecs make the allowed list exact paths, never globs or directories. Exit codes: git `grep` exits 1 when there
+pathspecs make the allowed list exact paths, never globs or directories. The binary skip is decided by content
+alone (see "Binary by content" below). Exit codes: git `grep` exits 1 when there
 is no match, so 1 maps to a pass. It exits 0 when there are matches, which maps to findings. Any other exit is the
 gate's exit 2, with git's first error line as the cause. The check that `<root>` is the top of a work tree stops the
 gate from scanning a parent repository by mistake. The tracked-file count stops a vacuous pass. Both are exit 2.
 
 Summary on a pass: `sandbox-paths: <n> tracked files checked, none holds a sandbox path (4 allowed files)`. The
 finding message: `holds a sandbox path; redact it with tooling/speckit/bin/redact-sandbox-paths.sh --in-place`.
+
+**Binary by content** (operator round 4, O4-02). `git grep -I` also treats as binary any file that a `.gitattributes`
+marks `binary` or `-diff`, so one committed line would exempt every log, beyond the four allowed files. The CLI
+therefore runs `git -C <root> -c core.quotePath=false -c core.attributesFile=/dev/null --attr-source=<empty tree> grep
+<grepArgs>` with `GIT_ATTR_NOSYSTEM=1` in git's environment. `<empty tree>` is `git -C <root> hash-object -t tree
+/dev/null` (so a SHA-256 repository works too; git knows the empty tree without writing it). Git then reads no
+attributes from the work tree, the index, the user or the system, and `-I` falls back to git's content test (a NUL
+byte near the start). True binary files stay skipped, and the exit 0, 1 and 2 contract does not change: a git older
+than 2.40 rejects `--attr-source`, which is a git failure and exit 2 with git's line. `.git/info/attributes` is still
+read. It is local to a clone and never tracked, so it cannot come in through a pull request (spec.md *Edge Cases*).
+The options are a pure export of `gates/lib/sandbox-paths.ts` (for example `attributeFreeOptions(emptyTree)`), so
+the unit test can pin them. A scratch check on git 2.43: a `*.log -diff` or `binary` line hid the file from plain
+`git grep -I`, and did not hide it with these options, while a NUL-byte file stayed skipped.
 
 ### Plant form `tracked-tree`
 
@@ -109,6 +132,7 @@ All of them are under `gates/plants/sandbox-paths/`. Locations are `path:line` b
 | `pass-near-misses` | `notes/near-misses.md`, one line each: `/work/root/x`, `gates/test/fixtures/root/x`, `` `/root/` ``, `/root/\|`, `/root/…`, `/home/user/…`, `/home/u/x`, `/home/runner/x`, `<pnpm store>`, `file://<repo>/x`, `<home>/.cache` | pass |
 | `pass-allowed-files` | the four allowed paths, each with one marker line (`gates/test/capture-plan.test.ts` as a TypeScript comment) | pass |
 | `pass-binary-file` | `notes/blob.bin`: a NUL byte, then a store path line | pass |
+| `fail-gitattributes-diff` (round 4) | `.gitattributes` with `*.log -diff` and `*.txt binary`; `notes/hidden.log` line 1 a store path, `notes/hidden.txt` line 1 a `@SANDBOX_HOME_USER@/.cache` path | fail: `notes/hidden.log:1` and `notes/hidden.txt:1` |
 | `error-no-tracked-file` | no `tree/` (`cause`: `no tracked file`) | error |
 
 ### Redaction script
@@ -165,6 +189,9 @@ after the real `git merge --signoff origin/main` that follows it, before the fin
 2. Run the redaction on the files the gate finds, which is the command of *Redaction script*:
    `git grep -lIzE '(^|[^A-Za-z0-9._~-])/(root|home/user)/[A-Za-z0-9._-]' -- . <one ':(exclude,literal)<path>' per
    allowed file of gates/lib/sandbox-paths.ts> | xargs -0 tooling/speckit/bin/redact-sandbox-paths.sh --in-place`.
+   Since round 4, `git grep` runs with the gate's attribute-free options (*The gate*, "Binary by content":
+   `GIT_ATTR_NOSYSTEM=1 git -c core.attributesFile=/dev/null --attr-source=$(git hash-object -t tree /dev/null)
+   grep …`), so the file list and the gate agree when a `.gitattributes` exists.
 3. Commit only those files: `chore(landing): redact sandbox paths in the merged tree`, signed off. The body cites
    `triage/decisions/023-landing-redaction.md`.
 4. Prove it: `tooling/speckit/bin/redact-sandbox-paths.sh --verify HEAD` and `pnpm run gate:sandbox-paths` must both
@@ -201,6 +228,34 @@ code=${PIPESTATUS[0]}
 keeping `set +e` around it as now. Both script copies get the same text, and `diff -r` of the two `scripts/`
 directories stays empty. The scripts are installed copies of `tooling/speckit/extensions/story`. Editing both
 copies to the same bytes matches what `specify extension add --dev` would install, so no reinstall is needed.
+
+### Focused runner
+
+Operator round 4, O4-01. Since main's op 025 (#78), `story-config.yml` sets `focused_runner:
+"gates/bin/story-evidence.ts"`. Then `red.sh` and `tdd-check.sh` run `story_require_redactor` and `exec` the runner
+before `story_run_tests_at` or `emit`, so the shell path's redaction never runs. The runner writes `red-*.log`,
+`check-*.log` and `tdd-check.json` itself, and its `safeLog` replaces only the worktree and the repository root. The
+setup output at the top of each log (pnpm's `Content-addressable store is at: …`) and any test failure message that
+names a home path pass through as they are.
+
+The fix, in `gates/bin/story-evidence.ts`:
+
+- One function, `redact(text)`, runs `<root>/tooling/speckit/bin/redact-sandbox-paths.sh` with the text on stdin and
+  returns its stdout (`execFileSync`, the same path `story_redactor` resolves). It is not a TypeScript port of the
+  rule. The script is the only copy, so the shell path and the focused path cannot drift apart.
+- `tools.writeLog` writes `redact(text)`: fresh evidence after `safeLog`, and reused evidence (`Reused completed
+  evidence …` with the cached log, which may predate the fix). The cache under `reports/story-evidence/` is ignored
+  by git and stays as it is.
+- `emitStoryReport` redacts the serialised JSON once and uses that text both for the file (`tdd-check.json`) and for
+  the printed line. The redaction keeps the JSON valid, because it replaces only path prefixes inside strings.
+- A missing script, or one that exits non-zero, throws. The runner then writes no log or record, prints a
+  `story-evidence:` cause on stderr and exits 2, the same as the shell path's `story_require_redactor`. The
+  error path of `runStoryCommand` must not write an unredacted record either.
+- The process-boundary call gets its `// Stryker disable next-line all: process boundary, covered by
+  gates-integration: gates/test/integration/story-redaction.test.ts "<test>"` record. The rest is mutated as usual.
+
+The scripts do not change: they already require the redaction script before the `exec`, and both copies stay
+byte-identical.
 
 ### SECURITY.md
 
@@ -293,6 +348,28 @@ Tests (each assertion one `toEqual` on an object of observable facts, as op 021 
    Red: the current script answers `--verify` with its usage and exit 2. So the pass and fail cases fail on their
    exit code, and the exit 2 cases fail on their cause text.
 
+9. Operator round 4, O4-01 (red label `fix-4`): `gates/test/integration/story-redaction.test.ts`, a `describe.each`
+   over the two script copies with `focused_runner: "gates/bin/story-evidence.ts"` set. The fixture is built like
+   `gates/test/integration/test-workflow-evidence.test.ts` builds its own: the runner and the `gates/lib/` files it
+   imports, the copy's scripts and config, `tooling/speckit/bin/redact-sandbox-paths.sh` and a `node_modules` link.
+   The `setup_command` prints a store path and a checkout path, and the red test fails on an assertion whose message
+   holds a store path, so the path reaches both the logs and the JSON evidence. All paths are built at run time.
+   - `red.sh 1 fix-4` on a test-only commit: `red-fix-4.log` and the printed JSON line hold `<pnpm store>` and no
+     line that matches the rule.
+   - `tdd-check.sh 1` after a green commit: every `check-*.log`, `tdd-check.json` and the printed line hold the
+     placeholders and no matching line.
+   - With the redaction script removed: both scripts exit 2 with the `story:` message, and no log exists.
+
+   Red: the runner writes the setup output and the failure message as they are.
+10. Operator round 4, O4-02 (same red commit): `gates/test/integration/sandbox-paths.test.ts` gains the cases of
+    acceptance check 2's third point. A text file with a store path on line 1, under a committed `.gitattributes`
+    that marks it `-diff` (and again `binary`, and again from a subdirectory's `.gitattributes`), exits 1 with exactly
+    its finding. A NUL-byte file under a `.gitattributes` that marks it `text` still exits 0.
+    `gates/test/sandbox-paths.test.ts` pins the attribute-free options for a given empty-tree id. The plant counts
+    (`gates/test/plant-runner.test.ts` `others` 252 to 253, and the eight plants of the `gates/test/gates-readme.test.ts`
+    row) change for `fail-gitattributes-diff`. Red: plain `git grep -I` skips the marked files (exit 0), the export
+    does not exist yet, and the plant and its README entry are not there.
+
 The tests build every sandbox path at run time (`"/" + "root/"`, `"/" + "home/user/"`), so no test file needs an
 allowed entry. The CODEOWNERS test (FR-035) is unchanged.
 
@@ -301,9 +378,9 @@ allowed entry. The CODEOWNERS test (FR-035) is unchanged.
 | Principle | Status |
 |---|---|
 | I to VII | Not touched: no element, token, story, baseline, manifest or package surface change. Semver `none`. |
-| VIII Test-first | The verify mode, added after the decision of 2026-11-20, has its own test-only red commit (T027) before its implementation (T028). The landing step is documentation (T029), and its check is the verify mode. One test-only red commit with every test of the story, after a scaffold if needed. Each test fails on behaviour against the scaffold. No existing assertion is weakened: the count tests and the FR-032 test change to the new requirement, through the spec amendment. |
-| VIII Gates are proven | The new gate has three fail plants, three pass plants and one breaking plant, judged in CI by the plant job. Its CLI is also tested directly. |
-| VIII Mutation | The new and changed TypeScript gate source is mutated in CI's Mutation testing check. Survivors are killed or recorded with a reason. |
+| VIII Test-first | Operator round 4 has its own test-only red commit (`fix-4`, T034) before its two fixes (T035, T036). The verify mode, added after the decision of 2026-11-20, has its own test-only red commit (T027) before its implementation (T028). The landing step is documentation (T029), and its check is the verify mode. One test-only red commit with every test of the story, after a scaffold if needed. Each test fails on behaviour against the scaffold. No existing assertion is weakened: the count tests and the FR-032 test change to the new requirement, through the spec amendment. |
+| VIII Gates are proven | The new gate has four fail plants (the fourth, `fail-gitattributes-diff`, since round 4), three pass plants and one breaking plant, judged in CI by the plant job. Its CLI is also tested directly. |
+| VIII Mutation | The new and changed TypeScript gate source, and round 4's changed lines of `gates/bin/story-evidence.ts`, are mutated in CI's Mutation testing check. Survivors are killed or recorded with a reason. |
 | Supply chain | The CI job pins its actions, keeps `contents: read` and checks out with `persist-credentials: false`. No secret is used. No dependency is added. |
 | No personal data | The op removes container paths from the public tree. Plant identities are RFC 2606 identities. |
 | Workflow | Approved triage 023. An op with one phase, reviewed like a mission phase. History is not rewritten. Every commit is signed off. |
@@ -319,6 +396,10 @@ No Complexity Tracking entry.
   `phase` already names the phase's first red commit (`25ecc2d`), and phase 1 has no review round yet. So the
   orchestrator chooses the label before T027 runs. `phase` must not be used, because it would drop the recorded red
   commit.
+- **Git version** (round 4). `--attr-source` needs git 2.40 or newer. CI's `ubuntu-24.04` runner and this sandbox
+  (2.43) have it. An older local git makes the gate exit 2 with git's line, never pass.
+- **Focused-runner cost** (round 4). The redaction adds one short child process per log or record written. That is
+  small next to a worktree setup and a Vitest run.
 - **Required check**: the gate blocks merges only after the operator adds `Sandbox paths` to the ruleset on `main`.
 - **Size**: about 411 files in the redaction commit. It is a commit of its own, so review can read it with
   `git diff --word-diff`.

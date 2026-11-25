@@ -24,9 +24,12 @@ This op:
    the stable placeholders `<pnpm store>`, `<repo>` and `<home>/`, and changes nothing else in those files. The four
    allowed files keep their paths and are listed in the gate's source;
 2. adds the **`sandbox-paths` CI gate**, which fails on any tracked file outside the allowed list holding a line
-   that matches the rule. It is test-first and has plants;
-3. makes **`red.sh` and `tdd-check.sh` redact** every log and JSON record they write, with the same redaction
-   script, in both identical copies of the story scripts;
+   that matches the rule. It decides what is binary by content alone, so no `.gitattributes` can exempt a file. It
+   is test-first and has plants;
+3. makes **`red.sh` and `tdd-check.sh` redact** every log and JSON record they write or print, with the same
+   redaction script, in both identical copies of the story scripts. This includes the focused path: when
+   `story-config.yml` sets `focused_runner`, `gates/bin/story-evidence.ts` writes the logs and records, and it passes
+   them through the same script;
 4. updates **`SECURITY.md` and spec 001 FR-032** for the public repository: GitHub private vulnerability reporting
    is the only channel, and `@MOES-Media` is removed (operator Q1 (a); private vulnerability reporting is switched
    on, Q3 (a));
@@ -89,6 +92,16 @@ These are within the triage's scope, and the operator can overrule them at the p
   `red.sh` and `tdd-check.sh` write, so redacting there covers all of them. `tdd-check.sh` also passes its JSON
   record through the script. All three files change identically in `.specify/extensions/story/scripts/` and
   `tooling/speckit/extensions/story/scripts/`.
+- **The focused runner redacts too** (operator round 4, O4-01, 2026-11-25). Main's op 025 (#78) set
+  `focused_runner: "gates/bin/story-evidence.ts"`, and with it set both scripts hand off to the runner before
+  `story_run_tests_at` or `emit` run. The runner writes `red-*.log`, `check-*.log` and `tdd-check.json` itself. It
+  now pipes each log and each JSON record it writes or prints through `redact-sandbox-paths.sh`. It does not port
+  the rule into TypeScript, so there is one rule that cannot drift. See plan.md *Focused runner*.
+- **No `.gitattributes` can exempt a file** (operator round 4, O4-02, 2026-11-25). `git grep -I` also skips a file
+  that `.gitattributes` marks `binary` or `-diff`, so one committed line could exempt every log. The gate runs git
+  with `--attr-source` set to the empty tree, `core.attributesFile=/dev/null` and `GIT_ATTR_NOSYSTEM=1`. So only
+  content (a NUL byte) makes a file binary, and the allowed list stays exactly four files. The landing step's file
+  list uses the same options. This needs git 2.40 or newer. See plan.md *The gate*.
 - **The check of the decision is the script's verify mode**, `redact-sandbox-paths.sh --verify <commit>` or
   `--verify <from>..<to>`. It passes only when every changed file is a modified regular file whose new content is
   exactly the script's redaction of its old content. That is stricter than "only matched prefixes changed": a
@@ -119,9 +132,13 @@ Each check is a test that fails before the change, except check 9 (a gate run, r
      1, exactly two findings `<path>:2` and `<path>:5` with rule `sandbox-path`, neither echoing the line.
    - The same lines in each of the four allowed files, an untracked file, a git-ignored file and a binary file (a
      NUL byte): exit 0.
+   - The same lines in a text file that a committed `.gitattributes` marks `-diff`, or `binary`, at the root or in a
+     subdirectory: exit 1 with the file's finding. A NUL-byte file stays exempt under a `.gitattributes` that
+     marks it `text` (operator round 4, O4-02).
    - No tracked file, or a root that is not the top of a git work tree: exit 2, with a cause naming the problem.
 3. **The plants** (`gates/plants/sandbox-paths/`, judged by the plant job). Every fail plant fails with exactly its
-   findings, every pass plant passes, and the breaking plant exits 2 with its cause. The `tracked-tree` form is
+   findings, every pass plant passes, and the breaking plant exits 2 with its cause. Since operator round 4, the fail
+   plant `fail-gitattributes-diff` shows that a committed `.gitattributes` exempts nothing. The `tracked-tree` form is
    covered by `gates/test/integration/plant-repo.test.ts`: the markers are replaced and the tree is committed, and
    an empty `tree/` gives a repository with no tracked file.
 4. **The registry**. `sandbox-paths` is in `gates/gates.json`, in `fr020` of `gates/lib/registry.ts` and in
@@ -136,11 +153,15 @@ Each check is a test that fails before the change, except check 9 (a gate run, r
 6. **`red.sh` writes a redacted log** (`gates/test/integration/story-redaction.test.ts`, once for each of the two
    script copies). In a temporary repository whose test command prints a store path and a repository-root path and
    exits 1, `red.sh 1 phase` writes `red-phase.log` with `<pnpm store>` and `<repo>` and no line that matches the
-   rule.
+   rule. With `focused_runner` set (operator round 4, O4-01), a setup command that prints those paths and a red
+   test whose failure message holds a store path give a `red-<label>.log` and a printed JSON line with the
+   placeholders and no matching line.
 7. **`tdd-check.sh` writes redacted logs and a redacted record** (same test file, both copies). Every log it writes
    (`check-red-*.log`, `check-final-tests-on-base.log`, `check-head.log`) and `tdd-check.json` hold the placeholders
    and no line that matches the rule. The JSON record gets its sandbox path from an input that the test chooses, as
    plan.md *Test approach* describes. Without the redaction script, both scripts exit 2 before they write any log.
+   The same holds with `focused_runner` set: every `check-*.log`, `tdd-check.json` and its printed line hold the
+   placeholders and no matching line (operator round 4, O4-01).
 8. **`SECURITY.md` for the public repository** (`gates/test/governance.test.ts`, changed). It names GitHub private
    vulnerability reporting. It does not contain `@MOES-Media`, "Until then", "Once the repository is public" or
    "1.0.0". It still promises 3 and 10 working days and does not ask for public issues.

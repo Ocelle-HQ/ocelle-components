@@ -3,7 +3,9 @@
 **Op**: `ops/023-public-repo-hygiene` | **Issue**: #60 | **Triage**: `triage/023-public-repo-hygiene.md`
 **Created**: 2026-11-20 | **Status**: started
 **Operator answers**: `triage/decisions/023-q1-q3-security-scope.md` (Q1 (a), Q2 (a), Q3 (a));
-`triage/decisions/023-landing-redaction.md` (a sanctioned redaction step at landing, 2026-11-20)
+`triage/decisions/023-landing-redaction.md` (a sanctioned redaction step at landing, 2026-11-20); operator round 4
+on phase 1 (`reviews/phase-1/round-4.md`, 2026-11-25: the focused runner redacts, and `.gitattributes` cannot exempt
+a file)
 
 ## Intent
 
@@ -36,8 +38,8 @@ branch.
 1. **Given** a tracked file outside the allowed list with a line that matches the rule, **When** the gate runs,
    **Then** it exits 1 with one finding `<path>:<line>` (rule `sandbox-path`) for each matching line, and no finding
    echoes the line.
-2. **Given** matching lines only in the four allowed files, in untracked or git-ignored files, or in binary files,
-   **When** the gate runs, **Then** it exits 0.
+2. **Given** matching lines only in the four allowed files, in untracked or git-ignored files, or in binary files
+   (binary by content: a NUL byte near the start), **When** the gate runs, **Then** it exits 0.
 3. **Given** lines with `/work/root/x`, `gates/test/fixtures/root/x`, `` `/root/` ``, `/root/|`, `/root/…`,
    `/home/user/…`, `/home/u/x`, `/home/runner/x` or a placeholder, **When** the gate runs, **Then** it exits 0.
 4. **Given** a root with no tracked file, or a root that is not the top of a git work tree, **When** the gate runs,
@@ -45,8 +47,9 @@ branch.
 5. **Given** text with a store path, a repository-root path (also after `file://`) and another matching path,
    **When** the redaction script reads it, **Then** it writes `<pnpm store>`, `<repo>` and `<home>/` in their
    places, and every other byte is unchanged.
-6. **Given** a test command whose output holds sandbox paths, **When** `red.sh` or `tdd-check.sh` runs it, **Then**
-   every log and JSON record the script writes holds the placeholders and no line matches the rule.
+6. **Given** a test command, a setup command or a test failure whose output holds sandbox paths, **When** `red.sh`
+   or `tdd-check.sh` runs it, with or without `focused_runner` set in `story-config.yml`, **Then** every log and JSON
+   record the script or the focused runner writes or prints holds the placeholders and no line matches the rule.
 7. **Given** the branch after this op, **When** the gate runs on it, **Then** it exits 0. The redaction commit
    shows only placeholder substitutions.
 8. **Given** `SECURITY.md`, **When** a reporter reads it, **Then** it names GitHub private vulnerability reporting
@@ -61,6 +64,9 @@ branch.
     lands it, **Then** after the last merge of `main` it makes one commit with the redaction script's output only.
     That commit passes `--verify` and the `Sandbox paths` gate, and it does not count as editing a review, verdict
     or check file.
+11. **Given** a tracked text file with a matching line and a committed `.gitattributes` (at the root or in a
+    subdirectory) that marks it `binary` or `-diff`, **When** the gate runs, **Then** it exits 1 with the file's
+    finding: no `.gitattributes` can exempt a file (operator round 4, O4-02).
 
 ### Edge Cases
 
@@ -77,6 +83,9 @@ branch.
   on the files the gate names. At landing that run is the sanctioned step of FR-012.
 - The verify mode compares whole files, so it also fails a commit that redacts only some of a file's matching lines.
   It reads committed objects only, so uncommitted changes do not affect it.
+- `.git/info/attributes`, `core.attributesFile` and the system attributes file are not part of the tracked tree.
+  The gate ignores the last two, and a clone (CI's checkout included) has no `.git/info/attributes` unless someone
+  writes one locally. That local file stays a known gap of a local run. CI's run is the verdict.
 - A file whose path itself holds a sandbox path is not redacted by the script (it changes contents, not names). The
   gate reports it, and the landing step stops and reports it to the operator.
 
@@ -87,7 +96,10 @@ branch.
 - **FR-001 (rule)**: A line holds a sandbox path when it matches the POSIX extended regular expression
   `(^|[^A-Za-z0-9._~-])/(root|home/user)/[A-Za-z0-9._-]`. The gate and the redaction use this rule and no other.
 - **FR-002 (gate)**: `pnpm run gate:sandbox-paths` (`gates/bin/sandbox-paths.ts --root <dir>`) searches the tracked
-  files of `<dir>` with `git grep` (extended regular expressions, binary files skipped, `-z`). It excludes exactly the
+  files of `<dir>` with `git grep` (extended regular expressions, binary files skipped, `-z`). Whether a file is
+  binary is decided by its content alone (git's NUL-byte test): git runs with `--attr-source` set to the empty tree,
+  `core.attributesFile=/dev/null` and `GIT_ATTR_NOSYSTEM=1`, so no `.gitattributes` (`binary`, `-diff` or any other)
+  can exempt a file (amended 2026-11-25, operator round 4, O4-02). It excludes exactly the
   allowed files of FR-003. It exits 1 with one finding per matching line (`<path>:<line>: sandbox-paths:
   sandbox-path: <message>`, where the message names the fix and does not echo the line). It exits 0 with a one-line
   summary when nothing matches. It exits 2 with a cause when `<dir>` is not the top of a git work tree, when it has
@@ -110,8 +122,12 @@ branch.
   other byte changes. It reads stdin and writes stdout, or with `--in-place <file>...` rewrites the files it is
   given. Its source does not match FR-001.
 - **FR-007 (write-time redaction)**: Every log that `red.sh` and `tdd-check.sh` write, and the JSON record
-  `tdd-check.json` (also as printed), passes through the redaction script. The scripts keep their exit codes and
-  JSON fields. When the script is missing, they exit 2 with a `story:` message before they write any log. Both
+  `tdd-check.json` (also as printed), passes through the redaction script. This holds on both paths: the shell path
+  (`story_run_tests_at` and `emit` in the story scripts) and the focused path, when `story-config.yml` sets
+  `focused_runner` and the scripts hand off to `gates/bin/story-evidence.ts`. The focused runner passes every log it
+  writes (fresh or reused evidence) and every JSON record it writes or prints through the same script, so there is
+  one rule and no second copy of it (amended 2026-11-25, operator round 4, O4-01). If the script is missing or
+  fails, the runner writes nothing and exits 2. The scripts keep their exit codes and JSON fields. When the script is missing, they exit 2 with a `story:` message before they write any log. Both
   copies of the story scripts (`.specify/extensions/story/scripts/` and
   `tooling/speckit/extensions/story/scripts/`) stay byte-identical.
 - **FR-008 (one-time redaction)**: Every tracked file on the branch outside the allowed files that matches FR-001 is
@@ -139,7 +155,8 @@ branch.
   merged tree, as the operator decided on 2026-11-20. The step runs after the last `git merge --signoff
   origin/main` (and so after the history fold) and before the final push. It runs only when the merged tree has
   `tooling/speckit/bin/redact-sandbox-paths.sh` and `pnpm run gate:sandbox-paths` exits 1. It runs the script with
-  `--in-place` on the tracked files outside the allowed files that match FR-001, and commits those files alone
+  `--in-place` on the tracked files outside the allowed files that match FR-001 (found with the gate's own
+  `git grep` options of FR-002, so `.gitattributes` cannot hide one), and commits those files alone
   (`chore(landing): redact sandbox paths in the merged tree`, signed off). Then `--verify HEAD` (FR-011) and the
   gate must both exit 0. Landing rule 8 is read over the commit's added lines, because the removed lines are the
   old paths. This commit does not count as editing a review, verdict or check file. Where a run rule forbids such
@@ -171,7 +188,9 @@ branch.
 
 ## Assumptions
 
-- `git` 2.34 or newer, as for the other gates. `git grep -z` and `:(exclude,literal)` pathspecs are available.
+- `git` 2.34 or newer, as for the other gates. `git grep -z` and `:(exclude,literal)` pathspecs are available. The
+  `sandbox-paths` gate needs `git` 2.40 or newer, for `--attr-source` (FR-002). CI's `ubuntu-24.04` runner has a newer
+  one. An older git rejects the option, and the gate exits 2 with git's line.
 - CI's checkout path (under `/home/runner/`) and its pnpm store do not match FR-001. The gate is clean on CI's own
   output.
 - The branch carries `main` at `7f61959` and nothing newer. If `main` moves before the landing, the landing runs the
