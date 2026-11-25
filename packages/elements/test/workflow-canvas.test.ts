@@ -3606,6 +3606,78 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(requests).toEqual([]);
   });
 
+  it("rejects stale source and outcome choices and resets the draft when its source is cleared", async () => {
+    const fixture = await editingFixture();
+    const { canvas, requests } = fixture;
+    await openCommands(canvas);
+    const trigger = commandButton(canvas, "Edit connection");
+    await keyboardActivate(trigger);
+    await settle(canvas);
+    const supplied = canvas.graph;
+    const backup = choice(canvas, "source", "backup");
+    canvas.graph = { ...supplied, nodes: supplied.nodes.map((node) => node.id === "backup" ? { ...node, outcomes: [] } : node) };
+    backup.click();
+    canvas.graph = supplied;
+    await settle(canvas);
+    expect(backup.getAttribute("aria-pressed")).toBe("false");
+    expect(choiceIds(canvas, "outcome")).toEqual([]);
+
+    const review = choice(canvas, "source", "review");
+    await keyboardActivate(review);
+    await settle(canvas);
+    const approved = choice(canvas, "outcome", "approved");
+    canvas.graph = { ...supplied, nodes: supplied.nodes.map((node) => node.id === "review"
+      ? { ...node, outcomes: node.outcomes.filter(({ id }) => id !== "approved") } : node) };
+    approved.click();
+    canvas.graph = supplied;
+    await settle(canvas);
+    expect(approved.getAttribute("aria-pressed")).toBe("false");
+    expect(choiceIds(canvas, "destination")).toEqual([]);
+
+    await keyboardActivate(approved);
+    await settle(canvas);
+    await chooseDestination(fixture, "publish");
+    await keyboardActivate(review);
+    await settle(canvas);
+    expect(choiceIds(canvas, "source")).toEqual(["review", "backup"]);
+    expect(choiceIds(canvas, "destination")).toEqual([]);
+    await commands.press("Escape");
+    await settle(canvas);
+    expect(active()).toBe(trigger);
+    expect(requests).toEqual([]);
+  });
+
+  it("resolves the supplied relation using both source and outcome identity", async () => {
+    const fixture = await editingFixture();
+    const { canvas, requests } = fixture;
+    const other = [
+      { sourceId: "backup", outcomeId: "approved", destinationId: "revise" },
+      { sourceId: "review", outcomeId: "alternate", destinationId: "backup" },
+    ];
+    canvas.graph = { ...canvas.graph, connections: [...other, { sourceId: "review", outcomeId: "approved", destinationId: "publish" }] };
+    await settle(canvas);
+    await startNamedEdit(fixture);
+    expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toBe("Connected to Destination (Author, Publication, publish)");
+    const removed = connectionRequest("disconnect", "publish");
+    canvas.addEventListener(connection, () => { acceptConnection(removed, canvas); }, { once: true });
+    await keyboardActivate(commandButton(canvas, "Disconnect connection"));
+    await settle(canvas);
+    expect(requests).toEqual([removed]);
+    expect(canvas.graph.connections).toEqual(other);
+
+    await keyboardActivate(commandButton(canvas, "Edit connection"));
+    await settle(canvas);
+    await keyboardActivate(choice(canvas, "source", "backup"));
+    await settle(canvas);
+    await keyboardActivate(choice(canvas, "outcome", "rejected"));
+    await settle(canvas);
+    await chooseDestination(fixture, "review");
+    await keyboardActivate(commandButton(canvas, "Apply connection"));
+    await settle(canvas);
+    expect(requests).toEqual([removed, presentationRequest(connection, { operation: "connect", sourceId: "backup", outcomeId: "rejected", destinationId: "review" })]);
+    expect(canvas.graph.connections).toEqual(other);
+  });
+
   it("leaves Escape outside the editor alone and cancels only a capture when focus is back on the map", async () => {
     const fixture = await editingFixture();
     const { canvas, after, requests } = fixture;
@@ -3635,10 +3707,11 @@ describe("workflow canvas named outcome editing in process", () => {
     const { canvas, frame, requests } = fixture;
     await startNamedEdit(fixture);
     await chooseDestination(fixture, "revise");
-    const { map, pointerId, end } = await beginConnectionDrag(fixture, "publish");
+    const { map, pointerId, end } = await beginConnectionDrag(fixture, "review");
     canvas.remove();
     const detachedCapture = map.hasPointerCapture(pointerId);
     frame.append(canvas);
+    map.dispatchEvent(new PointerEvent("pointerup", { pointerId, clientX: end.x, clientY: end.y }));
     await settle(canvas);
     expect(detachedCapture).toBe(false);
     expect(map.querySelector("path.connection-preview")).toBeNull();
@@ -3648,7 +3721,7 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(requests).toEqual([]);
   });
 
-  it.each(["current relation", "new relation", "source removed", "target removed", "outcome removed", "Escape", "read-only at release", "empty drop", "layout change", "map frame change", "lost capture"] as const)(
+  it.each(["current relation", "new relation", "source removed", "target removed", "outcome removed", "Escape", "read-only at release", "empty drop", "layout change", "viewport change", "map frame change", "lost capture"] as const)(
     "clears a captured outcome preview with no request after %s",
     async (reason) => {
       const fixture = await editingFixture(reason === "new relation" ? undefined : "publish");
@@ -3658,6 +3731,7 @@ describe("workflow canvas named outcome editing in process", () => {
       const source = action(canvas, "review");
       const expectedFocus = reason === "source removed" ? action(canvas, "publish") : source;
       const unrelatedLoss: boolean[] = [];
+      const captureAfterRender: boolean[] = [];
       let released = false;
       switch (reason) {
         case "current relation":
@@ -3687,6 +3761,13 @@ describe("workflow canvas named outcome editing in process", () => {
         }
         case "layout change":
           canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, y: entry.y + 3 } : entry);
+          await canvas.updateComplete;
+          captureAfterRender.push(captured.map.hasPointerCapture(captured.pointerId));
+          break;
+        case "viewport change":
+          canvas.viewport = { ...canvas.viewport, x: canvas.viewport.x + 5 };
+          await canvas.updateComplete;
+          captureAfterRender.push(captured.map.hasPointerCapture(captured.pointerId));
           break;
         case "map frame change":
           sheet.insertRule("#canvas-frame { transform: translateX(8px); }", sheet.cssRules.length);
@@ -3700,6 +3781,7 @@ describe("workflow canvas named outcome editing in process", () => {
       }
       await settle(canvas);
       expect(unrelatedLoss).toEqual(reason === "lost capture" ? [true] : []);
+      expect(captureAfterRender).toEqual(reason === "layout change" || reason === "viewport change" ? [false] : []);
       expect(captured.map.hasPointerCapture(captured.pointerId)).toBe(false);
       expect(captured.map.querySelector("path.connection-preview")).toBeNull();
       if (!released) await commands.pointerPath([{ ...captured.end, up: true }]);
@@ -3754,6 +3836,76 @@ describe("workflow canvas named outcome editing in process", () => {
     await settle(canvas);
     expect(requests).toEqual([presentationRequest(connection, { operation: "connect", sourceId: "review", outcomeId: "alternate", destinationId: "publish" })]);
     displayedConnection(canvas);
+  });
+
+  it("retains the stable captured outcome handle when the host reorders repeated outcome labels", async () => {
+    const fixture = await editingFixture();
+    const { canvas, requests } = fixture;
+    const original = connectionHandles(canvas);
+    const captured = await beginConnectionDrag(fixture, "publish");
+    canvas.graph = {
+      ...canvas.graph,
+      nodes: canvas.graph.nodes.map((node) => node.id === "review" ? { ...node, outcomes: [...node.outcomes].reverse() } : node),
+    };
+    await settle(canvas);
+    expect(connectionHandles(canvas)).toBe(original);
+    expect(captured.map.hasPointerCapture(captured.pointerId)).toBe(true);
+    await commands.pointerPath([{ ...captured.end, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([connectionRequest("connect", "publish")]);
+  });
+
+  it("shows the captured outcome preview before the pointer moves and publishes nothing on the handle", async () => {
+    const { canvas, requests } = await editingFixture();
+    const handle = connectionHandles(canvas);
+    const map = mapOf(canvas);
+    const start = elementCenter(handle);
+    await commands.pointerPath([{ ...start, down: true }]);
+    await settle(canvas);
+    const preview = map.querySelector("path.connection-preview");
+    expect(preview).toBeInstanceOf(SVGPathElement);
+    if (!(preview instanceof SVGPathElement)) throw new Error("Stationary outcome preview missing");
+    expect(preview.getTotalLength()).toBeLessThan(2);
+    await commands.pointerPath([{ ...start, up: true }]);
+    await settle(canvas);
+    expect(map.querySelector("path.connection-preview")).toBeNull();
+    expect(requests).toEqual([]);
+  });
+
+  it("rows fixed-size outcome hit targets and centers the arrow within each target", async () => {
+    const { canvas, requests } = await editingFixture();
+    canvas.graph = {
+      ...canvas.graph,
+      nodes: canvas.graph.nodes.map((node) => node.id === "review" ? {
+        ...node, outcomes: [...node.outcomes, { id: "third", label: "Third" }, { id: "fourth", label: "Fourth" }],
+      } : node),
+    };
+    await settle(canvas);
+    const card = getNode(canvas, "review")?.closest("foreignObject");
+    if (!(card instanceof SVGForeignObjectElement)) throw new Error("Review step is missing its visible card");
+    const first = connectionHandles(canvas).getBBox();
+    const gap = first.width / 8;
+    const row = card.y.baseVal.value + card.height.baseVal.value + gap;
+    const column = card.x.baseVal.value;
+    const pitch = first.width + gap;
+    const targetIds = ["approved", "alternate", "third", "fourth"] as const;
+    const expectedPositions = [[column, row], [column + pitch, row], [column + 2 * pitch, row], [column, row + pitch]];
+    const expectedArrow: readonly (readonly [number, number])[] = [[1 / 4, 1 / 2], [3 / 4, 1 / 2], [7 / 12, 1 / 3], [3 / 4, 1 / 2], [7 / 12, 2 / 3]];
+    for (const [index, id] of targetIds.entries()) {
+      const handle = connectionHandles(canvas, id);
+      const bounds = handle.getBBox();
+      const marker = handle.nextElementSibling;
+      expect([bounds.x, bounds.y]).toEqual(expectedPositions[index]);
+      expect([bounds.width, bounds.height]).toEqual([first.width, first.height]);
+      expect(marker).toBeInstanceOf(SVGPolylineElement);
+      if (!(marker instanceof SVGPolylineElement)) throw new Error("Outcome handle is missing its arrow marker");
+      expect(marker.points.length).toBe(expectedArrow.length);
+      const points = Array.from({ length: marker.points.length }, (_, pointIndex) => marker.points.getItem(pointIndex));
+      expect(points.map(({ x, y }) => [(x - bounds.x) / bounds.width, (y - bounds.y) / bounds.height])).toEqual(
+        expectedArrow.map(([x, y]) => [expect.closeTo(x, 4), expect.closeTo(y, 4)]),
+      );
+    }
+    expect(requests).toEqual([]);
   });
 
   it("allows the last painted outcome handle when the earlier handle's fill overlaps its stroke", async () => {
