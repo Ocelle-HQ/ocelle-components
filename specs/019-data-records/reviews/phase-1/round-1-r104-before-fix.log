@@ -1,0 +1,158 @@
+# R1-04: the two cases that arrived after their fixes, run against the code before each fix
+# worktree at ad17b16 (every test of the phase) with gates/lib/mutation/report.ts from 850102d (before T089's fix a94eb04)
+# and packages/elements/src/ocelle-data-table.ts from 016b05a (before T086's fix 17febd4)
+
+$ pnpm exec vitest run --project gates gates/test/mutation-report.test.ts -t "below every mutant"
+
+ RUN  v5.0.5 <worktree>
+
+ ❯ |gates| gates/test/mutation-report.test.ts (45 tests | 1 failed | 44 skipped) 19ms
+   ❯ classifyMutants: a checker failure (019, gate gap rule (c)) (15)
+     × cannot run when the shared diagnostic is below every mutant's lines, as above them 17ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates| gates/test/mutation-report.test.ts > classifyMutants: a checker failure (019, gate gap rule (c)) > cannot run when the shared diagnostic is below every mutant's lines, as above them
+AssertionError: expected { ok: true, findings: [], …(4) } to deeply equal { ok: false, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "mutation: could not run: Stryker's type checker rejects packages/tokens/src/x.ts itself, not its mutants: packages/tokens/src/x.ts(9,3): error TS7022; fix that type error (an explicit type often does) and rerun",
+-   "ok": false,
++   "compileErrors": [
++     {
++       "line": 5,
++       "mutator": "M5",
++       "path": "packages/tokens/src/x.ts",
++       "replacement": "r5",
++     },
++     {
++       "line": 6,
++       "mutator": "M6",
++       "path": "packages/tokens/src/x.ts",
++       "replacement": "r6",
++     },
++   ],
++   "findings": [],
++   "mutants": 2,
++   "ok": true,
++   "timeouts": [],
++   "zeroEntries": [],
+  }
+
+ ❯ gates/test/mutation-report.test.ts:617:72
+    615|     const mutants = [mutant("5", 5, "CompileError", shared), mutant("6…
+    616|     const run = { report: reportOf({ [x]: mutants }), exitCode: 0, out…
+    617|     expect(classifyMutants(run, [changed(x, [{ start: 5, end: 7 }])]))…
+       |                                                                        ^
+    618|       ok: false,
+    619|       cause: `mutation: could not run: Stryker's type checker rejects …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 44 skipped (45)
+   Start at  01:24:03
+   Duration  196ms (import 38%, tests 31%, transform 21%, worker 9%)
+
+exit: 1
+
+$ pnpm exec vitest run --project elements packages/elements/test/data-table.test.ts -t "Q-M2\): an overflowin"
+
+ RUN  v5.0.5 <worktree>
+
+ ❯ |elements (chromium)| packages/elements/test/data-table.test.ts (69 tests | 1 failed | 68 skipped) 698ms
+   ❯ ocelle-data-table, in process (US1) (69)
+     × US1-15 (re-attach, Q-M2): an overflowin… 695ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/data-table.test.ts > ocelle-data-table, in process (US1) > US1-15 (re-attach, Q-M2): an overflowin…
+AssertionError: expected { observed: { …(3) }, loopErrors: [] } to deeply equal { observed: { …(3) }, loopErrors: [] }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/data-table.test.ts/ocelle-data-table--in-process--US1----US1-15--re-attach--Q-M2---an-overflowin-.png
+
+- Expected
++ Received
+
+@@ -5,8 +5,8 @@
+        "aria-label": "Open work packages",
+        "role": "group",
+        "tabindex": "0",
+      },
+      "first": "Work packages",
+-     "inTask": "d-n",
++     "inTask": "",
+    },
+  }
+
+ ❯ packages/elements/test/data-table.test.ts:47:74
+     45|     const observed = await run(driver);
+     46|     // The `loop` bodies (the cases R-07 names) assert no loop error b…
+     47|     expect({ observed, loopErrors: checked === true ? loopErrors : [] …
+       |                                                                          ^
+     48|   });
+     49|
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=ea5af5a7:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 68 skipped (69)
+   Start at  01:24:04
+   Duration  1.48s (tests 79%, worker 16%, import 6%)
+
+exit: 1
+
+$ pnpm exec vitest run --project elements-browser packages/elements/test/browser/data-table.test.ts -t "Q-M2\): an overflowin"
+
+ RUN  v5.0.5 <worktree>
+
+ ❯ |elements-browser| packages/elements/test/browser/data-table.test.ts (69 tests | 1 failed | 68 skipped) 559ms
+   ❯ ocelle-data-table on the strict-CSP fixture with the browser build (US1) (69)
+     × US1-15 (re-attach, Q-M2): an overflowin… 437ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/data-table.test.ts > ocelle-data-table on the strict-CSP fixture with the browser build (US1) > US1-15 (re-attach, Q-M2): an overflowin…
+AssertionError: expected { observed: { …(3) }, …(1) } to deeply equal { observed: { …(3) }, …(1) }
+
+- Expected
++ Received
+
+@@ -4,11 +4,11 @@
+        "aria-label": "Open work packages",
+        "role": "group",
+        "tabindex": "0",
+      },
+      "first": "Work packages",
+-     "inTask": "d-n",
++     "inTask": "",
+    },
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+
+ ❯ packages/elements/test/browser/data-table.test.ts:38:57
+     36|     const page = await visit(browser, origin, "data-table.html", ["oce…
+     37|     const observed = await run(fixtureDriver(page.page, page.log, true…
+     38|     expect({ observed, recorded: await page.finish() }).toEqual({ obse…
+       |                                                         ^
+     39|   });
+     40|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 68 skipped (69)
+   Start at  01:24:07
+   Duration  2.86s (tests 54%, import 41%, transform 5%)
+
+exit: 1

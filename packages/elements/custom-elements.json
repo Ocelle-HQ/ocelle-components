@@ -1685,6 +1685,129 @@
         {
           "attributes": [
             {
+              "default": "undefined",
+              "description": "Names the scroll region while the table overflows; not shown. Trimmed; empty or whitespace-only counts as absent.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in body cells anywhere (`overflow-wrap: anywhere` through `@ocelle/styles`); any\nother value acts as unset.",
+              "fieldName": "wrap",
+              "name": "wrap",
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Present (any value): the `<thead>` stays pinned at the region's block start while the body scrolls in a block size\nthe page bounds on the host. Toggles at run time.",
+              "fieldName": "stickyHeader",
+              "name": "sticky-header",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Present (any value): each `<tbody>`'s even rows get the `--ocelle-color-inset` ground through `@ocelle/styles`.",
+              "fieldName": "striped",
+              "name": "striped",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A compact data table: a native `<table>` child in a box that scrolls in the inline direction when the table is wider\nthan its room, a tab stop and a named group only while it overflows.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "Names the scroll region while the table overflows; not shown. Trimmed; empty or whitespace-only counts as absent.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "wrap",
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in body cells anywhere (`overflow-wrap: anywhere` through `@ocelle/styles`); any\nother value acts as unset.",
+              "kind": "field",
+              "name": "wrap",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            },
+            {
+              "attribute": "sticky-header",
+              "default": "undefined",
+              "description": "Present (any value): the `<thead>` stays pinned at the region's block start while the body scrolls in a block size\nthe page bounds on the host. Toggles at run time.",
+              "kind": "field",
+              "name": "stickyHeader",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "attribute": "striped",
+              "default": "undefined",
+              "description": "Present (any value): each `<tbody>`'s even rows get the `--ocelle-color-inset` ground through `@ocelle/styles`.",
+              "kind": "field",
+              "name": "striped",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "name": "OcelleDataTable",
+          "slots": [
+            {
+              "description": "The first direct `<table>` child; other children are not shown after upgrade.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-data-table"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-data-table.ts",
+            "name": "OcelleDataTable"
+          },
+          "kind": "js",
+          "name": "OcelleDataTable"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-data-table.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "false",
               "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
               "fieldName": "open",
@@ -2347,6 +2470,223 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-empty-state.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered list.",
+              "name": "list"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An event history: one ordered list of its `ocelle-timeline-event` children, in source order, each with a dot on a\nline that joins the events.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEventTimeline",
+          "slots": [
+            {
+              "description": "The events, `ocelle-timeline-event` elements, in source order. Other children, and events with `hidden` or `aria-hidden=\"true\"`, are not shown.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-event-timeline"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-event-timeline.ts",
+            "name": "OcelleEventTimeline"
+          },
+          "kind": "js",
+          "name": "OcelleEventTimeline"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-event-timeline.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered list.",
+              "name": "list"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An evidence chain: one ordered list of its `ocelle-evidence-step` children, in source order, each default step with\na numbered marker, joined by connectors on each line and wrapping onto further lines in a narrow container.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEvidenceChain",
+          "slots": [
+            {
+              "description": "The steps, `ocelle-evidence-step` elements, in source order. Other children, and steps with `hidden` or `aria-hidden=\"true\"`, are not shown.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-evidence-chain"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-evidence-chain.ts",
+            "name": "OcelleEvidenceChain"
+          },
+          "kind": "js",
+          "name": "OcelleEvidenceChain"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-evidence-chain.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "`chip` draws the step compact inside a chain, with no marker or ordinal; any other value acts as unset. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"chip\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; unset wraps between words. Reflected.",
+              "fieldName": "wrap",
+              "name": "wrap",
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The content.",
+              "name": "content"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "One step of an evidence chain: its content, drawn by the chain with a numbered marker or, with `variant=\"chip\"`, as\na compact chip. Outside a chain it shows its content as plain text.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`chip` draws the step compact inside a chain, with no marker or ordinal; any other value acts as unset. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"chip\" | undefined"
+              }
+            },
+            {
+              "attribute": "wrap",
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; unset wraps between words. Reflected.",
+              "kind": "field",
+              "name": "wrap",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEvidenceStep",
+          "slots": [
+            {
+              "description": "The step's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-evidence-step"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-evidence-step.ts",
+            "name": "OcelleEvidenceStep"
+          },
+          "kind": "js",
+          "name": "OcelleEvidenceStep"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-evidence-step.ts"
     },
     {
       "declarations": [
@@ -5728,6 +6068,101 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-tabs.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The event's time as the consumer formats it, shown on its own line above the content. Empty or white space counts\nas no time. Ignored while the event has a slotted time (the `time` slot). Reflected.",
+              "fieldName": "time",
+              "name": "time",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; the time keeps its own line. Unset wraps between words.\nReflected.",
+              "fieldName": "wrap",
+              "name": "wrap",
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The time, on its own line above the content: the slotted time, or the `time` attribute's text. Rendered only while the event has a time.",
+              "name": "time"
+            },
+            {
+              "description": "The content.",
+              "name": "content"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "One event of an event timeline: its time (the `time` attribute, or a slotted time) above its content. Outside a\ntimeline it shows the same, as plain text.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "time",
+              "default": "undefined",
+              "description": "The event's time as the consumer formats it, shown on its own line above the content. Empty or white space counts\nas no time. Ignored while the event has a slotted time (the `time` slot). Reflected.",
+              "kind": "field",
+              "name": "time",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "wrap",
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; the time keeps its own line. Unset wraps between words.\nReflected.",
+              "kind": "field",
+              "name": "wrap",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleTimelineEvent",
+          "slots": [
+            {
+              "description": "The event's content.",
+              "name": ""
+            },
+            {
+              "description": "The event's time as marked-up nodes, for example a `<time datetime>`. It takes precedence over the `time` attribute while one of its nodes is visible (not `hidden` or `aria-hidden=\"true\"`) and has text that is not blank, and takes the time's type through `::slotted()`.",
+              "name": "time"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-timeline-event"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-timeline-event.ts",
+            "name": "OcelleTimelineEvent"
+          },
+          "kind": "js",
+          "name": "OcelleTimelineEvent"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-timeline-event.ts"
     },
     {
       "declarations": [

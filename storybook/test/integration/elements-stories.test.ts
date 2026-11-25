@@ -2520,3 +2520,412 @@ describe("the ocelle-code-block stories in the built Storybook (020 US2, FR-050,
     expect({ tabindex, focused: tabbed.focused, nodes }).toEqual({ tabindex: "0", focused: true, nodes: [{ role: "generic", name: "" }] });
   });
 });
+
+// 019 phase 1 (tasks.md T014; contracts/checks.md § Stories; I3): the 21 data-table stories. Each is in the built index
+// and renders its `ocelle-data-table` in light and dark with no request outside the origin; loaded at 320 × 800 the
+// page does not scroll sideways and the host has a size; the overflowing named stories expose a named `group` (the host
+// `aria-label` story "Deployments", the blank host `aria-label` story "Work packages", spike Q1 (b)); the bounded
+// sticky-header story is a `group` named "Work packages" scrolling in the block axis only at 1280 px with
+// `data-block-fade="end"` at rest (Q-I4); the unbounded one has no `data-axis`, `overflow-y: hidden`, no block scroll, no
+// tab stop, no group and no fade, with its table separated (C1 (b), Q-3 (c)); the room-rule one is a block-scrolling
+// `group` with no fade, the space below its `<thead>` above 0 and below twice the fade depth (fixes-2 Q-1 (b)); and the
+// two hover stories declare `parameters.ocelle.pointer.hover` with one selector matching one body cell, the striped
+// one's on an even row (IQ-2 to IQ-5).
+const dataTableStories = [
+  "fits",
+  "overflows-named-by-label",
+  "overflows-named-by-caption",
+  "overflows-unnamed",
+  "overflows-named-by-host-aria-label",
+  "overflows-blank-host-aria-label",
+  "row-headers",
+  "corner-header",
+  "wrap-anywhere",
+  "inside-prose",
+  "right-to-left",
+  "empty-body",
+  "width-320",
+  "no-table",
+  "sticky-header-bounded",
+  "sticky-header-unbounded",
+  "sticky-header-room-rule",
+  "numeric-column",
+  "striped",
+  "row-hovered",
+  "striped-even-row-hovered",
+].map((name) => `elements-ocelle-data-table--${name}`);
+
+/** Opens a data-table story at `width` × 800 and waits for its elements. */
+async function openDataTable(id: string, theme: "light" | "dark", width = 1280): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width, height: 800 }, reducedMotion: "reduce" });
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
+  });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
+  await page.waitForSelector("#storybook-root ocelle-data-table", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-data-table")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    for (let frame = 0; frame < 3; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  return { page, outside };
+}
+
+/** The first data table's region: its box's attributes and figures, `overflow-y`, the fade depth and the <thead>'s end. */
+function readRegion(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    const host = document.querySelector("#storybook-root ocelle-data-table");
+    const box = host?.shadowRoot?.querySelector(".region-box");
+    if (host === null || box === null || box === undefined) return null;
+    const rect = box.getBoundingClientRect();
+    const head = host.querySelector(":scope > table > thead")?.getBoundingClientRect();
+    const edge = host.shadowRoot?.querySelector(".region-edge.block-end")?.getBoundingClientRect();
+    return {
+      tabindex: box.getAttribute("tabindex"),
+      role: box.getAttribute("role"),
+      name: box.getAttribute("aria-label"),
+      axis: box.getAttribute("data-axis"),
+      blockFade: box.getAttribute("data-block-fade"),
+      overflowY: getComputedStyle(box).overflowY,
+      blockScroll: box.scrollHeight - box.clientHeight,
+      inlineScroll: box.scrollWidth - box.clientWidth,
+      collapse: getComputedStyle(host.querySelector(":scope > table") ?? host).borderCollapse,
+      space: head === undefined ? null : rect.top + box.clientHeight - head.bottom,
+      depth: edge?.height ?? 0,
+    };
+  });
+}
+
+describe("the ocelle-data-table stories in the built Storybook (019 FR-050, T014)", { timeout: 60_000 }, () => {
+  it("are all in the built index", () => {
+    const index = JSON.parse(readFileSync(join(built.out, "index.json"), "utf8")) as { entries?: Record<string, unknown> };
+    expect(dataTableStories.filter((id) => index.entries?.[id] === undefined)).toEqual([]);
+  });
+
+  for (const id of dataTableStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-data-table with no request outside the origin`, async () => {
+        const { page, outside } = await openDataTable(id, theme);
+        const observed = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme, defined: customElements.get("ocelle-data-table") !== undefined, region: document.querySelector("#storybook-root ocelle-data-table")?.shadowRoot?.querySelector(".region-box") !== null }));
+        await page.close();
+        expect({ observed, outside }).toEqual({ observed: { theme, defined: true, region: true }, outside: [] });
+      });
+    }
+
+    it(`${id} at 320 px: the page does not scroll sideways and the host has a size`, async () => {
+      const { page } = await openDataTable(id, "light", 320);
+      const observed = await page.evaluate(() => {
+        const host = document.querySelector("#storybook-root ocelle-data-table")?.getBoundingClientRect();
+        return { scrollWidth: document.documentElement.scrollWidth, sized: host !== undefined && host.width > 0 && host.height > 0 };
+      });
+      const scrollWidth = await readScrollWidth(page.mainFrame());
+      await page.close();
+      expect({ ...observed, read: scrollWidth }).toEqual({ scrollWidth: 320, sized: true, read: 320 });
+    });
+  }
+
+  it.each([
+    ["overflows-named-by-label", "Work packages"],
+    ["overflows-named-by-caption", "Work packages"],
+    ["overflows-named-by-host-aria-label", "Deployments"],
+    ["overflows-blank-host-aria-label", "Work packages"],
+  ])("%s: the overflowing region is a group named %s", async (name, label) => {
+    const { page } = await openDataTable(`elements-ocelle-data-table--${name}`, "light");
+    const region = (await readRegion(page)) as { tabindex: string | null; role: string | null; name: string | null } | null;
+    await page.close();
+    expect(region === null ? null : { tabindex: region.tabindex, role: region.role, name: region.name }).toEqual({ tabindex: "0", role: "group", name: label });
+  });
+
+  it("sticky header, bounded / unbounded / under the room rule, at 1280 px: block scroll and the fade as Q-I4, Q-3 (c), C1 (b) and fixes-2 Q-1 (b) state", async () => {
+    const read = async (name: string): Promise<Record<string, unknown> | null> => {
+      const { page } = await openDataTable(`elements-ocelle-data-table--${name}`, "light");
+      const region = (await readRegion(page)) as Record<string, unknown> | null;
+      await page.close();
+      return region;
+    };
+    const bounded = await read("sticky-header-bounded");
+    const unbounded = await read("sticky-header-unbounded");
+    const room = await read("sticky-header-room-rule");
+    const pick = (region: Record<string, unknown> | null, keys: readonly string[]): unknown => (region === null ? null : Object.fromEntries(keys.map((key) => [key, region[key]])));
+    expect({
+      bounded: pick(bounded, ["tabindex", "role", "name", "axis", "blockFade"]),
+      boundedScrolls: bounded !== null && Number(bounded.blockScroll) > 1 && Number(bounded.inlineScroll) <= 1,
+      unbounded: pick(unbounded, ["tabindex", "role", "name", "axis", "blockFade", "overflowY", "blockScroll", "collapse"]),
+      room: pick(room, ["tabindex", "role", "name", "blockFade"]),
+      roomScrolls: room !== null && Number(room.blockScroll) > 1,
+      roomSpace: room !== null && Number(room.space) > 0 && Number(room.space) < 2 * Number(room.depth),
+    }).toEqual({
+      bounded: { tabindex: "0", role: "group", name: "Work packages", axis: "both", blockFade: "end" },
+      boundedScrolls: true,
+      unbounded: { tabindex: null, role: null, name: null, axis: null, blockFade: null, overflowY: "hidden", blockScroll: 0, collapse: "separate" },
+      room: { tabindex: "0", role: "group", name: "Work packages", blockFade: null },
+      roomScrolls: true,
+      roomSpace: true,
+    });
+  });
+
+  it("the two hover stories declare parameters.ocelle.pointer.hover with one selector each, matching one body cell inside the viewport, the striped one's on an even row", async () => {
+    const source = readStories("data-table.stories.ts");
+    const selectors = [...source.matchAll(/pointer:\s*\{\s*hover:\s*"([^"]+)"\s*\}/g)].map((match) => match[1] ?? "");
+    const check = async (name: string, selector: string): Promise<unknown> => {
+      const { page } = await openDataTable(`elements-ocelle-data-table--${name}`, "light");
+      const observed = await page.evaluate((selector) => {
+        const matches = [...document.querySelectorAll(selector)];
+        const cell = matches[0];
+        const row = cell?.parentElement;
+        const rect = cell?.getBoundingClientRect();
+        return {
+          matches: matches.length,
+          bodyCell: cell !== undefined && /^(TD|TH)$/.test(cell.tagName) && row?.parentElement?.tagName === "TBODY",
+          even: row === null || row === undefined ? null : ([...(row.parentElement?.children ?? [])].indexOf(row) + 1) % 2 === 0,
+          inside: rect !== undefined && rect.width > 0 && rect.left >= 0 && rect.top >= 0 && rect.right <= 1280 && rect.bottom <= 800,
+        };
+      }, selector);
+      await page.close();
+      return observed;
+    };
+    const hovered = selectors.length === 2 ? await check("row-hovered", selectors[0] ?? "") : null;
+    const striped = selectors.length === 2 ? await check("striped-even-row-hovered", selectors[1] ?? "") : null;
+    expect({ declared: selectors.length, hovered, striped }).toEqual({
+      declared: 2,
+      hovered: { matches: 1, bodyCell: true, even: false, inside: true },
+      striped: { matches: 1, bodyCell: true, even: true, inside: true },
+    });
+  });
+});
+
+// 019 phase 2 (tasks.md T038; contracts/checks.md § Stories; I3; phase 2 spike Q1 (b)): the 13 timeline stories. Each is
+// in the built index and renders its timeline (or, in the standalone story, its events) in light and dark with no
+// request outside the origin; loaded at 320 × 800 the page does not scroll sideways and the element has a size (the
+// empty timeline an inline size only, as it renders nothing); every list is named, except in the empty and the
+// standalone stories, which render no list node; the standalone events have a size; and the two host `aria-label`
+// stories name the list "History" and "Mission history".
+const timelineStoryNames = [
+  "three-events",
+  "without-time",
+  "marked-up-times",
+  "long-identifier-wrap",
+  "link-in-event",
+  "one-event",
+  "hidden-event",
+  "right-to-left",
+  "width-320",
+  "empty",
+  "standalone-events",
+  "named-by-host-aria-label",
+  "blank-host-aria-label",
+];
+const timelineStories = timelineStoryNames.map((name) => `elements-ocelle-event-timeline--${name}`);
+const unlisted = ["empty", "standalone-events"];
+
+/** Opens a timeline story at `width` × 800 and waits for its elements. */
+async function openTimeline(id: string, theme: "light" | "dark", width = 1280): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width, height: 800 }, reducedMotion: "reduce" });
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
+  });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
+  await page.waitForSelector("#storybook-root ocelle-event-timeline, #storybook-root ocelle-timeline-event", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-event-timeline, #storybook-root ocelle-timeline-event")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    for (let frame = 0; frame < 3; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  return { page, outside };
+}
+
+/** The names of the page's unignored `list` nodes. */
+async function listNames(page: Page): Promise<string[]> {
+  const session = await page.context().newCDPSession(page);
+  try {
+    const { nodes } = (await session.send("Accessibility.getFullAXTree")) as { nodes: { ignored: boolean; role?: { value?: unknown }; name?: { value?: unknown } }[] };
+    return nodes.filter((node) => !node.ignored && node.role?.value === "list").map((node) => (typeof node.name?.value === "string" ? node.name.value : ""));
+  } finally {
+    await session.detach();
+  }
+}
+
+describe("the ocelle-event-timeline stories in the built Storybook (019 FR-050, T038)", { timeout: 60_000 }, () => {
+  it("are all in the built index", () => {
+    const index = JSON.parse(readFileSync(join(built.out, "index.json"), "utf8")) as { entries?: Record<string, unknown> };
+    expect(timelineStories.filter((id) => index.entries?.[id] === undefined)).toEqual([]);
+  });
+
+  for (const name of timelineStoryNames) {
+    const id = `elements-ocelle-event-timeline--${name}`;
+    const element = name === "standalone-events" ? "ocelle-timeline-event" : "ocelle-event-timeline";
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ${element} with no request outside the origin`, async () => {
+        const { page, outside } = await openTimeline(id, theme);
+        const observed = await page.evaluate((element) => ({ theme: document.documentElement.dataset.theme, defined: customElements.get(element) !== undefined, rendered: document.querySelector(`#storybook-root ${element}`)?.shadowRoot?.childElementCount !== undefined }), element);
+        await page.close();
+        expect({ observed, outside }).toEqual({ observed: { theme, defined: true, rendered: true }, outside: [] });
+      });
+    }
+
+    it(`${id} at 320 px: the page does not scroll sideways and the ${element} has a size`, async () => {
+      const { page } = await openTimeline(id, "light", 320);
+      const observed = await page.evaluate((element) => {
+        const host = document.querySelector(`#storybook-root ${element}`)?.getBoundingClientRect();
+        return { scrollWidth: document.documentElement.scrollWidth, inline: host !== undefined && host.width > 0, block: host !== undefined && host.height > 0 };
+      }, element);
+      const scrollWidth = await readScrollWidth(page.mainFrame());
+      await page.close();
+      expect({ ...observed, read: scrollWidth }).toEqual({ scrollWidth: 320, inline: true, block: name !== "empty", read: 320 });
+    });
+
+    it(`${id}: ${unlisted.includes(name) ? "renders no list node" : "every list is named, and there is one"}`, async () => {
+      const { page } = await openTimeline(id, "light");
+      const names = await listNames(page);
+      await page.close();
+      expect(unlisted.includes(name) ? { lists: names.length } : { lists: names.length, unnamed: names.filter((each) => each.trim() === "").length }).toEqual(unlisted.includes(name) ? { lists: 0 } : { lists: 1, unnamed: 0 });
+    });
+  }
+
+  it("standalone events: two ocelle-timeline-events with a size each, outside a timeline, each its time above its content", async () => {
+    const { page } = await openTimeline("elements-ocelle-event-timeline--standalone-events", "light");
+    const observed = await page.evaluate(() => {
+      const events = [...document.querySelectorAll("#storybook-root ocelle-timeline-event")];
+      return {
+        count: events.length,
+        timelines: document.querySelectorAll("#storybook-root ocelle-event-timeline").length,
+        sized: events.every((event) => event.getBoundingClientRect().width > 0 && event.getBoundingClientRect().height > 0),
+        above: events.every((event) => {
+          const time = event.shadowRoot?.querySelector('[part="time"]')?.getBoundingClientRect();
+          const content = event.shadowRoot?.querySelector('[part="content"]')?.getBoundingClientRect();
+          return time !== undefined && content !== undefined && time.bottom <= content.top + 0.5;
+        }),
+      };
+    });
+    await page.close();
+    expect(observed).toEqual({ count: 2, timelines: 0, sized: true, above: true });
+  });
+
+  it.each([
+    ["named-by-host-aria-label", "History"],
+    ["blank-host-aria-label", "Mission history"],
+  ])("%s: the list is named %s", async (name, label) => {
+    const { page } = await openTimeline(`elements-ocelle-event-timeline--${name}`, "light");
+    const names = await listNames(page);
+    await page.close();
+    expect(names).toEqual([label]);
+  });
+});
+
+// 019 phase 3 (tasks.md T061; contracts/checks.md § Stories; I3; phase 3 spike Q1 (b)): the 14 chain stories. Each is
+// in the built index and renders its chain (or, in the standalone story, its steps) in light and dark with no request
+// outside the origin; loaded at 320 × 800 the page does not scroll sideways and the element has a size (the empty
+// chain an inline size only, as it renders nothing); every list is named, except in the unnamed story, whose one list
+// has no name, and the empty and standalone stories, which render no list node; the standalone steps have a size; and
+// the two host `aria-label` stories name the list "Proof" and "Evidence".
+const chainStoryNames = [
+  "six-steps",
+  "wrapped-320",
+  "mixed-chips",
+  "all-chips",
+  "twenty-steps",
+  "long-step",
+  "wrap-anywhere",
+  "hidden-step",
+  "right-to-left",
+  "unnamed",
+  "empty",
+  "standalone-steps",
+  "named-by-host-aria-label",
+  "blank-host-aria-label",
+];
+const chainStories = chainStoryNames.map((name) => `elements-ocelle-evidence-chain--${name}`);
+const chainUnlisted = ["empty", "standalone-steps"];
+
+/** Opens a chain story at `width` × 800 and waits for its elements. */
+async function openChain(id: string, theme: "light" | "dark", width = 1280): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width, height: 800 }, reducedMotion: "reduce" });
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
+  });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
+  await page.waitForSelector("#storybook-root ocelle-evidence-chain, #storybook-root ocelle-evidence-step", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-evidence-chain, #storybook-root ocelle-evidence-step")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    for (let frame = 0; frame < 3; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  return { page, outside };
+}
+
+describe("the ocelle-evidence-chain stories in the built Storybook (019 FR-050, T061)", { timeout: 60_000 }, () => {
+  it("are all in the built index", () => {
+    const index = JSON.parse(readFileSync(join(built.out, "index.json"), "utf8")) as { entries?: Record<string, unknown> };
+    expect(chainStories.filter((id) => index.entries?.[id] === undefined)).toEqual([]);
+  });
+
+  for (const name of chainStoryNames) {
+    const id = `elements-ocelle-evidence-chain--${name}`;
+    const element = name === "standalone-steps" ? "ocelle-evidence-step" : "ocelle-evidence-chain";
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ${element} with no request outside the origin`, async () => {
+        const { page, outside } = await openChain(id, theme);
+        const observed = await page.evaluate((element) => ({ theme: document.documentElement.dataset.theme, defined: customElements.get(element) !== undefined, rendered: document.querySelector(`#storybook-root ${element}`)?.shadowRoot?.childElementCount !== undefined }), element);
+        await page.close();
+        expect({ observed, outside }).toEqual({ observed: { theme, defined: true, rendered: true }, outside: [] });
+      });
+    }
+
+    it(`${id} at 320 px: the page does not scroll sideways and the ${element} has a size`, async () => {
+      const { page } = await openChain(id, "light", 320);
+      const observed = await page.evaluate((element) => {
+        const host = document.querySelector(`#storybook-root ${element}`)?.getBoundingClientRect();
+        return { scrollWidth: document.documentElement.scrollWidth, inline: host !== undefined && host.width > 0, block: host !== undefined && host.height > 0 };
+      }, element);
+      const scrollWidth = await readScrollWidth(page.mainFrame());
+      await page.close();
+      expect({ ...observed, read: scrollWidth }).toEqual({ scrollWidth: 320, inline: true, block: name !== "empty", read: 320 });
+    });
+
+    it(`${id}: ${chainUnlisted.includes(name) ? "renders no list node" : name === "unnamed" ? "has one list, unnamed" : "every list is named, and there is one"}`, async () => {
+      const { page } = await openChain(id, "light");
+      const names = await listNames(page);
+      await page.close();
+      expect(chainUnlisted.includes(name) ? { lists: names.length } : { lists: names.length, unnamed: names.filter((each) => each.trim() === "").length }).toEqual(chainUnlisted.includes(name) ? { lists: 0 } : { lists: 1, unnamed: name === "unnamed" ? 1 : 0 });
+    });
+  }
+
+  it("standalone steps: a default and a chip ocelle-evidence-step with a size each, outside a chain, each its content part with no list node", async () => {
+    const { page } = await openChain("elements-ocelle-evidence-chain--standalone-steps", "light");
+    const observed = await page.evaluate(() => {
+      const steps = [...document.querySelectorAll("#storybook-root ocelle-evidence-step")];
+      return {
+        count: steps.length,
+        chips: steps.filter((step) => step.getAttribute("variant") === "chip").length,
+        chains: document.querySelectorAll("#storybook-root ocelle-evidence-chain").length,
+        sized: steps.every((step) => step.getBoundingClientRect().width > 0 && step.getBoundingClientRect().height > 0),
+        content: steps.every((step) => step.shadowRoot?.querySelector('[part="content"]') !== null && step.shadowRoot !== null),
+      };
+    });
+    const names = await listNames(page);
+    await page.close();
+    expect({ ...observed, lists: names.length }).toEqual({ count: 2, chips: 1, chains: 0, sized: true, content: true, lists: 0 });
+  });
+
+  it.each([
+    ["named-by-host-aria-label", "Proof"],
+    ["blank-host-aria-label", "Evidence"],
+  ])("%s: the list is named %s", async (name, label) => {
+    const { page } = await openChain(`elements-ocelle-evidence-chain--${name}`, "light");
+    const names = await listNames(page);
+    await page.close();
+    expect(names).toEqual([label]);
+  });
+});
+
+/** A stories file's text, empty while it does not exist. */
+function readStories(file: string): string {
+  const url = new URL(`../../stories/${file}`, import.meta.url);
+  return existsSync(url) ? readFileSync(url, "utf8") : "";
+}

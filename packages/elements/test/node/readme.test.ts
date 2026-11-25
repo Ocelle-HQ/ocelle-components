@@ -64,8 +64,10 @@ const fragments = [
   // styles (FR-003, R-03, R-04, R-09)
   // since 009 (T019, FR-030): the shared sheets and at most one per-instance sheet of measured figures, replacing "one
   // shared stylesheet"
-  "An element's styles are its shared `static styles`, one or more `css` tagged templates built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one per-instance constructed stylesheet that holds only px figures the element measured from layout",
-  "The per-instance sheet never holds a value from an attribute, a property, a token's text or slotted text, and it is written through `CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size and `ocelle-list-detail`'s intrinsic sizes are its two uses",
+  // amended by 019 phase 1 (research.md R-07, recheck Q2 (c)): at most one per-instance sheet of the element's own, plus
+  // the overflow-region module's beside it, and the data table's caption cap among the uses
+  "An element's styles are its shared `static styles`, one or more `css` tagged templates built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one per-instance constructed stylesheet of its own that holds only px figures the element measured from layout, and, in an element that uses the overflow-region module, the module's per-instance sheet beside it",
+  "A per-instance sheet never holds a value from an attribute, a property, a token's text or slotted text, and it is written through `CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size, `ocelle-list-detail`'s intrinsic sizes and `ocelle-data-table`'s caption cap (its box size and end fade depth) are its uses",
   "No template has a `style` attribute or a `<style>` element",
   "Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule.",
   // amended by 011 (FR-001, FR-036; research.md R-01): colour and ground variants inside the query, layout-only ones outside
@@ -121,7 +123,7 @@ const fragments = [
   // I10, I14, U10, U11, A5; T034a)
   "A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
   "On a form control a host `aria-label` that is not blank names the control alone; a blank one, empty or whitespace only, is skipped, and the labels and `label` name the control",
-  "For `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
+  "For `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table`, `ocelle-event-timeline` and `ocelle-evidence-chain` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
   "`ocelle-list-detail` takes no name: a host `aria-label` is not used",
   "On `ocelle-icon` and `ocelle-brand-mark`, when both are set, the host `aria-label` is the name; removing it falls back to `label`",
   "On `ocelle-icon` and `ocelle-brand-mark`, Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
@@ -272,7 +274,10 @@ const fragments = [
   "Importing `@ocelle/elements/ocelle-form-select.js` defines `ocelle-form-select` only: the select draws its indicator itself and does not define `ocelle-icon`",
   // the overflow-region module, under the element conventions (009 FR-011, FR-034; contracts/overflow-region.md; T019)
   "The overflow-region module (`src/overflow-region.ts`, internal) gives an element a scroll box that is a tab stop and a named group, or region, only while it overflows: `ocelle-scroller` uses it, and so does any later element with a scroll region",
-  "Inputs: the host element (`new OverflowRegion(host, { box, role, step })`), `box`, a function that returns the scroll box in the host's shadow root, `role`, `\"group\"` by default or `\"region\"`, `step`, 40 px by default, and the label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change",
+  // amended by 019 phase 1 (FR-018, inventory decision IQ-2; contracts/overflow-region-block-axis.md): the block-axis option
+  "Inputs: the host element (`new OverflowRegion(host, { box, role, step, blockAxis, blockStartBox })`), `box`, a function that returns the scroll box in the host's shadow root, `role`, `\"group\"` by default or `\"region\"`, `step`, 40 px by default, the block-axis option `blockAxis`, a function that returns whether the box also scrolls in the block axis, and `blockStartBox`, a function that returns the box the host pins at the block start or `null`, and the label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change",
+  "`ocelle-data-table` with `sticky-header` is the only user that sets the block-axis option. While it is on and the box overflows in the block axis, the module sets `data-axis=\"both\"` on the box, handles ArrowUp and ArrowDown, leaves PageUp, PageDown, Home, End, Space and Shift+Space to the browser, keeps a focused element clear of the pinned box, and fades the block end while content is below (`data-block-fade=\"end\"`, drawn by `.region-edge.block-end` as a line in forced colours)",
+  "`ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` do not set it, and nothing changes for them",
   "Outputs, read by the host's render: `overflowing`, `offStart`, `offEnd`, `fadeStart`, `fadeEnd`, `fadeAttribute` (`\"start\"`, `\"end\"`, `\"both\"` or undefined) and `name`; the module requests an update when one changes",
   "Effects, on the scroll box and the module's own shadow nodes only, never on the host: the box's `tabindex`, `role` and `aria-label`, the arrow keys on the box, the focus clearance of slotted controls and the focus handover when overflow ends",
   // the Lifecycle statement as contracts/overflow-region.md § Lifecycle has it (009 phase 2 review R2-02, landing review
@@ -641,6 +646,68 @@ const fragments = [
   "The label is text only: there is no slot for a rich label",
   "The element has no slot: text inside it (a \"7/12\" fallback) shows only before the element is defined, and after that it is neither shown nor exposed; the bar keeps its own name and value",
   "`ocelle-progress` emits no event and adds no tab stop",
+  // ocelle-data-table (019 FR-001 to FR-019, FR-040, FR-056, FR-058; contracts/ocelle-data-table.md; research.md R-01 to
+  // R-07, R-16, R-18 to R-20; tasks.md T013)
+  "`ocelle-data-table` holds one native `<table>` as its first child and shows it unchanged in a scroll region: `<ocelle-data-table label=\"Work packages\"><table>…</table></ocelle-data-table>`",
+  "A container whose content is one native element is styled by `@ocelle/styles` rules scoped to it and assigns that element by manual slot assignment; other children are not shown",
+  "`ocelle-data-table` uses the overflow-region module, as `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` do",
+  "The region's name is the host `aria-label` when it is not blank, else `label`, else the caption's text; give an overflowing table a caption or a `label`",
+  "Give an overflowing table a `label` that differs from its caption's text: a region named by its caption is announced with the table's own name",
+  "Sizing: a wrapper that is itself the flex or grid item, around the element, needs `min-inline-size: 0` too. In a shrink-to-fit host (a dialog, an inline-block, a start-aligned flex) the data table takes its table's width and overflows only when its own inline size is bounded",
+  "The `hidden` attribute, not CSS, hides part of a caption from the name",
+  "The caption scrolls with the table until the overflow-region module's pinned-start option lands",
+  "The caption's longest word widens the table; in a bounded host a caption word wider than the box overflows it and the region scrolls",
+  "The look comes from `@ocelle/styles`: link its `base.css` on the page, or adopt it in a consumer's shadow root",
+  "Inside a `data-ocelle-prose` container a consumer rule on the table needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`",
+  "Printed, content past the box is clipped; a consumer who prints sets a print rule of its own",
+  "Before upgrade the table is styled by `@ocelle/styles` with no scroll region",
+  "Chromium names each column header by its drawn upper-case text, so the accessible names of column headers follow the upper case",
+  "Base-style hook: the element writes `--data-table-box-size` (the box's measured inline size) and `--data-table-end-fade` (the end fade's depth while it shows) for `@ocelle/styles`' caption cap. Both are public surface of `@ocelle/elements` and `@ocelle/styles`, and a consumer does not set them",
+  "No change the data table makes to its region leaves it in a state a fresh load would not give",
+  "No change the data table makes to its region leaves it in a state a fresh load would not give, and nor does a change to its table or caption after load",
+  "A caption that grows after load (its text edited, a style changed or a web font loaded late) widens the table as it would on a fresh load",
+  "`sticky-header` pins the `<thead>` while the body scrolls in a block size the page bounds on the host with its own `block-size` or `max-block-size`; with no bound nothing scrolls in the block axis",
+  "The caption scrolls away in the block axis. ArrowUp and ArrowDown scroll the region, and PageUp, PageDown, Home, End, Space and Shift+Space scroll it as the browser does",
+  "The block end fades while rows are below, never under the header, with a line in forced colours",
+  "A bounded table prints its box only",
+  "`striped` gives each `<tbody>`'s even rows the `--ocelle-color-inset` ground, hidden rows counted",
+  "A hovered body row takes the `--ocelle-color-hover-bg` ground: a look only, with no event, no tab stop and no cursor; always on where the device can hover, nothing on a touch screen",
+  "In the light theme a hovered striped row shows no change, because `hover-bg` equals `inset` there",
+  "For an end-aligned numeric column, put `@ocelle/styles`' `data-ocelle-align=\"end\"` on the column's cells",
+  "No data-table row of the mapping reads \"pending inventory\"",
+  // ocelle-event-timeline and ocelle-timeline-event (019 FR-016, FR-020 to FR-027, FR-058; contracts/ocelle-event-timeline.md,
+  // contracts/ocelle-timeline-event.md; research.md R-08 to R-10, R-16; tasks.md T037)
+  "`ocelle-event-timeline` shows an event history as one ordered list of its `ocelle-timeline-event` children, in source order: `<ocelle-event-timeline label=\"Mission history\"><ocelle-timeline-event time=\"14:02\">Mission created</ocelle-timeline-event></ocelle-event-timeline>`",
+  "Each event is one list item: a dot on a line that joins the events, its time above its content, and its content. The dots and the line are drawn and hidden from assistive technology; a screen reader hears the list's name, then each item's time and content",
+  "The list is named by a non-blank host `aria-label`, trimmed, else by `label`; a blank host `aria-label` counts as absent. With neither the list is unnamed",
+  "Only `ocelle-timeline-event` children are shown and exposed; an event with `hidden` or `aria-hidden=\"true\"` is neither, and no line joins it. With no visible event the timeline renders no list",
+  "The element neither sorts nor formats times: events show in source order with the time as written",
+  "`ocelle-event-timeline` names its list with the overflow-region module's `resolveName`, as `ocelle-workflow-lane` does, and uses nothing else of that module",
+  "The `time` attribute is the event's time as plain text. For a machine-readable time, write it in the `time` slot instead: `<time slot=\"time\" datetime=\"2026-11-15T14:41\">14:41</time>`",
+  "The `time` slot takes precedence over the `time` attribute while one of its nodes is visible (neither `hidden` nor `aria-hidden=\"true\"`) and has text that is not blank; an empty, blank or hidden slotted time counts as none, and a `time` attribute then applies",
+  "A slotted time keeps the consumer's `datetime`, `title`, `lang`, `dir` or htmx target, which the attribute cannot carry. Write one time element per event",
+  "A slotted time takes the attribute time's type through `::slotted()`, wherever it is written in the event; a consumer rule on the slotted node beats that type",
+  "An event's item text is its time, a space and its content: the time is read first even when the slotted time is written after the content",
+  "`wrap=\"anywhere\"` on an event breaks a long identifier in its content anywhere; the time keeps its own line",
+  "Outside a timeline an event shows its time above its content as plain text, with no dot, line or list role",
+  "Before upgrade: `@ocelle/styles`' `base.css` shows each visible event on its own line; an event's `time` attribute shows only once the elements are defined, and a slotted time shows inline where it is written",
+  "The timeline has no live region, landmark, heading or tab stop; a link in an event keeps its own tab stop. Announce new events with the consumer's own live region",
+  "In forced colours the dots and the line are drawn in `CanvasText` and the text in the system text colour",
+  // ocelle-evidence-chain and ocelle-evidence-step (019 FR-030 to FR-036, FR-058; contracts/ocelle-evidence-chain.md,
+  // contracts/ocelle-evidence-step.md; research.md R-08, R-09, R-12, R-16; tasks.md T062): usage, ordinals, chips,
+  // wrapping, before upgrade and host ARIA (the Host ARIA sentence above names the chain)
+  "`ocelle-evidence-chain` shows an evidence chain as one ordered list of its `ocelle-evidence-step` children, in source order: `<ocelle-evidence-chain label=\"Evidence\"><ocelle-evidence-step>Spec</ocelle-evidence-step><ocelle-evidence-step variant=\"chip\">3 checks</ocelle-evidence-step></ocelle-evidence-chain>`",
+  "Each default step shows a round marker with its ordinal before its content. The markers, ordinals and connectors are drawn and hidden from assistive technology: a screen reader hears the list's name, then each step's content, and the list's order conveys the position",
+  "A default step's ordinal is its position among the visible steps, chip steps counted, so the numbers shown skip a chip",
+  "`variant=\"chip\"` draws a step as a compact chip: an outline with the `--ocelle-radius-2` corner and no fill, no marker and no ordinal, its text one size smaller than a default step's; any other value acts as unset. The chip is the chain's own and draws nothing of the pill tag",
+  "The steps sit in rows from the inline start and wrap onto further lines when the chain is too narrow for them; a connector joins consecutive steps on one line, never across lines or past the chain's edges. The chain follows its container's width, not the viewport's",
+  "Long content wraps between words inside the step; `wrap=\"anywhere\"` on a step breaks a long identifier anywhere",
+  "`ocelle-evidence-chain` names its list with the overflow-region module's `resolveName`, as `ocelle-event-timeline` does, and uses nothing else of that module",
+  "Only `ocelle-evidence-step` children are shown and exposed; a step with `hidden` or `aria-hidden=\"true\"` is neither and takes no ordinal. With no visible step the chain renders no list: place 013's `ocelle-empty-state` in its place",
+  "Outside a chain a step shows its content as plain text, with no marker, ordinal, connector or chip box",
+  "Before upgrade: `@ocelle/styles`' `base.css` shows each visible step on its own line, with no marker or ordinal",
+  "The chain has no live region, landmark, heading or tab stop; a link in a step keeps its own tab stop",
+  "In forced colours the markers, connectors and chip outlines are drawn in `CanvasText` and the text in the system text colour",
   // ocelle-listbox and ocelle-option (014 US1, FR-006, FR-009 to FR-018, FR-014a, FR-056; research.md R-01, R-03 to R-05, R-15, R-18)
   "`ocelle-listbox` is a single-select listbox of `ocelle-option` children: the host writes the options as its children, in the page's own markup, and reads the selected value from the listbox",
   "`value` (attribute and property, not reflected): the selected option's value, `\"\"` when none. Setting it to a value an enabled option has selects the first such option; setting it to `\"\"` or to a value no enabled option has clears the selection. A host set never emits an event, and setting the current value changes nothing",
@@ -765,6 +832,11 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-data-table.js` | `dist/ocelle-data-table.js` | `ocelle-data-table` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-event-timeline.js` | `dist/ocelle-event-timeline.js` | `ocelle-event-timeline` and its item `ocelle-timeline-event`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-timeline-event.js` | `dist/ocelle-timeline-event.js` | `ocelle-timeline-event` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-evidence-chain.js` | `dist/ocelle-evidence-chain.js` | `ocelle-evidence-chain` and its item `ocelle-evidence-step`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-evidence-step.js` | `dist/ocelle-evidence-step.js` | `ocelle-evidence-step` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-listbox.js` | `dist/ocelle-listbox.js` | `ocelle-listbox` and `ocelle-option`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-option.js` | `dist/ocelle-option.js` | `ocelle-option` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-tabs.js` | `dist/ocelle-tabs.js` | `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`; for hosts with a bundler |",
@@ -888,6 +960,87 @@ const progressMapping: readonly (readonly [string, string])[] = [
   ["progress centred", "`ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure"],
 ];
 
+/**
+ * The data table's rows of the README's kitty-mission-ui mapping (019 FR-058, research.md R-16, inventory decisions IQ-1
+ * (a), IQ-6 (a), IQ-7 (a)): one row per modifier, state and structure role of the library's data table (it has no
+ * part), each role name with the element, attribute or hook, or the consumer's remedy, or "none", exactly. Keyed by role
+ * name; no class-family name appears in this test (013's operator decision I1).
+ */
+const dataTableMapping: readonly (readonly [string, string])[] = [
+  ["data table scroller", "`ocelle-data-table`'s region: a named `group` tab stop only while the table overflows, with the overflow-region focus ring; give an overflowing table a `label` that differs from its caption"],
+  ["data table class", "the consumer's own `<table>` inside `ocelle-data-table`, with no class"],
+  ["data table caption", "the table's `<caption>`, styled by `@ocelle/styles`"],
+  ["data table header cells", "the eyebrow column headers of `@ocelle/styles`; for sentence case, the consumer's own rule on the header cells, which wins over the (0,0,0) rules. The prototype's mono headers map to the sans face with tabular figures, its 0.06em tracking to `--ocelle-tracking-eyebrow`, and its larger header padding to the cells' padding, so each header's text starts on its column's text line"],
+  ["data table body cells", "the compact body cells of `@ocelle/styles`. The prototype's mono cells map to the sans face with tabular figures"],
+  ["data table numeric cell", "`data-ocelle-align=\"end\"` on the column's cells, `@ocelle/styles`' hook"],
+  ["data table sticky header", "`ocelle-data-table sticky-header`, with the page's block bound on the host (`block-size` or `max-block-size`)"],
+  ["data table zebra rows", "`ocelle-data-table striped`"],
+  ["data table row hover", "built in: the hover ground of `@ocelle/styles` on a device that can hover"],
+  ["data table forced colours", "built in: system colours for text and rules, and the row band for the stripe and the hover"],
+  ["data table overflowing", "built in: the region's tab stop, role and name while the table overflows"],
+  ["data table tone", "none: the data table carries no tone"],
+  // 019 phase 4 review round 1 (G-1 (b), R1-01): #470's light-mode state, as the timeline and the chain have it.
+  ["data table light mode", "built in: the light and dark themes"],
+];
+
+/**
+ * The event timeline's rows of the README's kitty-mission-ui mapping (019 FR-058, research.md R-16's phase 2 table,
+ * inventory decisions IQ-8 to IQ-17 and IQ-26, each (a); plan gate Q-C (a)): one row per modifier, state and structure
+ * role of the library's timeline (it has no part), each role name with the element, attribute or slot, or the
+ * consumer's remedy, exactly. Keyed by role name; no class-family name appears in this test (013's operator decision I1).
+ */
+const eventTimelineMapping: readonly (readonly [string, string])[] = [
+  ["event timeline class", "`ocelle-event-timeline`: an ordered list of its `ocelle-timeline-event` children in source order, named by `label` or a non-blank host `aria-label`; the measure cap maps to the container: for a cap, `max-inline-size` on the host"],
+  ["event timeline item", "each `ocelle-timeline-event`: one list item with a drawn dot and a gapped line to the next visible event; long identifiers break with `wrap=\"anywhere\"`"],
+  ["event timeline summary", "the consumer's markup in the event's content, for example a `<strong>` title and text"],
+  ["event timeline metadata time", "the event's `time` attribute or `time` slot, on its own line above the content; the time after the title maps to that order, and the item text stays time first"],
+  ["event timeline metadata actor and facts", "the consumer's markup in the event's content; a later issue covers a metadata slot"],
+  ["event timeline content", "the consumer's markup in the event's content"],
+  ["event timeline marker", "the consumer's text in the event's content, the verification worded in text; a later issue covers a trust slot"],
+  ["event timeline leading marker", "the default dot; a later issue covers a marker slot"],
+  ["event timeline compact", "the default timeline, already at the compact type sizes; for more density, the consumer's rules on `::part(time)` and `::part(content)`; a later issue covers a density property"],
+  ["event timeline narrow", "the container: the timeline follows its column's width; for a cap, `max-inline-size` on the host"],
+  ["event timeline one event", "built in: a list of one item, with no line"],
+  ["event timeline two events", "built in: the events in source order, the supporting content the consumer's markup in the content"],
+  ["event timeline twenty events", "built in: the events in the supplied order; the element neither sorts nor formats times"],
+  ["event timeline long transition", "built in: content wraps between words inside the event; `wrap=\"anywhere\"` for identifiers"],
+  ["event timeline linked", "a link in the event's content keeps its own tab stop; an `id` on `ocelle-timeline-event` is the consumer's fragment target"],
+  ["event timeline degraded", "a rule in the consumer's own stylesheet (no inline style), with the degraded state stated in text beside the timeline, never by muting alone"],
+  ["event timeline unavailable retention", "013's `ocelle-empty-state` in place of the timeline; an announcement is the consumer's own notice or live region"],
+  ["event timeline forced colours", "built in: the dot and the line in `CanvasText`, the text in the system text colour"],
+  ["event timeline light mode", "built in: the light and dark themes"],
+];
+
+/**
+ * The evidence chain's rows of the README's kitty-mission-ui mapping (019 FR-058, research.md R-16's phase 3 table,
+ * inventory decisions IQ-18 to IQ-24 and IQ-27, each (a); Q-T4 (a)): one row per role of the library's chain, its
+ * property and the fields of each stage, its behaviour states and stories, and its parts, each role name with the
+ * element, attribute or part, or the consumer's remedy, exactly. Keyed by role name; no class-family name appears in
+ * this test (013's operator decision I1). IQ-27 (a) is carried by the rows as a whole.
+ */
+const evidenceChainMapping: readonly (readonly [string, string])[] = [
+  ["evidence chain stages", "`ocelle-evidence-chain` with one `ocelle-evidence-step` child per stage, in source order; the chain takes no property, and the consumer changes the children in place of assigning a new array, which the chain observes"],
+  ["evidence chain stage id", "an `id` the consumer sets on the step, if it needs one; the element neither reads nor writes an `id`"],
+  ["evidence chain stage label, value and annotation", "the consumer's markup in the step's content; the step draws no pill tag of its own; a later issue covers a valued stage"],
+  ["evidence chain stage tone", "none: the state worded in the step's text, with no state colour on any mark; a later issue covers a tone"],
+  ["evidence chain compact step", "the default step: a round `--ocelle-size-step` marker ringed by `--ocelle-ring-step`, showing the step's ordinal, before its content. #517's pill-shaped chip maps to `variant=\"chip\"` with `--ocelle-radius-2`, never the pill radius"],
+  ["evidence chain list part", "the chain's `list` part, its shadow ordered list, named by `label` or a non-blank host `aria-label`"],
+  ["evidence chain stage part", "the `ocelle-evidence-step` host, a light-DOM element the consumer styles directly, and its `content` part"],
+  ["evidence chain connector part", "none: the connector is decorative and hidden from assistive technology, not a styling hook"],
+  ["evidence chain connector arrow", "the plain connector line, with no arrowhead; the ordered list and the ordinals convey the direction; a later issue covers an arrowhead"],
+  ["evidence chain empty-state part", "none"],
+  ["evidence chain empty state", "013's `ocelle-empty-state`, placed by the consumer in place of the chain; an empty chain renders nothing and writes no text of its own"],
+  ["evidence chain invalid input", "none: with slotted steps there is no invalid whole input; children other than steps are neither shown nor exposed"],
+  ["evidence chain wide layout", "built in: the steps in one row while they fit, with a connector between consecutive steps on the row"],
+  ["evidence chain narrow layout", "the wrapping chain, which follows its container, not the viewport: the steps wrap onto further lines, with connectors only within a line; no stacked layout"],
+  ["evidence chain forced colours", "built in: markers, connectors and chip outlines as `CanvasText` borders, the text in the system text colour"],
+  ["evidence chain light mode", "built in: the light and dark themes"],
+  ["evidence chain two and six stages", "built in: one list item per visible step in source order, ordinals 1 to N, a connector between steps on a line"],
+  ["evidence chain long content", "built in: content wraps between words inside the step; `wrap=\"anywhere\"` for identifiers"],
+  ["evidence chain static form", "none needed: the chain is markup, and before upgrade `@ocelle/styles` shows the visible steps one per line"],
+  ["evidence chain composition", "the consumer's layout: the chain follows its container wherever the consumer places it"],
+];
+
 /** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
 function tableRows(text: string, heading: string): string[] {
   const section = new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
@@ -934,6 +1087,11 @@ describe("packages/elements/README.md", () => {
       "./ocelle-fact.js",
       "./ocelle-empty-state.js",
       "./ocelle-progress.js",
+      "./ocelle-data-table.js",
+      "./ocelle-event-timeline.js",
+      "./ocelle-timeline-event.js",
+      "./ocelle-evidence-chain.js",
+      "./ocelle-evidence-step.js",
       "./ocelle-listbox.js",
       "./ocelle-option.js",
       "./ocelle-tabs.js",
@@ -985,6 +1143,46 @@ describe("packages/elements/README.md", () => {
   it.each(progressMapping)("maps the role %s to its element and variant or the consumer's remedy in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
     const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
     expect(row?.[2]).toBe(covered);
+  });
+
+  it.each(dataTableMapping)("maps the role %s to its element, attribute or hook, or the consumer's remedy, in the kitty-mission-ui mapping (019 FR-058)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
+  });
+
+  it("maps every data-table role and none reads pending inventory (019 FR-058, IQ-1 (a))", () => {
+    const rows = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).filter((cells) => (cells[1] ?? "").startsWith("data table "));
+    expect({ roles: rows.map((cells) => cells[1]), pending: rows.filter((cells) => /pending inventory/i.test(cells[2] ?? "")).length }).toEqual({ roles: dataTableMapping.map(([role]) => role), pending: 0 });
+  });
+
+  it.each(eventTimelineMapping)("maps the role %s to its element, attribute or slot, or the consumer's remedy, in the kitty-mission-ui mapping (019 FR-058, R-16)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
+  });
+
+  it("maps every event-timeline role, in R-16's order (019 FR-058)", () => {
+    const rows = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).filter((cells) => (cells[1] ?? "").startsWith("event timeline "));
+    expect(rows.map((cells) => cells[1])).toEqual(eventTimelineMapping.map(([role]) => role));
+  });
+
+  it.each(evidenceChainMapping)("maps the role %s to its element, attribute or part, or the consumer's remedy, in the kitty-mission-ui mapping (019 FR-058, R-16)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
+  });
+
+  it("maps every evidence-chain role, in R-16's order (019 FR-058)", () => {
+    const rows = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).filter((cells) => (cells[1] ?? "").startsWith("evidence chain "));
+    expect(rows.map((cells) => cells[1])).toEqual(evidenceChainMapping.map(([role]) => role));
+  });
+
+  it("names the chain in its intro and has an `ocelle-evidence-chain` section (019 phase 3)", () => {
+    const text = read("README.md");
+    expect({ intro: flat(text.split(/^## /m)[0] ?? "").includes("`ocelle-evidence-chain`, an evidence chain"), section: /^## `ocelle-evidence-chain`$/m.test(text) }).toEqual({ intro: true, section: true });
+  });
+
+  it("names the timeline in its intro and has an `ocelle-event-timeline` section (019)", () => {
+    const text = read("README.md");
+    expect({ intro: flat(text.split(/^## /m)[0] ?? "").includes("`ocelle-event-timeline`, an event history"), section: /^## `ocelle-event-timeline`$/m.test(text) }).toEqual({ intro: true, section: true });
   });
 
   it("names the @ocelle/tokens peer dependency of package.json", () => {
@@ -1406,6 +1604,24 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`show-label`",
     "`size=\"compact\"`",
     "`ground=\"tinted\"`",
+    // 019 phase 1 (T021, T081; constitution VII, analysis I7 (a))
+    "`ocelle-data-table`",
+    "`@ocelle/elements/ocelle-data-table.js`",
+    "`sticky-header` (reflected) and `striped` (reflected)",
+    "the base-style hook `--data-table-box-size` and `--data-table-end-fade`",
+    // 019 phase 2 (T047; constitution VII): the timeline, its event, their entry points and the `time` slot
+    "`ocelle-event-timeline`",
+    "`ocelle-timeline-event`",
+    "`@ocelle/elements/ocelle-event-timeline.js`",
+    "`@ocelle/elements/ocelle-timeline-event.js`",
+    "the `time` slot",
+    "`time` (reflected) and `wrap` (reflected)",
+    // 019 phase 3 (T070; constitution VII): the chain, its step and their entry points
+    "`ocelle-evidence-chain`",
+    "`ocelle-evidence-step`",
+    "`@ocelle/elements/ocelle-evidence-chain.js`",
+    "`@ocelle/elements/ocelle-evidence-step.js`",
+    "`variant` (reflected) and `wrap` (reflected)",
     // 014 phase 2 (FR-058, research.md R-16, R-18)
     "`ocelle-listbox`",
     "`ocelle-option`",
@@ -1453,6 +1669,11 @@ describe("packages/elements/CHANGELOG.md", () => {
     expect(added).toContain(surface);
   });
 
+  // 019 phase 1 (T081): the overflow-region module's block-axis option, an internal change.
+  it("names the overflow-region module's block-axis option as an internal change with no effect on ocelle-scroller or ocelle-workflow-board", () => {
+    expect(flat(unreleased)).toContain("The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`");
+  });
+
   // 014 phase 4 (plan decision 1) raised the floor to Chromium 125 for custom states; 012 raised it again to Chromium
   // 135, so since the second merge of main the entry names what the segment needs within the merged floor.
   it("records that ocelle-segment's custom states need Chromium 125 and WebKit 17.4, within the Chromium 135 floor, under Unreleased (014 phase 4, plan decision 1)", () => {
@@ -1476,10 +1697,11 @@ const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "oc
 describe("packages/elements/README.md overview (014 T110)", () => {
   const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
 
-  it("counts and names all forty-one released elements", () => {
-    expect(overview).toContain("forty-two elements");
+  it("counts and names all forty-seven released elements", () => {
+    expect(overview).toContain("forty-seven elements");
     const tags = ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, ...frameElements,
-      "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea", "ocelle-workflow-node"];
+      "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea", "ocelle-workflow-node", "ocelle-data-table",
+      "ocelle-event-timeline", "ocelle-timeline-event", "ocelle-evidence-chain", "ocelle-evidence-step"];
     for (const tag of tags) expect(overview).toContain(`\`${tag}\``);
   });
 

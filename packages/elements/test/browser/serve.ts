@@ -5,7 +5,7 @@
 // tested frames, R-17; linked only by the pages that say so), and the files the global setup built
 // (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js`, User
 // Story 3's test host's file `ocelle-test-host.js`, since 009 the test-only slotted controls `ocelle-test-controls.js`
-// and (phase 4) `ocelle-test-list-detail.js`, 011's `card-bundle.js` (the module build's card alone) and the plant
+// and (phase 4) `ocelle-test-list-detail.js`, 019's block-axis test host `ocelle-test-overflow-block.js`, 011's `card-bundle.js` (the module build's card alone) and the plant
 // rows' bundle `ocelle-plants.js` (specs/010-feedback-forms). It serves them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
 // in a fresh context with the recorders installed before navigation, none of them a page script or a request (since
@@ -62,6 +62,7 @@ const builtFiles: Readonly<Record<string, string>> = {
   "ocelle-plants.js": "plants/ocelle-plants.js",
   "ocelle-test-controls.js": "test-controls/ocelle-test-controls.js",
   "ocelle-test-list-detail.js": "test-controls/ocelle-test-list-detail.js",
+  "ocelle-test-overflow-block.js": "test-controls/ocelle-test-overflow-block.js",
 };
 
 const types: Readonly<Record<string, string>> = {

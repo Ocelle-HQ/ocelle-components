@@ -1,0 +1,184 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The sticky caption cannot stay at the region's start or wrap to the visible width as R-06/R-07 design it"
+    evidence:
+      - artifact: "research.md § R-07: \"it wraps within the region's visible width because the track's inline padding and the box clip it\"; § R-06 caption row: \"position: sticky; inset-inline-start: 0\" with no max-inline-size; contracts/styles-data-table.md block 2 sets the caption's \"max-inline-size: none\""
+      - artifact: "spec.md § Edge Cases, \"Caption while the region scrolls\": \"either way it is never cut at 320 px (it wraps)\""
+      - code: "packages/styles/src/base.css:184-209: 003's prose table makes the table a query container (container-type: inline-size) and gives the caption max-inline-size: var(--ocelle-measure-container), and packages/tokens/src/source.ts:190 has measure-container = 100cqi. That is what lets 003's sticky caption move and wrap."
+    claim: |
+      A table caption is laid out as wide as the table grid, and the table wrapper box is its containing block. A sticky
+      box cannot move beyond its containing block, so a caption exactly as wide as the table cannot move. Clipping by
+      the scroll box does not make it wrap. In an overflowing data table, the caption's text runs across the whole
+      scrolled width, and at 320 px the part past the visible box is cut until the user scrolls. That breaks the spec's
+      edge case and R-07's claim. 003 solved this with a max-inline-size of 100cqi on the caption. In the data table the
+      table is no longer a query container: the prose override resets it to container-type: normal, and the track
+      cannot be one because its fit-content size comes from its content. So the plan has no size the caption can be
+      bounded by. The phase 1 spike will find this, but the plan's design, the prose override's "max-inline-size: none"
+      and the contracts are written on the wrong premise.
+    remedies:
+      - "Make `.region-box` a query container in the data table's own shadow styles (`container-type: inline-size`). Container queries resolve through the flat tree, so this applies to the slotted caption. Give the caption `max-inline-size` from `--ocelle-measure-container` (less the track's ring room) in block 1 and in the prose override. State that this adds size containment to the box, which a host in a shrink-to-fit context has to account for (as 003's README says of the prose table). Add this to R-07, the contract and US1's spike."
+      - "Drop the sticky caption: the caption scrolls with the table and is bounded some other way, and the spec's edge case says what a cut caption does at 320 px (operator decision, since the spec says it is never cut)."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "No forced-colours rules for the timeline and chain marks; a background-drawn dot and connector vanish, and the chip variant has no FR-001 placement"
+    evidence:
+      - artifact: "research.md § R-10: \"The marker is a filled square of --ocelle-size-dot in --ocelle-color-ink-muted\"; connector \"--ocelle-border-width wide in --ocelle-color-rule-strong\". § R-12 gives the connector, marker ring and chip box without any forced-colours rule. Only R-06 (data table) has a forced-colours row."
+      - artifact: "spec.md FR-013: \"In forced colours ... every line and mark classed above, decorative ones included, is drawn in a system colour and visible\"; US2-8, US3-8; FR-001: \"variant rules inside @media not (forced-colors: active)\""
+      - code: "origin/claude/013-data-display:packages/elements/README.md:509-510: \"Variant rules go inside @media not (forced-colors: active), so a forced-colours rule never has to outrank a variant selector.\" CSS Color Adjustment 1 § 3.1: in forced colours, background-color is forced to the system Canvas colour (alpha kept)."
+    claim: |
+      The plan never says how the timeline dot, the two connectors, the step ring, the ordinal or the chip outline are
+      drawn in forced colours. In forced colours a filled dot drawn with background-color is forced to Canvas, and so
+      is a connector drawn as a background-filled box. Both become invisible, which breaks FR-013, US2-8 and US3-8. The
+      chip is a variant (variant="chip"). FR-001 and 013's convention put its rules inside
+      `@media not (forced-colors: active)`, so with nothing more the chip loses its outline, padding and type in forced
+      colours, and its "structural, 3:1, the chip's only boundary" outline disappears. R-12 does not place the chip
+      rules or give their forced-colours counterpart.
+    remedies:
+      - "Add a forced-colours section to R-10 and R-12 and to the timeline and chain contracts. Draw each mark with a border or outline (forced to a system colour), or give it an explicit `@media (forced-colors: active)` rule in CanvasText. State that the chip's variant rules sit inside `@media not (forced-colors: active)` and that a forced-colours rule keeps its box (border in CanvasText, padding, size). Add US2-8 and US3-8 bodies that read each mark's computed colour and painted presence in forced colours."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "`time` is not reflected, but the timeline reads the `time` attribute to centre the marker"
+    evidence:
+      - artifact: "contracts/ocelle-timeline-event.md § Public surface: `time` is \"property / attribute\" (not reflected), while `wrap` is \"(reflected)\". plan.md § Constitution Check I: \"`wrap` and `variant` reflect, because the styles select on them\""
+      - artifact: "research.md § R-10: \"the container reads the item's `time` attribute and sets a class on the `<li>`\"; contracts/ocelle-event-timeline.md: \"A MutationObserver watches ... each child's hidden, aria-hidden and time\""
+      - code: "origin/claude/013-data-display:packages/elements/src/ocelle-fact.ts:23: `label: { type: String, reflect: true }`. 013's item reflects the property its container observes (ocelle-facts.ts:214, attributeFilter [\"label\", ...])."
+    claim: |
+      When a consumer sets `event.time = "14:02"` from script, which Svelte in kitty-mission-ui does for a defined custom
+      element, the event shows its time box. No attribute changes, though, so the container's MutationObserver never
+      fires, the `<li>` keeps the no-time class, and the marker is centred on the content's line instead of the time's
+      line. That breaks FR-021's "centred on the first line". The same happens when time is cleared by property. 013's
+      own item reflects the property for exactly this reason.
+    remedies:
+      - "Make `time` reflected (`reflect: true`) in the event's contract, data model and Constitution Check I, and add a body that sets `time` by property and measures the marker's centring."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "Q-D's default and its alternative both break the approved spec or a gate: FR-031 asks for a round marker, FR-040 and brand-rules forbid a new radius token"
+    evidence:
+      - artifact: "spec.md FR-031: \"Each default step MUST show a round marker\"; FR-040: \"No new radius token is added\"; US3 story text: \"a round step marker\""
+      - artifact: "research.md § Q-D: (a) `radius-1` on the 22.4 px marker, which \"reads as a rounded square\" (the plan's default); (b) \"a new token --ocelle-radius-round: 50% under FR-040\""
+      - code: "gates/bin/brand-rules.ts:22-28,132-139: the radius tokens must be exactly the closed set radius-1, -2, -row, -shell, -pill; any other radius-* token fails the gate. gates/stylelint/token-only.ts:62: a `%` value passes token-only, so `border-radius: 50%` needs no token."
+    claim: |
+      The plan's default, a 2 px corner on a 22.4 px square, is not the "round marker" FR-031 requires. It is a spec
+      change dressed as an open question, yet the plan says its choice "stands until the operator answers" and its
+      Constitution Check claims compliance. Q-D (b) adds a radius token. FR-040 forbids that, and the brand-rules gate's
+      closed radius set would fail it. Neither option the operator is offered meets the spec as approved. The option
+      that does, `border-radius: 50%` (lint-clean), is not listed, and nothing says whether constitution II's "one
+      radius" rule reads a circle as a radius.
+    remedies:
+      - "Rewrite Q-D. (a) A round marker by `border-radius: 50%`, with no token, recorded as a shape rather than a corner radius under constitution II; this meets FR-031 and FR-040. (b) `radius-1`, as a spec change to FR-031 and US3 that the operator approves before tasks. Drop the new-token option, or note that it needs FR-040, the brand-rules radius set and constitution II changed."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "Adding the data-table blocks breaks 003's existing source.test.ts rule-order assertions, and the plan does not plan for it"
+    evidence:
+      - artifact: "plan.md § Project Structure: the styles tests are `test/browser/data-table.test.ts, test/node/prose-override.test.ts, test/readme.test.ts` only. contracts/styles-data-table.md: block 2 is \"placed after 003's prose table rules\""
+      - code: "packages/styles/test/source.test.ts:206-214: \"follows the compact scale with the prose rules ... in its order\" (slice after the compact scale) and \"ends with the identifier-wrap rule ..., right after the prose rules\" (`rules(root).slice(start)` equals `[wrap]`). Any new rule placed before the prose rules, between them and the wrap rule, or after the wrap rule fails one of these. packages/styles/test/ has no `node/` directory."
+    claim: |
+      Both new blocks change the shipped rule sequence that 003's source test pins exactly. The phase 1 green would turn
+      an existing passing 003 test red. Changing it then is an unplanned edit to an existing test, which Principle VIII
+      lets through only with a recorded reason, and an extension that belongs in the red commit. The plan also does not
+      say where the blocks go relative to the identifier-wrap rule. The plan's `test/node/` path does not match the
+      styles package layout.
+    remedies:
+      - "Name the change to packages/styles/test/source.test.ts in the plan and the checks contract: the expected data-table and override rules, transcribed by hand as 003 does, with their position in the sequence (for example block 1 after the wrap rule and block 2 after it). Put the change in phase 1's red commit, and use the styles package's own test layout."
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The recheck omits 009's test driver, and the 009 and 013 driver interfaces conflict"
+    evidence:
+      - artifact: "research.md § R-14 and plan.md T001: the recheck covers \"013's README conventions and driver\", not 009's driver. contracts/checks.md § Oracles, keyboard: \"009's and 013's pressTab, focused and arrow-key helpers; scrollLeft\""
+      - code: "origin/claude/015-workflow-layouts:packages/elements/test/scenarios/driver.ts has `press`, `tabWalk`, `activeElement`, `scrollLeft`, `settle`, `computed(target: Target, …)`, `setProperty(…, value: string | undefined)`, `reducedMotion(on: boolean)`. origin/claude/013-data-display:…/driver.ts has `pressTab`, `focused`, `frames`, `computed(id: string, …)`, `setProperty(…, value: string | number | boolean | null | undefined)`, `reducedMotion(mode: ReducedMotion)`."
+    claim: |
+      The two branches change the same driver interface in incompatible ways. What exists after both merge (computed's
+      target type, reducedMotion's argument, whether pressTab or tabWalk survives, settle as against frames) is not
+      known. US1-5, US1-8 and US1-13 rely on 009's helpers and its settle() wait rule (contract § Lifecycle), but T001
+      does not compare them, so a renamed or merged helper reaches the red commit unchecked.
+    remedies:
+      - "Add 009's driver (keyboard, scroll, settle, the Target type) to R-14 and T001, and write checks.md's keyboard oracle in terms of the merged names T001 records, not a mix of the two branches."
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "The story list leaves out states that FR-050 requires stories for (hidden items) or that need an exception row"
+    evidence:
+      - artifact: "spec.md FR-050: \"their states (with and without time, wrap, hidden, chip) are stories in their container's file ... Any further state without a story is a constitution V exception recorded in the plan's Complexity Tracking\""
+      - artifact: "contracts/checks.md § Stories: no timeline story with a hidden event and no chain story with a hidden step. No data-table story for the unnamed overflowing region (US1-7, no label and no caption) or the no-table state, and none for an empty timeline or chain. plan.md § Complexity Tracking: \"No exception to the constitution is planned.\""
+    claim: |
+      FR-050 names "hidden" as an item state with a story in the container's file, and checks.md has none. The other
+      states listed (unnamed overflowing, no table, empty containers) are spec'd states with no story and no Complexity
+      Tracking row, which FR-050 says is an exception. Either way, the plan does not meet FR-050 as written.
+    remedies:
+      - "Add the 'one event hidden' and 'one step hidden' stories. Add stories for, or Complexity Tracking rows with the operator's approval for, the unnamed overflowing table, the data table with no table, and the empty timeline and chain."
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "US1-11's text-contrast clause and the element pairs of SC-004 have no oracle in the checks contract"
+    evidence:
+      - artifact: "contracts/checks.md § Oracles: the contrast row is \"Used by: US2-8, US3-8\" only. US1-11 appears only in the forced-colours row"
+      - artifact: "spec.md US1-11: \"cell text and header text meet the tokens' text-contrast declaration on each main ground\"; SC-004"
+      - code: "origin/claude/013-data-display:packages/elements/test/node/progress-pairs.test.ts: 013 ties each colour pair in an element's style template to a `checked` row of packages/tokens/contrast/pairs.json. packages/styles/test/pairs.test.ts only checks the set of colour tokens base.css declares, and ink, ink-soft and ink-muted are already in it, so the data-table block adds no pairing that it would check."
+    claim: |
+      Nothing planned fails if the data-table rules use a colour without a declaration on one of the nine grounds. The
+      styles pairing test cannot see the new block's pairings, and US1-11 has no contrast body. The pairs exist today
+      (I checked pairs.json: ink, ink-soft and ink-muted are `checked` on all nine main grounds in both themes), but
+      nothing in the plan proves it for the data table, the timeline or the chain.
+    remedies:
+      - "Add US1-11 to the contrast oracle, and plan a node check in 013's progress-pairs style: each colour each new element and the base.css block paints, against the nine main grounds in both themes in pairs.json, with a removed-row plant."
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 1
+    title: "The last-row rule drops the row rule between row groups"
+    evidence:
+      - artifact: "contracts/styles-data-table.md block 1: \"`… > :is(tbody, tfoot) > tr:last-child > :is(td, th)` | no rule below the last row\""
+      - artifact: "spec.md FR-005: \"a row rule in a token colour between body rows\""
+    claim: |
+      With two `<tbody>` groups, or a `<tbody>` followed by a `<tfoot>`, the last row of each group loses its rule. Two
+      consecutive body rows then have no rule between them, which breaks FR-005, and the multi-group case has no test.
+    remedies:
+      - "Select only the table's last row group (`table > :is(tbody, tfoot):last-child > tr:last-child`, or `:last-of-type` with tfoot ordering stated), and add an edge-case body with two tbodies and a tfoot."
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 1
+    title: "The README Host ARIA update leaves out the data table, whose naming follows 009's blank-counts-as-absent rule"
+    evidence:
+      - artifact: "plan.md phase 1 Green: the README list is \"section, conventions, overflow-region users, prose specificity, print, pre-upgrade\", with no Host ARIA entry. Phase 2 updates the Host ARIA list for the timeline and chain only"
+      - code: "origin/claude/015-workflow-layouts:packages/elements/README.md:335-343: the Host ARIA section names each element that follows which rule (icon and brand mark: decides alone; scroller, board, lane: blank counts as absent)."
+    claim: |
+      The data table's region uses the module's resolveName, so a blank host aria-label counts as absent. The Host ARIA
+      section lists elements by name, and the data table would be in neither list, which leaves its rule undocumented.
+    remedies:
+      - "Add the data table to the Host ARIA section's blank-counts-as-absent list in phase 1, with a README test statement."
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "list-name.ts \"if 009 has none\": 009 already exports resolveName, and its lane imports it"
+    evidence:
+      - artifact: "plan.md § Source Code: \"list-name.ts # new, internal: the blank-counts-as-absent list name (R-09), if 009 has none\""
+      - code: "origin/claude/015-workflow-layouts:packages/elements/src/overflow-region.ts:91 `export function resolveName(hostAriaLabel, label)`; ocelle-workflow-lane.ts:15 `import { resolveName } from \"./overflow-region.ts\"`."
+    claim: |
+      The condition is already settled on the branch. A second helper with the same rule duplicates the logic and doubles
+      the mutation surface.
+    remedies:
+      - "State that the timeline and chain use 009's `resolveName`, subject to T001's recheck, and drop list-name.ts from the plan."
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 1
+    title: "The connector's vertical position on a chip step is undefined"
+    evidence:
+      - artifact: "research.md § R-12: the connector is \"vertically centred on the marker\"; a chip `<li>` \"renders no marker\". The chip is 20.4 px tall and the marker 22.4 px, with `align-items: flex-start` on the `<ol>`"
+    claim: |
+      Between a chip and a default step, or two chips, the plan gives the connector nothing to centre on. Connectors on
+      one line can then sit at different heights, and US3-2 and US3-3's geometry bodies have no stated expectation for
+      them.
+    remedies:
+      - "Define one connector height for every `<li>` (for example centred on a `--ocelle-size-step` line box that a chip `<li>` also reserves, or centred on the chip's box), and add it to the geometry oracle."
+  - id: PLAN-CORRECTNESS-1-013
+    severity: 1
+    title: "Small inconsistencies between plan, research and contracts"
+    evidence:
+      - artifact: "plan.md § Technical Context Constraints: \"a `%`-free length from a token\", while R-06 uses `inline-size: 100%` and the module uses `min-inline-size: 100%`"
+      - artifact: "research.md § R-12: the ordinal's \"line height 1 (`--ocelle-line-height-tight` is 1.15; the plan uses it)\""
+      - artifact: "plan.md § Scale/Scope: \"about 34 stories\"; contracts/checks.md § Stories lists 11 + 7 + 9 = 27, two of them (\"named by its caption\" and \"unnamed but captioned (named by the caption)\") the same state"
+      - artifact: "contracts/ocelle-evidence-chain.md does not say `aria-label` is observed; the timeline and data-table contracts do"
+    claim: |
+      None of these builds the wrong thing on its own. Each leaves the implementer to guess which statement holds, and
+      the story count feeds R-15's `<n> added` baseline check.
+    remedies:
+      - "Say that `%` is allowed, settle the ordinal's line height on `--ocelle-line-height-tight`, make the story count match the list (and merge or tell apart the two caption stories), and add \"`aria-label` is observed\" to the chain contract."

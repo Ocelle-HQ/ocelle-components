@@ -1,0 +1,140 @@
+{
+  "files": {
+    "packages/tokens/src/x.ts": {
+      "language": "typescript",
+      "mutants": [
+        {
+          "id": "1",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "packages/tokens/src/x.ts(21,12): error TS7022: '#region' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.\npackages/tokens/src/x.ts(22,5): error TS7023: 'first' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.\n",
+          "status": "CompileError",
+          "static": false,
+          "coveredBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 33,
+              "line": 41
+            },
+            "start": {
+              "column": 10,
+              "line": 41
+            }
+          }
+        },
+        {
+          "id": "2",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "statusReason": "packages/tokens/src/x.ts(21,12): error TS7022: '#region' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.\npackages/tokens/src/x.ts(22,5): error TS7023: 'first' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.\n",
+          "status": "CompileError",
+          "static": false,
+          "coveredBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 33,
+              "line": 41
+            },
+            "start": {
+              "column": 10,
+              "line": 41
+            }
+          }
+        },
+        {
+          "id": "3",
+          "mutatorName": "EqualityOperator",
+          "replacement": "sample.first() !== null",
+          "statusReason": "packages/tokens/src/x.ts(21,12): error TS7022: '#region' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.\npackages/tokens/src/x.ts(22,5): error TS7023: 'first' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.\n",
+          "status": "CompileError",
+          "static": false,
+          "coveredBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 33,
+              "line": 41
+            },
+            "start": {
+              "column": 10,
+              "line": 41
+            }
+          }
+        },
+        {
+          "id": "0",
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "statusReason": "packages/tokens/src/x.ts(21,12): error TS7022: '#region' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.\npackages/tokens/src/x.ts(22,5): error TS7023: 'first' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.\npackages/tokens/src/x.ts(40,40): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.\n",
+          "status": "CompileError",
+          "static": false,
+          "coveredBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 2,
+              "line": 42
+            },
+            "start": {
+              "column": 47,
+              "line": 40
+            }
+          }
+        },
+        {
+          "id": "4",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "packages/tokens/src/x.ts(21,12): error TS7022: '#region' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.\npackages/tokens/src/x.ts(22,5): error TS7023: 'first' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.\n",
+          "status": "CompileError",
+          "static": false,
+          "coveredBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 42,
+              "line": 41
+            },
+            "start": {
+              "column": 36,
+              "line": 41
+            }
+          }
+        },
+        {
+          "id": "5",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "packages/tokens/src/x.ts(21,12): error TS7022: '#region' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.\npackages/tokens/src/x.ts(22,5): error TS7023: 'first' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.\n",
+          "status": "CompileError",
+          "static": false,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 52,
+              "line": 41
+            },
+            "start": {
+              "column": 45,
+              "line": 41
+            }
+          }
+        }
+      ],
+      "source": "// Plant for mutation testing: sample package source. The field `#region` has no type annotation and its initializer\n// passes `this` to a constructor with a callback, and the sample adds itself to the global HTMLElementTagNameMap: tsc\n// accepts the file, but Stryker's type checker, rechecking the program after any change to it, reports a circular\n// inference on the field's lines (TS7022, TS7023), as it did for ocelle-data-table.ts (019 T025, gate gap rule (c)).\ninterface Options {\n  readonly first: () => Element | null;\n}\n\nclass Region {\n  readonly #options: Options;\n  constructor(host: object, options: Options) {\n    this.#options = options;\n    void host;\n  }\n  first(): Element | null {\n    return this.#options.first();\n  }\n}\n\nexport class Sample {\n  readonly #region = new Region(this, {\n    first: () => this.#rows()?.querySelector(\":scope > thead\") ?? null,\n  });\n\n  #rows(): Element | undefined {\n    return undefined;\n  }\n\n  first(): Element | null {\n    return this.#region.first();\n  }\n}\n\ndeclare global {\n  interface HTMLElementTagNameMap {\n    \"x-sample\": Sample;\n  }\n}\n\nexport function label(sample: Sample): string {\n  return sample.first() === null ? \"none\" : \"first\";\n}\n"
+    }
+  },
+  "schemaVersion": "1.0",
+  "thresholds": {
+    "high": 100,
+    "low": 100,
+    "break": 100
+  }
+}

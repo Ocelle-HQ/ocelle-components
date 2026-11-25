@@ -91,6 +91,31 @@ const fragments = [
   "Before the elements are defined, `base.css` shows each `ocelle-fact` child of an undefined `ocelle-facts` as a block, one value per line: `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }`",
   "The whole selector is inside `:where()`, so its specificity is (0,0,0) and any page rule overrides it, and a fact with `hidden` keeps the user-agent `display: none`",
   "Labels are attributes, so they appear only once the elements are defined",
+  // 019 phase 1: the data-table rules (contracts/styles-data-table.md; research.md R-06, R-07, R-18 to R-20; tasks.md T011)
+  "`base.css` styles the direct `<table>` child of an `ocelle-data-table`, defined or not, with compact cells, eyebrow column headers in the eyebrow tokens, row headers and a rule between rows",
+  "Every data-table selector is inside `:where()`, so its specificity is (0,0,0) and any rule of the page on the same element wins; a table nested in a cell is not styled",
+  "Inside a `data-ocelle-prose` container an override at (0,1,0), placed after the prose rules, restates each data-table value, so a consumer rule there needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`",
+  "The rule below the last row is removed from the last row of the table's last row group, in source order: write a `<tfoot>` after the `<tbody>` groups, as HTML says",
+  "Before upgrade the table is styled the same, with no scroll region",
+  "Base-style hook: the caption's cap reads `--data-table-box-size` and `--data-table-end-fade`, which `ocelle-data-table` writes on its track. Both names are public surface of `@ocelle/elements` and `@ocelle/styles` (a rename is a breaking change), and a consumer does not set them",
+  "The caption is never narrower than its longest word, whatever the cap, so that word widens the table",
+  "Chromium names each column header by its drawn upper-case text, so the accessible names of column headers follow the upper case (\"ID\" for \"Id\")",
+  "`sticky-header` pins the `<thead>` on a `--ocelle-color-sheet` ground, in the separated border model (`border-collapse: separate`, `border-spacing: 0`), while the page bounds the host's block size with its own `block-size` or `max-block-size`",
+  "The pinned header sits at the region's block-start edge once scrolled and keeps the focus ring's room above it at rest",
+  "`striped` gives each `<tbody>`'s even rows the `--ocelle-color-inset` ground, hidden rows counted",
+  "A hovered body row takes the `--ocelle-color-hover-bg` ground, only on a device that can hover; on a touch screen nothing changes",
+  "In the light theme `hover-bg` and `inset` are equal, so a hovered striped row shows no change there",
+  "In forced colours a band at the start of each body row stands in for both: `Canvas`, `CanvasText` on a striped row and `Highlight` on the hovered row; it scrolls away with a row scrolled sideways",
+  // 019 phase 1: the numeric-cell hook (R-19, IQ-3)
+  "`data-ocelle-align=\"end\"` end-aligns a cell with tabular figures, on any element; it sets no font, colour, padding or wrap",
+  "Its selector has specificity (0,1,0) and comes after the data-table prose override, so it wins inside prose too",
+  // 019 phase 2: the timeline before upgrade (research R-08; contracts/ocelle-event-timeline.md § Before upgrade; tasks.md T035)
+  "Before the elements are defined, `base.css` shows each visible `ocelle-timeline-event` child of an undefined `ocelle-event-timeline` as a block, one event per line: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden=\"true\"])) { display: block; }`",
+  "An `aria-hidden=\"true\"` event is not shown before upgrade either, as after it: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden=\"true\"]) { display: none; }`",
+  "An event's `time` attribute is rendered in its shadow root, so it shows only once the elements are defined; a slotted time (`slot=\"time\"`) is the page's own node and shows inline where it is written",
+  // 019 phase 3: the chain before upgrade (research R-08; contracts/ocelle-evidence-chain.md § Before upgrade; tasks.md T059)
+  "Before the elements are defined, `base.css` shows each visible `ocelle-evidence-step` child of an undefined `ocelle-evidence-chain` as a block, one step per line, with no marker or ordinal: `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden=\"true\"])) { display: block; }`",
+  "An `aria-hidden=\"true\"` step is not shown before upgrade either, as after it: `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden=\"true\"]) { display: none; }`",
 ];
 
 /** The hook table of the README (FR-004): each hook's attribute, its values and its family, exactly. */
@@ -99,6 +124,7 @@ const hookRows = [
   "| `data-ocelle-value` | (empty), `ink` | compact scale |",
   "| `data-ocelle-prose` | (empty) | prose |",
   "| `data-ocelle-wrap` | `anywhere` | identifier wrap |",
+  "| `data-ocelle-align` | `end` | numeric cells |",
 ];
 
 /** SC-006: each of kitty-mission-ui's local stand-ins with the hooks and tokens that replace it. */
@@ -122,8 +148,12 @@ describe("packages/styles/README.md", () => {
     expect(readme).toContain(fragment);
   });
 
-  it("US1-6: the hook table lists exactly the four hooks, each with its exact attribute name and values (FR-004)", () => {
+  it("US1-6: the hook table lists exactly the five hooks (019 adds data-ocelle-align, IQ-3), each with its exact attribute name and values (FR-004)", () => {
     expect(tableRows(read("README.md"), "Hooks")).toEqual(hookRows);
+  });
+
+  it("019: has a § Numeric cells section for the data-ocelle-align hook (IQ-3) and a § Data tables section", () => {
+    expect({ numeric: /^## Numeric cells$/m.test(read("README.md")), tables: /^## Data tables$/m.test(read("README.md")) }).toEqual({ numeric: true, tables: true });
   });
 
   it("SC-006: maps each of kitty-mission-ui's stand-ins E-23, E-37 and E-39 to the hooks and tokens that replace it", () => {
@@ -163,6 +193,32 @@ describe("packages/styles/CHANGELOG.md", () => {
 
   it("names the data-ocelle-wrap hook under Unreleased / Added, so each of the four hooks is named (constitution VII, FR-004)", () => {
     expect(added).toMatch(/^- `data-ocelle-wrap`/m);
-    expect([...added.matchAll(/^- `(data-ocelle-[a-z]+)`/gm)].map((match) => match[1])).toEqual(["data-ocelle-density", "data-ocelle-value", "data-ocelle-prose", "data-ocelle-wrap"]);
+    expect([...added.matchAll(/^- `(data-ocelle-[a-z]+)`/gm)].map((match) => match[1])).toEqual(["data-ocelle-density", "data-ocelle-value", "data-ocelle-prose", "data-ocelle-wrap", "data-ocelle-align"]);
+  });
+
+  // 019 phase 2 (constitution VII; research R-08; tasks.md T035, T043).
+  it("names the timeline rules before upgrade under Unreleased / Added (019 phase 2)", () => {
+    expect(added).toMatch(/^- `ocelle-event-timeline` before upgrade/m);
+  });
+
+  // 019 phase 3 (constitution VII; research R-08; tasks.md T059, T066).
+  it("names the chain rules before upgrade under Unreleased / Added (019 phase 3)", () => {
+    expect(added).toMatch(/^- `ocelle-evidence-chain` before upgrade/m);
+  });
+
+  // 019 phase 1 (constitution VII; analysis I7 (a); IQ-3; tasks.md T011, T017).
+  it("names the data-table blocks, the base-style hook --data-table-box-size / --data-table-end-fade and the data-ocelle-align hook under Unreleased / Added (019)", () => {
+    expect({
+      blocks: /^- The `ocelle-data-table` rules/m.test(added),
+      hook: /^- The base-style hook `--data-table-box-size` and `--data-table-end-fade`/m.test(added),
+      align: /^- `data-ocelle-align`/m.test(added),
+    }).toEqual({ blocks: true, hook: true, align: true });
+  });
+
+  // 019 phase 4 review round 1 (R1-02; constitution VII; tasks.md T075): the data records' final surface statement.
+  it("states under Unreleased that base.css's four blocks, the data-ocelle-align hook and the base-style hook are a minor change with no token (019 T075)", () => {
+    expect(flat(unreleased)).toContain(
+      "`base.css`'s four blocks for the data records (the `ocelle-data-table` rules, their prose override, the pre-upgrade rules of `ocelle-event-timeline` and `ocelle-evidence-chain`, and the numeric-cell rule), the `data-ocelle-align` hook with its value `end`, and the base-style hook `--data-table-box-size` and `--data-table-end-fade` that `ocelle-data-table` writes are additions to the public surface: a minor change. No token is added.",
+    );
   });
 });
