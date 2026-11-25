@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A sandbox path only in a binary file (a NUL byte), which git grep -I skips (op 023, FR-002)."
+}

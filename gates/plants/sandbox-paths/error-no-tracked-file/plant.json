@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A checkout that tracks no file: a scan of nothing would pass vacuously, so the gate could not run (op 023, FR-002).",
+  "cause": "no tracked file"
+}

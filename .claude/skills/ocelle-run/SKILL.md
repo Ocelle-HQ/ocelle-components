@@ -57,7 +57,9 @@ Issue numbers start new work at step 1. `resume` continues existing work (see "R
    to `main`, never force-push without the operator's explicit approval, and never push with uncommitted or
    in-progress work from a running profile. Pull-request CI runs only on `pull_request`, so a branch push starts no
    CI. Profiles do not push; only you do. Beyond pushing, never touch GitHub (no comments, labels, state changes or
-   pull requests). Never edit a review, verdict or check file a profile wrote. The only records you write yourself
+   pull requests). Never edit a review, verdict or check file a profile wrote. The sanctioned landing redaction of
+   `/ocelle-land` (step 2.9, op 023, operator decision 2026-11-20) is not such an edit: it only puts placeholders in
+   place of sandbox paths, and `--verify` proves it. The only records you write yourself
    are the operator's decisions (named below), each committed alone.
 
 Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/squad/scripts`,

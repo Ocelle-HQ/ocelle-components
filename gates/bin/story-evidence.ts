@@ -116,6 +116,28 @@ function git(args: readonly string[], cwd = root): string {
   return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 }
 
+/** The repository's redaction script (op 023, FR-007): the one copy of the sandbox-path rule's redaction. */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "exits 2 with a story-evidence: cause on stderr, and writes no log, red-commits or tdd-check.json, for red and check"
+const redactionScript = "tooling/speckit/bin/redact-sandbox-paths.sh";
+
+/**
+ * Passes a log or record through the redaction script, run from the repository root (stdin to stdout), so the focused
+ * path writes and prints only the op's placeholders, as the shell path does (operator round 4, O4-01). It throws when
+ * the script is missing or fails, before anything is written; the command then exits 2 with this cause.
+ */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "red.sh 1 fix-4 writes red-fix-4.log and prints a JSON line, each with <pnpm store> and <repo> and no line that matches the rule"
+function redact(text: string): string {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "red.sh 1 fix-4 writes red-fix-4.log and prints a JSON line, each with <pnpm store> and <repo> and no line that matches the rule"
+  try {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "red.sh 1 fix-4 writes red-fix-4.log and prints a JSON line, each with <pnpm store> and <repo> and no line that matches the rule"
+    return execFileSync(join(root, redactionScript), [], { cwd: root, input: text, encoding: "utf8", maxBuffer: 1 << 30, stdio: ["pipe", "pipe", "ignore"] });
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "exits 2 with a story-evidence: cause on stderr, and writes no log, red-commits or tdd-check.json, for red and check"
+  } catch {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "exits 2 with a story-evidence: cause on stderr, and writes no log, red-commits or tdd-check.json, for red and check"
+    throw new Error(`story-evidence: ${redactionScript} is missing or failed; it redacts the logs and records this runner writes`);
+  }
+}
+
 function trackedDiff(git: PhaseTools["git"], from: string, to: string, filter: string, patterns: readonly string[] = []): string[] {
   return git(["diff", "--no-renames", "--name-only", "-z", `--diff-filter=${filter}`, from, to, "--", ...patterns])
     .split("\0").filter(Boolean);
@@ -390,9 +412,11 @@ function records(dir: string, tools: PhaseTools): { name: string; sha: string }[
   });
 }
 
-export function emitStoryReport(value: object, filename: string | undefined, print: (message: string) => void): void {
-  if (filename !== undefined) writeJson(filename, value);
-  print(JSON.stringify(value));
+/** Writes the record (when a file is named) and prints it: the serialised JSON, redacted once, is used for both. */
+export function emitStoryReport(value: object, filename: string | undefined, print: (message: string) => void, redactText = (text: string) => text): void {
+  const text = redactText(JSON.stringify(value));
+  if (filename !== undefined) storyFiles.write(filename, `${text}\n`);
+  print(text);
 }
 
 export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Promise<void> {
@@ -507,6 +531,10 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   }, out);
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function runStoryCommand(args: readonly string[], tools: StoryCommandTools): Promise<void> {
   const [mode, arg, phase, setup, patterns, label] = args;
   const { root, git, emit } = tools;
@@ -519,13 +547,18 @@ export async function runStoryCommand(args: readonly string[], tools: StoryComma
       throw new Error("invalid focused story evidence arguments");
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (mode === "check" && arg !== undefined && phase !== undefined) {
-      emit({ phase, status: "fail", head: head(git), problems: [message] }, join(root, arg, "reviews", `phase-${phase}`, "tdd-check.json"));
-    } else if (mode === "red") {
-      emit({ phase, status: "fail", red: false, recorded: false, problem: message });
-    } else {
-      tools.failure(message);
+    const message = errorMessage(error);
+    try {
+      if (mode === "check" && arg !== undefined && phase !== undefined) {
+        emit({ phase, status: "fail", head: head(git), problems: [message] }, join(root, arg, "reviews", `phase-${phase}`, "tdd-check.json"));
+      } else if (mode === "red") {
+        emit({ phase, status: "fail", red: false, recorded: false, problem: message });
+      } else {
+        tools.failure(message);
+      }
+    } catch (unwritten) {
+      // A failure record that cannot be redacted is not written either (O4-01): its cause goes to the error output.
+      tools.failure(errorMessage(unwritten));
     }
   }
 }
@@ -533,14 +566,16 @@ export async function runStoryCommand(args: readonly string[], tools: StoryComma
 // Stryker disable next-line ConditionalExpression: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
 if (import.meta.main) {
   const checkTools: CheckTools = {
-    ...storyFiles, root, pid: process.pid, now: Date.now, key: checkKey, git, readJson, writeJson, rename: renameSync, writeLog: storyFiles.write,
+    ...storyFiles, root, pid: process.pid, now: Date.now, key: checkKey, git, readJson, writeJson, rename: renameSync,
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "tdd-check.sh 1 after a green commit writes every check log and tdd-check.json, and prints it, with the placeholders and no line that matches the rule"
+    writeLog: (filename, log) => { storyFiles.write(filename, redact(log)); },
     // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     setup: (command, cwd) => runTool("bash", ["-c", command], cwd, environment),
     // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     worker: (cwd, input, output) => runTool(process.execPath, [path, "worker", input, output], cwd, environment),
   };
   // Stryker disable next-line BlockStatement,CallExpression: process stdout boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
-  const emit: PhaseTools["emit"] = (value, filename) => { emitStoryReport(value, filename, console.log); };
+  const emit: PhaseTools["emit"] = (value, filename) => { emitStoryReport(value, filename, console.log, redact); };
   const [, , ...args] = process.argv;
   await runStoryCommand(args, {
     root, git, emit,
