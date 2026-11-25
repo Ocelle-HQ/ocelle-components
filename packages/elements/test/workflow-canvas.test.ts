@@ -3181,6 +3181,11 @@ function choice(canvas: OcelleWorkflowCanvas, field: "source" | "outcome" | "des
   return button;
 }
 
+function choiceIds(canvas: OcelleWorkflowCanvas, field: "source" | "outcome" | "destination"): (string | null)[] {
+  const attribute = `data-${field}-id`;
+  return [...canvas.shadowRoot?.querySelectorAll(`button[${attribute}]`) ?? []].map((button) => button.getAttribute(attribute));
+}
+
 async function keyboardActivate(button: HTMLButtonElement): Promise<void> {
   button.focus({ preventScroll: true });
   await commands.press("Enter");
@@ -3279,6 +3284,7 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(source.getAttribute("aria-pressed")).toBe("false");
     expect(choice(canvas, "source", "backup").textContent).toContain("backup");
     const sourceNames = await axButtons();
+    const availableSources = choiceIds(canvas, "source");
     await commands.press("Tab");
     expect(active()).toBe(source);
     await commands.press("Enter");
@@ -3288,6 +3294,7 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(approved.textContent).toContain("approved");
     expect(approved.getAttribute("aria-pressed")).toBe("false");
     expect(choice(canvas, "outcome", "alternate").textContent).toContain("alternate");
+    const availableOutcomes = choiceIds(canvas, "outcome");
     await keyboardActivate(approved);
     await settle(canvas);
     expect(approved.getAttribute("aria-pressed")).toBe("true");
@@ -3297,6 +3304,11 @@ describe("workflow canvas named outcome editing in process", () => {
       "Destination (Author, Publication, publish)", "Destination (Author, Planning, revise)",
     ]));
     expect(sourceNames).toContain("Decision (Reviewer, Approval, backup)");
+    expect(availableSources).toEqual(["review", "backup"]);
+    expect(availableOutcomes).toEqual(["approved", "alternate"]);
+    expect(choiceIds(canvas, "source")).toEqual(["review"]);
+    expect(choiceIds(canvas, "outcome")).toEqual(["approved"]);
+    expect(choiceIds(canvas, "destination")).toEqual(["review", "publish", "revise", "backup"]);
     expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(true);
     expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toBe("No connection");
     expect(commandButton(canvas, "Apply connection").disabled).toBe(true);
@@ -3304,8 +3316,10 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(destination.getAttribute("aria-pressed")).toBe("false");
     await chooseDestination(fixture, "publish");
     expect(destination.getAttribute("aria-pressed")).toBe("true");
+    expect(choiceIds(canvas, "destination")).toEqual(["publish"]);
     await chooseDestination(fixture, "publish");
     expect(destination.getAttribute("aria-pressed")).toBe("false");
+    expect(choiceIds(canvas, "destination")).toEqual(["review", "publish", "revise", "backup"]);
     expect(commandButton(canvas, "Apply connection").disabled).toBe(true);
     await chooseDestination(fixture, "publish");
     expect(requests).toEqual([]);
@@ -3326,7 +3340,7 @@ describe("workflow canvas named outcome editing in process", () => {
       await settle(canvas);
       await keyboardActivate(choice(canvas, "outcome", "approved"));
       await settle(canvas);
-      expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toContain("Connected to Destination");
+      expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toBe("Connected to Destination (Author, Publication, publish)");
       await chooseDestination(fixture, "revise");
       if (accept) canvas.addEventListener(connection, () => { acceptConnection(assigned, canvas); }, { once: true });
       await keyboardActivate(commandButton(canvas, "Apply connection"));
@@ -3463,6 +3477,69 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(requests).toEqual([]);
     displayedConnection(canvas, "revise");
     expect(active()).toBe(source);
+  });
+
+  it("consumes an attempted named edit whose supplied relation was stale during activation", async () => {
+    const fixture = await editingFixture("publish");
+    const { canvas, pane, requests } = fixture;
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    const source = await startNamedEdit(fixture);
+    await chooseDestination(fixture, "revise");
+    const apply = commandButton(canvas, "Apply connection");
+    apply.focus({ preventScroll: true });
+    const supplied = canvas.graph;
+    canvas.graph = { ...supplied, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "revise" }] };
+    apply.click();
+    canvas.graph = supplied;
+    await settle(canvas);
+    expect(requests).toEqual([]);
+    expect(canvas.shadowRoot?.querySelector("button[data-destination-id]")).toBeNull();
+    expect(active()).toBe(source);
+    expect(canvas.graph).toBe(supplied);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
+  it("retains a draft while Canvas controls stay open and discards it on a completed native close", async () => {
+    const fixture = await editingFixture();
+    const { canvas, requests } = fixture;
+    await startNamedEdit(fixture);
+    await chooseDestination(fixture, "revise");
+    const details = canvas.shadowRoot?.querySelector("details.commands");
+    const summary = details?.querySelector("summary");
+    if (!(details instanceof HTMLDetailsElement) || !(summary instanceof HTMLElement)) throw new Error("Canvas controls disclosure missing");
+    const toggles: boolean[] = [];
+    details.addEventListener("toggle", () => { toggles.push(details.open); });
+    summary.click();
+    summary.click();
+    await settle(canvas);
+    expect(toggles).toEqual([true]);
+    expect(choice(canvas, "destination", "revise").getAttribute("aria-pressed")).toBe("true");
+    expect(commandButton(canvas, "Apply connection").disabled).toBe(false);
+
+    summary.click();
+    await settle(canvas);
+    expect(toggles).toEqual([true, false]);
+    await openCommands(canvas);
+    const trigger = commandButton(canvas, "Edit connection");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    await keyboardActivate(trigger);
+    await settle(canvas);
+    expect(choice(canvas, "source", "review").getAttribute("aria-pressed")).toBe("false");
+    expect(canvas.shadowRoot?.querySelector("button[data-destination-id]")).toBeNull();
+    expect(requests).toEqual([]);
+  });
+
+  it("ignores an edit trigger that still has its authoring label during a same-task mode change", async () => {
+    const { canvas, requests } = await editingFixture();
+    await openCommands(canvas);
+    const trigger = commandButton(canvas, "Edit connection");
+    canvas.mode = "read-only";
+    trigger.click();
+    canvas.mode = "author";
+    await settle(canvas);
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(choiceIds(canvas, "source")).toEqual([]);
+    expect(requests).toEqual([]);
   });
 
   it.each(["current relation", "new relation", "source removed", "target removed", "outcome removed", "Escape", "read-only at release", "empty drop", "layout change", "map frame change", "lost capture"] as const)(
