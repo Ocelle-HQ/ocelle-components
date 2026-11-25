@@ -58,13 +58,19 @@ function visualCaseNames(source: string): string[] {
 describe("unit test shard plans", () => {
   it("keeps the eleven Visual scenarios in independently planned integration files", () => {
     const integration = new URL("./integration/", import.meta.url);
-    const files = readdirSync(integration).filter((file) => /^visual(?:-[a-z-]+)?\.test\.ts$/.test(file));
-    const cases = Object.fromEntries(files.map((file) => [
-      file, visualCaseNames(readFileSync(new URL(file, integration), "utf8")),
-    ]));
+    const files = readdirSync(integration)
+      .filter((name) => /^visual(?:-[a-z-]+)?\.test\.ts$/.test(name))
+      .map((name) => ({ name, entry: { project: "gates-integration", file: "gates/test/integration/" + name } }));
+    const cases = Object.fromEntries(files.map(({ name, entry }) => {
+      const expected = measuredFiles.find((row) => row.project === entry.project && row.file === entry.file);
+      const names = estimateTestSeconds(entry) === expected?.seconds
+        ? visualCaseNames(readFileSync(new URL(name, integration), "utf8"))
+        : [];
+      return [name, names];
+    }));
     expect(cases).toEqual(visualCasesByFile);
 
-    const inventory = files.map((file) => ({ project: "gates-integration", file: "gates/test/integration/" + file }));
+    const inventory = files.map(({ entry }) => entry);
     const planned = planTestShards(revision, inventory, 4);
     expect(planned.shards).toEqual(expect.arrayContaining(inventory.map((file) => [file])));
     expect(planned.shards).toHaveLength(inventory.length);
