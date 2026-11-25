@@ -6081,6 +6081,14 @@
           }
         },
         {
+          "name": "WorkflowCanvasConnectionRequestDetail",
+          "kind": "js",
+          "declaration": {
+            "name": "WorkflowCanvasConnectionRequestDetail",
+            "module": "./workflow-canvas-types.ts"
+          }
+        },
+        {
           "name": "WorkflowCanvasGraph",
           "kind": "js",
           "declaration": {
@@ -6224,6 +6232,13 @@
           ],
           "kind": "class",
           "events": [
+            {
+              "description": "A proposed connection edit using stable step and outcome identifiers.",
+              "name": "ocelle-workflow-canvas-connection-request",
+              "type": {
+                "text": "CustomEvent<WorkflowCanvasConnectionRequestDetail>"
+              }
+            },
             {
               "type": {
                 "text": "CustomEvent<WorkflowCanvasViewportRequestDetail>"

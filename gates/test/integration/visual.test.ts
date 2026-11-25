@@ -122,7 +122,7 @@ describe("visual gate (gates/bin/visual.ts)", () => {
     async () => {
       const at = await root();
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: [`visual: 676 captures match their baselines (docker ${docker}`], stderr: [] });
+      expect(ran).toEqual({ code: 0, stdout: [`visual: 680 captures match their baselines (docker ${docker}`], stderr: [] });
       expect([...files(join(at, "storybook/.visual")).keys()]).toEqual([]);
     },
     timeout,
@@ -141,7 +141,7 @@ describe("visual gate (gates/bin/visual.ts)", () => {
         findings: ["tokens--colour/light: visual: differs", "tokens--colour/dark: visual: missing-baseline"],
         stderr: [],
       });
-      expect(ran.stdout.at(-1)).toBe(`visual: 2 findings in 676 story-themes (docker ${docker}`);
+      expect(ran.stdout.at(-1)).toBe(`visual: 2 findings in 680 story-themes (docker ${docker}`);
       const kept = files(join(at, "storybook/.visual"));
       expect([...kept.keys()]).toEqual(["baselines/tokens--colour.dark.png", "baselines/tokens--colour.light.png", "tokens--colour.light.actual.png", "tokens--colour.light.diff.png"]);
       expect(kept.get("baselines/tokens--colour.light.png")?.equals(kept.get("tokens--colour.light.actual.png") ?? Buffer.alloc(0))).toBe(true);
@@ -246,7 +246,7 @@ describe("baseline command (gates/bin/baselines.ts)", () => {
     async () => {
       const at = await root();
       const before = files(join(at, "storybook/baselines"));
-      expect(before.size).toBe(676);
+      expect(before.size).toBe(680);
       expect(await update(at)).toEqual({ code: 0, stdout: ["baselines: wrote 0 files (0 added, 0 changed, 0 removed), 0 bytes in total"], stderr: [] });
       expect(files(join(at, "storybook/baselines"))).toEqual(before);
     },
