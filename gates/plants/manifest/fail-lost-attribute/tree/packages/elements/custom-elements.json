@@ -6064,7 +6064,7 @@
           "cssParts": [],
           "cssProperties": [],
           "customElement": true,
-          "description": "A host-controlled workflow map with native selection, navigation and presentation controls.",
+          "description": "A host-controlled workflow map with native selection, navigation and named outcome inspection.",
           "events": [
             {
               "description": "A proposed connection edit using stable step and outcome identifiers.",
