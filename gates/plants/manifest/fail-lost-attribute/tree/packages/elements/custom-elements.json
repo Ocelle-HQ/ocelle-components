@@ -6067,6 +6067,13 @@
           "description": "A host-controlled workflow map with native selection, navigation and presentation controls.",
           "events": [
             {
+              "description": "A proposed connection edit using stable step and outcome identifiers.",
+              "name": "ocelle-workflow-canvas-connection-request",
+              "type": {
+                "text": "CustomEvent<WorkflowCanvasConnectionRequestDetail>"
+              }
+            },
+            {
               "description": "A proposed pan, zoom, fit or named reveal viewport.",
               "name": "ocelle-workflow-canvas-viewport-request",
               "type": {
@@ -6158,6 +6165,14 @@
           },
           "kind": "js",
           "name": "WorkflowCanvasConnection"
+        },
+        {
+          "declaration": {
+            "module": "./workflow-canvas-types.ts",
+            "name": "WorkflowCanvasConnectionRequestDetail"
+          },
+          "kind": "js",
+          "name": "WorkflowCanvasConnectionRequestDetail"
         },
         {
           "declaration": {

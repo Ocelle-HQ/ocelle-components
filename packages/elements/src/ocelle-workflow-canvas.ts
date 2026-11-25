@@ -602,30 +602,31 @@ export class OcelleWorkflowCanvas extends LitElement {
     const outcomes = source?.outcomes ?? [];
     const destinations = edit?.destinationId == null ? nodes : nodes.filter(({ id }) => id === edit.destinationId);
     const current = nodes.find(({ id }) => id === edit?.currentDestinationId);
+    const stepName = (node: WorkflowCanvasNode) => `${node.label} ${nameContext(node)}`.trim();
     return html`<div class="connection-editor" role="group" aria-label="Edit outcome connections">
       <div class="connection-basis">
         <div class="connection-choices" role="group" aria-label="Source step">
         ${repeat(source === undefined ? sources : [source], ({ id }) => id, (node) => html`
           <button class="control" type="button" data-source-id=${node.id} aria-pressed=${node === source}
             @click=${(event: MouseEvent) => { this.#chooseEditSource(node.id, event.currentTarget as HTMLButtonElement); }}>
-            ${node.label} ${nameContext(node)}
+            ${stepName(node)}
           </button>`)}
       </div>
       ${source === undefined ? nothing : html`
         <div class="connection-choices" role="group" aria-label="Named outcome">
           ${repeat(outcomes.filter(({ id }) => edit === null || edit.outcomeId === id), ({ id }) => id, ({ id, label }) => html`
             <button class="control" type="button" data-outcome-id=${id} aria-pressed=${edit?.outcomeId === id}
-              @click=${() => { this.#chooseEditOutcome(id); }}>${label}
-                ${outcomes.filter((other) => other.label === label).length > 1 ? `(${id})` : nothing}
+              @click=${() => { this.#chooseEditOutcome(id); }}>
+              ${outcomes.filter((other) => other.label === label).length > 1 ? `${label} (${id})` : label}
             </button>`)}
         </div>`}
       </div>
       ${edit === null ? nothing : html`
-        <p class="connection-current">${current === undefined ? "No connection" : `Connected to ${current.label} ${nameContext(current)}`}</p>
+        <p class="connection-current">${current === undefined ? "No connection" : `Connected to ${stepName(current)}`}</p>
         <div class="connection-choices" role="group" aria-label="Destination step">
           ${repeat(destinations, ({ id }) => id, (node) => html`
             <button class="control" type="button" data-destination-id=${node.id} aria-pressed=${node.id === edit.destinationId}
-              @click=${() => { this.#chooseEditDestination(node.id); }}>${node.label} ${nameContext(node)}</button>`)}
+              @click=${() => { this.#chooseEditDestination(node.id); }}>${stepName(node)}</button>`)}
         </div>
         <button class="control" type="button" ?disabled=${edit.destinationId === null || edit.destinationId === edit.currentDestinationId}
           @click=${() => { this.#finishNamedEdit(false); }}>Apply connection</button>
@@ -688,6 +689,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (this.mode !== "author") return;
     this.#resetEditor(!this.#editorOpen);
     this.#editInitiator = event.currentTarget as HTMLButtonElement;
+    this.requestUpdate();
   }
 
   #resetEditor(open: boolean): void {
@@ -695,7 +697,6 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#editSourceId = null;
     this.#namedEdit = null;
     this.#editInitiator = null;
-    this.requestUpdate();
   }
 
   #namedEditorCurrent(): boolean {
@@ -738,6 +739,7 @@ export class OcelleWorkflowCanvas extends LitElement {
       if (commands !== null) commands.open = false;
     }
     this.#resetEditor(keepOpen);
+    this.requestUpdate();
   }
 
   #finishNamedEdit(disconnect: boolean): void {
@@ -751,14 +753,14 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (request === null) return;
     const focus = this.shadowRoot?.activeElement;
     this.#resetEditor(false);
-    this.#publishConnection(edit, request);
+    this.#publishConnection(request);
     if (focus?.closest(".connection-editor") && this.shadowRoot?.activeElement === focus) {
       this.renderRoot.querySelector<HTMLButtonElement>("button.connection-trigger")?.focus(withoutScroll);
     }
+    this.requestUpdate();
   }
 
-  #publishConnection(edit: WorkflowCanvasEdit, request: WorkflowCanvasConnectionRequestDetail): void {
-    if (this.mode !== "author" || !isWorkflowCanvasEditCurrent(this.graph, edit)) return;
+  #publishConnection(request: WorkflowCanvasConnectionRequestDetail): void {
     this.dispatchEvent(new CustomEvent<WorkflowCanvasConnectionRequestDetail>("ocelle-workflow-canvas-connection-request", {
       detail: request,
       bubbles: true,
@@ -1016,11 +1018,11 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #finishConnectionGesture(gesture: ConnectionGesture, event: PointerEvent): void {
     this.#refresh();
+    this.#clearConnectionGesture();
     const valid = this.#hasConnectionBasis(gesture) && sameCanvasGestureFrame(gesture.frame, gesture.map);
     const edit = { ...gesture.edit, destinationId: valid ? this.#connectionTarget(event) : null };
-    this.#clearConnectionGesture();
     const request = workflowCanvasEditRequest(edit, false);
-    if (request !== null) this.#publishConnection(edit, request);
+    if (request !== null) this.#publishConnection(request);
   }
 
   #clearConnectionGesture(): void {
@@ -1212,7 +1214,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#retainedEditFocus = null;
     if (recovery === null || (!this.#documentFocusIsUnclaimed() && this.shadowRoot?.activeElement !== recovery.previous)) return;
     const { sourceId, initiator } = recovery;
-    if (initiator?.isConnected && !initiator.disabled && initiator.getClientRects().length > 0
+    if (initiator?.isConnected && !initiator.disabled
       && this.#withLiveClip(initiator, (clip) => clip.contains(initiator.getBoundingClientRect()))) {
       initiator.focus(withoutScroll);
       return;
