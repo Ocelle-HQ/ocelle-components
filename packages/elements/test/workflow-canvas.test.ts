@@ -3269,15 +3269,16 @@ describe("workflow canvas named outcome editing in process", () => {
     const originalAction = action(canvas, "review");
 
     await openCommands(canvas);
+    const collapsed = canvas.shadowRoot?.querySelector("button.connection-trigger")?.getAttribute("aria-expanded");
+    await keyboardActivate(commandButton(canvas, "Edit connection"));
     const trigger = commandButton(canvas, "Edit connection");
-    expect(trigger.getAttribute("aria-expanded")).toBe("false");
-    await keyboardActivate(trigger);
+    expect(collapsed).toBe("false");
     await settle(canvas);
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
     const source = choice(canvas, "source", "review");
     expect(source.getAttribute("aria-pressed")).toBe("false");
     expect(choice(canvas, "source", "backup").textContent).toContain("backup");
-    expect(await axButtons()).toContain("Decision (Reviewer, Approval, backup)");
+    const sourceNames = await axButtons();
     await commands.press("Tab");
     expect(active()).toBe(source);
     await commands.press("Enter");
@@ -3295,6 +3296,7 @@ describe("workflow canvas named outcome editing in process", () => {
       "Decision (Reviewer, Approval, review)", "Approved (approved)",
       "Destination (Author, Publication, publish)", "Destination (Author, Planning, revise)",
     ]));
+    expect(sourceNames).toContain("Decision (Reviewer, Approval, backup)");
     expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(true);
     expect(canvas.shadowRoot?.querySelector(".connection-current")?.textContent).toBe("No connection");
     expect(commandButton(canvas, "Apply connection").disabled).toBe(true);
