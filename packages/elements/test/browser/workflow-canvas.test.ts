@@ -565,18 +565,18 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     expect(await controlledState(canvas)).toEqual(response === "removed position"
       ? { ...original, layout: original.layout.filter(({ nodeId }) => nodeId !== "revise") } : { ...original, viewport: proposal });
 
+    const expectedFocus = response === "removed position" ? { picker: true, node: null } : { picker: false, node: "revise" };
+    const currentFocus = async () => ({ picker: await picker.evaluate((element) => element.matches(":focus")), node: await focusedId(page) });
+    expect(await currentFocus()).toEqual(expectedFocus);
     if (response === "removed position") {
-      expect(await picker.evaluate((element) => element.matches(":focus"))).toBe(true);
       await canvas.evaluate(async (element: OcelleWorkflowCanvas, { layout, proposal }) => {
         element.layout = layout;
         element.viewport = proposal;
         await element.updateComplete;
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
       }, { layout: original.layout, proposal });
-      expect(await picker.evaluate((element) => element.matches(":focus"))).toBe(true);
-    } else {
-      expect(await focusedId(page)).toBe("revise");
     }
+    expect(await currentFocus()).toEqual(expectedFocus);
     expect(await requests(page)).toEqual(initial);
     expect((await controlledState(canvas)).scroll).toEqual(original.scroll);
     expect(await finish()).toEqual(clean);

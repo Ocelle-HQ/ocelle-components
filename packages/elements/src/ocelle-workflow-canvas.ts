@@ -71,7 +71,7 @@ const navigationKeys: ReadonlySet<string> = new Set<WorkflowCanvasNavigationKey>
 const withoutScroll = { preventScroll: true };
 
 interface CanvasReveal extends WorkflowCanvasPendingReveal {
-  readonly initiator: HTMLButtonElement;
+  readonly initiator: HTMLButtonElement | null;
   readonly relationship: WorkflowCanvasRelationship | null;
 }
 
@@ -496,11 +496,12 @@ export class OcelleWorkflowCanvas extends LitElement {
       const pending = this.#pendingReveal;
       if (pending !== null) {
         if (pending.relationship !== null) {
-          if (!this.#canFollow(pending.relationship)) this.#pendingReveal = null;
+          if (!this.#canReveal(pending.nodeId, pending.relationship)) this.#pendingReveal = null;
         } else if (!this.#projection.positions.has(pending.nodeId)) {
           this.#pendingReveal = null;
-          if (!this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
-            this.#focusNamed(pending.initiator.parentElement, "select");
+          const { initiator } = pending;
+          if (!this.#canRevealNamed && initiator !== null && this.shadowRoot?.activeElement === initiator) {
+            this.#focusNamed(initiator.parentElement, "select");
           }
         }
       }
@@ -1410,40 +1411,41 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#focusNamed(this.renderRoot.querySelector(".navigator"));
   }
 
-  #canFollow({ source, outcome, destination }: WorkflowCanvasRelationship): boolean {
-    const position = this.#projection.positions.get(destination.id);
-    return position !== undefined && this.#relationshipDestination(source.id, outcome.id) === destination.id
-      && this.layout.some(({ nodeId, x, y }) => nodeId === destination.id && x === position.x && y === position.y);
+  #canReveal(id: string, relationship: WorkflowCanvasRelationship | null): boolean {
+    const position = this.#projection.positions.get(id);
+    return position !== undefined && (relationship === null
+      ? this.graph.nodes.some(({ id: nodeId }) => nodeId === id)
+      : this.#relationshipDestination(relationship.source.id, relationship.outcome.id) === id)
+      && this.layout.some(({ nodeId, x, y }) => nodeId === id && x === position.x && y === position.y);
   }
 
   #revealNamed(event: MouseEvent, id = this.#namedId, relationship: WorkflowCanvasRelationship | null = null): void {
     const initiator = event.currentTarget;
     if (!(initiator instanceof HTMLButtonElement)) return;
-    const position = id === null ? undefined : this.#projection.positions.get(id);
     const map = this.renderRoot.querySelector("svg");
-    if (id === null || position === undefined || map === null) return;
-    if (relationship !== null && !this.#canFollow(relationship)) return;
+    if (id === null || map === null || !this.#canReveal(id, relationship)) return;
     initiator.focus(withoutScroll);
-    // Focus listeners can synchronously replace the graph, layout or focused control.
-    if (relationship !== null && this.shadowRoot?.activeElement !== initiator) return;
+    const focused = this.shadowRoot?.activeElement === initiator ? initiator : null;
+    // A scripted Step reveal can request a viewport without acquiring focus.
+    if (focused === null && (event.isTrusted || relationship !== null)) return;
     // Stryker disable next-line UpdateOperator: either direction stores the same current value in the sole pending reveal.
-    const pending: CanvasReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator, relationship };
+    const pending: CanvasReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator: focused, relationship };
     this.#pendingReveal = pending;
     this.#continueReveal(pending, map);
   }
 
   #continueReveal(pending: CanvasReveal, map: SVGSVGElement): void {
     const { nodeId: id, relationship, initiator } = pending;
-    if (relationship !== null) {
-      if (this.#pendingReveal !== pending) return;
-      if (this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship)) {
-        this.#pendingReveal = null;
-        return;
-      }
-      if (this.#renderedViewport !== this.viewport) {
-        void this.updateComplete.then(() => { this.#continueReveal(pending, map); });
-        return;
-      }
+    if (this.#pendingReveal !== pending) return;
+    const stillFocused = this.shadowRoot?.activeElement === initiator;
+    if ((initiator !== null && !stillFocused) || !this.#canReveal(id, relationship)) {
+      this.#pendingReveal = null;
+      if (initiator !== null && stillFocused) this.#focusNamed(initiator.closest(".navigator"), "select");
+      return;
+    }
+    if (this.#renderedViewport !== this.viewport) {
+      void this.updateComplete.then(() => { this.#continueReveal(pending, map); });
+      return;
     }
     const actions = this.#actions();
     const { contained, eligible, bounds } = this.#measureEligibility(actions, map);
@@ -1469,21 +1471,23 @@ export class OcelleWorkflowCanvas extends LitElement {
     eligible: ReadonlySet<string>,
   ): void {
     const pending = this.#pendingReveal;
-    if (pending === null || this.shadowRoot?.activeElement !== pending.initiator) return;
-    if (pending.relationship !== null && (this.#renderedViewport !== this.viewport || !this.#canFollow(pending.relationship))) return;
-    const surface = pending.initiator.parentElement;
-    if (surface !== null && !this.#withLiveClip(surface, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
+    if (pending === null) return;
+    const { initiator, nodeId, relationship } = pending;
+    if (initiator === null || this.shadowRoot?.activeElement !== initiator) return;
+    if (this.#renderedViewport !== this.viewport || !this.#canReveal(nodeId, relationship)) return;
+    const surface = initiator.parentElement;
+    if (surface !== null && !this.#withLiveClip(surface, (clip) => clip.contains(initiator.getBoundingClientRect()))) {
       this.#pendingReveal = null;
       this.#focusNamed(this.renderRoot.querySelector(".navigator"));
-      pending.initiator.blur();
+      initiator.blur();
       return;
     }
     const ready = workflowCanvasRevealTarget(pending, eligible, this.#generation, this.#focusEpoch);
     if (ready !== null) {
       this.#pendingReveal = null;
       this.#focusAction(actions.find(({ node }) => node.nodeId === ready));
-    } else if (contained.has(pending.nodeId) && this.#raisedId !== pending.nodeId) {
-      this.#raisedId = pending.nodeId;
+    } else if (contained.has(nodeId) && this.#raisedId !== nodeId) {
+      this.#raisedId = nodeId;
       this.requestUpdate();
     }
   }
