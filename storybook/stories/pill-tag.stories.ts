@@ -7,8 +7,13 @@
 // `Disabled`, a disabled button-mode pill, link-mode pill and badge; `Focus`, one pill focused by a story-only wrapper
 // that calls its plain `focus()` once it has rendered, as `ocelle-button`'s `Focused` story does; and `PillHovered`,
 // `BadgeHovered`, `PillActive` and `BadgeActive`, one pill each, hovered or pressed by 006's pointer parameter. The links
-// point at fragments of the story page, so a capture never navigates. All in light and dark through the preview's theme
-// global. The element is imported from the package source by relative path, as the other element stories are. No
+// point at fragments of the story page, so a capture never navigates. Truncation (user story 5): `Truncated`, in the
+// narrow block, enabled interactive pills in button and link mode, two truncated and one fitting, none focused, and
+// below them one truncated pill alone in a container that clips, focused by the same wrapper after it has rendered, so
+// the baseline shows its ring whole and no tooltip bubble (plan decision 16: the focus lands before the pill has
+// enabled its tooltip, which shows a bubble only on a later focus or hover; the bubble is proven by the scenarios); and
+// `DisabledWraps`, a disabled button-mode pill and a disabled link-mode pill in the narrow block, each wrapping its long
+// text. All in light and dark through the preview's theme global. The element is imported from the package source by relative path, as the other element stories are. No
 // markup has a style attribute, and all text is Latin script.
 import type { Meta, StoryObj } from "@storybook/html-vite";
 import "../../packages/elements/src/ocelle-icon.ts";
@@ -114,4 +119,13 @@ export const BadgeActive: StoryObj = {
   name: "Badge, active",
   parameters: { ocelle: { pointer: { press: "ocelle-pill-tag" } } },
   render: () => row([pill("info", "3", ' interactive variant="badge"')]),
+};
+
+export const Truncated: StoryObj = {
+  render: () =>
+    `<div data-story="pill-narrow">${row([pill("warning", "Blocked by the review of the scheduler pipeline", " interactive"), pill("info", "Waiting for the nightly integration run", ' href="#waiting"'), pill("success", "Done", " interactive")])}</div><div data-story="pill-clip"><p><story-pill-focus>${pill("danger", "Failed in the nightly integration run", " interactive")}</story-pill-focus></p></div>`,
+};
+
+export const DisabledWraps: StoryObj = {
+  render: () => `<div data-story="pill-narrow">${row([pill("info", "Waiting for the nightly integration run", " interactive disabled"), pill("warning", "Blocked by the review of the scheduler pipeline", ' href="#blocked" disabled')])}</div>`,
 };

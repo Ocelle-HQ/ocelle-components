@@ -53,9 +53,21 @@
 // - Mode changes (FR-035; R-08), synchronously in the `interactive` / `href` callback: static → interactive
 //   `capture()`s the host's passthrough attributes; interactive → static `release()`s them back to the host; button ↔
 //   link keeps them held and the render applies them to the new control, and if the old control had focus the new one
-//   is focused in a microtask after the commit (where `ocelle-tooltip`'s `slotchange` will have run once it wraps the
-//   control), so the ring shows only if it showed before. A pill static at its upgrade gives copied mirrors back
+//   is focused in a microtask after the commit, so after `ocelle-tooltip`'s `slotchange` for the new control (R-08), and
+//   the ring and the tooltip show only if they showed before. A pill static at its upgrade gives copied mirrors back
 //   (`adoptMirrors()`); an interactive one reads them back (`connected()`).
+// - Truncation (US5, FR-033, FR-034; R-09; data-model.md § `ocelle-pill-tag`): the interactive control sits in
+//   `ocelle-tooltip` (one template for both modes, so a switch keeps the tooltip), its `text` the full text (the default
+//   slot's flattened text, trimmed, whitespace collapsed) and disabled while the pill is not truncated, with no
+//   `describes`. The host sheet sets an enabled pill's text span `nowrap`, `overflow: hidden`, `text-overflow:
+//   ellipsis`, and a disabled one's back to wrapping. Truncated = not disabled and the text's fractional inline extent
+//   (a `Range` over the slot's nodes) passing the span's inline end, re-measured in every `updated()` while interactive,
+//   by a `ResizeObserver` on the span (re-targeted when the render replaces it), by a `MutationObserver` on the element
+//   (`characterData`, `childList`, `subtree`) and on the default slot's `slotchange`; the observers end when the pill
+//   becomes static or is removed. The pill's own `slotchange` events stop at their slots: the tooltip would take them
+//   as a change of its trigger. The `min-inline-size: 0` chain is the merged one: the text span's own rule, the row's
+//   `max-inline-size: 100%`, the control's `--ocelle-target-small` minimum; in Chromium the host's automatic minimum is
+//   then the control's padding and border, and no rule of its own was observable (reviews/phase-6/notes.md).
 // `status`, `variant` and `density` are attribute-backed accessors (R-02's pattern): an unknown value stays in the
 // attribute as written and the property reads the default. Importing this module defines `ocelle-pill-tag` and no
 // other element.
@@ -63,6 +75,7 @@ import { LitElement, css, html, nothing } from "lit";
 import { MovedAttributes, controlState, controlStyles, guardHost, linkHref, resolveIds } from "./control.ts";
 import { define } from "./define.ts";
 import { iconSlotStyles } from "./icon-slot.ts";
+import "./ocelle-tooltip.ts";
 import { statusOf } from "./status.ts";
 
 /** The host attributes an interactive pill moves onto its inner control (FR-030), in the contract's order. */
@@ -81,7 +94,8 @@ type Mode = "static" | "button" | "link";
  * The interactive host sheet (plan decision 11; data-model.md § interactive host sheet): adopted after the element's
  * styles while the pill is interactive, so it wins on equal specificity, and removed when the pill becomes static. The
  * host is the inline grid whose one stretched item is the inner control (012 FR-001), capped at its container less two
- * focus-ring extents and offset by one, so the ring stays inside a container that clips.
+ * focus-ring extents and offset by one, so the ring stays inside a container that clips. An enabled pill keeps its text
+ * on one line and truncates it with an ellipsis; a disabled one wraps it as a static pill does (FR-033).
  */
 const interactiveStyles = css`
   :host {
@@ -89,7 +103,46 @@ const interactiveStyles = css`
     max-inline-size: calc(100% - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)));
     margin-inline: calc(var(--ocelle-focus-offset) + var(--ocelle-focus-width));
   }
+
+  .label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  :host([disabled]) .label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
 `;
+/**
+ * How far, in fractional CSS pixels, the text of `nodes` (the default slot's flattened assignment) passes the inline end
+ * of its text `span` (R-09): a `Range` from before the first to after the last node gives the text's unclipped inline
+ * extent, compared with the span's box at its inline end, the left edge in right to left; 0 without text.
+ */
+function overflow(span: Element, nodes: readonly Node[]): number {
+  const [first] = nodes;
+  const last = nodes.at(-1);
+  if (first === undefined || last === undefined) return 0;
+  const range = document.createRange();
+  range.setStartBefore(first);
+  range.setEndAfter(last);
+  const text = range.getBoundingClientRect();
+  const box = span.getBoundingClientRect();
+  return getComputedStyle(span).direction === "rtl" ? box.left - text.left : text.right - box.right;
+}
+
+/**
+ * Stops a `slotchange` of the pill's own slots where it is dispatched. The slots sit inside the inner control, which is
+ * `ocelle-tooltip`'s trigger, and the tooltip takes any `slotchange` that reaches its own slot as a change of its trigger
+ * (the first element assigned to the slot the event came from): a pill's text or icon changing would otherwise leave
+ * the tooltip without its trigger, or with the icon as its trigger.
+ */
+function stop(event: Event): void {
+  event.stopPropagation();
+}
+
 /** One constructed sheet of `interactiveStyles`, shared by every pill. */
 const interactiveSheet = new CSSStyleSheet();
 interactiveSheet.replaceSync(interactiveStyles.cssText);
@@ -118,7 +171,7 @@ interactiveSheet.replaceSync(interactiveStyles.cssText);
  * @attr {string} data-ocelle-moved-title - Element-owned mirror of the moved `title`; hosts do not write or remove it.
  * @cssstate pressed - While the pill is in button mode and its moved `aria-pressed` is `"true"`; never in link mode.
  * @cssstate current - While the pill is interactive and its moved `aria-current` is set to any value other than `"false"`.
- * @slot - The text. A static pill wraps a text that does not fit onto further lines; it never truncates.
+ * @slot - The text. A static or disabled pill wraps a text that does not fit onto further lines; an enabled interactive pill truncates it with an ellipsis and shows it whole in a tooltip on hover and keyboard focus.
  * @slot icon - One decorative icon before the text (the slot convention), one line tall.
  * @csspart pill - The visual box: the padding, the colours, the border and the radius; on an interactive pill, the inner control itself.
  * @csspart control - The inner `<button>`, or the inner `<a>` in link mode, of an interactive pill.
@@ -399,6 +452,22 @@ export class OcellePillTag extends LitElement {
   /** Whether the default slot holds text: non-whitespace text in its flattened assignment. */
   #labelled = false;
 
+  /** The full text: the default slot's flattened text, trimmed and with its whitespace collapsed (R-09). */
+  // Stryker disable next-line StringLiteral: equivalent, the first updated() measures before any focus or hover can reach the tooltip and replaces the value whatever it was (the tooltip shows no bubble while it is disabled, as it is until then unless the mutant of #truncated below is also applied)
+  #fullText = "";
+
+  /** Whether an enabled interactive pill's text passes its text span's inline end (R-09): the tooltip is enabled. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first updated() measures and replaces it before any focus or hover can reach the tooltip, and until then the tooltip's text is the empty initial full text, with which it shows no bubble
+  #truncated = false;
+
+  /**
+   * The truncation observers (R-09), while the pill is connected and interactive: a `ResizeObserver` on the text span
+   * (`#span`, the one it observes) and a `MutationObserver` on the element for the text inside it.
+   */
+  #resize: ResizeObserver | undefined;
+  #span: Element | undefined;
+  #changes: MutationObserver | undefined;
+
   /**
    * Rereads the text when text inside the element changes, which fires no `slotchange`: a text node's data, or text
    * inserted into or removed from a slotted element, as `ocelle-button` does. It observes the element for its lifetime.
@@ -504,6 +573,15 @@ export class OcellePillTag extends LitElement {
     super.connectedCallback();
   }
 
+  /** Removed: the truncation observers end; a reconnection's update creates them again (R-09). */
+  // Stryker disable next-line BlockStatement: equivalent, observer teardown has no public observable (contracts/checks.md § US5, R-09): a removed pill's observers see no layout, and kept ones measure correctly after a reconnection
+  override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection serves reactive controllers and async directives; the pill uses neither (as ocelle-tooltip's record, reviews/phase-4/notes.md)
+    super.disconnectedCallback();
+    // Stryker disable next-line CallExpression: equivalent, observer teardown has no public observable (contracts/checks.md § US5, R-09)
+    this.#unwatch();
+  }
+
   /** Static, button or link, read from the attributes (data-model.md § mode). */
   #modeNow(): Mode {
     if (linkHref(this.getAttribute("href"), document.baseURI) !== undefined) return "link";
@@ -539,11 +617,74 @@ export class OcellePillTag extends LitElement {
     return this.shadowRoot?.querySelector<HTMLElement>(".control") ?? null;
   }
 
-  /** Reads whether the default slot holds text, as `ocelle-button` reads its label. */
+  /**
+   * Reads whether the default slot holds text, as `ocelle-button` reads its label, and renders again when that changes;
+   * the truncation observers re-measure a text that changes otherwise.
+   */
   #readLabel(): void {
     const slot = this.renderRoot.querySelector<HTMLSlotElement>(".label slot");
-    this.#labelled = (slot?.assignedNodes({ flatten: true }) ?? []).map((node) => node.textContent).join("").trim() !== "";
+    const labelled = (slot?.assignedNodes({ flatten: true }) ?? []).map((node) => node.textContent).join("").trim() !== "";
+    // Stryker disable next-line ConditionalExpression: equivalent, the false mutant renders again on every text change, which re-renders the same template and re-measures what the truncation observers already measure; the true mutant (never rendering) is killed by the bare-row bodies
+    if (labelled === this.#labelled) return;
+    this.#labelled = labelled;
     this.requestUpdate();
+  }
+
+  /**
+   * A change of the default slot: the label is read again and the truncation re-measured (a reassignment no observer
+   * records). The event stops at the slot, as the icon slot's does (`stop`).
+   */
+  #onSlotchange(event: Event): void {
+    event.stopPropagation();
+    this.#readLabel();
+    this.#measure();
+  }
+
+  /**
+   * Measures the full text and whether it is truncated (R-09), and renders again when either changed: truncated while
+   * the pill is not disabled and its text passes its text span's inline end (`overflow`).
+   */
+  #measure(): void {
+    const span = this.renderRoot.querySelector(".label");
+    const nodes = span?.querySelector("slot")?.assignedNodes({ flatten: true }) ?? [];
+    const fullText = nodes.map((node) => node.textContent).join("").replace(/\s+/g, " ").trim();
+    const truncated = !this.disabled && (span === null ? 0 : overflow(span, nodes)) > 0;
+    if (fullText === this.#fullText && truncated === this.#truncated) return;
+    this.#fullText = fullText;
+    this.#truncated = truncated;
+    this.requestUpdate();
+  }
+
+  /**
+   * Keeps the truncation observers while the pill is interactive (R-09): the `MutationObserver` on the element, and the
+   * `ResizeObserver` on the current text span, re-targeted when the render replaced it (a switch between button and
+   * link) or after the observers ended; then a measure.
+   */
+  #watch(): void {
+    const span = this.renderRoot.querySelector(".label");
+    this.#changes ??= new MutationObserver(() => {
+      this.#measure();
+    });
+    this.#changes.observe(this, { characterData: true, childList: true, subtree: true });
+    this.#resize ??= new ResizeObserver(() => {
+      this.#measure();
+    });
+    // Stryker disable next-line ConditionalExpression: equivalent, the true mutant observes the same span again, which only adds an initial notification and a measure that changes nothing; the false mutant is a compile error
+    if (span !== null && span !== this.#span) {
+      // Stryker disable next-line CallExpression: equivalent, observer teardown (R-09): a replaced span left observed is detached, and its one notification measures the current span, which changes nothing
+      this.#resize.disconnect();
+      this.#resize.observe(span);
+      this.#span = span;
+    }
+    this.#measure();
+  }
+
+  /** Ends the truncation observers: the pill became static or was removed; the next `#watch()` observes again. */
+  // Stryker disable next-line BlockStatement: equivalent, observer teardown has no public observable (contracts/checks.md § US5, R-09): observers left running keep measuring the same span correctly, and a static pill ignores the result; ending the observers but keeping #span is killed by the reconnection body
+  #unwatch(): void {
+    this.#resize?.disconnect();
+    this.#changes?.disconnect();
+    this.#span = undefined;
   }
 
   /**
@@ -573,14 +714,23 @@ export class OcellePillTag extends LitElement {
   protected override render(): unknown {
     const mode = this.#modeNow();
     const classes = `pill status-${this.status} variant-${this.variant} density-${this.density}`;
-    const row = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
+    const row = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon" @slotchange=${stop}></slot></span><span class="label"><slot @slotchange=${this.#onSlotchange}></slot></span></span>`;
     if (mode === "static") return html`<span part="pill" class=${classes}>${row}</span>`;
     const value = (name: string): string | typeof nothing => this.#moved.get(name) ?? nothing;
     if (mode === "link") {
       const available = controlState(this.disabled, false) === "available";
-      return html`<a part="pill control" class="control ${classes}" href=${available ? (linkHref(this.getAttribute("href"), document.baseURI) ?? nothing) : nothing} role=${available ? nothing : "link"} aria-disabled=${available ? nothing : "true"} aria-label=${this.#name() ?? nothing} aria-current=${this.#current() ?? nothing} title=${value("title")} @click=${this.#activate}>${row}</a>`;
+      return this.#tooltip(html`<a part="pill control" class="control ${classes}" href=${available ? (linkHref(this.getAttribute("href"), document.baseURI) ?? nothing) : nothing} role=${available ? nothing : "link"} aria-disabled=${available ? nothing : "true"} aria-label=${this.#name() ?? nothing} aria-current=${this.#current() ?? nothing} title=${value("title")} @click=${this.#activate}>${row}</a>`);
     }
-    return html`<button part="pill control" class="control ${classes}" type="button" ?disabled=${this.disabled} aria-label=${this.#name() ?? nothing} aria-current=${this.#current() ?? nothing} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${row}</button>`;
+    return this.#tooltip(html`<button part="pill control" class="control ${classes}" type="button" ?disabled=${this.disabled} aria-label=${this.#name() ?? nothing} aria-current=${this.#current() ?? nothing} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${row}</button>`);
+  }
+
+  /**
+   * The inner control in `ocelle-tooltip` (FR-034): the full text, disabled while not truncated, no `describes`. One
+   * template for both modes, so a switch between button and link replaces the control and keeps the tooltip, which then
+   * learns its new trigger from its own `slotchange` (R-08).
+   */
+  #tooltip(inner: unknown): unknown {
+    return html`<ocelle-tooltip text=${this.#fullText} ?disabled=${!this.#truncated}>${inner}</ocelle-tooltip>`;
   }
 
   /**
@@ -610,6 +760,8 @@ export class OcellePillTag extends LitElement {
     const adopted = root.adoptedStyleSheets.includes(interactiveSheet);
     if (mode !== "static" && !adopted) root.adoptedStyleSheets = [...root.adoptedStyleSheets, interactiveSheet];
     if (mode === "static" && adopted) root.adoptedStyleSheets = root.adoptedStyleSheets.filter((sheet) => sheet !== interactiveSheet);
+    if (mode === "static") this.#unwatch();
+    else this.#watch();
     if (this.#refocus) {
       this.#refocus = false;
       queueMicrotask(() => {
