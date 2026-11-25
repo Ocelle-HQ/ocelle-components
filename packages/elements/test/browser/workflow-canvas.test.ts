@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, inject, it } from "vi
 import type { OcelleWorkflowCanvas } from "../../src/ocelle-workflow-canvas.ts";
 import type { OcelleWorkflowNode } from "../../src/ocelle-workflow-node.ts";
 import type { WorkflowCanvasGraph, WorkflowCanvasViewportRequestDetail } from "../../src/workflow-canvas-types.ts";
-import { audit, axeSetup } from "../commands.ts";
+import { audit, axDetails, axSubtree, axeSetup } from "../commands.ts";
 import { clean, launch, policy, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
 
@@ -1655,6 +1655,107 @@ describe("workflow canvas outcome editing in the strict-CSP aggregate", () => {
     expect(await requests(page)).toEqual([connect, reassign, reassign, editRequest("disconnect", "revise")]);
     await expect.poll(() => edge.count()).toBe(0);
     expect(await controlledState(canvas)).toEqual(supplied);
+    expect(await finish()).toEqual(clean);
+  });
+});
+
+describe("workflow canvas run inspection in the strict-CSP aggregate", () => {
+  it.each(["light", "dark", "forced colors"] as const)("keeps full repeated names and distinct selected, invalid and focus cues at narrow width in %s", async (display) => {
+    const { page, finish } = await mount();
+    await page.setViewportSize({ width: 400, height: 920 });
+    await page.emulateMedia({ colorScheme: display === "dark" ? "dark" : "light", forcedColors: display === "forced colors" ? "active" : "none" });
+    const canvas = page.locator("#canvas");
+    const label = "Review the complete publication proposal and its dependent approval records";
+    const outcome = "Ready for the next stage with exhaustive workflow transition criteria";
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, { label, outcome, display }) => {
+      document.documentElement.dataset.theme = display === "dark" ? "dark" : "light";
+      const narrow = new CSSStyleSheet();
+      narrow.replaceSync("#pane { inline-size: 360px; block-size: 790px; } #canvas { inline-size: 360px; block-size: 770px; }");
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, narrow];
+      element.mode = "read-only";
+      element.selectedNodeId = "review";
+      element.graph = {
+        nodes: element.graph.nodes.map((node) => ({
+          ...node, label, invalid: node.id === "review", outcomes: node.outcomes.map((entry) => ({ ...entry, label: outcome })),
+        })),
+        connections: element.graph.connections,
+      };
+      element.layout = [{ nodeId: "review", x: 24, y: 20 }, { nodeId: "publish", x: 900, y: 20 }, { nodeId: "revise", x: 1400, y: 20 }];
+      await element.updateComplete;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
+      const source = [...element.shadowRoot?.querySelectorAll("ocelle-workflow-node") ?? []].find((node) => node.nodeId === "review");
+      if (source !== undefined) source.id = "phase-4-inspection-source";
+    }, { label, outcome, display });
+
+    const source = canvas.locator("#phase-4-inspection-source button");
+    expect(await source.count(), "the narrow canvas renders the existing native selection action").toBe(1);
+    await page.keyboard.press("Tab");
+    await source.focus();
+    const cues = await source.evaluate((action) => {
+      const root = action.getRootNode();
+      const detail = action.ariaDescribedByElements?.map((part) => part.textContent).join(" ") ?? "";
+      const states = root instanceof ShadowRoot ? [...root.querySelectorAll("div")]
+        .filter((element) => ["Selected", "Invalid"].includes(element.textContent.trim()) && element.getBoundingClientRect().height > 0)
+        .map((element) => element.textContent.trim()) : [];
+      const style = getComputedStyle(action);
+      const bounds = action.getBoundingClientRect();
+      const inset = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
+      return {
+        pressed: action.getAttribute("aria-pressed"), invalid: /\bInvalid\b/.test(detail),
+        fullOutcome: detail.includes("Ready for the next stage with exhaustive workflow transition criteria"), states,
+        focus: action.matches(":focus-visible") && style.outlineStyle === "solid" && Number.parseFloat(style.outlineWidth) > 0,
+        fitsWidth: bounds.left - inset >= 0 && bounds.right + inset <= window.innerWidth,
+      };
+    });
+    expect(cues, "native selection, visible validation text and the keyboard focus outline coexist")
+      .toEqual({ pressed: "true", invalid: true, fullOutcome: true, states: ["Selected", "Invalid"], focus: true, fitsWidth: true });
+    const session = await page.context().newCDPSession(page);
+    const accessibility = await axDetails(session, "phase-4-inspection-source");
+    const namedActions = (await axSubtree(session, "canvas")).filter(({ role }) => role === "button").map(({ name }) => name);
+    await session.detach();
+    expect(accessibility).toEqual(expect.arrayContaining([expect.objectContaining({
+      role: "button", name: expect.stringMatching(new RegExp(`${label}.*Reviewer.*Approval`)),
+      description: expect.stringMatching(new RegExp(`${outcome}.*Selected.*Invalid`)), focused: true,
+    })]));
+    expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label}.*(?:Publication|publish)`, "i").test(name)),
+      "the narrow relationship view exposes the full first repeated destination with distinct context").toHaveLength(1);
+    expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label}.*(?:Planning|revise)`, "i").test(name)),
+      "the second repeated destination remains independently named").toHaveLength(1);
+    expect(await requests(page)).toEqual([]);
+    await source.click();
+    expect(await requests(page)).toEqual([{ type: selection, detail: { nodeId: "review" } }]);
+    expect((await controlledState(canvas)).selectedNodeId).toBe("review");
+    expect(await finish()).toEqual(clean);
+  });
+
+  it("honors reduced motion during native follow and immediate host viewport acceptance", async () => {
+    const { page, finish } = await mount(true);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const canvas = page.locator("#canvas");
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+      element.mode = "read-only";
+      await element.updateComplete;
+    });
+    expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
+    const follow = canvas.getByRole("button", { name: /\b(?:follow|reveal)\b.*\bRevise\b/i });
+    expect(await follow.count(), "a named follow to the clipped step remains available with reduced motion").toBe(1);
+    await canvas.evaluate((element: OcelleWorkflowCanvas) => {
+      element.addEventListener("ocelle-workflow-canvas-viewport-request", (event) => {
+        element.viewport = (event as CustomEvent<WorkflowCanvasViewportRequestDetail>).detail.viewport;
+        void element.updateComplete.then(() => {
+          const playing = () => element.getAnimations({ subtree: true }).filter((animation) => animation.pending || animation.playState === "running").length;
+          const first = playing();
+          requestAnimationFrame(() => { element.dataset.followMotion = JSON.stringify([first, playing()]); });
+        });
+      }, { once: true });
+    });
+    await follow.focus();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => focusedId(page)).toBe("revise");
+    const supplied = await controlledState(canvas);
+    await expect.poll(() => canvas.getAttribute("data-follow-motion"), { message: "viewport acceptance creates no pending or running presentation animation" }).toBe("[0,0]");
+    expect(await requests(page)).toEqual([{ type: viewport, detail: { viewport: supplied.viewport } }]);
+    expect(supplied.selectedNodeId).toBe("publish");
     expect(await finish()).toEqual(clean);
   });
 });
