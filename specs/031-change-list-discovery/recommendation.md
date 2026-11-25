@@ -11,6 +11,6 @@
 
 The plan uses stacked facts with explicit Previous, New and Unchanged labels. The upgrade combines stacked facts and a notice with a wrapping digest display and two separately named Copy controls. The renderer groups the digests visually. The composed copy requests carry the original strings, and the story host reports the simulated result.
 
-The six built-Storybook tests passed at 320 CSS pixels across light, dark and forced colors. They covered reading order, materiality changes for an identical diff, visible text, the two exact copy requests, focus continuation and local resource loading. The separately built Storybook reports 394 stories. Hosted Visual, Axe and the workflow comparison provide the remaining verification. [Plan and proofs](plan.md)
+The six built-Storybook tests passed at 320 CSS pixels across light, dark and forced colors. They covered reading order, materiality changes for an identical diff, visible text, the two exact copy requests, focus continuation and local resource loading. The separately built Storybook reports 394 stories. Both hosted Visual and Axe checks passed, and the paired workflow run retained all six discovery cases. [Plan](plan.md) · [Verification](reviews/phase-1/verification.md)
 
 The shared conventions are ordering, explicit labels and host-supplied state. The comparison meanings and actions differ. The recipe lets each host retain those decisions while reusing the existing elements.
