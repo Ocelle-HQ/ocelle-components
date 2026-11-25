@@ -542,6 +542,32 @@ export const pillTruncationScenarios: readonly Scenario[] = [
     expected: { shown: long },
   },
   {
+    name: "A forwarded slot's slotchange (R-09; review round 1, R1-05): in a host's shadow root, a <slot> forwarded into a static pill's default slot and one forwarded into its icon slot each give a slotchange that reaches a listener on that shadow root, above the pill, as through a plain <span>; in button and link mode, where ocelle-tooltip wraps the control, each stops at the pill (plants: the stop not limited to the interactive modes; the label slot's and the icon slot's stop removed)",
+    run: async (driver) => {
+      const hosts = ["n", "s", "b", "l"] as const;
+      await mount(driver, hosts.map((id) => `<div id="${id}" class="wide">${short}</div>`).join(""));
+      const slots = '<slot name="i" slot="icon"></slot><slot></slot>';
+      await driver.shadow("n", `<span>${slots}</span>`);
+      await driver.shadow("s", `<ocelle-pill-tag status="warning">${slots}</ocelle-pill-tag>`);
+      await driver.shadow("b", `<ocelle-pill-tag interactive status="warning">${slots}</ocelle-pill-tag>`);
+      await driver.shadow("l", `<ocelle-pill-tag href="#mine" status="warning">${slots}</ocelle-pill-tag>`);
+      await driver.settleLayout();
+      // A listener on each host's shadow root records the slot each slotchange came from in the host's data-heard.
+      await driver.module(
+        `for (const id of ${JSON.stringify(hosts)}) { const host = document.getElementById(id); const heard = []; host.setAttribute("data-heard", ""); host.shadowRoot.addEventListener("slotchange", (event) => { heard.push(event.target.name || "default"); host.setAttribute("data-heard", heard.join(" ")); }); }`,
+      );
+      for (const id of hosts) {
+        await driver.append(id, " by the review");
+        await driver.settleLayout();
+        await driver.append(id, '<ocelle-icon slot="i" name="folder"></ocelle-icon>');
+        await driver.settleLayout();
+      }
+      const heard = async (id: string): Promise<string | null> => driver.attribute(id, "data-heard");
+      return { span: await heard("n"), static: await heard("s"), button: await heard("b"), link: await heard("l") };
+    },
+    expected: { span: "default i", static: "default i", button: "", link: "" },
+  },
+  {
     name: "Full text (§ Edge cases): a truncated pill whose slotted text has leading, trailing and repeated whitespace and a nested <b> shows the trimmed, collapsed text in its tooltip; named by aria-label or by label with a name other than its text, its control keeps that name while the tooltip still shows the full text (FR-034; 012 FR-006)",
     run: async (driver) => {
       const spaced = `\n  Blocked   by the\n  <b>review</b>   of the scheduler  `;
