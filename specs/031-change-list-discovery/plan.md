@@ -2,26 +2,83 @@
 
 ## Constitution check
 
-The fixtures compose existing framework-free elements and use Storybook's normal CSS and rendering. Data enters as host fixtures. Native headings and facts preserve reading order, and native buttons preserve keyboard activation. Visual emphasis uses existing tokens. The built story contains no inline styles or script and runs under the existing story CSP. The only deliverables are compositions, tests, baselines and the comparison record.
+The fixtures compose existing framework-free elements with Storybook's external layout stylesheet. Host inputs supply the comparison and materiality judgment. Visible labels, native headings and facts carry the change meanings in document order. Native Copy buttons provide keyboard activation, and the host reports the simulated result. Styling uses the existing tokens, including the focus treatment and digest grouping in the existing elements. The deliverables are two compositions, their tests and baselines, and the comparison record.
+
+The existing Storybook integration server serves the built iframe without a CSP header. Storybook's own harness includes inline scripts. Inspect the DOM emitted by each composition, including its light-DOM descendants, for inline scripts, style markup and attributes, and inline event-handler attributes. Assert that every loaded request stays on the bound origin from navigation through interaction. Keep the root `gate:csp` in its normal scope and use the existing package browser fixtures for strict-runtime CSP evidence.
 
 ## Phase 1. Compare two runnable compositions
 
-| Task area | Exact write scope | Prerequisite |
+| Task area | Exact write paths | Prerequisite |
 | --- | --- | --- |
-| Test drafting for plan | `storybook/test/integration/change-list-plan.test.ts` | Agreed story ID and host materiality control |
-| Test drafting for upgrade | `storybook/test/integration/change-list-upgrade.test.ts` | Agreed story ID and copy request contract |
-| Plan example | `storybook/stories/change-list-plan.stories.ts` | Combined test-only red |
-| Upgrade example | `storybook/stories/change-list-upgrade.stories.ts` | Combined test-only red |
-| Integration | `storybook/.storybook/stories-layout.css`, four baseline PNGs, current visual and axe inventory selectors, phase evidence, and the recommendation | Both examples pass their assigned checks |
+| Draft plan browser tests | `storybook/test/integration/change-list-plan.test.ts` | Agreed story ID and materiality input |
+| Draft upgrade browser tests | `storybook/test/integration/change-list-upgrade.test.ts` | Agreed story ID, digest representation and copy contract |
+| Build the plan example | `storybook/stories/change-list-plan.stories.ts` | Combined test-only red |
+| Build the upgrade example | `storybook/stories/change-list-upgrade.stories.ts` | Combined test-only red |
+| Integrate the fixtures | `storybook/.storybook/stories-layout.css`, the four baseline PNGs listed below, the selected inventory paths below, and `specs/031-change-list-discovery/reviews/phase-1/test-scope.txt` | Both examples pass the workers' checks and the owner records the workflow pins |
+| Record the pilot and recommendation | `specs/031-change-list-discovery/reviews/phase-1/workflow-pins.md`, other phase evidence, and `specs/031-change-list-discovery/recommendation.md` | Record pins before return verification and inventory integration. Complete the comparison after combined green. |
 
-Use Storybook IDs `workflow-studio-plan-revision--reviewed-plan` and `workflow-studio-node-upgrade--pinned-versions`. Each story has an independent title and a single bounded column. The plan uses explicit Previous, New and Unchanged labels. It takes `requiresReview` as a boolean story input, with default true, and labels the supplied materiality independently of the diff. The upgrade groups explicit Removed and Added lines and uses facts, copy fields and notice. It handles `ocelle-copy-field-request` in its Storybook host and writes the outcome to the field's status. Inject a local clipboard test double before loading the built story. Assert the digest payload, accessible status text, and exactly one request for each keyboard activation.
+### Fixture behavior
 
-The test workers own separate files. The implementation workers own separate story files and can run in separate worktrees from the canonical red proof. The owner verifies returned scope and sign-off before staging and runs the combined checks. The same owner builds the final Storybook, inspects the inventory and updates capture counts and four baseline PNGs. The team reports dispatch-to-return, return-to-staging, and combined green elapsed time. Hosted CI timing belongs to the tested merge candidate. Use Op 030's handoff check as soon as its verified revision is available.
+Use the built Storybook IDs `workflow-studio-plan-revision--reviewed-plan` and `workflow-studio-node-upgrade--pinned-versions`. Keep independent story files and pair each with its own integration test. Both examples use a bounded single-column layout. Both retain their own labels and host actions.
 
-Each browser test discovers its story by exact ID before using its route, to prove a missing-story assertion on red. On green load the actual built iframe at a 320 CSS-pixel viewport, verify source order and no page overflow, and repeat the semantic observations in forced colors. Check both exact digests where the order matters and verify native Tab order and activation. Apply the same security and configuration checks that protect other built story fixtures.
+The plan example shows explicit Previous, New and Unchanged labels. It takes `requiresReview` as a boolean story input, defaulting to true. The input supplies the judgment for the retention diff. Load the same built story with both values through Storybook's real args input path. Assert each expected visible judgment and identical Previous, New and Unchanged labels, values and reading order in both renders.
 
-Use one shared layout only where the named fixtures need a narrow, bounded width. Keep each consumer responsible for its supplied data, labels and host actions. Compare the observed common concepts with their divergent meanings. Record a recipe recommendation if a common public API still needs design decisions. If both examples demonstrate a complete common contract, describe its bounded extraction scope for a follow-up.
+The upgrade example uses facts, notice and explicit Removed and Added labels. For each digest, show the original canonical text in one wrapping `ocelle-code-block` with the public `digest` property. It presents its prefix as supplied and groups the remainder into fours with the existing renderer. Supply the same original, unspaced string as the related `ocelle-copy-field` value so the actual request carries those exact bytes. Limit the CSS rule that hides the duplicated `::part(value)` text to the upgrade fixture. Keep the Copy button, focus ring and status region available. Use separate field group labels and public `copy-label` values for the distinctly named Copy previous digest and Copy new digest actions.
 
-## Evidence
+The delivered upgrade host handles a real composed `ocelle-copy-field-request` by recording the text in memory and setting the originating field's `status` property after it receives the request. Its copy result identifies the simulated outcome. Use the delivered host in the browser tests with ordinary clipboard permissions. Observe the actual delayed event and wait for the originating field's polite status result. Assert the complete request sequence with exactly one request per activation, matching each requested string to the canonical code-block text. Check visible digest grouping and the preserved exact canonical text.
 
-Use the phase red, final-on-base and green receipts. Record exact candidate Unit, Visual and Axe check links, affected Plants, and review status. Keep all original hosted checks and compare with the opt-in CI measurements only when the exact inventory and receipts match.
+### Browser verification and focused scope
+
+Use the `storybook-integration` project's injected per-run Storybook build for both index discovery and rendering. Each browser test asserts that its exact story ID is present in the injected index before opening that story's built iframe. Capture the missing-ID assertion as the test-only red. Run both behaviors together on the canonical integrated candidate.
+
+At 320 CSS pixels, exercise pinned light and dark themes and forced colors. Assert the specified reading order and no horizontal page overflow. Inspect the flat tree, including rendered shadow content, using the existing `readTextBoxes` helper or equivalent rendered-text geometry. Check that each required label, value, change state, judgment and digest has nonempty visible text bounds in the viewport without horizontal clipping, including at internal overflow ancestors. Inspect each whole digest's rendered groups, including the prefix, at the narrow width.
+
+Find each real Copy button by role and its distinct name. Use native Tab to reach the first button. Verify focus and a visible focus ring and check that the button and ring are inside the viewport and their clipping ancestors in both pinned themes and forced colors. Activate the button, assert its exact request and accessible simulated result, and verify focus remains on it. From that position use a real Tab to reach the other named Copy button without programmatic focus. Repeat the focus, bounds, activation, payload and status checks for the second button.
+
+The integration owner writes `reviews/phase-1/test-scope.txt` with explicit repository-relative paths for all runnable consumers affected by the story and CSS changes. Include the following in local scope:
+
+- `storybook/test/integration/change-list-plan.test.ts`
+- `storybook/test/integration/change-list-upgrade.test.ts`
+- `storybook/test/integration/elements-stories.test.ts`
+- `storybook/test/integration/render.test.ts`
+- `gates/test/integration/storybook-build.test.ts`
+- `gates/test/integration/plant-repo.test.ts`
+
+Check the list against the selected workflow pin and any additional shared support changes. Include eligible count-only Visual and Axe inventory files from the mapping below as `ci-only <repository-relative path>` only if the exact file is allowed by the selected runner and it carries only collateral count updates. Keep named red proofs, behavior cases, any noneligible changed test and both new browser files local. For every deferred case require the candidate revision, `gates-integration` project, exact Unit inventory file and successful shard receipt for that file and the successful corresponding dedicated Visual or Axe gate. Missing, stale or mismatched evidence leaves the review requirement open.
+
+### Inventory and baseline integration
+
+The existing control starts with 392 stories and 784 story-theme PNGs. With the two specified story IDs, inspect the new built index and baseline inventory and expect 394 stories and 788 PNGs. Use the measured inventories when updating exact expectations. Capture the four new PNGs in the pinned visual environment:
+
+- `storybook/baselines/workflow-studio-plan-revision--reviewed-plan.light.png`
+- `storybook/baselines/workflow-studio-plan-revision--reviewed-plan.dark.png`
+- `storybook/baselines/workflow-studio-node-upgrade--pinned-versions.light.png`
+- `storybook/baselines/workflow-studio-node-upgrade--pinned-versions.dark.png`
+
+The integration owner uses the concrete paths for the selected workflow pin:
+
+| Contract | Current control | Reviewed Op 030 candidate with the split |
+| --- | --- | --- |
+| Whole-repository Visual success count | `gates/test/integration/visual.test.ts` | `gates/test/integration/visual.test.ts` |
+| Visual findings count | `gates/test/integration/visual.test.ts` | `gates/test/integration/visual-findings.test.ts` |
+| Unchanged baseline write count | `gates/test/integration/visual.test.ts` | `gates/test/integration/visual-capture.test.ts` |
+| Whole-repository Axe inventory | `gates/test/integration/axe.test.ts` | `gates/test/integration/axe.test.ts` |
+| Exact Storybook build count | `gates/test/integration/storybook-build.test.ts` | `gates/test/integration/storybook-build.test.ts` |
+| Plant repository baseline count | `gates/test/integration/plant-repo.test.ts` | `gates/test/integration/plant-repo.test.ts` |
+| Visual token Plant expectations | `gates/plants/visual/fail-token-changed/plant.json` | `gates/plants/visual/fail-token-changed/plant.json` |
+
+Verify the candidate mapping against the reviewed split before editing counts. Retain the existing Visual and Axe positive and negative checks. Run the affected Visual token Plant under the pinned capture environment on each inventory used in the comparison. Update that Plant's expected result locations only for measured findings and verify the exact result afterward.
+
+### Workflow pilot checkpoint
+
+The control is the existing workflow at repository base `6a6d74c246e3d64e3470f3d71e7c52c569db8f29`. Record the control and the exact reviewed and verified Op 030 candidate SHA in `reviews/phase-1/workflow-pins.md` before the first worker-return check and before inventory integration. Record the corresponding tree and inventory mapping for each run. The exact Op 030 SHA must contain the reviewed handoff checker, focused review scope and Visual split before using them for the pilot. Test drafting can use the control while Op 030 is pending. A control-only run supplies control evidence. Completing the pilot requires a measured candidate run.
+
+Start the independent implementation worktrees from the canonical test-only red. The worker ownership stays limited to the two disjoint story paths. The integration owner uses the pinned verifier on each return to confirm the head, scope and sign-off, then stages the verified returns and runs combined green. Record dispatch-to-return, return-to-staging, combined green and hosted elapsed time, identifying each tested candidate. Compare the same fixture revision, including identical story code, layout and PNGs, with each workflow's corresponding inventory mapping. Verify that test identities, expected outcomes and required named checks match through the split mapping.
+
+The planned stories, tests and stylesheet produce an empty positive mutation scope with the existing changed-source selectors. Use the separate source-bearing #94 replay on its pinned control and candidate inputs for mutation grouping evidence. Record it as a workflow comparison with its own source and runner receipts.
+
+## Discovery decision and evidence
+
+Map the proposed shared inputs for labels, ordering and change states to both runnable examples, with their distinct domain meanings, materiality and host actions. Recommend a composition recipe when a shared public contract is still unresolved. An extraction recommendation needs a bounded follow-up with the complete contract demonstrated by both examples.
+
+Retain the phase red, final-on-base and green receipts. Record exact candidate Unit, Visual, Axe, strict-CSP and other required check links, affected Plants, and review status. Keep the existing required checks on the final candidate.
