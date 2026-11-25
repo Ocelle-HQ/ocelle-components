@@ -86,8 +86,9 @@ committed file holds a credential-shaped literal (R-08, FR-045).
 
 ## First-release base (`gates/release/first-release-base`)
 
-One line: the full SHA of the parent of this mission's squash commit on `main`, written by the pre-tag pull request
-(research.md R-15). `release-step base` uses it only when no earlier `v*` tag is reachable from the tagged commit's
+One line: the full SHA of the parent of this mission's squash commit on `main`. Committed in US3 with the `main`
+commit merged into this branch in Setup, so the dry run (which runs `release-step base`) has a base from its first
+run; the pre-tag pull request rewrites it to the exact parent (research.md R-10, R-15). `release-step base` uses it only when no earlier `v*` tag is reachable from the tagged commit's
 parent (research.md R-10).
 
 ## Readiness report (stdout of the `release-readiness` gate)
@@ -109,6 +110,9 @@ uncovered token names, grouped by first name segment; research.md R-09). Then th
 `refs/tags/v*`: creation, update, deletion and force pushes restricted; bypass list: the operator's account only (no
 app, team, role or agent identity; an empty list would block the operator too). The GitHub identity agents use is
 not the operator's account and is not on the bypass list; O5 records how the operator confirmed it, O8 re-confirms.
+The operator moves a release tag (delete and re-push through the bypass) only while no package of its version is on
+the registry, and records it in the release issue; once any package of the version is published, the tag is never
+moved and the fix ships as lockstep `x.y.z+1` (research.md R-15, failure procedure).
 
 ## Protected environment
 

@@ -51,6 +51,11 @@ install the three packages from the public npm registry instead of a workspace l
   MINOR, 1.3.1 to 1.4.0, and names the peer-range exception (PLAN-CORRECTNESS-1-007 (b), FR-040); the release date of
   each changelog entry is set by a pre-tag pull request the operator confirms, not by a gate rule
   (PLAN-FRESH-1-007 (b), FR-043); Story 4 scenario 4 is an observable peer check (PLAN-FRESH-1-006 (a)).
+- Plan squad round 2 (2026-11-25, operator fork decisions in `reviews/plan/round-2/refute.md`): the publish dry run
+  skips a version already on the registry and says so, by the registry answer the publish job uses
+  (PLAN-FRESH-2-001 (a), FR-027); the dry-run path runs the release workflow's whole pre-approval job graph on every
+  pull request (PLAN-FRESH-2-002 (a), FR-027); the history-reading tests run with full history in the unit-test jobs
+  (PLAN-FRESH-2-004 (a), FR-044).
 - Already done by the operator: the npm org `ocelle` is claimed (O1). Private vulnerability reporting is on per op
   023's decision Q3 (a) (O2, re-confirmed at release).
 
@@ -241,7 +246,8 @@ of FR-040 to FR-045 against them.
   merges after the `1.0.0` changelog entries were written, the readiness check (Story 2) still passes only if the
   entries name every surface the manifest and token list contain; the plan defines how it compares them (research.md
   R-09: every element tag, and every token by name or by a name-prefix mention).
-- **Partial publish.** Covered by Story 3, scenario 5: re-runs skip versions already on the registry.
+- **Partial publish.** Covered by Story 3, scenario 5: re-runs skip versions already on the registry; the release
+  procedure names the re-run the operator uses (FR-043).
 - **Wrong tarball published.** npm versions cannot be republished; the fix is a `1.0.1`. The pack-contents gate and
   the dry run exist to make this unlikely; the release procedure says so.
 - **Trusted publisher not yet configurable for a package that does not exist on the registry.** The plan settles the
@@ -349,9 +355,14 @@ of FR-040 to FR-045 against them.
   publish step, an environment binding or an identity-token permission in the dry-run path; a trigger other than a
   `v*` tag push that can reach the publish job).
 - **FR-027**: A dry-run path MUST exist (operator answer to SPEC-1-04, option (b)), started by a pull request or a
-  manual dispatch (the plan chooses one or both). It MUST run every pre-publish step of FR-022 on its commit
-  (build, pack, the pack-contents gate, the readiness check on those tarballs, the publish command's no-write mode)
-  and report the result. It MUST contain no publish job, bind no job to the protected environment and grant no job an
+  manual dispatch (the plan chooses one or both; it chose the pull request, research.md R-10). It MUST run every
+  pre-publish step of FR-022 on its commit (build, pack, the pack-contents gate, the readiness check on those
+  tarballs, the publish command's no-write mode) and report the result. For a package version already on the
+  registry, the no-write mode is reported as skipped instead of run, decided by the same "not found" answer the
+  publish job uses (FR-025), so the dry run of FR-022 does not fail a re-run after a partial publish or a pull request
+  after a release (PLAN-FRESH-2-001 (a)). It MUST run the same pre-approval jobs as the publish path (the gates
+  through the same reusable call, the base computation and the tarball hand-off), not only the shared steps
+  (PLAN-FRESH-2-002 (a)). It MUST contain no publish job, bind no job to the protected environment and grant no job an
   identity-token permission, so that nothing started by it can publish. The plan states how the pre-publish steps
   are shared between the dry-run path and the publish path so both run the same steps. On today's `main` the
   readiness step of a dry run reports not-ready by design (Story 2); the dry run still shows every other step.
@@ -398,13 +409,19 @@ of FR-040 to FR-045 against them.
   order, the readiness check, every operator-only step O1 to O8 (below) marked as operator-only, the dry run, the
   pre-tag pull request that sets each `1.0.0` changelog entry's date to the release day and empties "Unreleased"
   (the operator confirms the date before merging it; operator decision PLAN-FRESH-1-007 (b)), the tag push, the
-  environment approval, the post-publish check and what to do on each failure (including "a wrong tarball means
-  1.0.1"). It MUST state that the GitHub identity agents use is not the operator's account, is not on the `v*` tag
+  environment approval, the post-publish check and what to do on each failure: which re-run to use after a partial
+  publish; a failure before any package is published (the operator deletes and re-pushes the tag through the
+  ruleset bypass, recorded in the release issue); a failure after a partial publish that a re-run cannot fix (the tag
+  is never moved; lockstep `x.y.z+1` through a version-bump pull request whose contents the procedure lists); and "a
+  wrong tarball means 1.0.1", by the same version-bump pull request (research.md R-15). It MUST state that the GitHub identity agents use is not the operator's account, is not on the `v*` tag
   ruleset's bypass list and is not a reviewer of the protected environment, and O4 and O5 MUST record how the
   operator confirmed it.
 - **FR-044**: Spec 001's FR-020 and `contracts/ci-checks.md` MUST gain the new gates (pack contents, release
   readiness, release workflow static check) by amendment, in op 023's style, and spec 001's `contracts/plants.md`
-  MUST gain the plant-form changes the plan needs for them; FR-032 is not touched.
+  MUST gain the plant-form changes the plan needs for them; FR-032 is not touched. `contracts/ci-checks.md` MUST also
+  state every other change this mission makes to `ci.yml`: the `workflow_call` trigger and its inputs, the Sign-off
+  job's condition, the mutation commands' base expression and the unit-test checkouts' full history; each of these
+  lands in the same phase as the `ci.yml` change it describes (PLAN-FRESH-2-004, PLAN-FRESH-2-005).
 - **FR-045**: No new file in this mission may contain a sandbox path (op 023's rule) or a credential. Tests and
   plants that need a credential-shaped input assemble it at run time, so no committed file matches a secret-scan
   rule (research.md R-08).

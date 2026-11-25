@@ -33,3 +33,7 @@
   `break-gap-rows-invalid`.
 - **Integration test:** the gap check with the committed `gap-rows.json` against commit `183b20f` reports exactly
   rows 6, 10 and 15 unmet (research.md R-07).
+- **Full history in CI** (operator decision PLAN-FRESH-2-004 (a)): both history-reading gates-integration tests (the
+  `183b20f` gap test and the own-history scan) run in the unit-test shards, whose checkouts get `fetch-depth: 0` in
+  US2. Each first asserts that the clone is not shallow and that `183b20f` resolves to a commit, and fails (never
+  skips) otherwise (research.md R-07, R-08).

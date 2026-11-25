@@ -84,6 +84,13 @@ font), `dist/fonts/OFL.txt`. `@ocelle/styles`: `LICENSE`, `NOTICE`. `@ocelle/ele
 `NOTICE`, `THIRD_PARTY_NOTICES`, `licenses/` with Lit's licence). Each package's build copies the root files as the
 elements build already does.
 
+**Root NOTICE edit (US1, PLAN-FRESH-2-006).** The root `NOTICE` today says "The published @ocelle/elements package
+holds a copy" and points to `THIRD_PARTY_NOTICES` without saying where it is. Since the `identical` rule ships it
+byte for byte in all three packages, US1 edits it before the pack manifest freezes it: "Each published @ocelle package
+holds a copy.", and "Third-party assets and their licences are listed in THIRD_PARTY_NOTICES, in this repository and
+in the @ocelle/tokens and @ocelle/elements packages." Styles ships no `THIRD_PARTY_NOTICES` (it has no third-party
+asset); the edited sentence says where the file is instead.
+
 ## R-05. Entry points (FR-004, FR-030; SPEC-1-06)
 
 **Decision.** "Declared entry point" means every target of `exports` (with `*` patterns expanded against the tarball
@@ -125,6 +132,13 @@ the custom-elements manifest, token source and stylesheets of commit `183b20f` (
 (`#524 #526`) are `gap-row-unmet`, each naming the mission 018 evidence it expected, and every other row is met. It
 fails if a row of 018 is given evidence that already existed before 018, so the evidence cannot be vacuous.
 
+**Where it runs with full history (operator decision PLAN-FRESH-2-004 (a)).** The test is in project
+`gates-integration`, which CI runs in the unit-test shards. Their checkouts (`unit-tests-shard`, `unit-tests-full`)
+gain `fetch-depth: 0` in US2, with spec 001 `contracts/ci-checks.md` amended in the same phase (FR-044). The test's
+first assertion is that the clone is not shallow (`git rev-parse --is-shallow-repository` prints `false`) and that
+`183b20f` resolves to a commit; either failing fails the test with a message naming the cause. It never skips
+(constitution VIII). Cost: a full clone in every unit-test shard.
+
 ## R-08. History secret scan (FR-011, FR-045, #11 "the history contains no secrets")
 
 **Decision.** The gate runs `git log -p -m --no-color --no-ext-diff HEAD` (every commit reachable from the checked
@@ -156,7 +170,9 @@ assemble each credential-shaped value at run time from fragments that match no r
 prefix constant joined with a generated body), and readiness plants name the rule instead of holding the value (a
 `secret:` line in a commit-repo record, which the plant builder expands into a generated value at plant time,
 R-17). A gates-integration test runs the history scan on this repository's own `HEAD` and asserts zero hits with an
-empty allow list for the gate's own fixtures; the test file itself holds no literal.
+empty allow list for the gate's own fixtures; the test file itself holds no literal. It runs in the unit-test shards
+with full history (R-07, PLAN-FRESH-2-004 (a)) and first asserts that the clone is not shallow and that `183b20f`
+(an old commit) resolves, failing otherwise, so a shallow checkout cannot make it scan one commit and pass vacuously.
 
 **Allow list.** Exceptions are listed in `gates/release/secret-allowlist.json` as `{ path, rule, valueSha256,
 reason }`: the path the hit is in, the rule, the SHA-256 of the matched text (hex) and a reason. An entry is keyed by
@@ -198,25 +214,28 @@ the operator confirms the date before merging it (R-15).
   release logic that would otherwise be inline shell, unit-tested with an injected git and npm runner and in mutation
   scope. Subcommands: `base` (the previous `v*` tag reachable from `<sha>^`, else the SHA in
   `gates/release/first-release-base`), `check-tag` (the tag equals `v<version>` of all three manifests, and the commit
-  is an ancestor of `origin/main`), `digest` (SHA-256 of each tarball, written as step outputs) and `publish`
-  (below). It imports only Node built-ins and other `gates/lib` modules with no package dependency (a unit test
+  is an ancestor of `origin/main`; with `--no-tag`, used by the dry run, only the shared version and that `origin/main`
+  resolves, saying that the tag and ancestor checks are skipped), `digest` (SHA-256 of each tarball, written as step
+  outputs), `dry-run` (below) and `publish` (below). It imports only Node built-ins and other `gates/lib` modules with no package dependency (a unit test
   asserts the import graph), so the publish job runs it without `pnpm install`.
 - `.github/actions/release-prepare/action.yml`, the steps both paths share: build; `release-readiness` (with `--tag`
   when a tag is given); `pnpm pack` of the three packages; **immediately after the pack**, before any other step,
   `release-step digest`, whose digests the action exposes as outputs `sha256-tokens`, `sha256-styles`,
-  `sha256-elements` (PLAN-A11Y-SECURITY-1-004); the pack-contents gate on the tarballs; `npm publish <tgz> --dry-run`
-  for each; the tarball install rehearsal (R-12) on a **copy** of the tarballs in a temporary directory; and
+  `sha256-elements` (PLAN-A11Y-SECURITY-1-004); the pack-contents gate on the tarballs; `release-step dry-run` (the
+  publish dry run, below; the action never runs `npm publish` itself); the tarball install rehearsal (R-12) on a **copy** of the tarballs in a temporary directory; and
   `install-check --rehearse` (R-11; operator decision PLAN-CORRECTNESS-1-002 (a): the provenance proof runs in the
   release path, before the approval, so a failing proof blocks the publish).
 - `.github/workflows/release.yml`: `on: push: tags: ['v*']` only. Jobs:
-  1. `release-base`: checkout of the tag with full history, `persist-credentials: false`; `release-step base`;
-     output `base` (PLAN-FRESH-1-001). For the first release, `gates/release/first-release-base` holds the parent of
-     this mission's squash commit on `main`; the pre-tag pull request (R-15) writes it.
+  1. `release-base`: checkout of the tag with full history, `persist-credentials: false`; `./.github/actions/setup`
+     (pinned Node, PLAN-FRESH-2-002); `release-step base`; output `base` (PLAN-FRESH-1-001). For the first release,
+     `gates/release/first-release-base` holds the parent of this mission's squash commit on `main`; the file is
+     committed in US3 holding the `main` commit merged in Setup (so the dry run has a base from its first run), and
+     the pre-tag pull request (R-15) rewrites it to the exact parent.
   2. `gates` (needs `release-base`): `uses: ./.github/workflows/ci.yml` with `base: ${{
-     needs.release-base.outputs.base }}`, `head: ${{ github.sha }}` and `release: true`, so every merge gate runs on
-     the tagged commit (#11 "run every check"), the mutation gate over what the release adds.
-  3. `prepare` (needs `gates`): checkout of the tag with full history, `persist-credentials: false`; `release-step
-     check-tag`; the composite action; job outputs `sha256-tokens`, `sha256-styles`, `sha256-elements` from the
+     needs.release-base.outputs.base }}` and `release: true`, so every merge gate runs on the tagged commit (#11 "run
+     every check"), the mutation gate over what the release adds.
+  3. `prepare` (needs `gates`): checkout of the tag with full history, `persist-credentials: false`;
+     `./.github/actions/setup`; `release-step check-tag`; the composite action; job outputs `sha256-tokens`, `sha256-styles`, `sha256-elements` from the
      action's outputs; uploads the tarballs (only) as the artifact `release-tarballs`.
   4. `publish` (needs `prepare`): `environment: npm-publish`; `permissions: { contents: read, id-token: write }`;
      sparse checkout of the tag (`.node-version` and `gates/` only, `persist-credentials: false`,
@@ -226,11 +245,40 @@ the operator confirms the date before merging it (R-15).
   5. `install-check` (needs `publish`): checkout of the tag (`persist-credentials: false`) and
      `./.github/actions/setup` (pinned Node, pnpm, dependencies, Playwright's browser), then the install check (R-11)
      against the public registry with the expected repository, workflow, ref and commit (PLAN-CORRECTNESS-1-010).
-- `.github/workflows/release-dry-run.yml`: `on: pull_request` and `workflow_dispatch`; one job running the composite
-  action without a tag (so it includes the tarball rehearsal and `install-check --rehearse`); `permissions:
-  contents: read`; no environment, no `id-token`. It is a named check but **not required** (D5): its pack, contents
-  and readiness parts are already required gates, its rehearsal reaches the public registry for reading, which a
-  required check should not depend on, and the release path now runs the same rehearsal before the approval.
+- `.github/workflows/release-dry-run.yml` (operator decision PLAN-FRESH-2-002 (a)): `on: pull_request` only;
+  `permissions: contents: read`; no environment, no `id-token`. It runs **the same pre-approval job graph** as
+  `release.yml`: `release-base` (same steps), `gates` (`ci.yml` through `workflow_call` with the computed `base` and
+  `release: false`), and `prepare` (check **Release dry run**: setup, `release-step check-tag --no-tag`, the composite
+  action without a tag, so with the tarball rehearsal and `install-check --rehearse`, and the same artifact upload).
+  So the reusable-workflow call, the `base` computation, the job outputs, the setup of every job and the artifact
+  hand-off run on every pull request, not first on the real tag; the rule `dry-run-graph` (R-13) keeps the two
+  graphs equal. What only the tag can run is the tag comparison and ancestor test of `check-tag` (unit-tested), the
+  `publish` job and `install-check` in registry mode. `workflow_dispatch` is dropped: a dispatch has no pull-request
+  range, so ci.yml's Sign-off job (which keeps its pull-request range, below) could not run in it. The pre-tag pull
+  request's own dry run is the rehearsal on the release tree. It is a named check but **not required** (D5): its pack,
+  contents and readiness parts are already required gates, its rehearsal reaches the public registry for reading,
+  which a required check should not depend on, and the release path runs the same rehearsal before the approval.
+  Cost: its `gates` job runs every ci.yml job a second time on each pull request, the mutation gate over the release
+  range; being not required, it blocks no merge.
+
+**`release-step dry-run`** (operator decision PLAN-FRESH-2-001 (a)). From npm 11 on (checked in npm 11.21.3 and
+12.2.3, `lib/commands/publish.js`), `npm publish` without `--force` asks the registry for the package's versions and
+throws "You cannot publish over the previously published versions" before its dry-run branch, so `--dry-run` refuses
+a version that is already on the registry (prerelease and deprecated versions are ignored, so the `0.0.0-bootstrap.0`
+placeholders of D1 do not trigger it; npm 10 has no such check). A bare dry run would therefore fail a full re-run of
+`release.yml` after a partial publish (before `publish` can skip anything, FR-025) and every dry run between a
+release and the next version bump. `release-step dry-run` classifies each package as the publish loop does (`npm view
+<name>@<v> version --json`, same retry bound): `E404` runs `npm publish <tgz> --dry-run`; a version found is
+reported as `already published, dry run skipped`; any other error is retried, then fails naming the package. Unit
+tests cover both paths (dry run runs; skipped with no `npm publish` call), a partial state and the error bound; the
+rule `dry-run-via-release-step` (R-13) keeps the composite action from calling `npm publish` itself.
+
+**Re-run after a partial publish (FR-025, SC-005).** `RELEASING.md` tells the operator to use **"Re-run failed
+jobs"**: it re-runs `publish` (and `install-check`) with the artifact and the digests of the run the operator already
+approved, asks for the environment approval again, and `release-step publish` skips what is on the registry. "Re-run
+all jobs" also completes (the dry run skips published versions), but it re-runs every gate and repacks, so the
+remaining packages would come from new tarballs instead of the ones verified before the first approval; the
+procedure says to use it only when the failed run's artifact has expired.
 
 **`release-step publish`** (FR-023, FR-025, edge case "Registry outage"; PLAN-CORRECTNESS-1-009): first it compares
 each downloaded tarball's SHA-256 with the expected digest from `prepare`'s job outputs (not a file in the artifact)
@@ -250,12 +298,18 @@ single-parent squash commit committed by GitHub, which the sign-off gate (spec 0
 check fails on every release range. `ci.yml` therefore gains a boolean `workflow_call` input `release` (default
 `false`), and its Sign-off job runs with `if: ${{ !inputs.release }}`. On `pull_request`, `inputs` is empty, so the
 job always runs; the DCO check is enforced on every pull request before merge and `main`'s ruleset requires it. The
+Sign-off job keeps its pull-request range (base and head SHA of `github.event.pull_request`) and never reads
+`inputs.base`, so in the dry run's `workflow_call` (`release: false`, a pull-request event) it checks the pull
+request's own commits, not the release range; `ci.yml` needs no `head` input (PLAN-FRESH-2-002 (a)). The
 release-workflow gate keeps the skip out of pull-request runs (rules `signoff-skip-scope`, `release-input-caller`,
 R-13).
 
 Workflow-level `permissions: contents: read`; `concurrency: release` with `cancel-in-progress: false`.
 
-**Alternatives.** Rerun only the fast gates in the release (faster, but #11 says every check); require the dry run
+**Alternatives.** A bare `npm publish --dry-run` run only on `github.run_attempt == 1` and only while the version
+is not on the registry (PLAN-FRESH-2-001 (b), not chosen); an operator rehearsal with a pre-release tag such as
+`v1.0.0-rc.0` whose approval is rejected, instead of the dry run's full graph (PLAN-FRESH-2-002 (b), not chosen);
+rerun only the fast gates in the release (faster, but #11 says every check); require the dry run
 (adds a registry dependency to merges); a sign-off exemption for commits committed by GitHub
 (PLAN-FRESH-1-001 (b), not chosen); a `SHA256SUMS` file inside the artifact (detects only transport corruption, since
 whoever can change the tarballs can change the file).
@@ -361,11 +415,18 @@ for nested `permissions`, `environment` and `with` blocks). Rules:
   unit-tested); that step receives all three `needs.prepare.outputs.sha256-*` digests (`publish-verifies-checksums`);
   the job's checkout is sparse (`.node-version`, `gates/`) and `setup-node` reads `node-version-file: .node-version`
   (`publish-node-pin`);
+- pinned Node in every job (PLAN-FRESH-2-002): in `release.yml` and `release-dry-run.yml`, every job with a step that
+  runs `node` or `pnpm` has `./.github/actions/setup` before that step, or, in `publish` only, `setup-node` with
+  `node-version-file: .node-version` (`node-pin`);
 - composite action: the digest step comes directly after the pack step (`digest-after-pack`); it runs
-  `install-check --rehearse` (`rehearse-in-prepare`);
+  `install-check --rehearse` (`rehearse-in-prepare`); its publish dry run is `release-step dry-run`, and no `run:` of
+  the action runs `npm publish` (`dry-run-via-release-step`, PLAN-FRESH-2-001);
+- dry-run graph (PLAN-FRESH-2-002): `release-dry-run.yml` has the jobs `release-base`, `gates` and `prepare` with the
+  same `needs` and, step for step, the same steps as `release.yml`'s, except `gates`' `release: false` and
+  `check-tag --no-tag`; it has no other job (`dry-run-graph`);
 - sign-off scope: `ci.yml`'s Sign-off job has no `if` other than `${{ !inputs.release }}` (`signoff-skip-scope`);
-  the `release` input is declared only under `workflow_call` with default `false`, and only `release.yml` passes it
-  (`release-input-caller`).
+  the `release` input is declared only under `workflow_call` with default `false`; only `release.yml` passes `true`,
+  `release-dry-run.yml` passes `false`, and no other file passes it (`release-input-caller`).
 
 ## R-14. Constitution amendment (FR-040, FR-041, Q1 (a), PLAN-CORRECTNESS-1-007 (b))
 
@@ -382,12 +443,35 @@ tense; op 023 owns its content). Spec FR-040 lists every one of these statements
 
 **Decision.** A new `RELEASING.md` at the root, linked from `CONTRIBUTING.md` and each package README. It is the
 operator's script: readiness, O1 to O8 with exact settings and commands, the dry run, the pre-tag pull request, the
-tag, the approval, the install check, failures and their remedies (a wrong tarball means `1.0.1`).
+tag, the approval, the install check, failures and their remedies (a wrong tarball means `1.0.1`; the failure
+procedure below).
 
 - **Pre-tag pull request** (operator decision PLAN-FRESH-1-007 (b)): sets each package's `1.0.0` changelog date to
   the planned release day, empties "Unreleased", and for the first release writes `gates/release/first-release-base`
   (R-10). The operator confirms the date before merging it, and pushes the tag (O7) on the merged commit; if the tag
   slips past that day, a new pre-tag pull request corrects the date first.
+- **Re-run after a partial publish** (R-10): "Re-run failed jobs"; "Re-run all jobs" only when the failed run's
+  artifact has expired; with the reason.
+- **Failure procedure** (PLAN-FRESH-2-003). The `v*` tag moves only in case 1, and only through the operator's
+  ruleset bypass (O5):
+  1. *Failure before any publish* (every `npm view <name>@<version>` answers `E404`; for example a red gate, a
+     `check-tag` or workflow bug, a failed rehearsal, or a rejected approval, which publishes nothing): the operator
+     deletes the `v<version>` tag through the bypass, the fix lands through a normal pull request (with a new pre-tag
+     pull request if the date changes), and the operator tags the same version on the new `main` commit. The release
+     issue (#11) records the old and new commit SHA, the failed run's URL and the reason.
+  2. *Failure after a partial publish that a re-run cannot fix* (at least one package of the version is on the
+     registry): the tag of that version is never moved or re-pushed, because the packages already published name its
+     commit in their provenance and the install check takes one `--commit`. The release continues as lockstep
+     `<x.y.z+1>` through a **version-bump pull request** containing exactly: the three manifests' `version` set to
+     `<x.y.z+1>`; the peers of styles and elements set to `workspace:^<x.y.z+1>`; `pnpm-lock.yaml` as `pnpm install`
+     rewrites it; in each package's changelog a dated `<x.y.z+1>` entry that names the fix, and the `<x.y.z>` entry
+     kept with a line saying which packages of it were published and that `<x.y.z+1>` supersedes it; "Unreleased"
+     empty. The operator then tags `v<x.y.z+1>` (O7) on the merged commit; `release-step base` finds `v<x.y.z>` as
+     the previous tag. The operator (never the workflow) deprecates the published `<x.y.z>` versions with a message
+     naming `<x.y.z+1>`, after the install check of `<x.y.z+1>` passes. SC-002 and SC-004 are then read for
+     `<x.y.z+1>`.
+  3. *A wrong tarball that is already published*: the same version-bump pull request as case 2; that is what "a
+     wrong tarball means `1.0.1`" refers to.
 - **O4 settings** (PLAN-A11Y-SECURITY-1-002): environment `npm-publish`; required reviewer: the operator's account
   only; deployment branches and tags: tags `v*` only; "Allow administrators to bypass configured protection rules"
   off; "Prevent self-review" off (the operator pushes the tag and is the only reviewer, so with it on the release
