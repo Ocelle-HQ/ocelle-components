@@ -1013,7 +1013,9 @@ export class OcelleWorkflowCanvas extends LitElement {
     const hit = this.shadowRoot?.elementFromPoint(event.clientX, event.clientY);
     const node = hit?.closest("ocelle-workflow-node") ?? hit?.closest("foreignObject")?.querySelector("ocelle-workflow-node");
     const action = this.#action(node);
-    return action?.face.inert === false ? action.node.nodeId : null;
+    // A host update can remove a destination before the rendered card disappears.
+    return action?.face.inert === false && this.graph.nodes.some(({ id }) => id === action.node.nodeId)
+      ? action.node.nodeId : null;
   }
 
   #finishConnectionGesture(gesture: ConnectionGesture, event: PointerEvent): void {

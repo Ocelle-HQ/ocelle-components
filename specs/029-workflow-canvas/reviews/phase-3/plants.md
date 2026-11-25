@@ -105,4 +105,55 @@ fail-undescribed-slot: fail as planted (1 exact findings)
 pass-reordered: pass as planted (0 exact findings)
 ```
 
-The full hosted Plants verdict on the exact Phase 3 candidate is pending.
+The full hosted Plants verdict passed on signed Phase 3 candidate `c428227faba54ce5ca57b56710d8cbd63c5bbc93`. The tested merge shared the same tree. All 317 Plants matched their expected verdicts across 77 shards, including the five pinned Visual cases deferred locally. [Exact hosted Plants verdict](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45600078245/job/139185252207)
+
+## Corrected local affected run
+
+Signed `b150795e880d360d38204171baffe252990735db` exited 0. All 16 available selected cases matched their expected verdicts. The repository Axe Plant took 454.7s. The five visual Plants require the pinned container engines.
+
+```text
+$ node gates/bin/plants.ts -- --affected 786dbb41d487540d38be3710d0aff799f2f53171 --skip-container
+note: affected: contrast/repository-values, by packages/elements/custom-elements.json
+note: affected: brand-rules/repository-values, by packages/elements/custom-elements.json
+note: affected: manifest/break-missing, by packages/elements/custom-elements.json
+note: affected: manifest/break-not-json, by packages/elements/custom-elements.json
+note: affected: manifest/fail-lost-attribute, by gates/plants/manifest/fail-lost-attribute/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-stale-property, by packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-attribute, by gates/plants/manifest/fail-undescribed-attribute/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-css-part, by gates/plants/manifest/fail-undescribed-css-part/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-css-property, by gates/plants/manifest/fail-undescribed-css-property/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-event, by gates/plants/manifest/fail-undescribed-event/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-property, by gates/plants/manifest/fail-undescribed-property/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-slot, by gates/plants/manifest/fail-undescribed-slot/tree/packages/elements/custom-elements.json
+note: affected: manifest/pass-reordered, by gates/plants/manifest/pass-reordered/tree/packages/elements/custom-elements.json
+note: affected: manifest/pass-repository, by packages/elements/custom-elements.json
+note: affected: storybook-build/pass-repository, by packages/elements/custom-elements.json
+note: affected: visual/fail-missing-baseline, by packages/elements/custom-elements.json
+note: affected: visual/fail-one-pixel, by packages/elements/custom-elements.json
+note: affected: visual/fail-same-pixels-other-bytes, by packages/elements/custom-elements.json
+note: affected: visual/fail-token-changed, by gates/plants/visual/fail-token-changed/plant.json
+note: affected: visual/pass-repository, by packages/elements/custom-elements.json
+note: affected: axe/pass-repository, by packages/elements/custom-elements.json
+note: plant time: contrast/repository-values: 1.0 s
+note: plant time: brand-rules/repository-values: 1.0 s
+note: plant time: manifest/break-not-json: 1.8 s
+note: plant time: manifest/break-missing: 1.9 s
+note: plant time: manifest/fail-stale-property: 3.4 s
+note: plant time: manifest/fail-lost-attribute: 3.6 s
+note: plant time: manifest/fail-undescribed-attribute: 4.6 s
+note: plant time: manifest/fail-undescribed-css-property: 4.7 s
+note: plant time: manifest/fail-undescribed-event: 6.2 s
+note: plant time: manifest/fail-undescribed-css-part: 6.2 s
+note: plant time: manifest/fail-undescribed-property: 7.3 s
+note: plant time: manifest/fail-undescribed-slot: 7.4 s
+note: plant time: manifest/pass-reordered: 9.0 s
+note: plant time: manifest/pass-repository: 9.0 s
+note: plant time: storybook-build/pass-repository: 3.8 s
+note: plant time: axe/pass-repository: 454.7 s
+plants: skipped (no container): gates/plants/visual/fail-missing-baseline
+plants: skipped (no container): gates/plants/visual/fail-one-pixel
+plants: skipped (no container): gates/plants/visual/fail-same-pixels-other-bytes
+plants: skipped (no container): gates/plants/visual/fail-token-changed
+plants: skipped (no container): gates/plants/visual/pass-repository
+plants: affected since 786dbb41d487540d38be3710d0aff799f2f53171: 16 of 317 plants judged, every plant as expected; not the Plants check; partial run: 5 visual plants not run
+```
