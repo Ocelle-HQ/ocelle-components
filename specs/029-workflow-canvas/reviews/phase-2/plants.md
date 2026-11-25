@@ -52,3 +52,14 @@ pass-reordered: pass as planted (0 exact findings)
 ```
 
 The exact Phase 2 candidate passed the full hosted Plants judge. All 317 Plants across 17 gates and the registry matched their expected verdicts, including all five visual fixtures in the affected selection. [Exact hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45445205967/job/138640924435)
+
+## Phase 2 review round 1
+
+The affected selector at `73390c2f73621a20674ce099c2c1808af075c58d` returned the same 21 cases. The fresh official local partial run exited 0. Its Axe repository case took 551.9s.
+
+```text
+pnpm run gate:plants -- --affected a56fc8309667984bcc63c6f0e341c140728bbd65 --skip-container
+plants: affected since a56fc8309667984bcc63c6f0e341c140728bbd65: 16 of 317 plants judged, every plant as expected; not the Plants check; partial run: 5 visual plants not run
+```
+
+The candidate's five selected visual Plants use the hosted pinned engine.

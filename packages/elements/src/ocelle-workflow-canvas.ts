@@ -771,11 +771,18 @@ export class OcelleWorkflowCanvas extends LitElement {
           contained.add(id);
           if (!covered(outline)) eligible.add(id);
         }
-        if (handle?.matches(".move-handle") === true) {
+        if (handle instanceof SVGRectElement && handle.matches(".move-handle")) {
           const handleBounds = handle.getBoundingClientRect();
           const ready = eligible.has(id) && clip.contains(handleBounds) && !covered(handleBounds);
           handle.toggleAttribute("data-ready", ready);
-          if (ready) covering.push(handleBounds);
+          if (ready) {
+            // SVG hit testing includes the stroke outside the square handle's fill bounds.
+            const { left, right, top, bottom, width, height } = handleBounds;
+            const stroke = Number.parseFloat(getComputedStyle(handle).strokeWidth) / (2 * handle.getBBox().width);
+            const x = width * stroke;
+            const y = height * stroke;
+            covering.push({ left: left - x, right: right + x, top: top - y, bottom: bottom + y });
+          }
         }
         covering.push(card);
       }
