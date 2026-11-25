@@ -127,7 +127,11 @@ describe("the pinned node version comparison", { timeout: 60_000 }, () => {
           .toBeLessThan((await nextHeading.boundingBox())?.y ?? -Infinity);
         await page.evaluate(async () => {
           await document.fonts.ready;
-          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => {
+              resolve();
+            });
+          });
         });
         const texts = ["Previous", ...units(previous), "New", ...units(next), "Removed outcome", "needs-review", "Added outbound capability", "metrics:write"];
         const boxes = (await readTextBoxes(page.mainFrame(), "storybook-root"))
@@ -155,7 +159,13 @@ describe("the pinned node version comparison", { timeout: 60_000 }, () => {
           await expect.poll(() => status.textContent(), { timeout: 5_000 }).toBe(result);
           expect(await observeFocus(button), "simulated copy leaves the Copy control focused").toEqual(visibleFocus);
         }
-        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+        await page.evaluate(() => new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              resolve();
+            });
+          });
+        }));
         expect(await requests.jsonValue(), "the two native activations issue one exact request each").toEqual([previous, next]);
         const inline = await fixture.evaluate((article) => [article, ...article.querySelectorAll("*")].flatMap((node) => [
           ...(node.matches("script, style") ? [node.localName] : []),
