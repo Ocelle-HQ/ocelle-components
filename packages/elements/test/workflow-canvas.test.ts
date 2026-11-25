@@ -3177,6 +3177,95 @@ function visibleRelationship(canvas: OcelleWorkflowCanvas, labels: readonly stri
 }
 
 describe("workflow canvas named run inspection in process", () => {
+  it("recovers visible focus when an independently scrolled relationship list hides the withheld Follow", async () => {
+    const { canvas, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    const source = canvas.graph.nodes[0];
+    if (source === undefined) throw new Error("The scroll fixture requires its Review source");
+    const more = Array.from({ length: 18 }, (_, index) => ({ ...source, id: `review-${String(index)}`, label: `Review step ${String(index)}` }));
+    canvas.graph = {
+      nodes: [...canvas.graph.nodes, ...more],
+      connections: [source, ...more].map(({ id }) => ({ sourceId: id, outcomeId: "approved", destinationId: "publish" })),
+    };
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1080 } : entry);
+    await settle(canvas);
+    const follow = followAction(/^Follow Publish from Initial review via Approved$/i);
+    const list = follow.closest("ul");
+    expect(list).toBeInstanceOf(HTMLElement);
+    if (list === null) throw new Error("Scrollable relationship list missing");
+    const { picker } = revealControls(canvas);
+    const before = canvas.viewport;
+    const outerScroll = [pane.scrollLeft, pane.scrollTop];
+    await keyboardActivate(follow);
+    const proposed = lastViewport(requests);
+    const expected = [presentationRequest(viewport, { viewport: proposed })];
+    expect(active()).toBe(follow);
+    expect(follow.getBoundingClientRect().top).toBeGreaterThanOrEqual(list.getBoundingClientRect().top);
+    list.scrollTop = list.scrollHeight;
+    await settle(canvas);
+    expect(list.scrollTop).toBeGreaterThan(0);
+    expect(follow.getBoundingClientRect().bottom).toBeLessThan(list.getBoundingClientRect().top);
+    expect(canvas.viewport).toBe(before);
+    expect(active() === picker, "a withheld Follow moves focus to the visible Step before any viewport acceptance").toBe(true);
+    const internalScroll = list.scrollTop;
+    canvas.viewport = proposed;
+    await settle(canvas);
+    expect(active()).toBe(picker);
+    expect(list.scrollTop).toBe(internalScroll);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(outerScroll);
+    expect(requests).toEqual(expected);
+  });
+
+  it.each(["graph swap", "layout removal", "focus taken"] as const)("checks live %s after a Follow control receives focus and before publishing", async (change) => {
+    const { canvas, before, after, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    const viewportBefore = canvas.viewport;
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    let didFocus = false;
+    before.focus({ preventScroll: true });
+    follow.addEventListener("focus", () => {
+      didFocus = true;
+      if (change === "graph swap") {
+        canvas.graph = { ...canvas.graph, connections: canvas.graph.connections.map((edge) => edge.destinationId === "revise" ? { ...edge, destinationId: "publish" } : edge) };
+      } else if (change === "layout removal") {
+        canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "revise");
+      } else {
+        after.focus({ preventScroll: true });
+      }
+    }, { once: true });
+    follow.click();
+    expect(didFocus).toBe(true);
+    expect(requests, "the focus listener invalidates Follow before it emits a viewport request").toEqual([]);
+    await settle(canvas);
+    const expectedFocus = change === "focus taken" ? after : change === "layout removal" ? revealControls(canvas).picker : follow;
+    expect(active()).toBe(expectedFocus);
+    expect(canvas.viewport).toBe(viewportBefore);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([]);
+  });
+
+  it.each(["relationship", "layout"] as const)("recovers Step when an unactivated Follow loses its %s", async (removed) => {
+    const { canvas, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.graph = { ...canvas.graph, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "revise" }] };
+    await settle(canvas);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    const { picker } = revealControls(canvas);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    action(canvas, "publish").focus({ preventScroll: true });
+    await commands.press("Tab");
+    expect(active()).toBe(follow);
+    expect(requests).toEqual([]);
+    if (removed === "relationship") canvas.graph = { ...canvas.graph, connections: [] };
+    else canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "revise");
+    await settle(canvas);
+    expect(active() === picker, "a focused unavailable Follow recovers to the visible Step without activation").toBe(true);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([]);
+  });
+
   it("follows the swapped clipped destination by keyboard while the host owns viewport and selection", async () => {
     const { canvas, pane, requests } = await mount(true);
     canvas.mode = "read-only";
