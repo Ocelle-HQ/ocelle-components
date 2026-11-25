@@ -259,6 +259,18 @@ describe("mutation gate: opt-in shadow grouping", () => {
   const element = "packages/elements/src/canvas.ts";
   const other = "gates/lib/canvas.ts";
 
+  it("keeps the default element plan at thirty changed lines without opting in", () => {
+    expect(planShards([file(element, 61)])).toEqual([
+      { files: [`${element}:1-30`], lines: 30 },
+      { files: [`${element}:31-60`], lines: 30 },
+      { files: [`${element}:61-61`], lines: 1 },
+    ]);
+  });
+
+  it("keeps the path of a short element file even in the shadow plan", () => {
+    expect(planShards([file(element, 30)], true)).toEqual([{ files: [element], lines: 30 }]);
+  });
+
   async function plan(diff: string, args: readonly string[]) {
     const { io, out, err } = capture();
     const result = await mutation(context(["--base", base, "--plan", ...args]), {
@@ -293,6 +305,7 @@ describe("mutation gate: opt-in shadow grouping", () => {
   it.each([
     ["between entries", "@@ -1,30 +1,30 @@", "@@ -32,30 +32,30 @@"],
     ["inside an entry", "@@ -1,29 +1,29 @@", "@@ -31,31 +31,31 @@"],
+    ["inside the second entry", "@@ -1,31 +1,31 @@", "@@ -40,29 +40,29 @@"],
   ])("keeps element ranges with a gap %s on the standard path", async (_where, first, second) => {
     const diff = [
       `diff --git a/${element} b/${element}`,

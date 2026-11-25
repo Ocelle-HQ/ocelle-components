@@ -50,19 +50,23 @@ interface Entry {
   readonly lines: number;
 }
 
+interface RangeEntry extends LineRange {
+  readonly lines: number;
+}
+
 function lineCount(ranges: readonly LineRange[]): number {
   return ranges.reduce((sum, range) => sum + range.end - range.start + 1, 0);
 }
 
 /** A file's entries: its path, or line ranges of at most 30 changed lines each when it has more. */
-function splitFile(file: ChangedFile): Entry[] {
+function splitFile(file: ChangedFile, shadowGrouped: boolean): Entry[] {
   if (file.lines <= maxEntryLines) return [{ entry: file.path, path: file.path, lines: file.lines }];
-  const entries: Entry[] = [];
+  const entries: RangeEntry[] = [];
   let first = 0;
   let last = 0;
   let count = 0;
   const close = (): void => {
-    entries.push({ entry: `${file.path}:${String(first)}-${String(last)}`, path: file.path, lines: count });
+    entries.push({ start: first, end: last, lines: count });
     count = 0;
   };
   for (const range of file.ranges) {
@@ -75,39 +79,34 @@ function splitFile(file: ChangedFile): Entry[] {
     }
   }
   if (count > 0) close();
-  return entries;
+  const ranges = shadowGrouped && file.path.startsWith("packages/elements/src/") ? groupAdjacentEntries(entries) : entries;
+  return ranges.map(({ start, end, lines }) => ({ entry: `${file.path}:${String(start)}-${String(end)}`, path: file.path, lines }));
 }
 
 /** A candidate entry spans one contiguous pair without including any unchanged line. */
-function pairEntries(left: Entry, right: Entry): Entry | undefined {
-  const named = new Set([left.path]);
-  const first = readEntry(left.entry, named)?.window;
-  const second = readEntry(right.entry, named)?.window;
-  if (first === undefined || first.end + 1 !== second?.start) return undefined;
-  if (first.end - first.start + 1 !== left.lines || second.end - second.start + 1 !== right.lines) return undefined;
-  return { path: left.path, entry: `${left.path}:${String(first.start)}-${String(second.end)}`, lines: left.lines + right.lines };
-}
-
-function shadowEntries(file: ChangedFile): Entry[] {
-  const entries = splitFile(file);
-  if (!file.path.startsWith("packages/elements/src/")) return entries;
-  const grouped: Entry[] = [];
-  for (let i = 0; i < entries.length; i += 1) {
-    const left = entries[i];
-    const right = entries[i + 1];
-    if (left === undefined) break;
-    const pair = right === undefined ? undefined : pairEntries(left, right);
-    grouped.push(pair ?? left);
-    if (pair !== undefined) i += 1;
+function groupAdjacentEntries(entries: readonly RangeEntry[]): RangeEntry[] {
+  const grouped: RangeEntry[] = [];
+  let index = 0;
+  for (;;) {
+    const first = entries[index];
+    if (first === undefined) return grouped;
+    const second = entries[index + 1];
+    if (second !== undefined && first.end + 1 === second.start
+      && first.end - first.start + 1 === first.lines && second.end - second.start + 1 === second.lines) {
+      grouped.push({ start: first.start, end: second.end, lines: first.lines + second.lines });
+      index += 2;
+    } else {
+      grouped.push(first);
+      index += 1;
+    }
   }
-  return grouped;
 }
 
 export function planShards(files: readonly ChangedFile[], shadowGrouped = false): Shard[] {
   const shards: { files: string[]; lines: number }[] = [];
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
   let lastPath: string | undefined;
-  for (const { entry, path, lines } of sorted.flatMap(shadowGrouped ? shadowEntries : splitFile)) {
+  for (const { entry, path, lines } of sorted.flatMap((file) => splitFile(file, shadowGrouped))) {
     const last = shards.at(-1);
     // Entries come in path order, so the current shard holds an entry of this file only if its last entry is one.
     if (last !== undefined && path !== lastPath && last.files.length < maxEntries && last.lines + lines <= maxLines) {
