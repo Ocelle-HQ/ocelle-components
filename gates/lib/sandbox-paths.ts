@@ -1,8 +1,9 @@
 // The sandbox-paths gate's decisions (op 023, #60; ops/023-public-repo-hygiene/op.md *The rule*): the rule of FR-001,
-// the four allowed files of FR-003, the `git grep` arguments of a scan of the tracked files without them, the parse of
-// its `-z -n` records into findings that never echo the matched line, and the verdict for git's exit code and the
-// tracked-file count. The CLI (gates/bin/sandbox-paths.ts) runs git with these; this module is pure and tested in
-// process (gates/test/sandbox-paths.test.ts).
+// the four allowed files of FR-003, the `git grep` arguments of a scan of the tracked files without them, the git
+// options that keep every `.gitattributes` out of that scan (operator round 4, O4-02), the parse of its `-z -n` records
+// into findings that never echo the matched line, and the verdict for git's exit code and the tracked-file count. The
+// CLI (gates/bin/sandbox-paths.ts) runs git with these; this module is pure and tested in process
+// (gates/test/sandbox-paths.test.ts).
 import { plural } from "./findings.ts";
 import type { Finding, GateResult } from "./findings.ts";
 
@@ -27,10 +28,21 @@ const message = "holds a sandbox path; redact it with tooling/speckit/bin/redact
 
 /**
  * The `git grep` arguments of a scan of the tracked files with the rule: `-z` records, line numbers, binary files
- * skipped, and each allowed file excluded as a literal path (never a glob or a directory).
+ * skipped (by content alone, with attributeFreeOptions), and each allowed file excluded as a literal path (never a
+ * glob or a directory).
  */
 export function grepArgs(allowed: readonly string[]): string[] {
   return ["--no-color", "-z", "-n", "-I", "-E", "-e", sandboxPathRule, "--", ".", ...allowed.map((path) => `:(exclude,literal)${path}`)];
+}
+
+/**
+ * The git options, before `grep`, that keep every `.gitattributes` out of the scan (operator round 4, O4-02): no user
+ * attributes file, and the attributes read from `emptyTree`, the empty tree of the root's hash algorithm, instead of
+ * the work tree or the index. With `GIT_ATTR_NOSYSTEM=1` in git's environment, no attribute can mark a file binary or
+ * `-diff`, so `-I` decides binary by content alone. A git older than 2.40 rejects `--attr-source`: exit 2 with its line.
+ */
+export function attributeFreeOptions(emptyTree: string): string[] {
+  return ["-c", "core.attributesFile=/dev/null", `--attr-source=${emptyTree}`];
 }
 
 /** The `path\0line\0text\n` records of `git grep -z -n` output; throws on a record without a path and a line number. */

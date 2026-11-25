@@ -2,14 +2,15 @@
 // checkout but the four allowed files may hold a line that matches the sandbox-path rule. The root must be the top of
 // a git work tree (so a parent repository is never scanned by mistake) and must track a file (a scan of nothing would
 // pass vacuously; a failing `git ls-files` is exit 2 with git's first error line); then `git grep` searches the tracked
-// files with the rule, and gates/lib/sandbox-paths.ts decides.
+// files with the rule, with no attribute from any `.gitattributes`, the user or the system (operator round 4, O4-02), so
+// binary is decided by content alone; gates/lib/sandbox-paths.ts decides.
 // The gate reads gates/plants/ and gates/test/fixtures/ in normal mode: it scans the whole tracked tree (an exception
 // to contracts/gate-cli.md). Every line here is the process boundary, run by gates/test/integration/sandbox-paths.test.ts.
 import { realpath } from "node:fs/promises";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Io } from "../lib/cli.ts";
 import { emit } from "../lib/findings.ts";
-import { allowedFiles, grepArgs, verdict } from "../lib/sandbox-paths.ts";
+import { allowedFiles, attributeFreeOptions, grepArgs, verdict } from "../lib/sandbox-paths.ts";
 import { runTool } from "../lib/spawn.ts";
 import type { ToolRun } from "../lib/spawn.ts";
 
@@ -48,8 +49,14 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   if (listed.exitCode !== 0) return emit({ exit: 2, cause: `sandbox-paths: could not run: git ls-files failed${lsFilesFailure(listed)}` }, io.out, io.err);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/sandbox-paths.test.ts "exits 2 with the cause no tracked file in a repository that tracks nothing"
   const tracked = listed.stdout.split("\0").filter((path) => path !== "").length;
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/sandbox-paths.test.ts "exits 1 with exactly the two findings of a tracked file with a store path on line 2 and a checkout path on line 5, echoing neither line"
-  const grep = await runTool("git", ["-C", root, "-c", "core.quotePath=false", "grep", ...grepArgs(allowedFiles)], root, io.env);
+  // Operator round 4, O4-02: no .gitattributes may exempt a file, so git reads its attributes from the empty tree of
+  // the root's hash algorithm (git knows it without writing it), no user file and no system file.
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/sandbox-paths.test.ts "exits 1 with exactly the finding of a text file that a committed .gitattributes marks $name"
+  const emptyTree = await runTool("git", ["-C", root, "hash-object", "-t", "tree", "/dev/null"], root, io.env);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/sandbox-paths.test.ts "exits 1 with exactly the finding of a text file that a committed .gitattributes marks $name"
+  const attributeFree = attributeFreeOptions(emptyTree.stdout.trim());
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/sandbox-paths.test.ts "exits 1 with exactly the finding of a text file that a committed .gitattributes marks $name"
+  const grep = await runTool("git", ["-C", root, "-c", "core.quotePath=false", ...attributeFree, "grep", ...grepArgs(allowedFiles)], root, { ...io.env, GIT_ATTR_NOSYSTEM: "1" });
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/sandbox-paths.test.ts "exits 1 with exactly the two findings of a tracked file with a store path on line 2 and a checkout path on line 5, echoing neither line"
   return emit(verdict({ tracked, code: grep.exitCode, stdout: grep.stdout, stderr: grep.stderr }), io.out, io.err);
 }

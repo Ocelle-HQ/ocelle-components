@@ -38,7 +38,7 @@ the plant's `tree/` alone, with no configuration copied in.
 | `config-copies` | Story config copies | `gates/bin/config-copies.ts` | the two copies of FR-006 |
 | `pins` | Install and pins | `gates/bin/pins.ts` | manifests, lockfile, version pins, `pnpm-workspace.yaml` settings |
 | `signoff` | Sign-off | `gates/bin/signoff.ts --range <base>..<head>` | commits in the pull request |
-| `sandbox-paths` | Sandbox paths | `gates/bin/sandbox-paths.ts` (runs `git grep -E -I -z -n` over the tracked files; since op 023) | every tracked file but the four allowed files of `gates/lib/sandbox-paths.ts` |
+| `sandbox-paths` | Sandbox paths | `gates/bin/sandbox-paths.ts` (runs `git grep -E -I -z -n` over the tracked files, with `--attr-source=<empty tree>`, `core.attributesFile=/dev/null` and `GIT_ATTR_NOSYSTEM=1`, so binary is decided by content alone and no `.gitattributes` exempts a file; since op 023) | every tracked file but the four allowed files of `gates/lib/sandbox-paths.ts` |
 | `plants` | Plants | `gates/bin/plants.ts` | `gates/plants/` only, and the registry check |
 
 ## Findings versus breakage (tool-backed and Stryker-backed gates)

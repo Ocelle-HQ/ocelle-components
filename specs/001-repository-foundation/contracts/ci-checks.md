@@ -28,7 +28,7 @@ Security (research.md R-16):
 | Storybook build | `pnpm run gate:storybook-build` (job id `storybook-build`; since 006) | |
 | Visual regression | `pnpm run gate:visual -- --engine both --remove-docker-image` (job id `visual`; since 006); then the pin record step, uploaded as the artifact `pin-record`, and on failure the artifact `visual` (`storybook/.visual/`) (006 contracts/gates.md § The registry) | |
 | Accessibility | `pnpm run gate:axe` (job id `axe`; since 006) | |
-| Sandbox paths | `pnpm run gate:sandbox-paths` (job id `sandbox-paths`; since op 023) | |
+| Sandbox paths | `pnpm run gate:sandbox-paths` (job id `sandbox-paths`; since op 023); binary files are skipped by content alone, so no `.gitattributes` exempts a file (op 023 operator round 4) | |
 | Plants | verdict job `plants`: `needs: [plants-plan, plants-shard]`, `if: always()`; downloads every `plant-shard-*` artifact into `storybook/.visual/plant-shards/` (`actions/download-artifact` pinned by SHA, `merge-multiple`) and runs `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards` (since 006; 006 contracts/gates.md § The registry) | |
 
 Helper jobs of the mutation gate (research.md R-08; listed as `helperJobs` in `gates/gates.json`) and of the plant job

@@ -196,8 +196,10 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
    `git merge --signoff origin/main` that follows it, before the final push.
    1. Skip the step when the merged tree has no `tooling/speckit/bin/redact-sandbox-paths.sh` (`main` from before
       op 023), or when `pnpm run gate:sandbox-paths` exits 0.
-   2. Redact the files the gate finds, with the command of the one-time redaction:
-      `git grep -lIzE '(^|[^A-Za-z0-9._~-])/(root|home/user)/[A-Za-z0-9._-]' -- . <one ':(exclude,literal)<path>'
+   2. Redact the files the gate finds, with the command of the one-time redaction and the gate's attribute-free
+      options (op 023 operator round 4), so that the file list and the gate agree when a `.gitattributes` exists:
+      `GIT_ATTR_NOSYSTEM=1 git -c core.attributesFile=/dev/null --attr-source=$(git hash-object -t tree /dev/null)
+      grep -lIzE '(^|[^A-Za-z0-9._~-])/(root|home/user)/[A-Za-z0-9._-]' -- . <one ':(exclude,literal)<path>'
       per allowed file of gates/lib/sandbox-paths.ts> | xargs -0 tooling/speckit/bin/redact-sandbox-paths.sh
       --in-place`.
    3. Commit only those files: `chore(landing): redact sandbox paths in the merged tree`, signed off. The body cites
