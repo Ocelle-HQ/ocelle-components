@@ -4073,6 +4073,34 @@ describe("workflow canvas named outcome editing in process", () => {
     expect(requests).toEqual([]);
   });
 
+  it("rejects a destination removed before its first hit at a captured release", async () => {
+    const { canvas, requests } = await editingFixture();
+    const map = mapOf(canvas);
+    const handle = connectionHandles(canvas);
+    const start = elementCenter(handle);
+    const end = elementCenter(action(canvas, "publish"));
+    const destination = getNode(canvas, "publish");
+    const presses: PointerEvent[] = [];
+    handle.addEventListener("pointerdown", (event) => { presses.push(event); }, { once: true });
+    await commands.pointerPath([{ ...start, down: true }]);
+    const press = presses[0];
+    expect(press?.isTrusted).toBe(true);
+    const pointerId = press?.pointerId ?? -1;
+    expect(map.hasPointerCapture(pointerId)).toBe(true);
+
+    canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "publish") };
+    const hit = canvas.shadowRoot?.elementFromPoint(end.x, end.y);
+    expect(hit?.closest("ocelle-workflow-node")).toBe(destination);
+    map.dispatchEvent(new PointerEvent("pointerup", { pointerId, clientX: end.x, clientY: end.y }));
+    const stillCaptured = map.hasPointerCapture(pointerId);
+    await commands.pointerPath([{ ...start, up: true }]);
+    await settle(canvas);
+
+    expect(stillCaptured).toBe(false);
+    expect(map.querySelector("path.connection-preview")).toBeNull();
+    expect(requests, "a captured release may only publish a live destination").toEqual([]);
+  });
+
   it("identifies a visible destination when the native drop lands on the card's padding", async () => {
     const fixture = await editingFixture();
     const { canvas, requests } = fixture;
