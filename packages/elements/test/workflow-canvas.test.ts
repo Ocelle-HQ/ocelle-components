@@ -3145,3 +3145,317 @@ afterEach(async () => {
   delete document.documentElement.dataset.theme;
   await commands.emulateForcedColors("none");
 });
+
+const connection = "ocelle-workflow-canvas-connection-request";
+
+function connectionRequest(operation: "connect" | "reassign" | "disconnect", destinationId: string): Request {
+  return presentationRequest(connection, { operation, sourceId: "review", outcomeId: "approved", destinationId });
+}
+
+async function editingFixture(destinationId?: string, onMap = true): Promise<Fixture> {
+  const fixture = await mount(true);
+  const { canvas } = fixture;
+  canvas.graph = {
+    nodes: [
+      { ...namedSteps[0]!, label: "Decision", outcomes: [{ id: "approved", label: "Approved" }, { id: "alternate", label: "Approved" }] },
+      { ...namedSteps[1]!, label: "Destination", outcomes: [] },
+      { ...namedSteps[2]!, label: "Destination" },
+      { ...namedSteps[0]!, id: "backup", label: "Decision" },
+    ],
+    connections: destinationId === undefined ? [] : [{ sourceId: "review", outcomeId: "approved", destinationId }],
+  };
+  canvas.layout = [
+    { nodeId: "review", x: 25, y: 20 }, { nodeId: "publish", x: 310, y: 20 },
+    { nodeId: "revise", x: onMap ? 520 : 1080, y: onMap ? 132 : 20 },
+  ];
+  await settle(canvas);
+  return fixture;
+}
+
+function choice(canvas: OcelleWorkflowCanvas, field: "source" | "outcome" | "destination", id: string): HTMLButtonElement {
+  const button = canvas.shadowRoot?.querySelector(`button[data-${field}-id="${id}"]`);
+  expect(button, `the named ${field} ${id} is a native edit choice`).toBeInstanceOf(HTMLButtonElement);
+  if (!(button instanceof HTMLButtonElement)) throw new Error("Named edit choice missing");
+  return button;
+}
+
+async function keyboardActivate(button: HTMLButtonElement): Promise<void> {
+  button.focus({ preventScroll: true });
+  await commands.press("Enter");
+}
+
+async function startNamedEdit(fixture: Fixture, activate = keyboardActivate): Promise<HTMLButtonElement> {
+  const { canvas } = fixture;
+  await openCommands(canvas);
+  await activate(commandButton(canvas, "Edit connection"));
+  await settle(canvas);
+  const source = choice(canvas, "source", "review");
+  await activate(source);
+  await settle(canvas);
+  await activate(choice(canvas, "outcome", "approved"));
+  await settle(canvas);
+  return source;
+}
+
+async function chooseDestination(fixture: Fixture, id: string, activate = keyboardActivate): Promise<void> {
+  await activate(choice(fixture.canvas, "destination", id));
+  await settle(fixture.canvas);
+}
+
+function acceptConnection(request: Request, canvas: OcelleWorkflowCanvas): void {
+  const { operation, sourceId, outcomeId, destinationId } = request.detail as { operation: string; sourceId: string; outcomeId: string; destinationId: string };
+  const other = canvas.graph.connections.filter((edge) => edge.sourceId !== sourceId || edge.outcomeId !== outcomeId);
+  canvas.graph = { ...canvas.graph, connections: operation === "disconnect" ? other : [...other, { sourceId, outcomeId, destinationId }] };
+}
+
+function displayedConnection(canvas: OcelleWorkflowCanvas, id?: string): void {
+  const edges = [...mapOf(canvas).querySelectorAll<SVGPathElement>("path.edge")];
+  expect(edges).toHaveLength(id === undefined ? 0 : 1);
+  const edge = edges[0];
+  if (id !== undefined && edge !== undefined) checkConnectionEndpoint(edge, displayedOrigin(canvas, id)[0]);
+}
+
+function checkConnectionEndpoint(edge: SVGPathElement, x: number): void {
+  expect(edge.getPointAtLength(edge.getTotalLength()).x).toBeCloseTo(x);
+}
+
+function connectionHandles(canvas: OcelleWorkflowCanvas): SVGRectElement {
+  const handle = mapOf(canvas).querySelector('rect.outcome-handle[data-node-id="review"][data-outcome-id="approved"]');
+  expect(handle, "the named outcome has a pointer-only handle").toBeInstanceOf(SVGRectElement);
+  if (!(handle instanceof SVGRectElement)) throw new Error("Outcome handle missing");
+  return handle;
+}
+
+async function beginConnectionDrag(fixture: Fixture, id: string) {
+  const { canvas } = fixture;
+  const handle = connectionHandles(canvas);
+  const down = elementCenter(handle);
+  const end = elementCenter(action(canvas, id));
+  const map = mapOf(canvas);
+  let pointerId = -1;
+  handle.addEventListener("pointerdown", (event) => { pointerId = event.pointerId; }, { once: true });
+  action(canvas, "review").focus({ preventScroll: true });
+  await commands.pointerPath([{ ...down, down: true }, end]);
+  await settle(canvas);
+  expect(map.hasPointerCapture(pointerId)).toBe(true);
+  expect(map.querySelector("path.connection-preview")).toBeInstanceOf(SVGPathElement);
+  expect(fixture.requests).toEqual([]);
+  return { end, map, pointerId };
+}
+
+function assertNames(fixture: Fixture): void {
+  const { canvas } = fixture;
+  const names = [...canvas.shadowRoot?.querySelectorAll<HTMLButtonElement>("button[data-destination-id]") ?? []]
+    .filter(({ dataset }) => dataset.destinationId === "publish" || dataset.destinationId === "revise")
+    .map((button) => button.textContent.trim().replace(/\s+/g, " "));
+  expect(names).toEqual(["Destination (Author, Publication, publish)", "Destination (Author, Planning, revise)"]);
+}
+
+describe("workflow canvas named outcome editing in process", () => {
+  it("uses native keyboard controls for connect, rejected reassign, accepted reassign and disconnect for stable off-map names", async () => {
+    const fixture = await editingFixture(undefined, false);
+    const { canvas, pane, requests } = fixture;
+    const original = { graph: canvas.graph, layout: canvas.layout, viewport: canvas.viewport, selection: canvas.selectedNodeId };
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    const originalAction = action(canvas, "review");
+
+    await openCommands(canvas);
+    await keyboardActivate(commandButton(canvas, "Edit connection"));
+    await settle(canvas);
+    const source = choice(canvas, "source", "review");
+    expect(choice(canvas, "source", "backup").textContent).toContain("backup");
+    await commands.press("Tab");
+    expect(active()).toBe(source);
+    await commands.press("Enter");
+    await settle(canvas);
+    expect(choice(canvas, "outcome", "approved").textContent).toContain("approved");
+    expect(choice(canvas, "outcome", "alternate").textContent).toContain("alternate");
+    await keyboardActivate(choice(canvas, "outcome", "approved"));
+    await settle(canvas);
+    assertNames(fixture);
+    expect(getNode(canvas, "revise")?.parentElement?.inert).toBe(true);
+    await chooseDestination(fixture, "publish");
+    expect(requests).toEqual([]);
+    const connected = connectionRequest("connect", "publish");
+    canvas.addEventListener(connection, () => { acceptConnection(connected, canvas); }, { once: true });
+    await keyboardActivate(commandButton(canvas, "Apply connection"));
+    await settle(canvas);
+    expect(requests).toEqual([connected]);
+    displayedConnection(canvas, "publish");
+
+    const assigned = connectionRequest("reassign", "revise");
+    for (const accept of [false, true]) {
+      await keyboardActivate(commandButton(canvas, "Edit connection"));
+      await settle(canvas);
+      await keyboardActivate(choice(canvas, "source", "review"));
+      await settle(canvas);
+      await keyboardActivate(choice(canvas, "outcome", "approved"));
+      await settle(canvas);
+      await chooseDestination(fixture, "revise");
+      if (accept) canvas.addEventListener(connection, () => { acceptConnection(assigned, canvas); }, { once: true });
+      await keyboardActivate(commandButton(canvas, "Apply connection"));
+      await settle(canvas);
+      expect(requests).toEqual(accept ? [connected, assigned, assigned] : [connected, assigned]);
+      displayedConnection(canvas, accept ? "revise" : "publish");
+    }
+    await keyboardActivate(commandButton(canvas, "Edit connection"));
+    await settle(canvas);
+    await keyboardActivate(choice(canvas, "source", "review"));
+    await settle(canvas);
+    await keyboardActivate(choice(canvas, "outcome", "approved"));
+    await settle(canvas);
+    await chooseDestination(fixture, "revise");
+    await keyboardActivate(commandButton(canvas, "Apply connection"));
+    expect(requests).toEqual([connected, assigned, assigned]);
+    const disconnected = connectionRequest("disconnect", "revise");
+    canvas.addEventListener(connection, () => { acceptConnection(disconnected, canvas); }, { once: true });
+    await keyboardActivate(commandButton(canvas, "Disconnect connection"));
+    await settle(canvas);
+    expect(requests).toEqual([connected, assigned, assigned, disconnected]);
+    displayedConnection(canvas);
+    expect(original.graph.connections).toEqual([]);
+    expect(canvas.layout).toBe(original.layout);
+    expect(canvas.viewport).toBe(original.viewport);
+    expect(canvas.selectedNodeId).toBe(original.selection);
+    expect(action(canvas, "review")).toBe(originalAction);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
+  it.each(["current destination", "new relation", "removed outcome", "removed target", "removed source", "no visible survivor", "Escape", "read-only at dispatch"] as const)(
+    "cancels a pending named edit with zero requests after %s",
+    async (reason) => {
+      const fixture = await editingFixture(reason === "new relation" ? undefined : "publish", reason !== "no visible survivor");
+      const { canvas, pane, requests } = fixture;
+      if (reason === "no visible survivor") {
+        canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId === "review");
+        await settle(canvas);
+      }
+      const scroll = [pane.scrollLeft, pane.scrollTop];
+      const source = await startNamedEdit(fixture);
+      await chooseDestination(fixture, "revise");
+      const apply = commandButton(canvas, "Apply connection");
+      apply.focus({ preventScroll: true });
+      let expectedFocus: Element | null = source;
+      switch (reason) {
+        case "current destination":
+        case "new relation":
+          canvas.graph = { ...canvas.graph, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "revise" }] };
+          break;
+        case "removed outcome":
+          canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.map((node) => node.id === "review"
+            ? { ...node, outcomes: node.outcomes.filter(({ id }) => id !== "approved") } : node) };
+          break;
+        case "removed target":
+          canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "revise") };
+          break;
+        case "removed source":
+        case "no visible survivor":
+          expectedFocus = reason === "removed source" ? action(canvas, "publish") : revealControls(canvas).picker;
+          canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== "review") };
+          break;
+        case "Escape":
+          await commands.press("Escape");
+          break;
+        case "read-only at dispatch":
+          expectedFocus = action(canvas, "review");
+          pane.addEventListener("click", () => { canvas.mode = "read-only"; }, { capture: true, once: true });
+          await commands.press("Enter");
+          break;
+      }
+      await settle(canvas);
+      expect(requests).toEqual([]);
+      expect(active()).toBe(expectedFocus);
+      expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    },
+  );
+
+  it("retains the named edit across display-only renames and honors same-task relation changes at disconnect", async () => {
+    const fixture = await editingFixture("publish");
+    const { canvas, pane, requests } = fixture;
+    const source = await startNamedEdit(fixture);
+    await chooseDestination(fixture, "revise");
+    canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.map((node) => ({
+      ...node, label: `New ${node.label}`, outcomes: node.outcomes.map((outcome) => ({ ...outcome, label: `New ${outcome.label}` })),
+    })) };
+    await settle(canvas);
+    expect(choice(canvas, "source", "review")).toBe(source);
+    expect(choice(canvas, "destination", "revise").textContent).toContain("New Destination");
+    pane.addEventListener("click", () => {
+      canvas.graph = { ...canvas.graph, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "revise" }] };
+    }, { capture: true, once: true });
+    await keyboardActivate(commandButton(canvas, "Disconnect connection"));
+    await settle(canvas);
+    expect(requests).toEqual([]);
+    displayedConnection(canvas, "revise");
+    expect(active()).toBe(source);
+  });
+
+  it.each(["current relation", "new relation", "source removed", "target removed", "outcome removed", "Escape", "read-only at release", "empty drop"] as const)(
+    "clears a captured outcome preview with no request after %s",
+    async (reason) => {
+      const fixture = await editingFixture(reason === "new relation" ? undefined : "publish");
+      const { canvas, pane, requests } = fixture;
+      const scroll = [pane.scrollLeft, pane.scrollTop];
+      const captured = await beginConnectionDrag(fixture, "revise");
+      const source = action(canvas, "review");
+      const expectedFocus = reason === "source removed" ? action(canvas, "publish") : source;
+      let released = false;
+      switch (reason) {
+        case "current relation":
+        case "new relation":
+          canvas.graph = { ...canvas.graph, connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "revise" }] };
+          break;
+        case "source removed":
+        case "target removed":
+          canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.filter(({ id }) => id !== (reason === "source removed" ? "review" : "revise")) };
+          break;
+        case "outcome removed":
+          canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.map((node) => node.id === "review" ? { ...node, outcomes: [] } : node) };
+          break;
+        case "Escape":
+          await commands.press("Escape");
+          break;
+        case "read-only at release":
+          pane.addEventListener("pointerup", () => { canvas.mode = "read-only"; }, { capture: true, once: true });
+          await commands.pointerPath([{ ...captured.end, up: true }]);
+          released = true;
+          break;
+        case "empty drop": {
+          const rect = captured.map.getBoundingClientRect();
+          await commands.pointerPath([{ x: rect.left + 8, y: rect.bottom - 8, up: true }]);
+          released = true;
+          break;
+        }
+      }
+      await settle(canvas);
+      expect(captured.map.hasPointerCapture(captured.pointerId)).toBe(false);
+      expect(captured.map.querySelector("path.connection-preview")).toBeNull();
+      if (!released) await commands.pointerPath([{ ...captured.end, up: true }]);
+      expect(requests).toEqual([]);
+      expect(active()).toBe(expectedFocus);
+      expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    },
+  );
+
+  it("retains a real drag on renamed IDs and suppresses a repeated drop on that supplied destination", async () => {
+    const fixture = await editingFixture();
+    const { canvas, requests } = fixture;
+    const captured = await beginConnectionDrag(fixture, "publish");
+    canvas.graph = { ...canvas.graph, nodes: canvas.graph.nodes.map((node) => ({ ...node, label: `Renamed ${node.label}` })) };
+    await settle(canvas);
+    expect(captured.map.hasPointerCapture(captured.pointerId)).toBe(true);
+    const connected = connectionRequest("connect", "publish");
+    canvas.addEventListener(connection, () => { acceptConnection(connected, canvas); }, { once: true });
+    await commands.pointerPath([{ ...captured.end, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([connected]);
+    displayedConnection(canvas, "publish");
+    expect(captured.map.querySelector("path.connection-preview")).toBeNull();
+    const handle = connectionHandles(canvas);
+    const target = elementCenter(action(canvas, "publish"));
+    await commands.pointerPath([{ ...elementCenter(handle), down: true }, { ...target, up: true }]);
+    await settle(canvas);
+    expect(requests).toEqual([connected]);
+    expect(captured.map.querySelector("path.connection-preview")).toBeNull();
+  });
+});

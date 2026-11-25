@@ -1584,3 +1584,77 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     expect(focused, "focus recovers from the clipped standalone action to Review").toBe("review");
   });
 });
+
+function editRequest(operation: "connect" | "reassign" | "disconnect", destinationId: string) {
+  return { type: "ocelle-workflow-canvas-connection-request", detail: { operation, sourceId: "review", outcomeId: "approved", destinationId } };
+}
+
+async function builtOutcomeDrag(page: Page, canvas: Locator, targetId: string, preview: Locator, releaseOnly = false): Promise<void> {
+  const handle = canvas.locator('rect.outcome-handle[data-node-id="review"][data-outcome-id="approved"]');
+  expect(await handle.count(), "the built canvas exposes the named pointer outcome").toBe(1);
+  expect(await handle.getAttribute("aria-hidden")).toBe("true");
+  const start = await handle.boundingBox();
+  const end = await canvas.getByRole("button", { name: targetId === "publish" ? "Publish" : "Revise", exact: true }).boundingBox();
+  if (start === null || end === null) throw new Error("Built outcome drag geometry missing");
+  const x = end.x + end.width / 2;
+  const y = end.y + end.height / 2;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(x, y, { steps: 3 });
+  if (!releaseOnly) await expect.poll(() => preview.count()).toBe(1);
+  await page.mouse.up();
+  await expect.poll(() => preview.count()).toBe(0);
+}
+
+describe("workflow canvas outcome editing in the strict-CSP aggregate", () => {
+  it("uses real mouse connect, rejected and accepted reassign, no-op, and native disconnect", async () => {
+    const mounted = await mount(true);
+    const { page, finish } = mounted;
+    const canvas = page.locator("ocelle-workflow-canvas");
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+      element.graph = { ...element.graph, connections: [] };
+      element.layout = [{ nodeId: "review", x: 25, y: 20 }, { nodeId: "publish", x: 310, y: 20 }, { nodeId: "revise", x: 520, y: 132 }];
+      const host = (element.getRootNode() as ShadowRoot).host as HTMLElement;
+      element.addEventListener("ocelle-workflow-canvas-connection-request", (event) => {
+        const { operation, sourceId, outcomeId, destinationId } = (event as CustomEvent<{
+          operation: string; sourceId: string; outcomeId: string; destinationId: string;
+        }>).detail;
+        if (host.dataset.reject === "true") return;
+        const rest = element.graph.connections.filter((current) => current.sourceId !== sourceId || current.outcomeId !== outcomeId);
+        element.graph = { ...element.graph, connections: operation === "disconnect" ? rest : [...rest, { sourceId, outcomeId, destinationId }] };
+      });
+      await element.updateComplete;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
+    });
+    const supplied = await controlledState(canvas);
+    const preview = canvas.locator("path.connection-preview");
+    const edge = canvas.locator("path.edge");
+    const connect = editRequest("connect", "publish");
+    const reassign = editRequest("reassign", "revise");
+    await builtOutcomeDrag(page, canvas, "publish", preview);
+    expect(await requests(page)).toEqual([connect]);
+    expect(await edge.count()).toBe(1);
+    const published = await edge.getAttribute("d");
+    await page.locator("#host").evaluate((host) => { host.dataset.reject = "true"; });
+    await builtOutcomeDrag(page, canvas, "revise", preview);
+    expect(await requests(page)).toEqual([connect, reassign]);
+    expect(await edge.getAttribute("d")).toBe(published);
+    await page.locator("#host").evaluate((host) => { host.dataset.reject = "false"; });
+    await builtOutcomeDrag(page, canvas, "revise", preview);
+    expect(await requests(page)).toEqual([connect, reassign, reassign]);
+    expect(await edge.count()).toBe(1);
+    expect(await edge.getAttribute("d")).not.toBe(published);
+    await builtOutcomeDrag(page, canvas, "revise", preview, true);
+    expect(await requests(page)).toEqual([connect, reassign, reassign]);
+
+    await canvas.locator("summary").click();
+    await canvas.getByRole("button", { name: "Edit connection", exact: true }).click();
+    await canvas.locator('button[data-source-id="review"]').click();
+    await canvas.locator('button[data-outcome-id="approved"]').click();
+    await canvas.getByRole("button", { name: "Disconnect connection", exact: true }).click();
+    expect(await requests(page)).toEqual([connect, reassign, reassign, editRequest("disconnect", "revise")]);
+    await expect.poll(() => edge.count()).toBe(0);
+    expect(await controlledState(canvas)).toEqual(supplied);
+    expect(await finish()).toEqual(clean);
+  });
+});
