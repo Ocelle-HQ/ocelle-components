@@ -34,7 +34,8 @@ async function observe(page: Page, origin: string, theme: Mode["theme"], require
   await fixture.waitFor({ state: "visible" });
   await fixture.evaluate(async (element) => {
     const fields = element.querySelectorAll<HTMLElement & { readonly updateComplete?: Promise<unknown> }>("ocelle-facts, ocelle-fact, ocelle-notice");
-    await Promise.all([...fields].map((field) => field.updateComplete));
+    const updates = [...fields].map((field) => field.updateComplete).filter((update) => update !== undefined);
+    await Promise.all(updates);
     await document.fonts.ready;
   });
   const frame = page.mainFrame();
