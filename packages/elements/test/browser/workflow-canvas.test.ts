@@ -203,11 +203,12 @@ async function setUpPaintPane(canvas: Locator, clipped: boolean): Promise<void> 
   await canvas.evaluate(async (element: OcelleWorkflowCanvas, clipped) => {
     const pane = element.parentElement;
     if (pane === null) throw new Error("The paint containment fixture is missing its pane");
+    const relationships = element.shadowRoot?.querySelector(".relationships")?.getBoundingClientRect().height ?? 0;
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(`
       #pane { inline-size: 700px; block-size: 180px; overflow: visible; }
       #pane.paint-clipped { contain: paint; }
-      #canvas { inline-size: 700px; block-size: 390px; }
+      #canvas { inline-size: 700px; block-size: ${String(390 + relationships)}px; }
     `);
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     pane.classList.toggle("paint-clipped", clipped);
@@ -230,9 +231,11 @@ async function setUpClippingPane(canvas: Locator, mode: PaneClip, clipped = true
     const pane = element.parentElement;
     const root = element.getRootNode();
     if (pane === null || !(root instanceof ShadowRoot)) throw new Error("The nested clipping fixture is missing its pane");
+    const relationships = element.shadowRoot?.querySelector(".relationships")?.getBoundingClientRect().height ?? 0;
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(`
       #pane { overflow: visible; block-size: 445px; }
+      #canvas { block-size: ${String(430 + relationships)}px; }
       #pane.inset.clipped { clip-path: inset(0 0 220px 0); }
       #pane.calculated { clip-path: inset(0 0 calc(50% - 2.5px) 0); }
       #pane.margin-box { margin-block-end: 36px; }
@@ -1006,7 +1009,7 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     const { page, finish } = await mount(true);
     const canvas = page.locator("#canvas");
     await setUpClippingPane(canvas, "corner", false);
-    const publish = page.getByRole("button", { name: "Publish" });
+    const publish = page.getByRole("button", { name: "Publish", exact: true });
     await publish.focus();
     expect(await focusedId(page)).toBe("publish");
     const before = await publish.boundingBox();
@@ -1065,7 +1068,7 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     const { page, finish } = await mount(true);
     const canvas = page.locator("#canvas");
     await setUpClippingPane(canvas, "notched", false);
-    const publish = page.getByRole("button", { name: "Publish" });
+    const publish = page.getByRole("button", { name: "Publish", exact: true });
     await page.getByRole("button", { name: /^Reveal / }).focus();
     await page.keyboard.press("Tab");
     expect(await focusedId(page)).toBe("publish");
@@ -1372,7 +1375,7 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     const { page, finish } = await mount(true);
     const canvas = page.locator("#canvas");
     await setUpClippingPane(canvas, scenario.mode, false);
-    const publish = page.getByRole("button", { name: "Publish" });
+    const publish = page.getByRole("button", { name: "Publish", exact: true });
     const reveal = page.getByRole("button", { name: "Reveal step" });
     await reveal.focus();
     await page.keyboard.press("Tab");
@@ -1408,13 +1411,23 @@ describe("workflow canvas on the built aggregate under strict CSP", () => {
     const picker = page.getByRole("combobox", { name: "Step" });
     const reveal = page.getByRole("button", { name: /^Reveal / });
     const after = page.getByRole("button", { name: "After canvas" });
+    const followPublish = canvas.getByRole("button", { name: /^Follow Publish / });
+    const followRevise = canvas.getByRole("button", { name: /^Follow Revise / });
 
     await reveal.focus();
     await page.keyboard.press("Tab");
     const forwardEntry = await focusedId(page);
     await page.keyboard.press("Tab");
+    expect(await followPublish.evaluate((button) => button.matches(":focus"))).toBe(true);
+    await page.keyboard.press("Tab");
+    expect(await followRevise.evaluate((button) => button.matches(":focus"))).toBe(true);
+    await page.keyboard.press("Tab");
     const tabExits = await after.evaluate((button) => button.matches(":focus"));
     await after.focus();
+    await page.keyboard.press("Shift+Tab");
+    expect(await followRevise.evaluate((button) => button.matches(":focus"))).toBe(true);
+    await page.keyboard.press("Shift+Tab");
+    expect(await followPublish.evaluate((button) => button.matches(":focus"))).toBe(true);
     await page.keyboard.press("Shift+Tab");
     const backwardEntry = await focusedId(page);
     await page.keyboard.press("ArrowRight");
@@ -1717,10 +1730,13 @@ describe("workflow canvas run inspection in the strict-CSP aggregate", () => {
       role: "button", name: expect.stringMatching(new RegExp(`${label}.*Reviewer.*Approval`)),
       description: expect.stringMatching(new RegExp(`${outcome}.*Selected.*Invalid`)), focused: true,
     })]));
-    expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label}.*(?:Publication|publish)`, "i").test(name)),
+    expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label} \\([^)]*\\b(?:Publication|publish)\\b[^)]*\\)`, "i").test(name)),
       "the narrow relationship view exposes the full first repeated destination with distinct context").toHaveLength(1);
-    expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label}.*(?:Planning|revise)`, "i").test(name)),
+    expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label} \\([^)]*\\b(?:Planning|revise)\\b[^)]*\\)`, "i").test(name)),
       "the second repeated destination remains independently named").toHaveLength(1);
+    expect(namedActions).toEqual(expect.arrayContaining([
+      expect.stringContaining(`${outcome} (approved)`), expect.stringContaining(`${outcome} (rejected)`),
+    ]));
     expect(await requests(page)).toEqual([]);
     await source.click();
     expect(await requests(page)).toEqual([{ type: selection, detail: { nodeId: "review" } }]);

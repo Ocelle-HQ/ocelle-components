@@ -2618,6 +2618,12 @@ and End navigate the visible steps in graph order. The named step picker include
 Reveal focuses the chosen step when its action is visible, or proposes a viewport when the positioned step is
 clipped. Names for unpositioned steps remain available in the picker.
 
+Both modes show the supplied source, outcome and destination in the Outcome connections list. Follow moves to the
+destination through the same reveal operation. A valid destination without a layout position remains named in the
+list with Follow unavailable, and its edge appears when the host supplies the endpoint positions. Follow proposes a
+viewport only when the destination needs revealing and leaves selection to the native step action. An empty graph
+announces No workflow steps through the Step control, which remains the named focus destination.
+
 Use rectangular overflow or paint containment to clip the canvas. Supported CSS shapes on an unfragmented,
 axis-aligned HTML host include rounded `inset()`, `circle()`, `ellipse()` and simple straight-edge `polygon()`
 with pixel or percentage coordinates. Use positive scaling and translation through `transform`. Custom CSS
