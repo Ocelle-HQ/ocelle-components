@@ -169,11 +169,11 @@ function touchChoice(canvas: OcelleWorkflowCanvas, field: "source" | "outcome" |
 async function tapNative(button: HTMLButtonElement): Promise<void> {
   const types: string[] = [];
   button.addEventListener("pointerdown", (event) => { types.push(event.pointerType); }, { once: true });
-  await tap(button);
-  expect(types).toEqual(["touch"]);
   const { width, height } = button.getBoundingClientRect();
   const target = Number.parseFloat(getComputedStyle(button).minBlockSize);
   expect(Math.min(width, height)).toBeGreaterThanOrEqual(target);
+  await tap(button);
+  expect(types).toEqual(["touch"]);
 }
 
 const connectionEvent = "ocelle-workflow-canvas-connection-request";

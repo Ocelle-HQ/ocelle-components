@@ -3155,12 +3155,14 @@ function connectionRequest(operation: "connect" | "reassign" | "disconnect", des
 async function editingFixture(destinationId?: string, onMap = true): Promise<Fixture> {
   const fixture = await mount(true);
   const { canvas } = fixture;
+  const [review, publish, revise] = namedSteps;
+  if (review === undefined || publish === undefined || revise === undefined) throw new Error("The editing fixture requires three named steps");
   canvas.graph = {
     nodes: [
-      { ...namedSteps[0]!, label: "Decision", outcomes: [{ id: "approved", label: "Approved" }, { id: "alternate", label: "Approved" }] },
-      { ...namedSteps[1]!, label: "Destination", outcomes: [] },
-      { ...namedSteps[2]!, label: "Destination" },
-      { ...namedSteps[0]!, id: "backup", label: "Decision" },
+      { ...review, label: "Decision", outcomes: [{ id: "approved", label: "Approved" }, { id: "alternate", label: "Approved" }] },
+      { ...publish, label: "Destination", outcomes: [] },
+      { ...revise, label: "Destination" },
+      { ...review, id: "backup", label: "Decision" },
     ],
     connections: destinationId === undefined ? [] : [{ sourceId: "review", outcomeId: "approved", destinationId }],
   };
