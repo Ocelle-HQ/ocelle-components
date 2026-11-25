@@ -360,3 +360,139 @@ it("prints invalid red labels and sends invalid worker commands to stderr with e
     rmSync(root, { force: true, recursive: true });
   }
 });
+
+const returnCheck = join(repository, "tooling/speckit/bin/worktree-return-check.sh");
+
+function returnedWorktree(verify: (root: string, base: string, worker: string) => void): void {
+  expect(existsSync(returnCheck), "the worktree return checker is available").toBe(true);
+  const root = fixture();
+  const worker = mkdtempSync(join(tmpdir(), "ocelle-return-worker-"));
+  try {
+    write(root, "owned.ts", "base\n");
+    write(root, "outside.ts", "base\n");
+    const base = commit(root, "base");
+    git(root, "worktree", "add", "--quiet", "--detach", worker, base);
+    verify(root, base, worker);
+  } finally {
+    rmSync(worker, { force: true, recursive: true });
+    rmSync(root, { force: true, recursive: true });
+  }
+}
+
+function checkReturn(root: string, base: string, ...groups: string[]) {
+  return spawnSync("bash", [returnCheck, root, base, ...groups], {
+    cwd: root, encoding: "utf8", timeout: 10_000,
+  });
+}
+
+it("reports a clean sign-off and exact owned paths for a worktree return", () => {
+  returnedWorktree((root, base, worker) => {
+    write(worker, "owned.ts", "worker change\n");
+    const head = commit(worker, "finish owned change");
+    const refs = git(root, "show-ref", "--head");
+    const result = checkReturn(root, base, worker, "owned.ts");
+
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({ ok: true, head, paths: ["owned.ts"] });
+    expect(git(root, "show-ref", "--head")).toBe(refs);
+    expect(git(root, "status", "--porcelain")).toBe("");
+    expect(git(worker, "rev-parse", "HEAD")).toBe(head);
+    expect(git(worker, "status", "--porcelain")).toBe("");
+  });
+});
+
+it.each([
+  {
+    label: "a dirty worker",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "work to return\n");
+      commit(worker, "return owned change");
+      write(worker, "owned.ts", "uncommitted edit\n");
+      return base;
+    },
+  },
+  {
+    label: "a different base",
+    change: (root: string, _base: string, worker: string): string => {
+      write(worker, "owned.ts", "work on the old base\n");
+      commit(worker, "return work from the old base");
+      write(root, "outside.ts", "canonical base changed\n");
+      return commit(root, "advance canonical base");
+    },
+  },
+  {
+    label: "an unsigned commit",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "unsigned worker change\n");
+      git(worker, "add", "--", "owned.ts");
+      git(worker, "commit", "--quiet", "--no-signoff", "-m", "return unsigned work");
+      return base;
+    },
+  },
+  {
+    label: "a sign-off for someone other than the author",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "worker change with mismatched sign-off\n");
+      git(worker, "add", "--", "owned.ts");
+      git(worker, "commit", "--quiet", "--signoff", "--author", "Another Worker <other@example.com>", "-m", "return someone else's work");
+      return base;
+    },
+  },
+  {
+    label: "a merge commit",
+    change: (root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "worker change\n");
+      commit(worker, "return owned change");
+      write(root, "second.ts", "another owned file\n");
+      git(worker, "merge", "--quiet", "--signoff", "--no-ff", "--no-edit", commit(root, "another owned change"));
+      return base;
+    },
+  },
+  {
+    label: "a rename out of the assigned paths",
+    change: (_root: string, base: string, worker: string): string => {
+      git(worker, "mv", "--", "owned.ts", "renamed.ts");
+      commit(worker, "move the owned file outside the assignment");
+      return base;
+    },
+  },
+  {
+    label: "an out-of-scope edit restored before return",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "outside.ts", "out-of-scope change\n");
+      commit(worker, "touch an unowned path");
+      write(worker, "outside.ts", "base\n");
+      write(worker, "owned.ts", "worker change\n");
+      commit(worker, "restore the unowned file and finish owned work");
+      return base;
+    },
+  },
+])("rejects a worktree return with $label", ({ change }) => {
+  returnedWorktree((root, base, worker) => {
+    const pinned = change(root, base, worker);
+    const result = checkReturn(root, pinned, worker, "owned.ts", "second.ts");
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({ ok: false });
+  });
+});
+
+it("rejects overlapping path ownership in a group of worktree returns", () => {
+  returnedWorktree((root, base, worker) => {
+    const other = mkdtempSync(join(tmpdir(), "ocelle-return-other-"));
+    try {
+      git(root, "worktree", "add", "--quiet", "--detach", other, base);
+      write(worker, "owned.ts", "first worker change\n");
+      commit(worker, "first return");
+      write(other, "second.ts", "second worker change\n");
+      commit(other, "second return");
+
+      const result = checkReturn(root, base, worker, "owned.ts", "--worker", other, "owned.ts", "second.ts");
+
+      expect(result.status).toBe(1);
+      expect(JSON.parse(result.stdout) as unknown).toMatchObject({ ok: false });
+    } finally {
+      rmSync(other, { force: true, recursive: true });
+    }
+  });
+});

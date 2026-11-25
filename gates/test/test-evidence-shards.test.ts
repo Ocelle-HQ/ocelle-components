@@ -1,3 +1,4 @@
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { estimateTestSeconds, planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
 
@@ -23,7 +24,49 @@ const measuredFiles = [
   { project: "elements-browser", file: "packages/elements/test/browser/button.test.ts", seconds: 155 },
 ];
 
+const visualCasesByFile = {
+  "visual.test.ts": [
+    "captures the repository's <inventory> story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)",
+  ],
+  "visual-findings.test.ts": [
+    "keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2)",
+  ],
+  "visual-cli.test.ts": [
+    "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)",
+    "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)",
+    "reads the options after the -- that pnpm run passes on",
+    "exits 2 naming skopeo when PATH holds podman but no skopeo, and runs no podman command",
+    "exits 2 naming both engines when --remove-docker-image comes with docker alone, and runs no docker command",
+  ],
+  "visual-capture.test.ts": [
+    "writes nothing on an unchanged tree and says so (FR-008, analysis G1)",
+    "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)",
+    "captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012)",
+    "differs between two screenshots with reduced motion and animations left at Playwright's defaults, and agrees with the capture's options",
+  ],
+};
+
+function visualCaseNames(source: string): string[] {
+  return [...source.matchAll(/^\s*it\(\s*"([^"\n]+)"/gm)].map(([, name]) =>
+    (name ?? "").replace(/repository's \d+ story-themes/, "repository's <inventory> story-themes"),
+  );
+}
+
 describe("unit test shard plans", () => {
+  it("keeps the eleven Visual scenarios in independently planned integration files", () => {
+    const integration = new URL("./integration/", import.meta.url);
+    const files = readdirSync(integration).filter((file) => /^visual(?:-[a-z-]+)?\.test\.ts$/.test(file));
+    const cases = Object.fromEntries(files.map((file) => [
+      file, visualCaseNames(readFileSync(new URL(file, integration), "utf8")),
+    ]));
+    expect(cases).toEqual(visualCasesByFile);
+
+    const inventory = files.map((file) => ({ project: "gates-integration", file: "gates/test/integration/" + file }));
+    const planned = planTestShards(revision, inventory, 4);
+    expect(planned.shards).toEqual(expect.arrayContaining(inventory.map((file) => [file])));
+    expect(planned.shards).toHaveLength(inventory.length);
+  });
+
   it.each([
     ["40 hexadecimal characters", revision],
     ["64 hexadecimal characters", "b".repeat(64)],

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { classifyMutants } from "../lib/mutation/report.ts";
+import * as mutationReport from "../lib/mutation/report.ts";
 import type { MutantVerdict } from "../lib/mutation/report.ts";
 import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
 
@@ -13,6 +13,7 @@ import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
 const fixture = (name: string): string => readFileSync(new URL(`fixtures/stryker/${name}`, import.meta.url), "utf8");
 const report = fixture("report.json");
 const sample = "gates/lib/sample.ts";
+const { classifyMutants } = mutationReport;
 
 function changed(path: string, ranges: readonly LineRange[]): ChangedFile {
   return { path, ranges, lines: ranges.reduce((sum, r) => sum + r.end - r.start + 1, 0) };
@@ -21,6 +22,34 @@ function changed(path: string, ranges: readonly LineRange[]): ChangedFile {
 function survivor(line: number, rule: string, message: string): object {
   return { location: { path: sample, line }, gate: "mutation", rule, message };
 }
+
+describe("shadow mutation inventory", () => {
+  type Inventory = (...args: Parameters<typeof classifyMutants>) => unknown;
+  const inventory = Reflect.get(mutationReport, "shadowMutantInventory") as Inventory | undefined;
+
+  it("records the same stable in-scope identity and verdict when Stryker's IDs change", () => {
+    const location = { start: { line: 29, column: 3 }, end: { line: 31, column: 11 } };
+    const changedScope = [changed(sample, [{ start: 1, end: 60 }])];
+    const expected = {
+      ok: true,
+      mutants: [{ path: sample, location, mutatorName: "BlockStatement", replacement: "{}", status: "Killed" }],
+    };
+    for (const id of ["1", "39"]) {
+      const report = JSON.stringify({ files: { [sample]: { mutants: [
+        { id, location, mutatorName: "BlockStatement", replacement: "{}", status: "Killed" },
+        { id: "900", location: { start: { line: 61, column: 1 }, end: { line: 61, column: 8 } }, mutatorName: "StringLiteral", replacement: '""', status: "Survived" },
+      ] } } });
+      expect(inventory?.({ report, exitCode: 0, output: "" }, changedScope), "a shadow receipt identifies each compared mutant without a run-specific ID").toEqual(expected);
+    }
+  });
+
+  it("rejects a report that has a pending in-scope mutant", () => {
+    const report = JSON.stringify({ files: { [sample]: { mutants: [
+      { id: "7", location: { start: { line: 3, column: 1 }, end: { line: 3, column: 6 } }, mutatorName: "BooleanLiteral", replacement: "false", status: "Pending" },
+    ] } } });
+    expect(inventory?.({ report, exitCode: 1, output: "" }, [changed(sample, [{ start: 1, end: 60 }])]), "a pending mutant cannot yield a complete comparison receipt").toMatchObject({ ok: false });
+  });
+});
 
 describe("classifyMutants", () => {
   it("makes Survived and NoCoverage mutants on changed lines findings; Killed, Timeout, RuntimeError, CompileError and Ignored pass", () => {
