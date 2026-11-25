@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { commands } from "vitest/browser";
+import { commands, page } from "vitest/browser";
 import "../src/ocelle-workflow-canvas.ts";
 import type { OcelleWorkflowCanvas } from "../src/ocelle-workflow-canvas.ts";
 import type { WorkflowCanvasPositionRequestDetail, WorkflowCanvasViewportRequestDetail } from "../src/workflow-canvas-types.ts";
@@ -181,6 +181,55 @@ const connectionEvent = "ocelle-workflow-canvas-connection-request";
 function edit(operation: "connect" | "reassign" | "disconnect", destinationId: string): ObservedRequest {
   return request(connectionEvent, { operation, sourceId: "review", outcomeId: "approved", destinationId });
 }
+
+describe("workflow canvas real touch inspection", () => {
+  it("follows the current clipped destination with one tap and selects it with a separate tap", async () => {
+    const { canvas, requests } = await mount();
+    canvas.mode = "read-only";
+    canvas.graph = {
+      nodes: [...canvas.graph.nodes, { id: "revise", label: "Revise", accountableRole: "Editor", kind: "Planning", outcomes: [] }],
+      connections: [{ sourceId: "review", outcomeId: "approved", destinationId: "revise" }],
+    };
+    canvas.layout = [...canvas.layout, { nodeId: "revise", x: 840, y: 65 }];
+    canvas.selectedNodeId = "review";
+    await settle(canvas);
+    const graph = canvas.graph;
+    const layout = canvas.layout;
+    const supplied = canvas.viewport;
+    const native = page.getByRole("button", { name: /\b(?:follow|reveal)\b.*\bRevise\b/i }).elements();
+    expect(native, "read-only offers a single accessible native follow target for the newly supplied destination").toHaveLength(1);
+    expect(page.getByRole("button", { name: /\b(?:follow|reveal)\b.*\bPublish\b/i }).elements()).toEqual([]);
+    const follow = native[0];
+    if (!(follow instanceof HTMLButtonElement)) throw new Error("Native follow target missing");
+    const geometry = follow.getBoundingClientRect();
+    expect(Math.min(geometry.width, geometry.height)).toBeGreaterThanOrEqual(Number.parseFloat(getComputedStyle(follow).minBlockSize));
+    const down: { trusted: boolean; type: string }[] = [];
+    follow.addEventListener("pointerdown", (event) => { down.push({ trusted: event.isTrusted, type: event.pointerType }); }, { once: true });
+    await tap(follow);
+    expect(down).toEqual([{ trusted: true, type: "touch" }]);
+    const proposed = (requests[0]?.detail as WorkflowCanvasViewportRequestDetail | undefined)?.viewport;
+    expect(proposed).toMatchObject({ x: expect.any(Number), y: expect.any(Number), scale: supplied.scale });
+    if (proposed === undefined) throw new Error("Native follow request missing");
+    const reveal = request(viewport, { viewport: proposed });
+    expect(requests).toEqual([reveal]);
+    expect(canvas.viewport).toBe(supplied);
+    expect(canvas.shadowRoot?.activeElement).toBe(follow);
+
+    canvas.viewport = proposed;
+    await settle(canvas);
+    const actions = page.getByRole("button", { name: "Revise", exact: true }).elements();
+    expect(actions).toHaveLength(1);
+    const action = actions[0];
+    if (!(action instanceof HTMLButtonElement)) throw new Error("Revealed Revise action missing");
+    expect(action.matches(":focus")).toBe(true);
+    expect(requests).toEqual([reveal]);
+    await tap(action);
+    expect(requests).toEqual([reveal, request("ocelle-workflow-node-select", { nodeId: "revise" })]);
+    expect(canvas.selectedNodeId).toBe("review");
+    expect(canvas.graph).toBe(graph);
+    expect(canvas.layout).toBe(layout);
+  });
+});
 
 describe("workflow canvas real touch editing", () => {
   it("connects, rejects and accepts a reassignment, and disconnects through separate native taps", async () => {
