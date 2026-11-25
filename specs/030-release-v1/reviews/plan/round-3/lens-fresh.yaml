@@ -1,0 +1,54 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "The 'mutation gate over the release range' outgrows GitHub's 256-job matrix limit within a few element missions, and since round 2 it runs on every pull request as well"
+    evidence:
+      - artifact: "research.md § R-10 (line 237): `gates` runs ci.yml 'with ... release: true, so every merge gate runs on the tagged commit (#11 \"run every check\"), the mutation gate over what the release adds'. R-10 `release-base`: the base is 'the previous `v*` tag reachable from `<sha>^`, else ... first-release-base'"
+      - artifact: "research.md § R-10 (line 262) and contracts/release-workflow.md § release-dry-run.yml (line 98), the round-2 fix for PLAN-FRESH-2-002 (a): 'Cost: its `gates` job runs every ci.yml job a second time on each pull request, the mutation gate over the release range ... being not required, it blocks no merge'"
+      - code: ".github/workflows/ci.yml `mutation-shard`: `strategy.matrix.shard: fromJSON(needs.mutation-plan.outputs.shards)`, `timeout-minutes` 75 for a shard with `packages/elements/src/` entries, 10 otherwise. No cap on the shard count in gates/lib/mutation/shards.ts (maxEntryLines 30, maxEntries 10, maxLines 250, and a file's 30-line chunks never share a shard because of the `path !== lastPath` condition at :88). No artifact of this feature mentions a shard cap or the matrix limit (grep for '256' and 'matrix' in specs/030-release-v1: no hit)"
+      - code: "probe: ran the repository's own planShards(changedFiles(git diff --unified=0 <a> <b> -- scopePathspecs)) over real ranges of main. One mission: 183b20f9^..183b20f9 43 shards (42 with elements/src), 1b8b0b2b^..1b8b0b2b 80 (80), 33523659^..33523659 61 (61). Eight missions, 4911fd0b..183b20f9: 298 shards, 255 of them element shards with the 75-minute limit. All of main since mission 001, eaf16896..183b20f9: 743 shards"
+      - artifact: "GitHub Actions documentation (not probed from this session): a matrix generates at most 256 jobs per workflow run; a larger matrix fails the job when the run starts"
+    claim: |
+      Every pull request on `main` already passed the required mutation gate on its own changed lines. The release run
+      then mutates the whole range since the last release again. For 1.0.0 the range is only this mission, because the
+      first-release base is the parent of this mission's squash commit. For every later release the range is everything
+      since the previous tag. On this repository's actual history, a release range of about seven to eight element
+      missions plans more than 256 shards. At that point `mutation-shard` cannot expand, `Mutation testing` fails, and
+      `gates` fails, so the release stops before approval. A rerun cannot fix this, and the round-2 failure procedure
+      has no case for it. The range never shrinks except by releasing, which this failure prevents. A range just under
+      the limit is also costly: about 255 element shards at up to 75 minutes each, waiting in a shared queue of
+      concurrent jobs. That can take long enough to overrun D1's two-day window for the trusted-publisher configuration.
+      The round-2 fix made this a per-pull-request cost too. `release-dry-run.yml` runs the same `gates` call with the
+      computed release `base` on every pull request and every push to it, and the plan sets no concurrency group. So
+      each pull request queues a second full ci.yml plus a mutation run over the whole release range. It competes for
+      runners with the required checks of every other open pull request, and that cost grows with every merge until
+      the next release. "Not required, blocks no merge" is true of the check's verdict, not of the queue it takes.
+    remedies:
+      - "Narrow the mutation range in `workflow_call` runs to what main has not already proven. In `release.yml`, `release-base` passes the tagged commit's parent (the pre-tag pull request's own range, or `first-release-base` for 1.0.0 as now). In `release-dry-run.yml`, mutation runs on the pull request's own range: the `base` input is omitted and `dry-run-graph` allows that difference. Record in spec Assumptions and R-10 that mutation over already-merged commits is trusted from `main`'s required check (the spec's 'trusted ... when the plan shows that result cannot be bypassed' clause). Add `concurrency: { group: release-dry-run-${{ github.event.pull_request.number }}, cancel-in-progress: true }` to the dry run."
+      - "Keep the full release range in `release.yml` but make it fit and finish. `--plan` fails with a named finding above 256 shards, or the release run batches shards over several matrix jobs. State the expected release duration and how it fits D1's two-day window in R-01 and RELEASING.md. The dry run still passes no `base` (pull-request range, `dry-run-graph` allows the difference) and gets a cancel-in-progress concurrency group."
+
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "With the round-2 job graph, the dry run's `prepare` runs only when every duplicated ci.yml job passes, so FR-027's 'the dry run still shows every other step' is false, and a skipped 'Release dry run' can be mistaken for a rehearsal"
+    evidence:
+      - artifact: "spec.md FR-027 (line 368): 'On today's `main` the readiness step of a dry run reports not-ready by design (Story 2); the dry run still shows every other step'"
+      - artifact: "contracts/release-workflow.md § release-dry-run.yml (line 88): `prepare: name \"Release dry run\" ... needs gates`. `gates` is the whole ci.yml, which includes the required Release readiness job (FR-014) and every slow or flaky job (visual, plants, mutation over the release range). Inside the composite action (§ release-prepare), readiness is the second step, before pack, digest, the pack-contents gate, `release-step dry-run` and both rehearsals. No artifact uses `continue-on-error`, `if: always()` or a verdict job for the dry run (grep: no hit)"
+      - artifact: "research.md § R-10 (line 259): 'The pre-tag pull request's own dry run is the rehearsal on the release tree'; quickstart.md § 5 lists no step in which the operator confirms that this rehearsal actually ran"
+      - code: "GitHub Actions: a job whose `needs` failed is skipped. A skipped job reports the conclusion 'skipped', and GitHub's checks UI and rulesets treat that conclusion as passing, not failing (the documented behaviour behind ci.yml's own verdict jobs, e.g. `mutation` and `unit-tests` with `if: always()`)"
+    claim: |
+      Round 2 put the composite action behind the whole duplicated ci.yml. When readiness is not ready, the case FR-027
+      names, `gates` fails and `prepare` never runs. No pack, digest, pack-contents check, publish dry run, tarball
+      rehearsal or provenance rehearsal is shown. The same happens when any one of the duplicated jobs flakes. The check
+      the operator reads, "Release dry run", then reports skipped, and a skipped check looks green. On the pre-tag pull
+      request, which R-10 calls the rehearsal on the release tree, a flaky visual or plant shard in the second ci.yml
+      run silently removes the rehearsal. Nothing in RELEASING.md or the quickstart tells the operator to check for this
+      before O7. The spec text and the design disagree, and the disagreement hides the one pre-tag signal the dry run
+      exists to give.
+    remedies:
+      - "Correct FR-027's last sentence: the dry run shows the pre-publish steps only when its `gates` job passes, and a not-ready readiness stops it, as it stops the release. Add to R-15 / RELEASING.md and quickstart.md § 5 an explicit pre-O7 step: the operator confirms that the pre-tag pull request's 'Release dry run' check concluded success, not skipped, and re-runs the failed jobs otherwise."
+      - "Add a final dry-run verdict job, named 'Release dry run', with `needs: [release-base, gates, prepare]` and `if: always()`. It fails unless all three succeeded, in the style of ci.yml's `mutation` and `unit-tests` verdict jobs. Rename the `prepare` job's check accordingly, and let `dry-run-graph` allow this one extra job. A skipped rehearsal then shows as red."
