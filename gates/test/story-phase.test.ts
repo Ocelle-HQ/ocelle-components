@@ -444,6 +444,101 @@ describe("phase CI collateral declarations", () => {
   });
 });
 
+describe("phase implementation story declarations", () => {
+  const implementation = "storybook/stories/Workflow_Studio-2.0/plan_v2.1.stories.ts";
+  const removed = "storybook/stories/retired.stories.ts";
+  const support = implementation + "-support.stories.ts";
+  const removedSupport = "storybook/stories/removed-support.stories.ts";
+  const scopeFile = join(dir, "test-scope.txt");
+  const scopeError = "implementation-story requires an exact .stories.ts path under storybook/stories/";
+
+  it("keeps only ordinary changed and deleted stories in the overlay and runs the focused head", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "  implementation-story \t" + implementation + "\nimplementation-story " + removed + "\n" + file);
+    const git: PhaseTools["git"] = (args) => {
+      const output = tools.git(args);
+      if (args[5] !== anchor || args[6] !== head) return output;
+      if (args.includes("--diff-filter=AMT")) return output + implementation + "\0" + support + "\0";
+      if (args.includes("--diff-filter=D")) return removed + "\0" + removedSupport + "\0";
+      return output;
+    };
+    await checkPhase(request, { ...tools, git });
+    expect(checks.filter(({ check }) => check.mode !== "red").map(({ check }) => check.selection)).toEqual([
+      { changed: [file, support], deleted: [removedSupport], extra: [file], changedLines: { ...changedLines, [support]: changedLines[file] } },
+      { changed: [file, support], deleted: [removedSupport], extra: [file], changedLines: { ...changedLines, [support]: changedLines[file] } },
+    ]);
+    expect(outputs).toMatchObject([{ output: { status: "pass", problems: [] } }]);
+  });
+
+  it("checks exact declared paths before recording a red, preserving an unrelated story change", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "implementation-story " + implementation);
+    const git: PhaseTools["git"] = (args) =>
+      args.includes("--diff-filter=ACDMRTUXB") && args.length === 8 ? file + "\0" + support + "\0" : tools.git(args);
+    await checkPhase({ ...request, mode: "red", label: "phase" }, { ...tools, git });
+    expect(checks.map(({ check }) => check.mode)).toEqual(["red"]);
+    expect(checks[0]?.check.selection.extra).toEqual([]);
+    expect(outputs).toMatchObject([{ output: { tests_only: true, red: true, recorded: true } }]);
+    expect(files.get(join(dir, "red-commits"))).toBe("phase " + head + "\n");
+  });
+
+  it("rejects a red that edits a declared story before running the test worker", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "implementation-story " + implementation);
+    const git: PhaseTools["git"] = (args) =>
+      args.includes("--diff-filter=ACDMRTUXB") && args.length === 8 ? file + "\0" + implementation + "\0" : tools.git(args);
+    await checkPhase({ ...request, mode: "red", label: "phase" }, { ...tools, git });
+    expect(checks).toEqual([]);
+    expect(outputs).toMatchObject([{ output: {
+      sha: head, tests_only: false, red: false, recorded: false,
+      problem: "red commit changes a declared implementation story: " + implementation,
+    } }]);
+    expect(files.get(join(dir, "red-commits"))).toBe("phase " + initial + "\n");
+  });
+
+  it("rejects a declared story in recorded red history", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "implementation-story " + implementation);
+    const git: PhaseTools["git"] = (args) =>
+      args.includes("--diff-filter=ACDMRTUXB") && args.length === 8 ? implementation + "\0" : tools.git(args);
+    await checkPhase(request, { ...tools, git });
+    expect(checks.map(({ check }) => check.mode)).toEqual(["base", "head"]);
+    expect(outputs).toMatchObject([{ output: {
+      status: "fail", red_commits: [],
+      problems: ["red commit phase changes a declared implementation story: " + implementation],
+    } }]);
+  });
+
+  it.each([
+    "", "/storybook/stories/plan.stories.ts", "packages/storybook/stories/plan.stories.ts",
+    "storybook/stories/../plan.stories.ts", "storybook/stories/./plan.stories.ts", "storybook/stories//plan.stories.ts",
+    "storybook/stories/*.stories.ts", ":(glob)storybook/stories/plan.stories.ts", "storybook/stories/plan.test.ts",
+    "storybook/stories/sub\\plan.stories.ts", "storybook/stories/.stories.ts", "storybook/stories/a.stories.tsx",
+    "storybook/stories/my plan.stories.ts",
+  ])("rejects malformed implementation story scope (%s)", async (path) => {
+    const { tools, files, checks } = fixture();
+    files.set(scopeFile, "implementation-story " + path);
+    await expect(checkPhase(request, tools)).rejects.toThrow(scopeError);
+    expect(checks).toEqual([]);
+  });
+
+  it.each([implementation, "ci-only " + implementation])("rejects competing declarations for a story (%s)", async (other) => {
+    const { tools, files, checks } = fixture();
+    files.set(scopeFile, other + "\nimplementation-story " + implementation);
+    await expect(checkPhase(request, tools)).rejects.toThrow("conflicting test scope for implementation story: " + implementation);
+    expect(checks).toEqual([]);
+  });
+
+  it("does not interpret the directive inside an ordinary test path", async () => {
+    const { tools, files, calls, checks } = fixture();
+    const path = "test/implementation-story support.test.ts";
+    files.set(scopeFile, path);
+    await checkPhase(request, tools);
+    expect(checks.at(-1)?.check.selection.extra).toEqual([path]);
+    expect(calls.filter((args) => args.includes("--diff-filter=ACDMRTUXB") && args.length === 8)).toEqual([]);
+  });
+});
+
 describe("Story file syntax boundaries", () => {
   it("does not interpret ci-only as a directive inside a local scope path", async () => {
     const { tools, files, checks, outputs } = fixture();
