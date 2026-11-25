@@ -32,7 +32,8 @@ pnpm run gate:release-workflow
 
 Expect exit 0. On the pull request, `release-dry-run.yml` runs the release's pre-approval job graph: `release-base`,
 `gates` (ci.yml through `workflow_call`, `release: false`), and `prepare` (check **Release dry run**):
-`release-step check-tag --no-tag`, then the composite action: build, readiness, pack, the tarball digests,
+`release-step check-tag --no-tag`, then the composite action without its `tag` input: build, readiness (without
+`--tag`), pack, the tarball digests,
 pack-contents on the tarballs, `release-step dry-run` (a dry run per tarball not yet on the registry, "already
 published, dry run skipped" otherwise), the tarball install rehearsal, and the provenance rehearsal.
 

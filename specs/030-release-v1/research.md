@@ -218,8 +218,9 @@ the operator confirms the date before merging it (R-15).
   resolves, saying that the tag and ancestor checks are skipped), `digest` (SHA-256 of each tarball, written as step
   outputs), `dry-run` (below) and `publish` (below). It imports only Node built-ins and other `gates/lib` modules with no package dependency (a unit test
   asserts the import graph), so the publish job runs it without `pnpm install`.
-- `.github/actions/release-prepare/action.yml`, the steps both paths share: build; `release-readiness` (with `--tag`
-  when a tag is given); `pnpm pack` of the three packages; **immediately after the pack**, before any other step,
+- `.github/actions/release-prepare/action.yml`, the steps both paths share. It has one input, `tag` (string, default
+  empty; PLAN-FRESH-2-002): `release.yml` passes the pushed tag's name, `release-dry-run.yml` passes nothing. Steps:
+  build; `release-readiness` (with `--tag <tag>` when the input is not empty, without `--tag` otherwise); `pnpm pack` of the three packages; **immediately after the pack**, before any other step,
   `release-step digest`, whose digests the action exposes as outputs `sha256-tokens`, `sha256-styles`,
   `sha256-elements` (PLAN-A11Y-SECURITY-1-004); the pack-contents gate on the tarballs; `release-step dry-run` (the
   publish dry run, below; the action never runs `npm publish` itself); the tarball install rehearsal (R-12) on a **copy** of the tarballs in a temporary directory; and
@@ -235,7 +236,7 @@ the operator confirms the date before merging it (R-15).
      needs.release-base.outputs.base }}` and `release: true`, so every merge gate runs on the tagged commit (#11 "run
      every check"), the mutation gate over what the release adds.
   3. `prepare` (needs `gates`): checkout of the tag with full history, `persist-credentials: false`;
-     `./.github/actions/setup`; `release-step check-tag`; the composite action; job outputs `sha256-tokens`, `sha256-styles`, `sha256-elements` from the
+     `./.github/actions/setup`; `release-step check-tag`; the composite action with `tag: ${{ github.ref_name }}`; job outputs `sha256-tokens`, `sha256-styles`, `sha256-elements` from the
      action's outputs; uploads the tarballs (only) as the artifact `release-tarballs`.
   4. `publish` (needs `prepare`): `environment: npm-publish`; `permissions: { contents: read, id-token: write }`;
      sparse checkout of the tag (`.node-version` and `gates/` only, `persist-credentials: false`,
@@ -249,7 +250,7 @@ the operator confirms the date before merging it (R-15).
   `permissions: contents: read`; no environment, no `id-token`. It runs **the same pre-approval job graph** as
   `release.yml`: `release-base` (same steps), `gates` (`ci.yml` through `workflow_call` with the computed `base` and
   `release: false`), and `prepare` (check **Release dry run**: setup, `release-step check-tag --no-tag`, the composite
-  action without a tag, so with the tarball rehearsal and `install-check --rehearse`, and the same artifact upload).
+  action without its `tag` input, so readiness runs without `--tag`, with the tarball rehearsal and `install-check --rehearse`, and the same artifact upload).
   So the reusable-workflow call, the `base` computation, the job outputs, the setup of every job and the artifact
   hand-off run on every pull request, not first on the real tag; the rule `dry-run-graph` (R-13) keeps the two
   graphs equal. What only the tag can run is the tag comparison and ancestor test of `check-tag` (unit-tested), the
@@ -422,8 +423,11 @@ for nested `permissions`, `environment` and `with` blocks). Rules:
   `install-check --rehearse` (`rehearse-in-prepare`); its publish dry run is `release-step dry-run`, and no `run:` of
   the action runs `npm publish` (`dry-run-via-release-step`, PLAN-FRESH-2-001);
 - dry-run graph (PLAN-FRESH-2-002): `release-dry-run.yml` has the jobs `release-base`, `gates` and `prepare` with the
-  same `needs` and, step for step, the same steps as `release.yml`'s, except `gates`' `release: false` and
-  `check-tag --no-tag`; it has no other job (`dry-run-graph`);
+  same `needs` and, step for step, the same steps as `release.yml`'s, except exactly three differences:
+  `gates`' `release: false` (`release.yml`: `true`), `prepare`'s `check-tag --no-tag` (`release.yml`: `check-tag`),
+  and `prepare`'s composite-action step without the `tag` input (`release.yml`: `with: tag: ${{ github.ref_name }}`);
+  any other difference, or a `with:` key other than `tag` that only one side has, is a finding; it has no other job
+  (`dry-run-graph`, PLAN-FRESH-2-002);
 - sign-off scope: `ci.yml`'s Sign-off job has no `if` other than `${{ !inputs.release }}` (`signoff-skip-scope`);
   the `release` input is declared only under `workflow_call` with default `false`; only `release.yml` passes `true`,
   `release-dry-run.yml` passes `false`, and no other file passes it (`release-input-caller`).

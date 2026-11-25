@@ -152,7 +152,8 @@ and share the gate CLI, finding format and plant job; release-only data sits in 
    the day the phase is implemented; the pre-tag pull request sets the release date later (R-15, operator decision
    PLAN-FRESH-1-007 (b)).
 3. **US3, P2 — workflows**: `yaml` dependency, release-workflow gate and plants first (red, including `node-pin`,
-   `dry-run-via-release-step` and `dry-run-graph`), the `release-step` module and its unit tests (red, including
+   `dry-run-via-release-step` and `dry-run-graph`, whose only allowed differences are `release: false`, `check-tag
+   --no-tag` and the composite action's absent `tag` input), the `release-step` module and its unit tests (red, including
    `dry-run` and `check-tag --no-tag`), `gates/release/first-release-base` (R-10); then `ci-workflow.test.ts` amended
    first (red: the `inputs.base || ...` lines of `mutation-plan` and `mutation-shard`, the `workflow_call` trigger with
    inputs `base` and `release`, the Sign-off `if`; PLAN-FRESH-2-005), then `ci.yml`'s `workflow_call`, with spec 001
@@ -204,7 +205,7 @@ rules to the agent permission settings (O5, research R-16), which no agent perfo
 | Finding | Option | Effect |
 |---|---|---|
 | PLAN-FRESH-2-001 | (a) | `release-step dry-run`: dry run only for a version `npm view` answers `E404`, "already published, dry run skipped" otherwise; rule `dry-run-via-release-step`; RELEASING.md names "Re-run failed jobs" (R-10, R-13, R-15) |
-| PLAN-FRESH-2-002 | (a) | every release job on the pinned Node (rule `node-pin`); `release-dry-run.yml` runs the same pre-approval graph (`release-base`, `gates` with `release: false`, `prepare` with `check-tag --no-tag`), rule `dry-run-graph`; pull request trigger only; ci.yml's `head` input dropped, Sign-off keeps its pull-request range (R-10, R-13) |
+| PLAN-FRESH-2-002 | (a) | every release job on the pinned Node (rule `node-pin`); `release-dry-run.yml` runs the same pre-approval graph (`release-base`, `gates` with `release: false`, `prepare` with `check-tag --no-tag` and the composite action without its `tag` input), rule `dry-run-graph`; pull request trigger only; ci.yml's `head` input dropped, Sign-off keeps its pull-request range (R-10, R-13) |
 | PLAN-FRESH-2-004 | (a) | `fetch-depth: 0` on the unit-test shard and full checkouts, spec 001 ci-checks amended; the two history tests assert a non-shallow clone first (R-07, R-08) |
 
 ## Complexity Tracking

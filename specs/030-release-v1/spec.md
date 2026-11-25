@@ -149,8 +149,8 @@ nobody can skip the approval.
 **Why this priority**: it is the release itself, but it depends on Story 1's tarballs and Story 2's readiness, and
 it runs once per release.
 
-**Independent Test**: the dry-run path (FR-027, operator answer to SPEC-1-04), started by a pull request or a
-manual dispatch, runs every pre-publish step on its commit and ends without publishing, because it has no publish
+**Independent Test**: the dry-run path (FR-027, operator answer to SPEC-1-04), started by a pull request (the
+start the plan chose, research.md R-10), runs every pre-publish step on its commit and ends without publishing, because it has no publish
 job and no job in it can request an identity token; the release path's publish job permissions, environment and
 pinned actions are as FR-021 says; a static check of the workflow files fails on each planted misconfiguration,
 including a dry-run path that gains a publish step, an environment binding or an identity-token permission.
@@ -173,7 +173,7 @@ including a dry-run path that gains a publish step, an environment binding or an
    other than the publish job may request an identity token, if the default token permissions exceed read-only
    contents, if the publish job is not bound to the protected environment, if any action is referenced by anything
    other than a full commit SHA, if a checkout keeps credentials, or if the workflow reads a long-lived npm token.
-7. **Given** a pull request (or a manual dispatch of the dry run), **When** the dry-run path runs, **Then** it runs
+7. **Given** a pull request (the dry run's start, FR-027), **When** the dry-run path runs, **Then** it runs
    every pre-publish step of FR-022 and reports the result, contains no publish job, binds no job to the protected
    environment, grants no job an identity-token permission and writes nothing to any registry.
 
@@ -454,8 +454,8 @@ consumer migrations; rewriting git history; automated version bumps or a release
   commit (and optionally a tag).
 - **Release tag**: `v<version>` on a commit of `main`, protected by ruleset; its push is the only trigger of the
   release workflow's publish path.
-- **Dry-run path**: the pull-request or manually dispatched run of every pre-publish step, with no publish job and
-  no identity-token permission (FR-027).
+- **Dry-run path**: the run of every pre-publish step started by a pull request (FR-027 allows a manual dispatch
+  too; the plan chose the pull request only), with no publish job and no identity-token permission (FR-027).
 - **Protected environment**: the GitHub environment the publish job runs in; its required reviewer is the human
   approval.
 - **Provenance attestation**: the registry's signed statement linking each published version to this repository,

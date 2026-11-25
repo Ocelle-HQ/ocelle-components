@@ -14,7 +14,7 @@ jobs:
                  with: { base: needs.release-base.outputs.base, release: true }
   prepare:       needs gates; checkout tag, fetch-depth 0, persist-credentials false; uses ./.github/actions/setup;
                  node gates/bin/release-step.ts check-tag   (tag == v<version>; commit ancestor of origin/main)
-                 uses ./.github/actions/release-prepare
+                 uses ./.github/actions/release-prepare  with: { tag: github.ref_name }
                  outputs: sha256-tokens, sha256-styles, sha256-elements (from the action's outputs)
                  upload artifact "release-tarballs" (the three .tgz only)
   publish:       needs prepare; environment: npm-publish;
@@ -37,7 +37,9 @@ PLAN-FRESH-2-002).
 
 ## `.github/actions/release-prepare/action.yml`
 
-In order: build; `gate:release-readiness` (`--tag` when given); `pnpm pack` of the three packages;
+Input `tag` (string, default empty): `release.yml` passes the pushed tag's name, `release-dry-run.yml` passes nothing
+(PLAN-FRESH-2-002). In order: build; `gate:release-readiness` (`--tag <tag>` when the input is not empty, without
+`--tag` otherwise); `pnpm pack` of the three packages;
 `release-step digest` directly after the pack (outputs `sha256-tokens`, `sha256-styles`, `sha256-elements`);
 `gate:pack-contents --tarballs`; `release-step dry-run` (the publish dry run, below; never a bare `npm publish`);
 `install-check --from-tarballs` on a copy of the tarballs; `install-check --rehearse` (operator decision
@@ -86,7 +88,8 @@ jobs:
   prepare:       name "Release dry run" (the check; not required, research D5); needs gates; checkout with
                  fetch-depth 0, persist-credentials false; uses ./.github/actions/setup;
                  node gates/bin/release-step.ts check-tag --no-tag
-                 uses ./.github/actions/release-prepare (without --tag: tarball rehearsal and install-check --rehearse)
+                 uses ./.github/actions/release-prepare (no tag input: readiness without --tag; tarball
+                   rehearsal and install-check --rehearse)
                  the same outputs and the same "release-tarballs" artifact upload as release.yml
 ```
 
@@ -126,10 +129,15 @@ plant form `repo-tree`; reads `release.yml`, `release-dry-run.yml`, `ci.yml` and
 `prepare-needs-gates`, `publish-needs-prepare`, `install-check-needs-publish`, `publish-builds`, `publish-order`,
 `publish-verifies-checksums`, `publish-node-pin`, `node-pin`, `digest-after-pack`, `rehearse-in-prepare`,
 `dry-run-via-release-step`, `dry-run-graph`, `signoff-skip-scope`, `release-input-caller`, `file-missing` (exit 2 if a
-file does not parse). Rule meanings: research.md R-13. Plants: one fail plant per rule (among them
+file does not parse). Rule meanings: research.md R-13. `dry-run-graph` compares `release-dry-run.yml`'s `release-base`,
+`gates` and `prepare` with `release.yml`'s step for step and allows exactly three differences: `gates`' `release:
+false` (`release.yml`: `true`), `check-tag --no-tag` (`release.yml`: `check-tag`), and the composite-action step
+without the `tag` input (`release.yml`: `with: tag: ${{ github.ref_name }}`); the planned pair of files passes it
+(`pass-repository`). Plants: one fail plant per rule (among them
 `fail-signoff-skipped-on-pr`: the Sign-off job with any other `if`; `fail-publish-rebuilds`: a build step in publish;
 `fail-digest-in-artifact`: publish reads digests from a file instead of `needs.prepare.outputs`;
 `fail-prepare-no-setup`: `prepare` runs `release-step` with no setup step before it; `fail-bare-dry-run`: the composite
 action runs `npm publish --dry-run` itself; `fail-dry-run-graph-drift`: `release-dry-run.yml`'s `prepare` lacks a step
-`release.yml`'s has); pass: `pass-repository`, `pass-local-action` (`uses: ./...` is not a remote action); breaking:
+`release.yml`'s has; `fail-dry-run-graph-extra-input`: `release-dry-run.yml`'s composite-action step passes a `with:`
+key that `release.yml`'s lacks); pass: `pass-repository`, `pass-local-action` (`uses: ./...` is not a remote action); breaking:
 `break-not-yaml`.
