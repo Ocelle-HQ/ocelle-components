@@ -4,6 +4,12 @@ import { controlStyles } from "./control.ts";
 import { define } from "./define.ts";
 import "./ocelle-workflow-node.ts";
 import type { OcelleWorkflowNode } from "./ocelle-workflow-node.ts";
+import {
+  isWorkflowCanvasEditCurrent,
+  startWorkflowCanvasEdit,
+  workflowCanvasEditRequest,
+  type WorkflowCanvasEdit,
+} from "./workflow-canvas-edit.ts";
 import { projectWorkflowCanvasGraph } from "./workflow-canvas-graph.ts";
 import {
   navigateWorkflowCanvas,
@@ -34,6 +40,7 @@ import {
   type CanvasGestureFrame,
 } from "./workflow-canvas-viewport.ts";
 import type {
+  WorkflowCanvasConnectionRequestDetail,
   WorkflowCanvasGraph,
   WorkflowCanvasLayoutEntry,
   WorkflowCanvasMode,
@@ -46,6 +53,7 @@ import type {
 
 export type {
   WorkflowCanvasConnection,
+  WorkflowCanvasConnectionRequestDetail,
   WorkflowCanvasGraph,
   WorkflowCanvasLayoutEntry,
   WorkflowCanvasMode,
@@ -74,6 +82,24 @@ interface NodeAction {
   readonly focusBounds: SVGRectElement;
 }
 
+interface ConnectionGesture {
+  readonly pointerId: number;
+  readonly map: SVGSVGElement;
+  readonly handle: SVGRectElement;
+  readonly frame: CanvasGestureFrame;
+  readonly layout: readonly WorkflowCanvasLayoutEntry[];
+  readonly view: WorkflowCanvasViewport;
+  edit: WorkflowCanvasEdit;
+  point: WorkflowCanvasPoint;
+}
+
+interface EditFocus {
+  readonly sourceId: string | null;
+  readonly order: readonly string[];
+  readonly initiator: HTMLButtonElement | null;
+  readonly previous: HTMLElement;
+}
+
 interface PresentationGesture {
   readonly pointerId: number;
   readonly map: SVGSVGElement;
@@ -94,6 +120,7 @@ interface PresentationGesture {
  * @fires {CustomEvent<{nodeId: string}>} ocelle-workflow-node-select - The original bubbling request from the native node action.
  * @fires {CustomEvent<WorkflowCanvasViewportRequestDetail>} ocelle-workflow-canvas-viewport-request - A proposed pan, zoom, fit or named reveal viewport.
  * @fires {CustomEvent<WorkflowCanvasPositionRequestDetail>} ocelle-workflow-canvas-position-request - The requested absolute graph position of a step in author mode.
+ * @fires {CustomEvent<WorkflowCanvasConnectionRequestDetail>} ocelle-workflow-canvas-connection-request - A proposed connection edit using stable step and outcome identifiers.
  */
 export class OcelleWorkflowCanvas extends LitElement {
   static override properties = {
@@ -137,7 +164,7 @@ export class OcelleWorkflowCanvas extends LitElement {
         background-color: var(--ocelle-color-sheet);
       }
 
-      .navigator > .clip-probe {
+      .navigator > .clip-probe, .connection-editor .clip-probe {
         position: absolute;
         inset: 0;
         inline-size: 100%;
@@ -222,7 +249,7 @@ export class OcelleWorkflowCanvas extends LitElement {
         pointer-events: none;
       }
 
-      .move-handle {
+      .move-handle, .outcome-handle {
         width: var(--ocelle-target-min);
         height: var(--ocelle-target-min);
         visibility: hidden;
@@ -233,13 +260,56 @@ export class OcelleWorkflowCanvas extends LitElement {
         cursor: grab;
       }
 
-      .move-handle[data-ready] {
+      .move-handle[data-ready], .outcome-handle[data-ready] {
         visibility: visible;
         pointer-events: all;
       }
 
-      .move-handle:active {
+      .move-handle:active, .outcome-handle:active {
         cursor: grabbing;
+      }
+
+      .outcome-handle {
+        fill: var(--ocelle-color-sheet);
+      }
+
+      .outcome-mark, .connection-preview {
+        fill: none;
+        stroke: var(--ocelle-color-control-border);
+        stroke-width: var(--ocelle-border-width);
+        pointer-events: none;
+      }
+
+      .outcome-handle:not([data-ready]) + .outcome-mark {
+        visibility: hidden;
+      }
+
+      .connection-editor, .connection-basis, .connection-choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ocelle-space-2);
+        box-sizing: border-box;
+        min-inline-size: 0;
+        inline-size: 100%;
+      }
+
+      .connection-basis > .connection-choices {
+        inline-size: auto;
+      }
+
+      .command-panel:has(.connection-editor) {
+        max-block-size: calc(8 * var(--ocelle-target-min));
+        overflow: auto;
+      }
+
+      .connection-current {
+        margin: 0;
+        inline-size: 100%;
+      }
+
+      .connection-editor .control {
+        position: relative;
+        overflow-wrap: anywhere;
       }
 
       foreignObject {
@@ -271,11 +341,11 @@ export class OcelleWorkflowCanvas extends LitElement {
           border-color: ButtonText;
         }
 
-        .edge {
+        .edge, .outcome-mark, .connection-preview {
           stroke: CanvasText;
         }
 
-        .command-panel, .move-handle {
+        .command-panel, .move-handle, .outcome-handle {
           background-color: Canvas;
           border-color: ButtonText;
           fill: ButtonFace;
@@ -319,6 +389,12 @@ export class OcelleWorkflowCanvas extends LitElement {
   #gesture: PresentationGesture | null = null;
   #preview: WorkflowCanvasPoint | null = null;
   #frameRequest: number | undefined;
+  #connectionGesture: ConnectionGesture | null = null;
+  #editorOpen = false;
+  #editSourceId: string | null = null;
+  #namedEdit: WorkflowCanvasEdit | null = null;
+  #editInitiator: HTMLButtonElement | null = null;
+  #retainedEditFocus: EditFocus | null = null;
 
   constructor() {
     super();
@@ -352,6 +428,9 @@ export class OcelleWorkflowCanvas extends LitElement {
     this.#clipAttributes.disconnect();
     this.#watched.clear();
     this.#scrollAncestors.clear();
+    this.#clearConnectionGesture();
+    this.#resetEditor(false);
+    this.#retainedEditFocus = null;
     this.#pendingReveal = null;
     this.#retainedFocus = null;
   }
@@ -362,6 +441,8 @@ export class OcelleWorkflowCanvas extends LitElement {
       this.#retainedFocus ??= { id: focusedId, order: this.#order };
     }
     if (this.#gesture !== null && !this.#hasGestureBasis(this.#gesture)) this.#clearGesture();
+    if (this.#connectionGesture !== null && !this.#hasConnectionBasis(this.#connectionGesture)) this.#clearConnectionGesture();
+    if (this.#editorOpen && !this.#namedEditorCurrent()) this.#cancelNamedEdit();
     const previousControl = this.shadowRoot?.activeElement;
     if (changes.has("mode") && this.mode !== "author" && this.#namedId !== null
       && previousControl instanceof HTMLElement && previousControl.closest(".move-position") !== null) {
@@ -416,7 +497,33 @@ export class OcelleWorkflowCanvas extends LitElement {
       <rect class="focus-bounds" aria-hidden="true"></rect>
       ${this.mode === "author" && position !== undefined ? svg`
         <rect class="move-handle" aria-hidden="true" data-node-id=${node.id}
-          x=${point.x + (size?.width ?? 1)} y=${point.y}><title>Drag to move ${node.label}</title></rect>` : nothing}`;
+          x=${point.x + (size?.width ?? 1)} y=${point.y}><title>Drag to move ${node.label}</title></rect>
+        ${this.#renderOutcomeHandles(node, point, size)}` : nothing}`;
+  }
+
+  #renderOutcomeHandles(node: WorkflowCanvasNode, point: WorkflowCanvasPoint, size: NodeSize | undefined): unknown {
+    // The measured face is four target widths, keeping the rendered handle geometry in local SVG units.
+    const target = (size?.width ?? 1) / 4;
+    const pitch = target + target / 8;
+    return svg`<g class="outcome-handles" aria-hidden="true">
+      ${repeat(node.outcomes, ({ id }) => id, ({ id, label }, index) => {
+        const x = point.x + (index % 3) * pitch;
+        const y = point.y + (size?.height ?? 1) + target / 8 + Math.floor(index / 3) * pitch;
+        const middle = y + target / 2;
+        const tip = x + 3 * target / 4;
+        const side = tip - target / 6;
+        return svg`<rect class="outcome-handle" aria-hidden="true" data-node-id=${node.id} data-outcome-id=${id} x=${x} y=${y}>
+          <title>Connect ${label} (${id})</title>
+        </rect><polyline class="outcome-mark" points=${`${String(x + target / 4)},${String(middle)} ${String(tip)},${String(middle)} ${String(side)},${String(middle - target / 6)} ${String(tip)},${String(middle)} ${String(side)},${String(middle + target / 6)}`}></polyline>`;
+      })}
+    </g>`;
+  }
+
+  #renderConnectionPreview(): unknown {
+    const gesture = this.#connectionGesture;
+    if (gesture === null) return nothing;
+    const { x, y, width, height } = gesture.handle.getBBox();
+    return svg`<path class="connection-preview" d=${`M ${String(x + width / 2)} ${String(y + height / 2)} L ${String(gesture.point.x)} ${String(gesture.point.y)}`}></path>`;
   }
 
   get #displayViewport(): WorkflowCanvasViewport {
@@ -453,15 +560,17 @@ export class OcelleWorkflowCanvas extends LitElement {
     return `M ${String(x)} ${String(y)} C ${String(middle)} ${String(y)}, ${String(middle)} ${String(endY)}, ${String(end.x)} ${String(endY)}`;
   }
 
-  #renderCommands(): unknown {
-    if (this.#projection.positions.size === 0) return nothing;
+  #renderCommands(nameContext: (node: WorkflowCanvasNode) => string): unknown {
+    const canEdit = this.mode === "author" && this.#projection.nodes.some(({ outcomes }) => outcomes.length > 0);
+    if (this.#projection.positions.size === 0 && !canEdit) return nothing;
     const id = this.#namedId;
     const named = id === null ? undefined : this.#projection.positions.get(id);
     const disclosure = this.renderRoot.querySelector<HTMLDetailsElement>("details.commands");
     return html`
       <details class="commands" @toggle=${this.#toggleCommands}>
         <summary class="control">Canvas controls</summary>
-        ${disclosure?.open ? html`<div class="command-panel" role="group" aria-label="Canvas presentation">
+        ${disclosure?.open ? html`<div class="command-panel" role="group" aria-label="Canvas controls">
+          ${this.#editorOpen ? nothing : html`
           <button type="button" class="control" value="left" @click=${this.#requestViewportCommand}>Pan left</button>
           <button type="button" class="control" value="right" @click=${this.#requestViewportCommand}>Pan right</button>
           <button type="button" class="control" value="up" @click=${this.#requestViewportCommand}>Pan up</button>
@@ -477,8 +586,54 @@ export class OcelleWorkflowCanvas extends LitElement {
                 .value=${named === undefined ? nothing : String(named.y)} ?disabled=${named === undefined}></label>
               <button class="control" type="submit" ?disabled=${named === undefined}>Move step</button>
             </form>`) : nothing}
+          `}
+          ${canEdit ? html`<button class="control connection-trigger" type="button"
+            aria-expanded=${this.#editorOpen} @click=${this.#toggleEditor}>Edit connection</button>` : nothing}
+          ${this.#editorOpen ? this.#renderConnectionEditor(nameContext) : nothing}
         </div>` : nothing}
       </details>`;
+  }
+
+  #renderConnectionEditor(nameContext: (node: WorkflowCanvasNode) => string): unknown {
+    const nodes = this.#projection.nodes;
+    const source = nodes.find(({ id }) => id === this.#editSourceId);
+    const edit = this.#namedEdit;
+    const sources = nodes.filter(({ outcomes }) => outcomes.length > 0);
+    const outcomes = source?.outcomes ?? [];
+    const destinations = edit?.destinationId == null ? nodes : nodes.filter(({ id }) => id === edit.destinationId);
+    const current = nodes.find(({ id }) => id === edit?.currentDestinationId);
+    return html`<div class="connection-editor" role="group" aria-label="Edit outcome connections">
+      <div class="connection-basis">
+        <div class="connection-choices" role="group" aria-label="Source step">
+        ${repeat(source === undefined ? sources : [source], ({ id }) => id, (node) => html`
+          <button class="control" type="button" data-source-id=${node.id} aria-pressed=${node === source}
+            @click=${(event: MouseEvent) => { this.#chooseEditSource(node.id, event.currentTarget as HTMLButtonElement); }}>
+            ${node.label} ${nameContext(node)}
+          </button>`)}
+      </div>
+      ${source === undefined ? nothing : html`
+        <div class="connection-choices" role="group" aria-label="Named outcome">
+          ${repeat(outcomes.filter(({ id }) => edit === null || edit.outcomeId === id), ({ id }) => id, ({ id, label }) => html`
+            <button class="control" type="button" data-outcome-id=${id} aria-pressed=${edit?.outcomeId === id}
+              @click=${() => { this.#chooseEditOutcome(id); }}>${label}
+                ${outcomes.filter((other) => other.label === label).length > 1 ? `(${id})` : nothing}
+            </button>`)}
+        </div>`}
+      </div>
+      ${edit === null ? nothing : html`
+        <p class="connection-current">${current === undefined ? "No connection" : `Connected to ${current.label} ${nameContext(current)}`}</p>
+        <div class="connection-choices" role="group" aria-label="Destination step">
+          ${repeat(destinations, ({ id }) => id, (node) => html`
+            <button class="control" type="button" data-destination-id=${node.id} aria-pressed=${node.id === edit.destinationId}
+              @click=${() => { this.#chooseEditDestination(node.id); }}>${node.label} ${nameContext(node)}</button>`)}
+        </div>
+        <button class="control" type="button" ?disabled=${edit.destinationId === null || edit.destinationId === edit.currentDestinationId}
+          @click=${() => { this.#finishNamedEdit(false); }}>Apply connection</button>
+        ${edit.currentDestinationId === null ? nothing : html`
+          <button class="control" type="button" @click=${() => { this.#finishNamedEdit(true); }}>Disconnect connection</button>
+        `}
+      `}
+    </div>`;
   }
 
   protected override render(): unknown {
@@ -492,7 +647,7 @@ export class OcelleWorkflowCanvas extends LitElement {
     return html`
       <div class="canvas">
         <div class="navigator">
-          ${this.#renderCommands()}
+          ${this.#renderCommands(nameContext)}
           <label>Step
             <select class="control" @change=${this.#chooseNamed}>
               ${nodes.map((node) => html`<option value=${node.id}>
@@ -508,6 +663,7 @@ export class OcelleWorkflowCanvas extends LitElement {
           @pointercancel=${this.#loseGesture} @lostpointercapture=${this.#loseGesture}>
           <g aria-hidden="true">
             ${drawableConnections.map(({ source, destination }) => svg`<path class="edge" d=${this.#edgePath(source.id, destination.id)}></path>`)}
+            ${this.#renderConnectionPreview()}
           </g>
           ${repeat(painted, ({ id }) => id, (node) => this.#renderNode(node, nameContext(node)))}
         </svg>
@@ -523,7 +679,91 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #toggleCommands(): void {
+    const commands = this.renderRoot.querySelector<HTMLDetailsElement>("details.commands");
+    if (commands?.open === false) this.#resetEditor(false);
     this.requestUpdate();
+  }
+
+  #toggleEditor(event: MouseEvent): void {
+    if (this.mode !== "author") return;
+    this.#resetEditor(!this.#editorOpen);
+    this.#editInitiator = event.currentTarget as HTMLButtonElement;
+  }
+
+  #resetEditor(open: boolean): void {
+    this.#editorOpen = open;
+    this.#editSourceId = null;
+    this.#namedEdit = null;
+    this.#editInitiator = null;
+    this.requestUpdate();
+  }
+
+  #namedEditorCurrent(): boolean {
+    if (this.mode !== "author") return false;
+    if (this.#namedEdit !== null) return isWorkflowCanvasEditCurrent(this.graph, this.#namedEdit);
+    return this.#editSourceId === null
+      || this.graph.nodes.some(({ id, outcomes }) => id === this.#editSourceId && outcomes.length > 0);
+  }
+
+  #chooseEditSource(id: string, button: HTMLButtonElement): void {
+    if (!this.#namedEditorCurrent() || !this.graph.nodes.some((node) => node.id === id && node.outcomes.length > 0)) return;
+    this.#editSourceId = this.#editSourceId === id ? null : id;
+    this.#editInitiator = this.#editSourceId === null ? this.renderRoot.querySelector("button.connection-trigger") : button;
+    this.#namedEdit = null;
+    this.requestUpdate();
+  }
+
+  #chooseEditOutcome(id: string): void {
+    if (!this.#namedEditorCurrent() || this.#editSourceId === null) return;
+    this.#namedEdit = this.#namedEdit?.outcomeId === id ? null : startWorkflowCanvasEdit(this.graph, this.#editSourceId, id);
+    this.requestUpdate();
+  }
+
+  #chooseEditDestination(id: string): void {
+    const edit = this.#namedEdit;
+    if (edit === null || !this.#namedEditorCurrent() || !this.graph.nodes.some((node) => node.id === id)) return;
+    this.#namedEdit = { ...edit, destinationId: edit.destinationId === id ? null : id };
+    this.requestUpdate();
+  }
+
+  #cancelNamedEdit(): void {
+    const previous = this.shadowRoot?.activeElement;
+    if (previous instanceof HTMLElement && previous.closest(".connection-editor, .connection-trigger") !== null) {
+      this.#retainedEditFocus = { sourceId: this.#editSourceId, order: this.#order, initiator: this.#editInitiator, previous };
+    }
+    const sourceExists = this.#editSourceId === null || this.graph.nodes.some(({ id }) => id === this.#editSourceId);
+    const keepOpen = this.mode === "author" && sourceExists;
+    if (!keepOpen) {
+      const commands = this.renderRoot.querySelector<HTMLDetailsElement>("details.commands");
+      if (commands !== null) commands.open = false;
+    }
+    this.#resetEditor(keepOpen);
+  }
+
+  #finishNamedEdit(disconnect: boolean): void {
+    const edit = this.#namedEdit;
+    if (edit === null) return;
+    if (!this.#namedEditorCurrent()) {
+      this.#cancelNamedEdit();
+      return;
+    }
+    const request = workflowCanvasEditRequest(edit, disconnect);
+    if (request === null) return;
+    const focus = this.shadowRoot?.activeElement;
+    this.#resetEditor(false);
+    this.#publishConnection(edit, request);
+    if (focus?.closest(".connection-editor") && this.shadowRoot?.activeElement === focus) {
+      this.renderRoot.querySelector<HTMLButtonElement>("button.connection-trigger")?.focus(withoutScroll);
+    }
+  }
+
+  #publishConnection(edit: WorkflowCanvasEdit, request: WorkflowCanvasConnectionRequestDetail): void {
+    if (this.mode !== "author" || !isWorkflowCanvasEditCurrent(this.graph, edit)) return;
+    this.dispatchEvent(new CustomEvent<WorkflowCanvasConnectionRequestDetail>("ocelle-workflow-canvas-connection-request", {
+      detail: request,
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   #requestViewportCommand(event: MouseEvent): void {
@@ -616,7 +856,11 @@ export class OcelleWorkflowCanvas extends LitElement {
   #startGesture(event: PointerEvent): void {
     const map = event.currentTarget;
     const target = event.target;
-    if (!(map instanceof SVGSVGElement) || this.#gesture !== null || !event.isPrimary || event.button !== 0) return;
+    if (!(map instanceof SVGSVGElement) || this.#gesture !== null || this.#connectionGesture !== null || !event.isPrimary || event.button !== 0) return;
+    if (target instanceof SVGRectElement && target.matches(".outcome-handle")) {
+      this.#startConnectionGesture(map, target, event);
+      return;
+    }
     const view = canvasViewport(this.viewport);
     let nodeId: string | null = null;
     let origin: WorkflowCanvasPoint = view;
@@ -642,11 +886,19 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #monitorGestureFrame = (): void => {
     this.#frameRequest = undefined;
-    const gesture = this.#gesture;
-    if (gesture === null) return;
-    if (!this.#hasGestureBasis(gesture) || !sameCanvasGestureFrame(gesture.frame, gesture.map)) {
-      this.#clearGesture();
-      return;
+    const connection = this.#connectionGesture;
+    if (connection !== null) {
+      if (!this.#hasConnectionBasis(connection) || !sameCanvasGestureFrame(connection.frame, connection.map)) {
+        this.#clearConnectionGesture();
+        return;
+      }
+    } else {
+      const gesture = this.#gesture;
+      if (gesture === null) return;
+      if (!this.#hasGestureBasis(gesture) || !sameCanvasGestureFrame(gesture.frame, gesture.map)) {
+        this.#clearGesture();
+        return;
+      }
     }
     this.#frameRequest = this.ownerDocument.defaultView?.requestAnimationFrame(this.#monitorGestureFrame);
   };
@@ -662,6 +914,17 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #moveGesture(event: PointerEvent): void {
+    const connection = this.#connectionGesture;
+    if (connection?.pointerId === event.pointerId) {
+      if (!this.#hasConnectionBasis(connection) || !sameCanvasGestureFrame(connection.frame, connection.map)) {
+        this.#clearConnectionGesture();
+        return;
+      }
+      connection.point = canvasGesturePoint(connection.frame, event);
+      connection.edit = { ...connection.edit, destinationId: this.#connectionTarget(event) };
+      this.requestUpdate();
+      return;
+    }
     const gesture = this.#gesture;
     if (gesture?.pointerId !== event.pointerId) return;
     const proposal = this.#gestureProposal(event, gesture);
@@ -674,6 +937,11 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   #finishGesture(event: PointerEvent): void {
+    const connection = this.#connectionGesture;
+    if (connection?.pointerId === event.pointerId) {
+      this.#finishConnectionGesture(connection, event);
+      return;
+    }
     const gesture = this.#gesture;
     if (gesture?.pointerId !== event.pointerId) return;
     const proposal = this.#gestureProposal(event, gesture);
@@ -685,12 +953,18 @@ export class OcelleWorkflowCanvas extends LitElement {
 
   #loseGesture(event: PointerEvent): void {
     if (this.#gesture?.pointerId === event.pointerId) this.#clearGesture();
+    if (this.#connectionGesture?.pointerId === event.pointerId) this.#clearConnectionGesture();
   }
 
   #cancelOnEscape = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape" || this.#gesture === null) return;
+    if (event.key !== "Escape") return;
+    const active = this.shadowRoot?.activeElement;
+    const named = this.#editorOpen && Boolean(active?.closest(".connection-editor, .connection-trigger"));
+    if (this.#gesture === null && this.#connectionGesture === null && !named) return;
     event.preventDefault();
     this.#clearGesture();
+    this.#clearConnectionGesture();
+    if (named) this.#cancelNamedEdit();
   };
 
   #clearGesture(): void {
@@ -698,12 +972,62 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (gesture === null) return;
     this.#gesture = null;
     this.#preview = null;
+    this.#releaseCapturedPointer(gesture.map, gesture.pointerId);
+  }
+
+  #releaseCapturedPointer(map: SVGSVGElement, pointerId: number): void {
     if (this.#frameRequest !== undefined) {
       this.ownerDocument.defaultView?.cancelAnimationFrame(this.#frameRequest);
       this.#frameRequest = undefined;
     }
     this.requestUpdate();
-    if (gesture.map.hasPointerCapture(gesture.pointerId)) gesture.map.releasePointerCapture(gesture.pointerId);
+    if (map.hasPointerCapture(pointerId)) map.releasePointerCapture(pointerId);
+  }
+
+  #startConnectionGesture(map: SVGSVGElement, handle: SVGRectElement, event: PointerEvent): void {
+    if (this.mode !== "author") return;
+    this.#refresh();
+    const { nodeId, outcomeId } = handle.dataset;
+    if (!handle.hasAttribute("data-ready") || nodeId === undefined || outcomeId === undefined) return;
+    const edit = startWorkflowCanvasEdit(this.graph, nodeId, outcomeId);
+    const frame = canvasGestureFrame(map);
+    if (edit === null || frame === null) return;
+    event.preventDefault();
+    map.setPointerCapture(event.pointerId);
+    this.#connectionGesture = {
+      pointerId: event.pointerId, map, handle, frame, edit,
+      layout: this.layout, view: this.viewport, point: canvasGesturePoint(frame, event),
+    };
+    this.requestUpdate();
+    this.#monitorGestureFrame();
+  }
+
+  #hasConnectionBasis(gesture: ConnectionGesture): boolean {
+    return this.mode === "author" && this.viewport === gesture.view && this.layout === gesture.layout
+      && gesture.handle.isConnected && gesture.handle.hasAttribute("data-ready") && isWorkflowCanvasEditCurrent(this.graph, gesture.edit);
+  }
+
+  #connectionTarget(event: PointerEvent): string | null {
+    const hit = this.shadowRoot?.elementFromPoint(event.clientX, event.clientY);
+    const node = hit?.closest("ocelle-workflow-node") ?? hit?.closest("foreignObject")?.querySelector("ocelle-workflow-node");
+    const action = this.#action(node);
+    return action?.face.inert === false ? action.node.nodeId : null;
+  }
+
+  #finishConnectionGesture(gesture: ConnectionGesture, event: PointerEvent): void {
+    this.#refresh();
+    const valid = this.#hasConnectionBasis(gesture) && sameCanvasGestureFrame(gesture.frame, gesture.map);
+    const edit = { ...gesture.edit, destinationId: valid ? this.#connectionTarget(event) : null };
+    this.#clearConnectionGesture();
+    const request = workflowCanvasEditRequest(edit, false);
+    if (request !== null) this.#publishConnection(edit, request);
+  }
+
+  #clearConnectionGesture(): void {
+    const gesture = this.#connectionGesture;
+    if (gesture === null) return;
+    this.#connectionGesture = null;
+    this.#releaseCapturedPointer(gesture.map, gesture.pointerId);
   }
 
   #action(target: EventTarget | null | undefined): NodeAction | undefined {
@@ -759,19 +1083,19 @@ export class OcelleWorkflowCanvas extends LitElement {
           id: node.nodeId,
           outline: canvasActionBounds(button, transform),
           card: face.getBoundingClientRect(),
-          handle: focusBounds.nextElementSibling,
+          handles: this.#outcomePaintOrder(focusBounds),
         }));
       const bounds = new Map(painted.map(({ id, outline }) => [id, outline]));
       const panel = map.previousElementSibling?.querySelector("details[open] .command-panel")?.getBoundingClientRect();
       const covering: CanvasBounds[] = panel === undefined ? [] : [panel];
       const covered = (outline: CanvasBounds) => covering.some((box) => canvasBoundsOverlap(outline, box));
       // Walk from front to back so only actually ready later handles cover earlier targets.
-      for (const { id, outline, card, handle } of painted.reverse()) {
+      for (const { id, outline, card, handles } of painted.reverse()) {
         if (clip.contains(outline)) {
           contained.add(id);
           if (!covered(outline)) eligible.add(id);
         }
-        if (handle instanceof SVGRectElement && handle.matches(".move-handle")) {
+        for (const handle of handles) {
           const handleBounds = handle.getBoundingClientRect();
           const ready = eligible.has(id) && clip.contains(handleBounds) && !covered(handleBounds);
           handle.toggleAttribute("data-ready", ready);
@@ -788,6 +1112,13 @@ export class OcelleWorkflowCanvas extends LitElement {
       }
       return { contained, eligible, bounds };
     });
+  }
+
+  #outcomePaintOrder(focusBounds: SVGRectElement): readonly SVGRectElement[] {
+    const move = focusBounds.nextElementSibling;
+    if (!(move instanceof SVGRectElement) || !move.matches(".move-handle")) return [];
+    const outcomes = move.nextElementSibling?.querySelectorAll<SVGRectElement>(".outcome-handle") ?? [];
+    return [...outcomes].reverse().concat(move);
   }
 
   #withLiveClip<T>(surface: Element, read: (clip: CanvasClipMeasurement) => T): T {
@@ -872,7 +1203,24 @@ export class OcelleWorkflowCanvas extends LitElement {
     for (const { face } of actions) {
       if (face.inert && !face.hasAttribute("aria-hidden")) face.setAttribute("aria-hidden", "true");
     }
+    this.#recoverNamedEditFocus(map, actions, eligible);
     this.#completeReveal(actions, contained, eligible);
+  }
+
+  #recoverNamedEditFocus(map: SVGSVGElement, actions: readonly NodeAction[], eligible: ReadonlySet<string>): void {
+    const recovery = this.#retainedEditFocus;
+    this.#retainedEditFocus = null;
+    if (recovery === null || (!this.#documentFocusIsUnclaimed() && this.shadowRoot?.activeElement !== recovery.previous)) return;
+    const { sourceId, initiator } = recovery;
+    if (initiator?.isConnected && !initiator.disabled && initiator.getClientRects().length > 0
+      && this.#withLiveClip(initiator, (clip) => clip.contains(initiator.getBoundingClientRect()))) {
+      initiator.focus(withoutScroll);
+      return;
+    }
+    const id = sourceId === null || eligible.has(sourceId) ? sourceId : recoverWorkflowCanvasFocus(recovery.order, eligible, sourceId);
+    const action = actions.find(({ node }) => node.nodeId === id);
+    if (action === undefined) this.#focusNamed(map.previousElementSibling);
+    else action.node.focus(withoutScroll);
   }
 
   #placeFocusBounds(marker: SVGRectElement, bounds: CanvasBounds, inverse: DOMMatrix): void {

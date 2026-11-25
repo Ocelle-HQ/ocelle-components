@@ -1,0 +1,6 @@
+packages/elements/test/browser/workflow-canvas.test.ts
+packages/elements/test/workflow-canvas-graph.test.ts
+packages/elements/test/workflow-canvas-navigation.test.ts
+packages/elements/test/workflow-canvas-viewport.test.ts
+packages/elements/test/workflow-canvas.test.ts
+packages/elements/test/workflow-canvas.touch.test.ts

@@ -2498,6 +2498,18 @@ matching `layout` entry on acceptance. The request events bubble across shadow r
 supplied layout or view in place. Escape or a changed enclosing frame clears a captured preview. Read-only mode
 keeps selection, navigation and viewport controls available.
 
+To edit an outcome in author mode, drag its arrow-shaped handle onto a visible step, or open Edit connection in
+Canvas controls. Choose a named source, outcome and destination, then press Apply connection. Use Disconnect
+connection to remove the supplied connection. The named controls work by keyboard, mouse and separate taps, and
+their destination choices include off-map steps. The editor identifies duplicate labels with their context and IDs.
+
+Listen for `ocelle-workflow-canvas-connection-request` with `{ operation, sourceId, outcomeId, destinationId }`.
+A connect or reassign proposes the new target ID. A disconnect names the supplied target ID. A host inspector can
+offer the same named choices and use that tuple for its own policy. To accept an edit, replace the corresponding
+relation in `graph.connections` and supply the new graph. Keeping the graph retains the supplied route. Escape,
+invalidated inputs and leaving author mode cancel edits and clear previews. A canceled or unchanged edit emits no
+request.
+
 ## `ocelle-workflow-node`
 
 The workflow node shows the supplied step title (`label`), `kind`, `accountable-role` (property
