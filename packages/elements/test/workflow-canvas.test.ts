@@ -3340,6 +3340,61 @@ describe("workflow canvas named run inspection in process", () => {
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
   });
 
+  it.each(["horizontal position", "vertical position", "another step at the old position"] as const)("refuses a stale Follow before taking focus after a same-task change to %s", async (change) => {
+    const { canvas, before, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    const original = canvas.layout.find(({ nodeId }) => nodeId === "revise");
+    if (original === undefined) throw new Error("The positioning fixture needs Revise in the rendered layout");
+    const updated = change === "horizontal position" ? { ...original, x: original.x + 40 }
+      : change === "vertical position" ? { ...original, y: original.y + 40 } : { ...original, nodeId: "review" };
+    before.focus({ preventScroll: true });
+    canvas.layout = canvas.layout.map((entry) => entry === original ? updated : entry);
+    follow.click();
+    expect(active(), "an outdated rendered destination must not take focus").toBe(before);
+    expect(requests).toEqual([]);
+    await settle(canvas);
+    expect(active()).toBe(before);
+    expect(requests).toEqual([]);
+  });
+
+  it.each(["relationship", "layout", "viewport"] as const)("checks the live %s before a scroll-driven Follow handoff in the same task", async (change) => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const target = action(canvas, "publish");
+    const targetBounds = target.getBoundingClientRect();
+    const paneBounds = pane.getBoundingClientRect();
+    const left = targetBounds.left - paneBounds.left - 10;
+    const top = targetBounds.top - paneBounds.top - 8;
+    const bottom = targetBounds.bottom - paneBounds.top + 8;
+    sheet.insertRule(`#canvas-pane.hide-follow-destination { clip-path: polygon(0 0, 100% 0, 100% ${String(top)}px,
+      ${String(left)}px ${String(top)}px, ${String(left)}px ${String(bottom)}px, 100% ${String(bottom)}px, 100% 100%, 0 100%); }`, sheet.cssRules.length);
+    pane.classList.add("hide-follow-destination");
+    await settle(canvas);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bPublish\b/i);
+    await keyboardActivate(follow);
+    const expected = [presentationRequest(viewport, { viewport: lastViewport(requests) })];
+    expect(active()).toBe(follow);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+
+    if (change === "relationship") {
+      canvas.graph = { ...canvas.graph, connections: canvas.graph.connections.map((edge) => edge.destinationId === "publish" ? { ...edge, destinationId: "revise" } : edge) };
+    } else if (change === "layout") {
+      canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "publish");
+    } else {
+      canvas.viewport = { ...canvas.viewport, x: 720 };
+    }
+    pane.classList.remove("hide-follow-destination");
+    pane.dispatchEvent(new Event("scroll"));
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+    expect(active(), "the old painted target does not receive focus during the host update").toBe(follow);
+    expect(requests).toEqual(expected);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
   it.each(["relationship", "layout"] as const)("recovers Step when an unactivated Follow loses its %s", async (removed) => {
     const { canvas, pane, requests } = await mount(true);
     canvas.mode = "read-only";

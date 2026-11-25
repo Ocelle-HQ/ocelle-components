@@ -495,11 +495,11 @@ export class OcelleWorkflowCanvas extends LitElement {
       this.#recoverUnavailableFollow(previousControl);
       const pending = this.#pendingReveal;
       if (pending !== null) {
-        const available = pending.relationship === null
-          ? this.#projection.positions.has(pending.nodeId) : this.#canFollow(pending.relationship);
-        if (!available) {
+        if (pending.relationship !== null) {
+          if (!this.#canFollow(pending.relationship)) this.#pendingReveal = null;
+        } else if (!this.#projection.positions.has(pending.nodeId)) {
           this.#pendingReveal = null;
-          if (pending.relationship === null && !this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
+          if (!this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
             this.#focusNamed(pending.initiator.parentElement, "select");
           }
         }
@@ -1411,7 +1411,6 @@ export class OcelleWorkflowCanvas extends LitElement {
     const id = this.#relationshipDestination(followSource, followOutcome);
     if (id !== null && this.#projection.positions.has(id)) return;
     this.#focusNamed(this.renderRoot.querySelector(".navigator"));
-    control.blur();
   }
 
   #canFollow({ source, outcome, destination }: WorkflowCanvasRelationship): boolean {
@@ -1475,10 +1474,10 @@ export class OcelleWorkflowCanvas extends LitElement {
     const pending = this.#pendingReveal;
     if (pending === null || this.shadowRoot?.activeElement !== pending.initiator) return;
     if (pending.relationship !== null && (this.#renderedViewport !== this.viewport || !this.#canFollow(pending.relationship))) return;
-    const navigator = pending.initiator.parentElement;
-    if (navigator !== null && !this.#withLiveClip(navigator, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
+    const surface = pending.initiator.parentElement;
+    if (surface !== null && !this.#withLiveClip(surface, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
       this.#pendingReveal = null;
-      this.#focusNamed(pending.relationship === null ? navigator : this.renderRoot.querySelector(".navigator"));
+      this.#focusNamed(this.renderRoot.querySelector(".navigator"));
       pending.initiator.blur();
       return;
     }
