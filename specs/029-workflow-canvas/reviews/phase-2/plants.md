@@ -1,6 +1,6 @@
 # Plants of phase 2
 
-- base: a56fc8309667984bcc63c6f0e341c140728bbd65
+- base: 76afb213e7ed2f451896a26e894081acf380d44a
 - command: `pnpm run gate:plants -- --affected a56fc8309667984bcc63c6f0e341c140728bbd65 --list`
 - exit: 0
 
