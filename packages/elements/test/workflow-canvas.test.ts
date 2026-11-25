@@ -3340,6 +3340,90 @@ describe("workflow canvas named run inspection in process", () => {
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
   });
 
+  it.each([true, false])("preserves a focused Follow across a graph update only if its destination stayed current (%s)", async (preserve) => {
+    const { canvas, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1880 } : entry);
+    await settle(canvas);
+    const original = canvas.graph;
+    const follow = followAction("Follow Publish from Initial review via Approved");
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    await keyboardActivate(follow);
+    const proposal = lastViewport(requests);
+    expect(active()).toBe(follow);
+
+    if (preserve) {
+      canvas.graph = { ...original, nodes: original.nodes.map((node) => node.id === "review" ? { ...node, label: "Updated review" } : node) };
+    } else {
+      canvas.graph = { ...original, connections: original.connections.map((entry) => entry.outcomeId === "approved"
+        ? { ...entry, destinationId: "revise" } : entry) };
+    }
+    await settle(canvas);
+    const updated = preserve ? "Follow Publish from Updated review via Approved" : "Follow Revise from Initial review via Approved";
+    expect(followAction(updated)).toBe(follow);
+    expect(active()).toBe(follow);
+    canvas.graph = original;
+    await settle(canvas);
+    expect(followAction("Follow Publish from Initial review via Approved")).toBe(follow);
+    expect(active()).toBe(follow);
+
+    canvas.viewport = proposal;
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+    expect(active(), "only an uninterrupted relationship can hand focus to its destination").toBe(preserve ? publish : follow);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+  });
+
+  it("preserves a newer Follow activated synchronously from the first control's native focus listener", async () => {
+    const { canvas, before, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1880 } : entry);
+    await settle(canvas);
+    const publish = followAction("Follow Publish from Initial review via Approved");
+    const revise = followAction("Follow Revise from Initial review via Rejected");
+    before.focus({ preventScroll: true });
+    publish.addEventListener("focus", () => { revise.click(); }, { once: true });
+    publish.click();
+    const proposal = lastViewport(requests);
+    expect(active()).toBe(revise);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+    canvas.viewport = proposal;
+    await settle(canvas);
+    expect(focusId(canvas), "the first focus listener cannot discard the newer viewport handoff").toBe("revise");
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+  });
+
+  it("checks that deferred Follow still owns focus when a host intercepts the blur event", async () => {
+    const { canvas, before, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1080 } : entry);
+    await settle(canvas);
+    const follow = followAction("Follow Publish from Initial review via Approved");
+    const supplied = { x: -42, y: 18, scale: 1 };
+    before.focus({ preventScroll: true });
+    follow.addEventListener("focus", () => { canvas.viewport = supplied; }, { once: true });
+    let intercepted = false;
+    const preventBlurPropagation = (event: FocusEvent) => {
+      if (event.composedPath()[0] !== follow) return;
+      intercepted = true;
+      event.stopPropagation();
+    };
+    canvas.addEventListener("blur", preventBlurPropagation, { capture: true });
+    follow.click();
+    expect(active()).toBe(follow);
+    expect(requests).toEqual([]);
+    before.focus({ preventScroll: true });
+    canvas.removeEventListener("blur", preventBlurPropagation, { capture: true });
+    expect(intercepted, "the host intercepted the native blur before the relationship control handled it").toBe(true);
+    await settle(canvas);
+    expect(active()).toBe(before);
+    expect(canvas.viewport).toBe(supplied);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(requests, "the deferred action cannot publish once the host has taken focus").toEqual([]);
+  });
+
   it.each(["horizontal position", "vertical position", "another step at the old position"] as const)("refuses a stale Follow before taking focus after a same-task change to %s", async (change) => {
     const { canvas, before, requests } = await mount(true);
     canvas.mode = "read-only";
@@ -3620,6 +3704,8 @@ describe("workflow canvas named run inspection in process", () => {
     await settle(canvas);
     const stepDescription = async () => (await commands.axTree(canvas.id, "details"))
       .find(({ role, name }) => role === "combobox" && name === "Step")?.description;
+    const { picker } = revealControls(canvas);
+    expect(picker.getAttribute("aria-describedby"), "a non-empty Step has no dangling description reference").toBeNull();
     expect(await stepDescription()).toBe("");
     action(canvas, "review").focus({ preventScroll: true });
     canvas.graph = { nodes: [], connections: [] };
@@ -3628,6 +3714,7 @@ describe("workflow canvas named run inspection in process", () => {
     const names = (await commands.axTree("workflow-canvas-host", "subtree")).map(({ name }) => name);
     expect(names.some((name) => /\b(?:empty (?:workflow|run|canvas)|no (?:workflow )?(?:steps|nodes))\b/i.test(name)),
       "the empty graph presents a named state in Chromium's accessibility tree").toBe(true);
+    expect(picker.ariaDescribedByElements?.map((element) => element.textContent)).toEqual(["No workflow steps"]);
     expect(await stepDescription()).toBe("No workflow steps");
     const recovered = active();
     expect(recovered?.getRootNode()).toBe(canvas.shadowRoot);
