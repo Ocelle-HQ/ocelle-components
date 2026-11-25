@@ -109,7 +109,7 @@ The full hosted Plants verdict on the exact Phase 3 candidate is pending.
 
 ## Corrected local affected run
 
-The corrected run exited 0. All 16 available selected cases matched their expected verdicts. The Axe repository Plant took 1143.5s while other local checks were running.
+Signed `b150795e880d360d38204171baffe252990735db` exited 0. All 16 available selected cases matched their expected verdicts. The repository Axe Plant took 454.7s. The five visual Plants require the pinned container engines.
 
 ```text
 $ node gates/bin/plants.ts -- --affected 786dbb41d487540d38be3710d0aff799f2f53171 --skip-container
@@ -134,22 +134,22 @@ note: affected: visual/fail-same-pixels-other-bytes, by packages/elements/custom
 note: affected: visual/fail-token-changed, by gates/plants/visual/fail-token-changed/plant.json
 note: affected: visual/pass-repository, by packages/elements/custom-elements.json
 note: affected: axe/pass-repository, by packages/elements/custom-elements.json
-note: plant time: brand-rules/repository-values: 0.5 s
-note: plant time: manifest/break-missing: 0.8 s
-note: plant time: manifest/break-not-json: 1.0 s
-note: plant time: manifest/fail-lost-attribute: 2.2 s
-note: plant time: manifest/fail-stale-property: 2.4 s
-note: plant time: manifest/fail-undescribed-attribute: 4.0 s
-note: plant time: manifest/fail-undescribed-css-part: 4.2 s
-note: plant time: manifest/fail-undescribed-css-property: 5.7 s
-note: plant time: manifest/fail-undescribed-event: 5.7 s
-note: plant time: manifest/fail-undescribed-property: 7.2 s
-note: plant time: manifest/fail-undescribed-slot: 7.2 s
-note: plant time: contrast/repository-values: 7.7 s
-note: plant time: manifest/pass-reordered: 8.7 s
-note: plant time: manifest/pass-repository: 9.2 s
-note: plant time: storybook-build/pass-repository: 3.6 s
-note: plant time: axe/pass-repository: 1143.5 s
+note: plant time: contrast/repository-values: 1.0 s
+note: plant time: brand-rules/repository-values: 1.0 s
+note: plant time: manifest/break-not-json: 1.8 s
+note: plant time: manifest/break-missing: 1.9 s
+note: plant time: manifest/fail-stale-property: 3.4 s
+note: plant time: manifest/fail-lost-attribute: 3.6 s
+note: plant time: manifest/fail-undescribed-attribute: 4.6 s
+note: plant time: manifest/fail-undescribed-css-property: 4.7 s
+note: plant time: manifest/fail-undescribed-event: 6.2 s
+note: plant time: manifest/fail-undescribed-css-part: 6.2 s
+note: plant time: manifest/fail-undescribed-property: 7.3 s
+note: plant time: manifest/fail-undescribed-slot: 7.4 s
+note: plant time: manifest/pass-reordered: 9.0 s
+note: plant time: manifest/pass-repository: 9.0 s
+note: plant time: storybook-build/pass-repository: 3.8 s
+note: plant time: axe/pass-repository: 454.7 s
 plants: skipped (no container): gates/plants/visual/fail-missing-baseline
 plants: skipped (no container): gates/plants/visual/fail-one-pixel
 plants: skipped (no container): gates/plants/visual/fail-same-pixels-other-bytes
