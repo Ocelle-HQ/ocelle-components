@@ -58,6 +58,15 @@ overflow region, and shows a digest in groups that copy and read unbroken.
 are additions to the public surface: a minor change. The README's element conventions gain the digest rule: a prefix
 to the last colon, groups of four code points with a `--ocelle-space-1` gap, copied and read text unbroken.
 
+The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an
+internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
+
+`ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain` and
+`ocelle-evidence-step`, their properties (`label`, `wrap`, `stickyHeader` as `sticky-header`, `striped`, `time` and
+`variant`), the event's `time` slot, the parts `list`, `time` and `content`, their entry points and the base-style hook
+`--data-table-box-size` and `--data-table-end-fade` are additions to the public surface: a minor change. None of them
+dispatches an event, and no token is added.
+
 ### Added
 
 - **Selectable workflow steps (#72).** `ocelle-workflow-node` shows the supplied title, accountable role and
@@ -324,6 +333,26 @@ to the last colon, groups of four code points with a `--ocelle-space-1` gap, cop
   the text's baseline); nothing inside the control moves. A control with no label puts the class `bare` on its row,
   which the rule skips, so an icon-only control stays where it was, its icon where a native `<button>` with an svg
   puts it.
+
+- `ocelle-data-table`: a native `<table>` child in a scroll region, a tab stop and a named group only while it
+  overflows, with `label`, `wrap` (reflected), the property `stickyHeader` as `sticky-header` (reflected) and `striped`
+  (reflected), its default slot and no part; its entry point
+  `@ocelle/elements/ocelle-data-table.js`; and the base-style hook `--data-table-box-size` and `--data-table-end-fade`,
+  which it writes for `@ocelle/styles`' caption cap.
+- `ocelle-event-timeline`, an event history as one ordered list of its `ocelle-timeline-event` children in source
+  order, each with a dot on a line that joins the events, named by `label` or a non-blank host `aria-label`, with its
+  part `list`; and `ocelle-timeline-event`, one event, its time above its content, with `time` (reflected) and `wrap`
+  (reflected), its default slot and the `time` slot (a marked-up time, for example a `<time datetime>`, which takes
+  precedence over the `time` attribute while it has visible text), and its parts `time` and `content`. Entry points
+  `@ocelle/elements/ocelle-event-timeline.js` (defines `ocelle-event-timeline` and its item `ocelle-timeline-event`)
+  and `@ocelle/elements/ocelle-timeline-event.js` (defines `ocelle-timeline-event` only).
+- `ocelle-evidence-chain`, an evidence chain as one ordered list of its `ocelle-evidence-step` children in source
+  order, each default step with a round marker showing its ordinal, joined by connectors on each line and wrapping onto
+  further lines in a narrow container, named by `label` or a non-blank host `aria-label`, with its part `list`; and
+  `ocelle-evidence-step`, one step, with `variant` (reflected) and `wrap` (reflected), `variant="chip"` drawing a
+  compact chip with no marker, its default slot and its part `content`. Entry points
+  `@ocelle/elements/ocelle-evidence-chain.js` (defines `ocelle-evidence-chain` and its item `ocelle-evidence-step`) and
+  `@ocelle/elements/ocelle-evidence-step.js` (defines `ocelle-evidence-step` only).
 
 ### Fixed
 

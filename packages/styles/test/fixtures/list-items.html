@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Block 3: the timeline's events and the chain's steps before upgrade</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<main id="main">
+<ocelle-event-timeline id="timeline" label="Mission history"><ocelle-timeline-event id="first" time="14:02">Mission created</ocelle-timeline-event><ocelle-timeline-event id="hidden" time="14:10" hidden>Hidden event</ocelle-timeline-event><ocelle-timeline-event id="masked" time="14:15" aria-hidden="true">Masked event</ocelle-timeline-event><ocelle-timeline-event id="second" time="14:20">Plan approved</ocelle-timeline-event><ocelle-timeline-event id="third"><time id="slotted" slot="time" datetime="2026-11-15T14:41">14:41</time> Review requested</ocelle-timeline-event></ocelle-event-timeline>
+<ocelle-evidence-chain id="chain" label="Evidence"><ocelle-evidence-step id="c-first">Spec</ocelle-evidence-step><ocelle-evidence-step id="c-hidden" hidden>Hidden step</ocelle-evidence-step><ocelle-evidence-step id="c-masked" aria-hidden="true">Masked step</ocelle-evidence-step><ocelle-evidence-step id="c-second" variant="chip">3 checks</ocelle-evidence-step><ocelle-evidence-step id="c-third">Review</ocelle-evidence-step></ocelle-evidence-chain>
+<div id="plain"><ocelle-timeline-event id="loose" time="15:00">Not in a timeline</ocelle-timeline-event><ocelle-evidence-step id="c-loose">Not in a chain</ocelle-evidence-step></div>
+</main>
+</body>
+</html>

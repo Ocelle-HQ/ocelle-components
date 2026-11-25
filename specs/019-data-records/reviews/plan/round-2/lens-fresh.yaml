@@ -1,0 +1,100 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Round 2 attacks the round-1 fixes. Read: spec.md, plan.md, research.md, data-model.md, contracts/*, quickstart.md,
+# the constitution, round-1 refute.md, fixes-1.md, fixes-2.md, verify-1.md, verify-2.md. Checked against
+# origin/claude/015-workflow-layouts (overflow-region.ts, README, manifest scripts, tokens) and probes run in
+# Google Chrome for Testing 153.0.8010.12 headless (probe files in the session scratchpad, not in the repository).
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "The round-1 query container on .region-box makes the data table zero pixels wide in every shrink-to-fit host"
+    evidence:
+      - artifact: "research.md R-07: '`.region-box { container-type: inline-size; }`. This adds inline size containment to the box ... The box is a block that fills the frame, so nothing else changes.' R-02 Host sizing: 'R-07's query container on `.region-box` adds inline size containment, which also keeps the table's width out of the host's min-content size'. contracts/ocelle-data-table.md § Shadow structure: the same rule, and the README Sizing line covers only 'a wrapper that is itself the flex or grid item'."
+      - artifact: "plan.md phase 1 Red: the sizing bodies are 'the element as a default flex item and as a `1fr` grid item at 320 px' only. No body puts the element in a shrink-to-fit host."
+      - code: "Probe (headless Chrome 153). A host with a shadow `.box{overflow-x:auto;container-type:inline-size}` > `.track{inline-size:fit-content;min-inline-size:100%;padding-inline:4px}` > slot, with a slotted three-cell table (natural width 174 px). Host inside `display:inline-block`: host width 0.0, box width 0.0, scrollWidth 174, caption width 0.0. The same with the host in a column flex with `align-items:flex-start`, in an open `<dialog>`, and in a `position:absolute` wrapper: all 0.0. With `container-type: normal`, all four give 174.3 px."
+      - code: "origin/claude/015-workflow-layouts packages/elements/README.md, the scroller's and the board's Sizing lines: 'In a shrink-to-fit host (a default flex item, a dialog, a table cell) the scroller takes its content's size and does not overflow, so the page may scroll sideways instead'. 009's elements have no container-type (git grep container-type on that branch: only base.css's prose table)."
+    claim: |
+      Inline size containment makes the box contribute nothing to its ancestors' min-content and max-content sizes. In
+      any shrink-to-fit context (a `<dialog>`, a popover or other absolutely positioned panel, an inline-block, a
+      float, a table cell, a column flex or grid with start alignment, a `width: fit-content` card), the host's
+      inline size is therefore 0. The table is then shown in a zero-width scroll box. The caption's cap
+      (`100cqi - ...`) goes negative, so the caption is 0 px wide too, one glyph per line. Before round 1 such a host
+      took the table's width, as 009's own elements do and document. Now the data table collapses. That is a worse
+      and different failure from the one the README's Sizing line describes, and the plan says "nothing else
+      changes". The fix to PLAN-CORRECTNESS-1-001 brought this in. No planned body or story places the element in
+      such a host, so the green phase would ship it. Detail panes and dialogs are a likely place for a consumer's data
+      table, and the spec's edge case asks that the table is never cut at 320 px.
+    remedies:
+      - "Drop the containment. Cap the caption by a measured width instead: the element reads the box's client width (the module's ResizeObserver already fires) and writes it as an inherited private custom property into its per-instance constructed sheet on `.region-track`, which the slotted caption inherits through the flat tree. block 1 then reads `max-inline-size: calc(var(<that property>, 100cqi) - ...)`, with no strict-CSP cost. Add bodies in a dialog, an inline-block and a start-aligned column flex: host width equals the table's natural width (or the available width), the caption is not narrower than one word, and the region overflows only when the available width is smaller."
+      - "Keep the containment. State in R-02, R-07 and the README that the data table needs a definite or maximum inline size in a shrink-to-fit host, or it renders at zero width (a spec change to FR-009's edge cases for the operator). Add bodies that pin the collapse and the documented fix, for example `inline-size: 100%` or `min-inline-size: <n>` on the host in a dialog."
+      - "Reopen PLAN-CORRECTNESS-1-001 option (b): no sticky caption and no cap, so no container is needed. The caption wraps at the table's width and is reached by scrolling."
+  - id: PLAN-FRESH-2-002
+    severity: 2
+    title: "Q-F (a)'s sticky inset applies at rest and when the table fits, so the caption is always 28 px off the first column, not only 'while the table is scrolled'"
+    evidence:
+      - artifact: "reviews/plan/round-1/fixes-1.md § Q-F (a): 'the caption sits a fade depth (`--ocelle-space-7`) in from the box's start edge while the table is scrolled'. research.md Q-F (a): sticky with `inset-inline-start: var(--ocelle-scroller-fade-size)` and the cap `calc(var(--ocelle-measure-container) - 2 * var(--ocelle-scroller-fade-size))`. plan.md Decision 7 recommends (a)."
+      - artifact: "research.md R-07 and R-17: the caption bodies assert only that 'every caption line box lies inside the box's unmasked extent'. No body compares the caption's start with the first column's."
+      - code: "Probe (headless Chrome 153), the same structure with `caption{position:sticky;inset-inline-start:32px;max-inline-size:calc(100cqi - 64px)}`, scrollLeft 0. For a fitting table (no overflow, no fade), caption.left - box.left = 32.0 and td.left - box.left = 4.0. The overflowing table gives the same at rest. The caption is 404 px wide on a 468 px box."
+      - code: "origin/claude/015-workflow-layouts packages/tokens/src/source.ts:152,158: `space-7` is `2rem`, and `scroller-fade-size` is `var(--ocelle-space-7)`. `.region-box` has `overflow-x: auto` (overflow-region.ts), so it is the caption's sticky scrollport whether or not it overflows."
+    claim: |
+      A sticky box is moved so that it stays the inset away from its scrollport's edge whenever its containing block
+      has room. That holds at any scroll position, 0 included. `.region-box` is always a scroll container, and the
+      table is wider than the capped caption, so under Q-F (a) the caption is moved by 32 px - 4 px in every state:
+      the fitting table, the overflowing one at rest, and every story. The caption is then visibly indented from the
+      first column, about a tenth of the width at 320 px, and 64 px narrower than the box even when there is no fade.
+      The operator was asked to choose (a) on a description that says this happens only while the table is scrolled.
+      The caption bodies cannot tell the difference, so the 12 phase-1 baselines would commit the misalignment. When
+      009's option lands, "the inset goes to 0" moves every data-table baseline, which the plan calls a later PATCH.
+    remedies:
+      - "Correct Q-F (a)'s description in research.md, plan.md Decision 7 and the fixes record (the inset and the narrower cap apply in every state, the fitting table included), and put Q-F back to the operator with that text. Add a body that pins whichever look is chosen: at rest, caption start minus first-cell start equals the stated figure."
+      - "Make the inset follow the fade. The data table's shadow styles set an inherited private custom property on `.region-box[data-fade=start|both]` (0 otherwise), and block 1's caption reads `inset-inline-start: var(<that property>, 0)`, so the caption lines up with the first column at rest and steps in only while the start fade shows. Add bodies at rest (aligned) and scrolled (inset). Record the jump on the first scrolled pixel as accepted, or add a transition under no-preference motion."
+      - "Choose Q-F (b) (not sticky until 009's option lands), which has no inset at any position."
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "`hasTime` exported from ocelle-timeline-event.ts becomes manifest surface and a public entry-point export"
+    evidence:
+      - artifact: "contracts/ocelle-timeline-event.md § Has a time: 'The module exports one internal predicate, `hasTime(time)` ... is not re-exported from `index.ts` and is not public surface: the manifest treats it as it treats 009's internal `overflow-region.ts` exports on `main` (T001 checks how).' research.md R-10 and plan.md Source Code ('exports the internal hasTime predicate')."
+      - code: "origin/claude/015-workflow-layouts packages/elements/custom-elements-manifest.config.mjs: `globs: [\"src/ocelle-*.ts\"]`. scripts/manifest.ts:88-91 maps every declaration of every module through normaliseDeclaration and drops only non-public class members and attributes, not module-level functions. overflow-region.ts is outside the manifest only because its file name does not match `ocelle-*.ts`."
+      - code: "origin/claude/015-workflow-layouts packages/elements/package.json exports: each element module is its own public entry (`./ocelle-workflow-lane.js`: `./dist/ocelle-workflow-lane.js`). `git grep '^export function' -- 'packages/elements/src/ocelle-*.ts'` on 015 and 013 finds none: no element module exports a function today."
+    claim: |
+      `ocelle-timeline-event.ts` matches the manifest glob. The analyzer will record `hasTime` as a function
+      declaration and a js export of that module, so it lands in custom-elements.json. Constitution VII makes the
+      manifest public surface. The module also ships as the public entry `@ocelle/elements/ocelle-timeline-event.js`,
+      so consumers can import `hasTime`, and removing or renaming it later is a MAJOR change. The contract's
+      precedent does not apply: 009's helpers are internal because they live in a non-`ocelle-` module, not because
+      of any manifest rule. The first element module to export a function would also show whether the manifest
+      gate and its test accept a non-class declaration, and the plan does not check that.
+    remedies:
+      - "Move `hasTime` into an internal module outside the manifest glob and the exports map (for example `src/timeline-time.ts`), imported by both `ocelle-timeline-event.ts` and `ocelle-event-timeline.ts`. Add a manifest test statement that the module of `ocelle-timeline-event` declares only the class, and remove the 'T001 checks how' hedge."
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "The timeline connector starts at the dot's centre and paints over its lower half; with mixed timed and untimed events it misses the next centre"
+    evidence:
+      - artifact: "research.md R-10: the connector is 'absolutely positioned in the marker column ... from the marker's centre to the next `<li>`'s marker centre (it spans the `<li>`'s block size plus the row gap)'. contracts/ocelle-event-timeline.md: the connector span comes after `.marker-line`, and neither is given a stacking order. spec FR-021: 'a connector line from each marker to the next visible event's marker'."
+      - code: "Probe (headless Chrome 153): an `<li>` (position: relative, grid) holding `.marker-line > .marker` (in flow, a 7.2 px border-drawn dot) and then an absolutely positioned `.connector` starting at the dot's centre. `document.elementFromPoint` at the connector's x and three quarters down the dot returns the connector. The dot spans 33.1 to 40.3, the connector starts at 36.7, and the positioned span paints above the in-flow dot (CSS 2.1 Appendix E, step 8)."
+      - artifact: "research.md R-10: the marker line box is the time's type (`xs` × `line-height-normal`) with `has-time` and the content's (`sm` × `line-height-normal`) without it. 'Spans the li's block size plus the row gap' measured from this marker's centre ends at this li's centre offset inside the next li, not at the next marker's centre, when the two li differ in `has-time`."
+    claim: |
+      Every connector is drawn, in `rule-strong`, across the lower half of its own dot, and with an overshoot across
+      the upper half of the next dot. The dot is the structural mark (FR-013, 3:1 in `ink-muted`), and a lighter line
+      across it lowers its contrast where they overlap. The baselines would commit that. In a timeline that mixes
+      events with and without a time (a planned story, 'an event without a time'), each centre's offset differs by
+      half the difference of the two line heights (about 1.45 px with `xs` and `sm` at 1.45). So the connector ends
+      above or below the next marker's centre, and FR-021's 'from each marker to the next marker' holds only by
+      accident. US2-2's oracle ('a connector joins each marker to the next one') and the forced-colours box checks
+      pass either way.
+    remedies:
+      - "Run each connector from its own marker's block end to the next marker's block start. Its start offset comes from this `<li>`'s marker line, and its end from the next `<li>`'s type (the container knows both `has-time` values, so it can set a class such as `next-has-time`). Or draw the dot above the connector (`.marker-line { position: relative; z-index: 1 }`). Add geometry bodies, with a mixed timed and untimed timeline among them: the connector's block start is at or after the dot's block end, its block end is at or before the next dot's block start, and the gaps are equal within 0.5 px. Add an element plant (connector from the centre again) that must fail."
+  - id: PLAN-FRESH-2-005
+    severity: 1
+    title: "The pre-upgrade list rules show `aria-hidden=\"true\"` items that the upgraded containers drop"
+    evidence:
+      - artifact: "research.md R-08 Before upgrade and contracts/styles-data-table.md Block 3: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden])) { display: block; }` (and the chain's). R-08: 'A visible item is a direct child with the item tag and neither `hidden` nor `aria-hidden=\"true\"`'. Upgraded containers assign no slot to an `aria-hidden` item, so it is not shown."
+    claim: |
+      Before upgrade, an `aria-hidden="true"` event or step is shown, one per line and visible to sighted users,
+      though hidden from assistive technology. On upgrade it disappears and the list shifts. The planned pre-upgrade
+      bodies test `hidden` only, and the spec's edge case on `aria-hidden` items is tested only after upgrade.
+    remedies:
+      - "Either add `:not([aria-hidden=\"true\"])` to both rules plus a (0,0,0) `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden=\"true\"]) { display: none; }` (and the chain's), with a styles browser body, or state in the README's 'Before upgrade' line and the spec edge case that `aria-hidden` items show until upgrade, with a body pinning that."

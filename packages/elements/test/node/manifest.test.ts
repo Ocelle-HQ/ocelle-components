@@ -476,10 +476,14 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-code-block.ts",
       "src/ocelle-context-sidebar.ts",
       "src/ocelle-copy-field.ts",
+      "src/ocelle-data-table.ts",
       "src/ocelle-dialog.ts",
       "src/ocelle-disclosure.ts",
       "src/ocelle-drawer.ts",
       "src/ocelle-empty-state.ts",
+      "src/ocelle-event-timeline.ts",
+      "src/ocelle-evidence-chain.ts",
+      "src/ocelle-evidence-step.ts",
       "src/ocelle-fact.ts",
       "src/ocelle-facts.ts",
       "src/ocelle-form-input.ts",
@@ -504,6 +508,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-tab-panel.ts",
       "src/ocelle-tab.ts",
       "src/ocelle-tabs.ts",
+      "src/ocelle-timeline-event.ts",
       "src/ocelle-tooltip.ts",
       "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
@@ -1481,6 +1486,82 @@ describe("generate(root) on the repository's element source", () => {
       slots: [{ name: "", described: true }],
       parts: [{ name: "label", described: true }],
       properties: [{ name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
+  });
+
+  // 019 phase 2 (T034; contracts/ocelle-event-timeline.md, contracts/ocelle-timeline-event.md, research R-10): the two
+  // timeline modules declare only their class; the event declares the default and the time slot and the time and
+  // content parts; the internal timeline-time module is not in the manifest.
+  it("declares ocelle-timeline-event with time (string | undefined) and wrap (\"anywhere\" | undefined), reflected, the default and time slots and the time and content parts, its module declaring only its class; ocelle-event-timeline with label (string | undefined), not reflected, the default slot and the list part; timeline-time not a module", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[]; exports?: Record<string, unknown>[] }[];
+    const eventModule = modules.find((module) => module.path === "src/ocelle-timeline-event.ts");
+    const timelineModule = modules.find((module) => module.path === "src/ocelle-event-timeline.ts");
+    const [event] = eventModule?.declarations ?? [];
+    const [timeline] = timelineModule?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({
+      declarations: [eventModule?.declarations.map((each) => each.name), timelineModule?.declarations.map((each) => each.name)],
+      exported: eventModule?.exports?.map((each) => each.name),
+      internal: modules.some((module) => module.path.includes("timeline-time")),
+      event: { name: event?.name, tagName: event?.tagName, events: event?.events },
+      timeline: { name: timeline?.name, tagName: timeline?.tagName, events: timeline?.events },
+    }).toEqual({
+      declarations: [["OcelleTimelineEvent"], ["OcelleEventTimeline"]],
+      exported: ["OcelleTimelineEvent"],
+      internal: false,
+      event: { name: "OcelleTimelineEvent", tagName: "ocelle-timeline-event", events: [] },
+      timeline: { name: "OcelleEventTimeline", tagName: "ocelle-event-timeline", events: [] },
+    });
+    expect(described(event?.members)).toEqual([
+      { kind: "field", name: "time", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "time", reflects: true, described: true },
+      { kind: "field", name: "wrap", privacy: "public", type: { text: '"anywhere" | undefined' }, default: "undefined", attribute: "wrap", reflects: true, described: true },
+    ]);
+    expect(described(timeline?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect({
+      event: { slots: named(event?.slots), parts: named(event?.cssParts), properties: named(event?.cssProperties) },
+      timeline: { slots: named(timeline?.slots), parts: named(timeline?.cssParts), properties: named(timeline?.cssProperties) },
+    }).toEqual({
+      event: { slots: [{ name: "", described: true }, { name: "time", described: true }], parts: [{ name: "time", described: true }, { name: "content", described: true }], properties: [] },
+      timeline: { slots: [{ name: "", described: true }], parts: [{ name: "list", described: true }], properties: [] },
+    });
+  });
+
+  // 019 phase 3 (T057, T067; contracts/ocelle-evidence-chain.md, contracts/ocelle-evidence-step.md): the two chain
+  // modules declare only their class; the step declares variant and wrap, reflected, the default slot and the content
+  // part; the chain declares label, not reflected, the default slot and the list part; neither has an event.
+  it("declares ocelle-evidence-step with variant (\"chip\" | undefined) and wrap (\"anywhere\" | undefined), reflected, the default slot and the content part; ocelle-evidence-chain with label (string | undefined), not reflected, the default slot and the list part; each module declaring only its class, with no event", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const stepModule = modules.find((module) => module.path === "src/ocelle-evidence-step.ts");
+    const chainModule = modules.find((module) => module.path === "src/ocelle-evidence-chain.ts");
+    const [step] = stepModule?.declarations ?? [];
+    const [chain] = chainModule?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({
+      declarations: [stepModule?.declarations.map((each) => each.name), chainModule?.declarations.map((each) => each.name)],
+      step: { name: step?.name, tagName: step?.tagName, events: step?.events },
+      chain: { name: chain?.name, tagName: chain?.tagName, events: chain?.events },
+    }).toEqual({
+      declarations: [["OcelleEvidenceStep"], ["OcelleEvidenceChain"]],
+      step: { name: "OcelleEvidenceStep", tagName: "ocelle-evidence-step", events: [] },
+      chain: { name: "OcelleEvidenceChain", tagName: "ocelle-evidence-chain", events: [] },
+    });
+    expect(described(step?.members)).toEqual([
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"chip" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+      { kind: "field", name: "wrap", privacy: "public", type: { text: '"anywhere" | undefined' }, default: "undefined", attribute: "wrap", reflects: true, described: true },
+    ]);
+    expect(described(chain?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect({
+      step: { slots: named(step?.slots), parts: named(step?.cssParts), properties: named(step?.cssProperties) },
+      chain: { slots: named(chain?.slots), parts: named(chain?.cssParts), properties: named(chain?.cssProperties) },
+    }).toEqual({
+      step: { slots: [{ name: "", described: true }], parts: [{ name: "content", described: true }], properties: [] },
+      chain: { slots: [{ name: "", described: true }], parts: [{ name: "list", described: true }], properties: [] },
     });
   });
 

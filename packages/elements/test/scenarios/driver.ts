@@ -741,6 +741,8 @@ export interface Driver {
    * id in the copy gets `-<into>` appended.
    */
   copy(id: string, via: CopyVia, into: string): Promise<void>;
+  /** Selects the contents of the element with `id`, then reads the text from a user copy and paste. */
+  copyText(id: string): Promise<string>;
   /**
    * Applies a morph's attribute sync (idiomorph's order) of the first element of `markup` to the live element `id`: set
    * each attribute that differs, then remove, from the last, each live attribute the markup lacks; waits for every
@@ -785,6 +787,16 @@ export interface Driver {
   scrollLeft(target: ElementTarget): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
   setScrollLeft(target: ElementTarget, value: number): Promise<void>;
+  /**
+   * The item texts of the first `list` node in the accessibility subtree of the element with `id` (019 R-11, T029):
+   * for each of its `listitem`s, the names of the `StaticText` nodes at any depth under it (a slotted `<time>`'s `time`
+   * node included), joined with single spaces, white space collapsed and trimmed; `[]` with no list.
+   */
+  itemTexts(id: string): Promise<string[]>;
+  /** The target's `scrollTop` (019 T079, the block-axis option of the overflow-region module). */
+  scrollTop(target: ElementTarget): Promise<number>;
+  /** Sets the target's `scrollTop` with an instant scroll, then settles (019 T079). */
+  setScrollTop(target: ElementTarget, value: number): Promise<void>;
   /** Whether the last keydown the window saw since the last `mount` was default-prevented; false when there was none. */
   lastKeyPrevented(): Promise<boolean>;
   /**
@@ -1077,6 +1089,25 @@ export interface FixtureDriver extends Driver {
 
 /** How `copy` copies the live DOM. */
 export type CopyVia = "outerHTML" | "clone" | "innerHTML";
+
+/**
+ * The item texts of the first `list` node of a flat accessibility subtree in tree order (`axSubtree`'s reading; 019
+ * research R-11, T029): for each `listitem` after the list, the `StaticText` names that follow it before the next
+ * `listitem`, joined with single spaces, white space collapsed and trimmed. Both harnesses read the subtree with
+ * `axSubtree`, so both use this one function. It stops at a second `list` node, so a list nested in an item ends the
+ * reading; the lists it reads hold none.
+ */
+export function itemTextsOf(nodes: readonly AxNode[]): string[] {
+  const start = nodes.findIndex((node) => node.role === "list");
+  if (start === -1) return [];
+  const items: string[][] = [];
+  for (const node of nodes.slice(start + 1)) {
+    if (node.role === "list") break;
+    if (node.role === "listitem") items.push([]);
+    else if (node.role === "StaticText") items.at(-1)?.push(node.name);
+  }
+  return items.map((texts) => texts.join(" ").replace(/\s+/g, " ").trim());
+}
 
 /**
  * The event types `listen` also hears in the capture phase on the elements themselves: those an element could emit

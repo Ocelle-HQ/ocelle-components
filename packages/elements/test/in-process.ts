@@ -38,7 +38,7 @@ import { layoutWait } from "./layout-wait.ts";
 import { activeInnerOf, activePath, characterBoxes, clickElement, computedOf, copyElement, copySentinel, currentOf, dropSentinel, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, selectSentinel, selectShadowRun, sentinelId, shadowClientRects, startOrder, takeRecords } from "./page-side.ts";
 import { installPageHelpers, pageHelpers } from "./page-helpers.ts";
 import { decodePng } from "./pixels.ts";
-import { heardTypes } from "./scenarios/driver.ts";
+import { heardTypes, itemTextsOf } from "./scenarios/driver.ts";
 import type { Box, DriverTarget, Drawing, ElementTarget, Entries, Heard, InProcessDriver, InsertHow, NavigationRecord, Operation, Paint, Part, Placement, Reading, Sheets, TreeNode, Validity } from "./scenarios/driver.ts";
 import { probe } from "./scenarios/probe.ts";
 
@@ -639,6 +639,7 @@ export function inProcessDriver(): InProcessDriver {
     },
     ax: (id) => commands.axTree(id),
     axSubtree: (id) => commands.axTree(id, "subtree"),
+    itemTexts: async (id) => itemTextsOf(await commands.axTree(id, "subtree")),
     theme: async (theme) => {
       if (theme === null) document.documentElement.removeAttribute("data-theme");
       else document.documentElement.dataset.theme = theme;
@@ -893,6 +894,25 @@ export function inProcessDriver(): InProcessDriver {
       copyElement({ id, via, into });
       await settle();
     },
+    copyText: async (id) => {
+      const range = document.createRange();
+      range.selectNodeContents(element(id));
+      const selection = getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      await userEvent.copy();
+      const field = document.createElement("textarea");
+      document.body.append(field);
+      let pasted = "";
+      field.addEventListener("paste", (event) => {
+        pasted = event.clipboardData?.getData("text/plain") ?? "";
+      });
+      field.focus();
+      await userEvent.paste();
+      field.remove();
+      getSelection()?.removeAllRanges();
+      return pasted;
+    },
     morph: async (id, markup) => {
       morphElement({ id, markup });
       await settle();
@@ -1060,6 +1080,11 @@ export function inProcessDriver(): InProcessDriver {
     scrollLeft: (target) => Promise.resolve(resolve(target).scrollLeft),
     setScrollLeft: async (target, value) => {
       resolve(target).scrollTo({ left: value, behavior: "instant" });
+      await settle();
+    },
+    scrollTop: (target) => Promise.resolve(resolve(target).scrollTop),
+    setScrollTop: async (target, value) => {
+      resolve(target).scrollTo({ top: value, behavior: "instant" });
       await settle();
     },
     lastKeyPrevented: () => Promise.resolve(lastKey?.defaultPrevented ?? false),

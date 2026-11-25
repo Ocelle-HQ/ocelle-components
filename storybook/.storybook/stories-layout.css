@@ -228,3 +228,67 @@
   inline-size: 288px;
   max-inline-size: 100%;
 }
+
+/*
+ * The ocelle-data-table stories' wrappers (019 contracts/checks.md § Stories): a wide block, a 320 px block (the
+ * overflowing stories), and the two bounded sticky-header stories, whose host takes the page's block bound: five
+ * rows' worth in the bounded story, and in the room-rule story less than twice the fade depth below the header row.
+ * Each is capped at the viewport, so no story scrolls sideways.
+ */
+[data-story="data-table"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-bounded"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-bounded"] > ocelle-data-table {
+  max-block-size: calc(var(--ocelle-space-10) * 5);
+}
+
+[data-story="data-table-room-rule"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-room-rule"] > ocelle-data-table {
+  max-block-size: calc(var(--ocelle-space-10) + var(--ocelle-space-3));
+}
+
+/*
+ * The ocelle-event-timeline stories' wrappers (019 contracts/checks.md § Stories): a reading-width block and a 320 px
+ * block (the long-identifier, right-to-left and 320 px stories). Each is capped at the viewport, so no story scrolls
+ * sideways.
+ */
+[data-story="event-timeline"] {
+  inline-size: calc(var(--ocelle-space-10) * 9);
+  max-inline-size: 100%;
+}
+
+[data-story="event-timeline-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-evidence-chain stories' wrappers (019 contracts/checks.md § Stories): a reading-width block and a 320 px
+ * block (the wrapped, long-step, wrap and right-to-left stories). Each is capped at the viewport, so no story scrolls
+ * sideways.
+ */
+[data-story="evidence-chain"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="evidence-chain-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}

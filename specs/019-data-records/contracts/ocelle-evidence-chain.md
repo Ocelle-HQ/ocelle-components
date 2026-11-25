@@ -1,0 +1,121 @@
+# Contract: `ocelle-evidence-chain`
+
+Module `packages/elements/src/ocelle-evidence-chain.ts`, class `OcelleEvidenceChain`. It imports
+`./ocelle-evidence-step.ts` and calls `define("ocelle-evidence-chain", …)`.
+
+## Usage
+
+```html
+<ocelle-evidence-chain label="Evidence">
+  <ocelle-evidence-step>Spec</ocelle-evidence-step>
+  <ocelle-evidence-step>Plan</ocelle-evidence-step>
+  <ocelle-evidence-step variant="chip">3 checks</ocelle-evidence-step>
+  <ocelle-evidence-step>Review</ocelle-evidence-step>
+</ocelle-evidence-chain>
+```
+
+## Public surface (manifest)
+
+| Kind | Name | Type / value | Default | Description |
+|---|---|---|---|---|
+| property / attribute | `label` | `string \| undefined` | `undefined` | Names the list when the host has no non-blank `aria-label`. |
+| slot | (default) | `ocelle-evidence-step` children | | Other children, and hidden steps, are not shown. |
+| CSS part | `list` | the shadow `<ol>` | | |
+| CSS custom properties | none | | | |
+| events | none | | | |
+
+`aria-label` is observed. The name comes from `resolveName`, imported from `./overflow-region.ts` (R-09).
+
+## Host styles
+
+`:host { display: block; }` and `:host([hidden]) { display: none; }` beside it (FR-001; the display rule would
+otherwise beat the user-agent `[hidden]` rule). A hidden chain has no box and no list node (analysis G3).
+
+## Shadow structure
+
+```html
+<ol role="list" part="list" aria-label="…">
+  <li role="listitem">                                <!-- data-line-end at a line's end; class chip for a chip -->
+    <span class="marker" aria-hidden="true">1</span>  <!-- not rendered for a chip step -->
+    <span class="connector" aria-hidden="true"></span>
+    <slot></slot>
+  </li>
+  …
+</ol>
+```
+
+## Behaviour
+
+- **Assignment.** Visible steps are assigned to slots in source order, as for the timeline.
+- **Name.** `resolveName(host aria-label, label)`, set on the `<ol>` (R-09). Chromium also shows the host as a
+  `generic` node of the host's name beside the `list`, as on the timeline; axe-core 4.14.0 reports nothing on it, blank
+  or not (`reviews/phase-3/spike.md` § 6), so both states have stories (phase 3 spike Q1 (b), contracts/checks.md
+  § Stories).
+- **Re-render.** A `MutationObserver` watches the child list and each step's `hidden`, `aria-hidden` and `variant`.
+- **Ordinals.** A default step shows its 1-based position among the visible steps, chip steps counted.
+- **Line ends (R-12).** These are measured after each render and from a `ResizeObserver` on the `<ol>` and every
+  `<li>`. A `<li>` gets `data-line-end` when the next `<li>` starts below it, and the last `<li>` always gets it. The
+  connector span lies inside the `<li>`'s trailing padding and `li[data-line-end] > .connector { display: none; }`
+  hides it, so toggling it changes no size. An in-process test proves no `ResizeObserver` loop error (R-12).
+- **One centre line (R-12).** Every `<li>` has `min-block-size: var(--ocelle-size-step)`; a chip `<li>` sets
+  `align-items: center`. Every connector sits at `calc(var(--ocelle-size-step) / 2 - var(--ocelle-border-width) / 2)`
+  from its `<li>`'s block start, so all connectors on a row share the default marker's centre line.
+- **Marks.** `.marker`: `--ocelle-size-step` square, `box-sizing: border-box`, a `--ocelle-ring-step` solid border in
+  `ink-muted`, no fill, `border-radius: 50%` (round, FR-031; Q-D); the ordinal in `xs`, medium, `ink-muted`,
+  `figures`, line height `--ocelle-line-height-tight`. Chromium floors the ring's 1.5 px to a `1px` border at device
+  pixel ratios 1 and 2, so the marker (22.39 px laid out) has a 20.39 px inner box, inside which ordinal 20 fits
+  (R-12; `reviews/phase-3/spike.md` § 2). `.connector`: no block size, `border-block-start:
+  var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative).
+- **Chip.** `::slotted(ocelle-evidence-step[variant="chip"])` draws the box: `xs`, `line-height-normal`,
+  `padding-block: 0`, `padding-inline: space-2`, a `ring-step` border in `ink-muted` and `radius-2`, with no fill
+  (Q-A). It is 19.39 px tall: the 17.4 px line plus two `ring-step` borders as Chromium draws them, 1 px each (R-12,
+  phase 3 spike Q2 (a)). Tests compare the ring's and the chip outline's border width with `--ocelle-ring-step` read
+  as a border width (the probe's `border-top-width`, 1 px), and assert the chip's block size below `--ocelle-size-step`,
+  never an exact figure. The box rule (border width and style, radius, padding, type) sits outside the
+  `@media not (forced-colors: active)` block, because the outline is structural; only its colours sit inside. Nothing
+  of `ocelle-pill-tag` is used.
+- **Default content.** `::slotted(ocelle-evidence-step:not([variant="chip"]))` sets `sm`, `ink` and
+  `line-height-normal`, and centres the step's first line on the marker with `margin-block-start:
+  calc((var(--ocelle-size-step) - 1lh) / 2)` (`1lh` the step's own 20.3 px line). There is no `1lh` wrapper, the
+  timeline's way of centring its dot: the marker (22.4 px) is taller than the line, so the content moves instead, and
+  no shadow node is added (R-12).
+- **Not added.** No tab stop, live region, landmark or heading.
+
+## Forced colours (PLAN-A11Y-SECURITY-1-001)
+
+Every mark is a border, never a background. Outside the variant block: `@media (forced-colors: active) { .marker,
+.connector { border-color: CanvasText; } ::slotted(ocelle-evidence-step[variant="chip"]) { border-color: CanvasText;
+} }`. The ordinal and step text take the system text colour. No `forced-color-adjust: none`.
+
+## Before upgrade
+
+`@ocelle/styles` sets, in `base.css`'s base layer after the timeline's rules (recheck Q5 (b)), `:where(ocelle-evidence-chain:not(:defined) >
+ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])) { display: block; }` and
+`:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]) { display: none; }`, so the
+visible steps show one per line, with no marker or ordinal, and an `aria-hidden="true"` step is not shown, as after
+upgrade (R-08, PLAN-FRESH-2-005). The README's "Before upgrade" line says so.
+
+## Accessibility tree (Chromium)
+
+`list` > `listitem` × N. Each item's text is the step's content only. No marker, ordinal or connector appears in the
+tree; each marker and connector span carries `aria-hidden="true"`.
+
+## README mapping (FR-058, research R-16)
+
+The README's evidence-chain mapping rows are research R-16's phase 3 table (operator, 2026-11-22,
+`reviews/phase-3-inventory-decisions.md`; Q-T4 (a), 2026-11-20), asserted by role name in phase 3's red (T062) and
+written in its green (T070). The rows this element carries:
+
+- The library's `stages` property maps to this element's `ocelle-evidence-step` children, one per stage, in source
+  order (Q3 (a)); the chain takes no property (IQ-18 (a)).
+- The `list` part maps to this element's `list` part (IQ-24 (a)). The `connector` part maps to none: the connector is
+  decorative and hidden, not a styling hook (IQ-24 (a)).
+- The connector's arrow maps to the plain connector, and a later issue covers an arrowhead (IQ-22 (a)).
+- The narrow, stacked layout maps to the wrapping chain, which follows its container, not the viewport (FR-034,
+  IQ-21 (a)); the wide layout, two and six stages, forced colours and light mode are built in.
+- The empty state maps to 013's `ocelle-empty-state`, placed by the consumer in place of the chain; an empty chain
+  renders nothing (FR-025). The `empty-state` part and the invalid-input state have no counterpart (IQ-23 (a),
+  IQ-24 (a)).
+- The approved example's card and grid map to the consumer's layout; the chain follows its container.
+
+No property, attribute, slot, part or story is added for any of them. IQ-27 (a) changes no row.
