@@ -692,8 +692,9 @@ export class OcelleWorkflowCanvas extends LitElement {
         const destinationName = name(destination);
         const repeated = source.outcomes.some(({ id, label }) => id !== outcome.id && label === outcome.label);
         const outcomeName = repeated ? `${outcome.label} (${outcome.id})` : outcome.label;
+        const phrase = `${sourceName} · ${outcomeName} → ${destinationName}`;
         return html`<li class="relationship">
-          <span>${sourceName} · ${outcomeName} → ${destinationName}</span>
+          <span>${phrase}</span>
           <button class="control" type="button" aria-label=${`Follow ${destinationName} from ${sourceName} via ${outcomeName}`}
             data-follow-source=${source.id} data-follow-outcome=${outcome.id}
             ?disabled=${!positions.has(destination.id)} @blur=${this.#loseRevealFocus}
