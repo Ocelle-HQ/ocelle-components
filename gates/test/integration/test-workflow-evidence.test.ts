@@ -69,7 +69,7 @@ function prepareStoryWrappers(root: string): string {
   }
   const config = ".specify/extensions/story/story-config.yml";
   write(root, config, readFileSync(join(root, config), "utf8").replace(/^setup_command:.*$/m,
-    'setup_command: "ln -s \"$OCELLE_EVIDENCE_MODULES\" node_modules"'));
+    'setup_command: "ln -s "$OCELLE_EVIDENCE_MODULES" node_modules"'));
   write(root, storyFeature + "/plan.md", "# Implementation story proof\n");
   write(root, storyFeature + "/tasks.md", "## Phase 1: Story behavior\n");
   write(root, implementationStory, 'export const answer = "old";\n');
@@ -167,10 +167,9 @@ it("rejects a declared implementation story in a mixed red commit and in red his
     write(root, storyReviews + "/red-commits", "phase " + red + "\n");
     const checked = storyWrapper(root, "tdd-check");
     expect({ status: checked.status, stderr: checked.stderr }).toEqual({ status: 0, stderr: "" });
-    expect(JSON.parse(checked.stdout) as unknown).toMatchObject({
-      status: "fail", red_commits: [],
-      problems: expect.arrayContaining(["red commit phase changes a declared implementation story: " + implementationStory]),
-    });
+    const verdict = JSON.parse(checked.stdout) as { readonly problems: readonly string[] };
+    expect(verdict).toMatchObject({ status: "fail", red_commits: [] });
+    expect(verdict.problems).toContain("red commit phase changes a declared implementation story: " + implementationStory);
   } finally {
     rmSync(root, { force: true, recursive: true });
   }
