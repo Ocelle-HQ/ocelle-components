@@ -56,6 +56,7 @@ describe("shadow mutation inventory", () => {
     const report = JSON.stringify({ files: { [sample]: { mutants: [
       { id: "7", location: { start: { line: 3, column: 1 }, end: { line: 3, column: 6 } }, mutatorName: "BooleanLiteral", replacement: "false", status: "Pending" },
     ] } } });
+    expect(inventory?.({ report, exitCode: 1, output: "" }, [changed(sample, [{ start: 1, end: 60 }])]), "a pending mutant cannot yield a complete comparison receipt").toMatchObject({ ok: false });
     expect(inventory?.({ report, exitCode: 1, output: "" }, changedScope), "a pending mutant cannot yield a complete comparison receipt").toEqual({
       ok: false,
       cause: `mutation: could not run: mutant 7 at ${sample}:3 has status Pending; re-run the mutation gate`,
