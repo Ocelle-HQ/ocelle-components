@@ -515,8 +515,25 @@ async function assertNonPanningPointerInputs(): Promise<void> {
   const { canvas, requests } = await arranging();
   const map = mapOf(canvas);
   const bounds = map.getBoundingClientRect();
-  const origin = { x: bounds.right - 50, y: bounds.bottom - 75 };
-  await commands.pointerPath([{ ...origin, down: true, up: true }]);
+  const origin = { x: bounds.right - 8, y: bounds.bottom - 55 };
+  expect(canvas.shadowRoot?.elementFromPoint(origin.x, origin.y), "the stationary gesture starts on the painted map background").toBe(map);
+  let pointerId = -1;
+  const down: boolean[] = [];
+  const released: boolean[] = [];
+  map.addEventListener("pointerdown", (event) => {
+    pointerId = event.pointerId;
+    down.push(event.isTrusted && event.isPrimary && event.composedPath()[0] === map);
+  }, { once: true });
+  map.addEventListener("pointerup", (event) => {
+    released.push(event.isTrusted && event.pointerId === pointerId && map.hasPointerCapture(pointerId));
+  }, { capture: true, once: true });
+  await commands.pointerPath([{ ...origin, down: true }]);
+  expect(down).toEqual([true]);
+  expect(map.hasPointerCapture(pointerId), "the trusted stationary press acquires native pointer capture").toBe(true);
+  await commands.pointerPath([{ ...origin, up: true }]);
+  expect(released).toEqual([true]);
+  expect(map.hasPointerCapture(pointerId)).toBe(false);
+  expect(requests, "releasing the captured primary press at the same origin emits no presentation request").toEqual([]);
   await commands.pointerPath([{ ...origin, down: true, button: "right" }, { x: origin.x - 32, y: origin.y + 24, up: true, button: "right" }]);
   await settle(canvas);
   expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
