@@ -1673,6 +1673,37 @@ describe("workflow canvas outcome editing in the strict-CSP aggregate", () => {
 });
 
 describe("workflow canvas run inspection in the strict-CSP aggregate", () => {
+  it.each(["light", "dark"] as const)("lets Axe measure visible relationship text beside clipped cards in %s", async (theme) => {
+    const { page, finish } = await mount();
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    const canvas = page.locator("#canvas");
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, theme) => {
+      document.documentElement.dataset.theme = theme;
+      const wide = new CSSStyleSheet();
+      wide.replaceSync("#pane { inline-size: 876px; } #canvas { inline-size: 876px; block-size: calc(8 * var(--ocelle-target-min)); }");
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, wide];
+      element.mode = "read-only";
+      element.selectedNodeId = "review";
+      element.layout = [{ nodeId: "review", x: 36, y: 72 }, { nodeId: "publish", x: 556, y: 22 }, { nodeId: "revise", x: 556, y: 152 }];
+      await element.updateComplete;
+      await document.fonts.ready;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
+    }, theme);
+    const relationships = canvas.getByRole("list", { name: "Outcome connections" });
+    expect(await relationships.getByRole("button", { name: /^Follow / }).count(), "both supplied relationships remain exposed").toBe(2);
+    const findings = await audit(page.mainFrame(), () => page.addScriptTag({ url: "axe.js" }), axeSetup().rules, "host");
+    const contrast = findings.flatMap(({ id, kind, targets }) => id !== "color-contrast" ? []
+      : targets.filter((target) => target.includes(".relationship")).map((target) => ({ kind, target })));
+    expect(contrast, "the full Axe rule set determines contrast for all visible relationship text").toEqual([]);
+    expect(await relationships.locator("li > span").evaluateAll((labels) => labels.map((label) => [...label.childNodes]
+      .filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent))),
+    "each visible relationship is one complete native text phrase").toEqual([
+      ["Initial review · Approved → Publish"], ["Initial review · Rejected → Revise"],
+    ]);
+    expect(await requests(page)).toEqual([]);
+    expect(await finish()).toEqual(clean);
+  });
+
   it("recovers the visible Step on a native wheel while the host still withholds Follow", async () => {
     const { page, finish } = await mount();
     const canvas = page.locator("#canvas");
