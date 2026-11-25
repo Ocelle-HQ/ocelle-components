@@ -1,0 +1,98 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/*, quickstart.md, constitution III/IV; 009's
+# overflow-region.ts and README on origin/claude/015-workflow-layouts; 013's README and ocelle-progress.ts on
+# origin/claude/013-data-display; packages/styles/src/base.css (003's prose table rules) and
+# packages/tokens/src/source.ts and contrast/pairs.json on this branch.
+# Verified with no finding: every text and structural colour the plan picks (ink, ink-soft, ink-muted) has a text
+# declaration on all nine main grounds in both themes (pairs.json; ink-muted lowest 5.09 dark on accent-low); no ID
+# reference crosses a root (caption text copied, R-04); no new tab stop besides the region; the module scrolls with
+# behavior "instant" and nothing in the plan animates (reduced motion); no target-size duty (no primary action);
+# CSP: constructed sheets only, no style attribute, attribute/class writes only; no I/O; no new dependency.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Timeline dot, connectors and chip outline have no forced-colours rule; the filled dot disappears"
+    evidence:
+      - artifact: "research.md § R-10: 'The marker is a filled square of --ocelle-size-dot in --ocelle-color-ink-muted'; the connector is the <li>'s ::before, 'border-width wide in color-rule-strong', with no statement of whether it is a border or a background"
+      - artifact: "research.md § R-12 and contracts/ocelle-evidence-chain.md § Behaviour (Chip): the chip box and connector are specified with no forced-colours rule; the only forced-colours rule in the whole plan is research.md:125 / contracts/styles-data-table.md:20 (data table only)"
+      - artifact: "spec.md FR-001: 'variant rules inside @media not (forced-colors: active)'; the chip is a variant, so its ::slotted([variant=\"chip\"]) border would be dropped in forced colours unless a separate forced-colours rule draws it"
+      - code: "origin/claude/013-data-display:packages/elements/src/ocelle-progress.ts:193-204: the library's precedent for a filled mark in forced colours is 'forced-color-adjust: none; background-color: Highlight' and a system-colour outline, because forced colours replace a background colour with Canvas"
+      - artifact: "contracts/checks.md § Oracles: forced colours = 'system colours, lines visible'; a background forced to Canvas is a system colour, so a computed-colour check passes while the dot is Canvas on Canvas"
+    claim: |
+      In forced colours, Chromium replaces background-color with the system Canvas colour. A dot drawn as a filled
+      background therefore paints Canvas on Canvas: it is invisible, while FR-013, US2-8 and constitution III require
+      every structural mark to show in a system colour. If the connectors are drawn as backgrounds they vanish the same
+      way. If the chip rule follows FR-001's convention and sits inside `@media not (forced-colors: active)`, the chip
+      loses its only boundary, which FR-013 classes as structural. The plan names no forced-colours rule for the
+      timeline or the chain. The planned oracle ("system colours") cannot tell Canvas from CanvasText, so a red test
+      written to it could pass on an invisible mark.
+    remedies:
+      - "Add a forced-colours row to R-10 and R-12 and the timeline, chain and step contracts. The dot gets 'forced-color-adjust: none; background-color: CanvasText', or is drawn with a border. The connectors are drawn as borders, or as CanvasText under forced-color-adjust: none. A rule in '@media (forced-colors: active)' gives the chip a 'border: var(--ocelle-ring-step) solid CanvasText' outside the variant block. Tighten checks.md's forced-colours oracle: a mark's painted colour is CanvasText (or another foreground system colour), not equal to the ground's Canvas, and it has a non-zero box. Add plants: the forced-colours dot rule removed must fail US2-8, and the chip forced-colours rule removed must fail US3-8."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "The sticky caption sits under the module's start fade whenever the table is scrolled"
+    evidence:
+      - artifact: "research.md § R-06 caption row: 'position: sticky; inset-inline-start: 0 (it stays at the region's start edge while the region scrolls, R-07)'"
+      - code: "origin/claude/015-workflow-layouts:packages/elements/src/overflow-region.ts:185-187: .region-box[data-fade=\"start\"] gets mask-image linear-gradient(to right, transparent, ink var(--ocelle-scroller-fade-size)); the mask is on .region-box, which contains the track and so the slotted caption; .region-box has no inline padding (line 122-127), so a sticky inset-inline-start: 0 pins the caption to the masked edge"
+      - code: "packages/tokens (branch 015) scroller-fade-size = var(--ocelle-space-7) = 2rem: the first 32 px of the caption fade from transparent"
+      - artifact: "contracts/checks.md: no body scrolls the region and then measures the caption; the overflowing story renders at scroll 0, where there is no start fade"
+    claim: |
+      The caption is pinned to the region's start edge precisely while content is off-screen at the start, which is
+      when the module fades that edge. The first 2rem of the table's name are then masked from transparent up to full
+      ink. That fails WCAG 1.4.3 on visible text in both themes, and the name is the one piece of the table the
+      design means to keep readable. Neither axe nor the computed-colour oracle sees a mask, and the visual baseline
+      is taken unscrolled, so no planned check would catch it.
+    remedies:
+      - "Drop the sticky caption. It scrolls with the table, which the spec's edge case allows ('scrolls with it unless the plan keeps it at the region's start edge'), and is bounded to the visible width at scroll 0 (see PLAN-A11Y-SECURITY-1-003)."
+      - "Keep it sticky but clear of the fade: inset-inline-start of var(--ocelle-scroller-fade-size), or a request to the operator for a module option that excludes a pinned start box from the mask. Add a body that scrolls the region to its end and asserts the caption's text box starts at least the fade depth from the box's start edge."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "The caption has no inline bound, so it is as wide as the table: sticky does nothing and the caption is cut at 320 px"
+    evidence:
+      - artifact: "research.md § R-06 table: no max-inline-size on the caption in block 1; contracts/styles-data-table.md § Block 2 caption: 'max-inline-size: none'; research.md:139-140 the override sets max-inline-size: none"
+      - artifact: "research.md § R-07: 'it wraps within the region's visible width because the track's inline padding and the box clip it'; clipping is not wrapping"
+      - code: "packages/styles/src/base.css:187-207: 003 makes its sticky caption work only by 'container-type: inline-size' on the table and 'max-inline-size: var(--ocelle-measure-container)' on the caption; the data table restates both away ('container-type: normal', 'max-inline-size: none')"
+      - artifact: "spec.md § Edge Cases, Caption while the region scrolls: 'either way it is never cut at 320 px (it wraps)'"
+    claim: |
+      A table caption is laid out at the table's inline size. With no bound, the caption of an overflowing table is
+      wider than the region. A sticky box as wide as its containing block cannot move, so it never sticks. Its text
+      wraps at the table's width, so at 320 px part of each caption line lies past the box, under the end fade, and
+      can only be read by scrolling sideways. That breaks the spec's "never cut at 320 px" and puts the table's name
+      into two-dimensional scrolling. 003 solved this with a query container and a bounded caption, and the plan
+      removes both. The R-07 spike may catch this, but the design as written cannot pass.
+    remedies:
+      - "Bound the caption to the region's visible width. For example, the data table's own styles set ':host { container-type: inline-size }' or put it on .region-frame (after a spike: it also changes the host's intrinsic size, see PLAN-A11Y-SECURITY-1-004), and base.css gives the caption 'max-inline-size: calc(100cqi - 2 * the ring room)'. State it in R-06 and R-07 and the styles contract, and add a 320 px body asserting that every caption line box lies inside the box's client rect at scroll 0."
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "In a shrink-to-fit host the data table widens the page instead of scrolling; the plan neither tests nor documents it"
+    evidence:
+      - code: "origin/claude/015-workflow-layouts:packages/elements/README.md:225 and :252: 'In a shrink-to-fit host (a default flex item, a dialog, a table cell) the scroller takes its content's size and does not overflow, so the page may scroll sideways instead'"
+      - artifact: "spec.md US1-4 and plan Testing: the reflow test is in a '320 px block container' only; checks.md § Oracles scroll width covers block containers"
+      - artifact: "research.md § R-03: the track is fit-content, so the host's min-content contribution is the table's min-content width"
+      - artifact: "spec.md § Consumers: the Kitty Desktop inspector and console pages, typically flex or grid columns; spec FR-009: 'A data table wider than its column scrolls inside its own region, never the page'"
+    claim: |
+      As a default flex item (min-inline-size: auto) or a grid item in an auto track, ocelle-data-table takes the
+      table's min-content width, because its scroll box is a descendant and not the item itself. The region then
+      never overflows, and the page scrolls sideways at 320 px or at 200% zoom. That breaks WCAG 1.4.10 and FR-009 in
+      the consumers' usual layouts, and the planned block-container tests can never show it. 009 documents this
+      limit for its own elements. The data table, whose whole point is to keep the page from scrolling sideways,
+      neither documents nor tests it.
+    remedies:
+      - "Add a 320 px body and a story with the data table as a default flex item and as a grid item, and either make it hold (spike ':host { min-inline-size: 0 }', which lifts the automatic minimum of flex and grid items, against 'contain: inline-size' or the container-type of PLAN-A11Y-SECURITY-1-003; a shrink-to-fit inline-block or table cell still needs the consumer's width) or add a README Sizing statement like 009's, with a README test, telling consumers to give the element a definite or 'min-inline-size: 0' context."
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 1
+    title: "The region's name from the caption's textContent can differ from the caption's accessible name"
+    evidence:
+      - artifact: "research.md § R-04: 'captionText is the whitespace-collapsed, trimmed textContent of the assigned table's caption'"
+      - artifact: "data-model.md § Data table: caption text = 'the assigned table's caption's textContent'"
+    claim: |
+      textContent includes the text of descendants that are display:none, `hidden` or aria-hidden (for example a
+      visually hidden sort hint or a hidden count), and it leaves out an `<img alt>` inside the caption. The group's
+      name can then contain words the table's own name does not, or miss words it has. A screen-reader user would
+      hear two different names for one table in a row.
+    remedies:
+      - "Read the caption's name skipping the subtrees of [hidden] and [aria-hidden=\"true\"] elements and taking img alt text, or state in R-04 and the README that the caption should hold plain text only. Add a body with an aria-hidden span in the caption either way."

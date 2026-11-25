@@ -63,6 +63,8 @@ const fragments = [
   // 012 (research.md R-08 item 2, R-12; tasks.md T052): the inside focus ring offset and the description ink's grounds
   "`--ocelle-focus-offset-inset` is the negative offset that draws a focus ring inside a box: `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px",
   "`--ocelle-color-ink-soft` is also declared on the state grounds (`color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`, `color-neutral-bg`), where an action row's description and tags sit",
+  "`--ocelle-app-shell-narrow-below` defaults to `45rem` and `--ocelle-app-shell-collapse-below` defaults to `68.75rem`.",
+  "A valid `narrow-below` or `collapse-below` setting wins, followed by a valid token override and then its published default.",
 ];
 
 describe("packages/tokens/README.md", () => {
@@ -81,6 +83,14 @@ describe("packages/tokens/CHANGELOG.md", () => {
   it("names every token as added in the Unreleased section (FR-025)", () => {
     const named = new Set([...added.matchAll(/`(--ocelle-[a-z0-9-]+)`/g)].map((match) => match[1]));
     expect([...named].sort()).toEqual(expectedTokens.map((token) => `--ocelle-${token.name}`).sort());
+  });
+
+  // Since the second merge of main, 012's entry declares color-accent-strong on every main ground, so 014's entry names
+  // its use of those pairs and adds none.
+  it("names the selected bars' color-accent-strong on the main grounds under Unreleased / Added (014 FR-058, research.md R-17)", () => {
+    expect(added.replace(/\s+/g, " ")).toContain(
+      "`@ocelle/elements`' listbox, tabs and segmented choice (mission 014) draw their selected bars in `color-accent-strong` on the main grounds, which the contrast check covers through the grounds above; no token name, value or pair is added.",
+    );
   });
 
   it("names no excluded token (A.6)", () => {

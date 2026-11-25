@@ -1,0 +1,5 @@
+# Squad round 2: refute
+
+| ID | Verdict | Kind | Decision | Reason |
+|----|---------|------|----------|--------|
+| PLAN-FRESH-2-001 | confirmed | fix | - | `control.ts:124–135` resolves ID strings to elements, and `ocelle-action-row.ts:548–555,582–593,668–676` resolves on connection and attribute changes before reflecting those objects onto the inner action. The node contract uses the same reference lifecycle. In a pinned Chromium probe, editing text on the original targets updated the computed name and description. Replacing the targets under the same IDs dropped their context and left the built-in title and Waiting text. Clearing and reapplying the host attributes after replacement exposed the new context and preserved the built-in text. Document that the host keeps existing reference targets for text updates or refreshes the corresponding attributes after replacing those targets. Add a built browser test of that refresh so it checks the actual name and description. This makes the established lifecycle explicit within the approved host responsibilities. |

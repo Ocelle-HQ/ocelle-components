@@ -1,0 +1,96 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+# Probes: Playwright 1.x from /opt/node22/lib/node_modules/playwright driving Chromium at
+# /opt/pw-browsers/chromium-1243 (headless), on throwaway pages in the session scratchpad, outside the repository.
+# Each probe used vanilla custom elements built the way research.md describes (shadow root options, template, CSS),
+# not the repository's code, which does not exist yet for these two elements.
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 4
+    title: "delegatesFocus on the disclosure sends any click on panel text to the summary: the page jumps back to the summary, and a following Space closes the panel"
+    evidence:
+      - artifact: "research.md § R-01 Decision: 'The shadow root (open, `delegatesFocus`) renders: <details> … <div class=\"panel\" part=\"panel\"><slot></slot></div>'; spec.md FR-003 'in an open shadow root attached with `delegatesFocus`'; FR-004 'A click on the panel does not toggle' (the only planned panel-click check)"
+      - code: "Probe b.cjs: an open shadow details, panel slotted from light DOM, 2000 px tall. Scrolled to the panel's bottom paragraph (scrollY 2060) and mouse-clicked its plain text. With delegatesFocus: true the shadow root's activeElement became the summary and scrollY became 0 (the page jumped to the summary). With delegatesFocus: false focus stayed on the body and scrollY stayed 2060."
+      - code: "Probe g.cjs: with delegatesFocus: true, a mouse click on plain panel text followed by Space left details.open false: the panel closed, and the page did not scroll."
+      - code: "Probe d.cjs: with delegatesFocus: true and tabindex=\"-1\" on the .panel wrapper, the same click focused the panel, not the summary, and scrollY stayed 2060."
+      - code: "packages/elements/README.md:966-967 (Control conventions rule 1) assumes a host that holds only its control: 'exactly one native <button> … in an open shadow root attached with `delegatesFocus`'. No existing delegatesFocus element (ocelle-button, ocelle-action-row) slots long, non-focusable content."
+    claim: |
+      With delegatesFocus, a mouse click on a non-focusable part of the host's flat tree focuses the shadow root's first
+      focusable element. In the disclosure that is always the summary, and the panel's slotted content is part of the
+      host's flat tree. So every click on the panel's text, padding or images moves focus to the summary, and Chromium
+      scrolls the summary into view. US1's main use case is a long panel of raw event payload or advanced settings. In
+      that panel, clicking at the bottom throws the reader back to the top. Pressing Space afterwards, to page down or
+      after clicking to read, closes the panel. Assistive-technology users get a focus change they did not ask for.
+      FR-004 only checks that a panel click does not toggle, which passes, so no planned test catches this. Rule 1's
+      delegatesFocus works for a host whose whole box is its control, and the disclosure already departs from rule 1
+      for the same reason in R-03's 'no host guard'.
+    remedies:
+      - "Drop delegatesFocus on ocelle-disclosure. Override focus(options) to call the summary's focus(options); the summary is natively focusable and in the tab order, and document.activeElement is still the host by retargeting, so US1-4, US1-19 and the overflow-region handover are unaffected. Record this as a second departure from Control conventions rule 1 in the README section and in Complexity Tracking. Add a body that clicks plain panel text in a long open panel and asserts focus is unchanged, scroll position is unchanged, and Space afterwards leaves the disclosure open. Its red run must fail with delegatesFocus."
+      - "Keep delegatesFocus and put tabindex=\"-1\" on the .panel wrapper, so the click focuses the panel instead (measured above: no scroll jump). This needs a check that the panel never shows a focus ring, never becomes a tab stop and gets no accessibility-tree role from being focusable. Add the same body as in the first remedy."
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "Code inherits an RTL direction and is bidi-reordered: `--force main.` is shown as `.force main--`"
+    evidence:
+      - artifact: "research.md § R-06 sets font, white-space and overflow-wrap on .code but no direction or unicode-bidi; spec.md US2-8 'Given dir=\"rtl\", When an overflowing scroll block renders, Then it starts at the inline start (right)'; FR-050's code-block RightToLeft story"
+      - code: "Probe f.cjs: <div dir=\"rtl\"><pre>--force main.</pre></div> in Chromium. Characters sorted by their left edge read \".force main--\": the leading '--' and the trailing '.' (bidi neutrals) take the RTL paragraph direction and move to the other end of the line."
+    claim: |
+      Commands, logs, configuration and digests are left-to-right technical text. Under an inherited rtl direction, the
+      plan's shadow pre sets up an RTL paragraph, and the Unicode bidi algorithm moves leading and trailing neutrals
+      (option dashes, punctuation, brackets, paths starting with '/') to the wrong side. The block then shows a command
+      that is not the one that is copied or run: a copy gives '--force main.' while the screen shows '.force main--'.
+      The plan plans an RTL story and RTL scenarios, but they only assert scroll start and fade sides, so the reordering
+      would be baked into the RightToLeft baseline. Digests are not affected (one LTR run with no neutrals inside), but
+      'sha256:' prefixes after a neutral would be.
+    remedies:
+      - "Render the code left to right in every page direction: `.block { direction: ltr; unicode-bidi: isolate }` (or dir=\"ltr\" on the .block). US2-8 then reads: under dir=\"rtl\" the block still starts at the left and fades at the right, and the README says code is always shown left to right. Add a body asserting the visual order of '--force main.' under an rtl ancestor."
+      - "Keep the inherited direction for the box, but give the pre `unicode-bidi: plaintext`, so each line takes its direction from its first strong character, with `text-align: left` for an LTR line. Add the same visual-order body. The README records that an RTL block's scroll origin and its LTR lines then differ."
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "The disclosure has no :host display rule, so the host is display: inline around a block details"
+    evidence:
+      - artifact: "research.md § R-01 and § R-04 (the disclosure's structure and look) and contracts/elements.md § ocelle-disclosure name no host display; the only :host display in the plan is the code block's (research.md:136)"
+      - code: "packages/elements/README.md:1612-1613 (§ Element conventions, Styles): 'Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule'"
+      - code: "Probe a.cjs: getComputedStyle of a custom element host with a shadow details and no :host rule gives display 'inline'."
+    claim: |
+      An undefined :host display leaves ocelle-disclosure inline. The details inside it is a block, so Chromium splits
+      the host into anonymous block boxes. The host's own box is then not the details' box, so margins, ::part
+      outlines, getBoundingClientRect of the host and :host-level sizing behave like an inline wrapper. As a flex or
+      grid item it acts differently from every other element in the library. FR-008 says 'directly after the summary in
+      the element's own box', and US1-16's reflow check read on the host depends on what that box is. The README
+      convention expects a :host display rule beside the hidden rule, and the plan has none for this element.
+    remedies:
+      - "Add `:host { display: block }` to R-04 and contracts/elements.md, with a body asserting the host's computed display is block and that the host's border box contains the summary and the open panel. Add a plant that removes the rule."
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "The existing clipboardCopy driver selects the host's light-DOM children; under the copy model those are not rendered, and the copy gives nothing"
+    evidence:
+      - artifact: "contracts/checks.md § Oracles 'Copy: Ctrl+C with clipboard permissions and navigator.clipboard.readText() (R-07)'; research.md § R-07 'Copy driver'; neither says what is selected, and checks.md has no § Driver additions (earlier missions listed theirs)"
+      - code: "packages/elements/test/scenarios/driver.ts:611-615 `clipboardCopy(id)`: 'Selects the rendered text of the element with id (its light-DOM content)'; test/in-process.ts:621-623 and test/browser/driver.ts:556-561 do range.selectNodeContents(element(id))"
+      - code: "Probe c.cjs: a host with an unslotted light-DOM digest and a shadow copy. After selectNodeContents(host), String(getSelection()) was ''. Ctrl+C left a clipboard pre-filled with 'SENTINEL' unchanged. Selecting the shadow pre's contents and pressing Ctrl+C copied the digest exactly."
+    claim: |
+      US2-10, FR-031 and SC-004 depend on the copy measure. FR-052 requires every scenario to be written once in
+      test/scenarios/ against the shared driver. The only driver method for copying selects the host's light DOM, and
+      under SPEC-1-01's copy model that DOM has no box. The copy then puts nothing on the clipboard, or the last
+      clipboard value survives if the paste side reads a stale clipboard. A body built on clipboardCopy either fails for
+      a harness reason or, worse, passes on a stale clipboard. R-07's measure selected the shadow content on a test page,
+      which is not what the driver does. The plan does not record the driver addition it needs.
+    remedies:
+      - "Add a § Driver additions to contracts/checks.md. Name a shadow-aware copy method: select the contents of the element matching `inner` in the shadow root of the element with `id`, then the platform copy shortcut and a paste read. Name it in both harnesses, with a body that clears the clipboard to a sentinel first, so a copy that writes nothing fails. List there the other additions the bodies need: the text-fragment navigation for US1-10 in the in-process harness, and the StaticText concatenation and ariaSnapshot readers for US2-11."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "The digest gap as margin-inline-start on the unit after each wbr indents every wrapped line by --ocelle-space-1"
+    evidence:
+      - artifact: "research.md:175 '.digest > wbr + span { margin-inline-start: var(--ocelle-space-1) }'; spec.md US2-12 and FR-050's DigestWrapping story (288 px)"
+      - code: "Probe c.cjs: a 200 px pre-wrap pre with sha256: plus 16 groups, inline spans joined by wbr, gap 4 px as margin-inline-start. The first unit of each line starts this many px from the pre's start, by line: {line 1: 0, line 2: 4, line 3: 4, line 4: 4}."
+      - code: "Probe e.cjs: the same with the gap as margin-inline-end on each unit followed by a wbr. The first unit of every line starts at 0, and the copy is unchanged (the digest exactly)."
+    claim: |
+      When a line breaks at a wbr, the margin of the next unit is at the start of the new line. Every continuation line
+      of a wrapped digest therefore starts space-1 further in than the first line and than the block's other text, so
+      the groups do not line up. The DigestWrapping baseline would commit this, and the planned break-position checks
+      (one rect per unit, more than one line) do not see it. A trailing margin is invisible at a line's end and keeps
+      FR-030's gap between adjacent units on a line.
+    remedies:
+      - "Put the gap on the unit before each break: `.digest > span:not(:last-child) { margin-inline-end: var(--ocelle-space-1) }`. Add to US2-12's body that every line's first unit starts at the pre's content-box inline start. Update the README digest rule's wording to match (gap between units, none at a line's start)."

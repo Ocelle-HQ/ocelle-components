@@ -1,0 +1,32 @@
+---
+check: 2
+verdict: clean
+---
+
+# Spec check 2
+
+Second check of `specs/020-disclosure-code-block/spec.md`, after `reviews/spec/check-1-fixes.md`. Read with
+`checklists/requirements.md`, the constitution 1.3.1, `packages/elements/README.md` (§ Control conventions, § Host ARIA)
+and 009's `contracts/overflow-region.md`. No `[NEEDS CLARIFICATION]` is left. The branch base `4911fd0b` (FR-060)
+exists and is the merge base with `main`.
+
+**Earlier checks.** Every finding of check 1 is resolved as its fix note says. The four blocking findings: SPEC-1-01
+has one content model, a copy of `textContent` in every mode with no slot (header, FR-020, FR-024, FR-035, US2
+scenarios 20 and 21). SPEC-1-02 has three cases with exact counts (US1 scenario 7). SPEC-1-03 has one break rule,
+measured with `getClientRects()` (US2 scenario 12, FR-033). SPEC-1-04 names the CDP StaticText measure (US2 scenario
+11, FR-032, SC-004). The operator question SPEC-1-05 is answered and recorded in the header, Scope and Assumptions.
+Notes SPEC-1-06 to SPEC-1-14 are applied where the fix note says.
+
+| ID | Severity | Where | Finding | Fix |
+|----|----------|-------|---------|-----|
+| SPEC-2-01 | note | spec.md Consumers paragraph (line 42) | "see FR-048" points to a requirement that does not exist. The inventory mapping is FR-058. | Change the reference to FR-058. |
+| SPEC-2-02 | note | spec.md FR-008; FR-010; US1 scenario 1 | "While closed, the panel's content has no box" is not a measure a test can apply as written, and it may conflict with FR-010. Chromium's find in page opens a closed `details` because the closed content is skipped (`content-visibility: hidden`), not removed from layout. A plan that reads "no box" as `display: none` on the panel wrapper may break find in page. | Name the observable, for example `checkVisibility()` is false for the panel's content, it is not in the tab order and it is not in the accessibility tree. Leave the hiding technique to the plan, subject to FR-010. |
+| SPEC-2-03 | note | spec.md FR-031; header "Digest rendering (clarify 4)" | FR-031 (copied text unbroken) is a MUST that rests on a Chromium measure the plan has not yet made. The header says "the plan measures both". FR-032 has a fallback if its measure fails, but FR-031 has none. Some layouts of the gap boxes (for example blockified flex items) can add newlines to the copied text. | Say what happens if the copy measure fails, as FR-010 does: the plan picks a layout that passes, or the run stops for the operator. |
+| SPEC-2-04 | note | spec.md FR-009; FR-012; US1 scenarios 3 and 6 | `open` is `@default undefined`, but no scenario says that `undefined` and `false` are the same closed state. Nothing says whether setting `open = false` on a closed disclosure (from `undefined`) fires an event. Scenario 3 does not state the property's value after a user close (`false`, or still reflected-absent). | Add to scenario 6, or to FR-012, that setting `false` on a closed disclosure changes nothing and fires no event. Say that the property is `false` after a user close. |
+| SPEC-2-05 | note | spec.md US1 scenario 8; US2 scenario 16 | The morph scenario does not assert events. Per FR-012, a morph that removes `open` fires one `ocelle-disclosure-toggle` with `detail.open === false`, and a morph that keeps `open` fires none, but scenario 8 states neither. US2 scenario 16's "When the change is done" does not say when to observe (for example after the mutation record, `updateComplete` and the driver's `settle()`). | State the event count in scenario 8. Give scenario 16 the same wait rule as US1 scenario 7. |
+| SPEC-2-06 | note | spec.md FR-003, FR-004, FR-014, FR-020, FR-022, FR-025, FR-026, FR-029; Edge Cases "Nested disclosures", "Digest prefix only", "Digest with several colons", "Leading newline" | Several stated behaviours have no acceptance scenario. FR-052 and SC-001 tie tests to scenarios, so the plan's tests may leave these out: the native marker not shown (FR-003); a click on the panel does not toggle (FR-004); the 24 x 24 target size (FR-014); a newline right after the opening tag is shown (FR-020); `overflow` values that are case-insensitive or trimmed, and other values that fall back to wrap (FR-022); switching `overflow` at run time leaves no tab stop, role or name behind (FR-025); a non-blank host `aria-label` wins over `label` in scroll mode (FR-026); a prefix with nothing after it, and a prefix with several colons (FR-029); a nested disclosure's event does not change the outer one. | Add scenarios for these, or have FR-052 say that tests cover every FR and edge case, not only the scenarios. |
+| SPEC-2-07 | note | spec.md FR-021; US2 scenarios 2 and 3 | The spec does not say whether a short code block fills its container up to `--ocelle-measure-reading` or shrinks to its text. Both readings pass scenario 2, but the "short" and "digest" baselines differ. | State the sizing, for example a block box that fills its container's inline size, capped at the measure, as 003's prose `pre` does. |
+| SPEC-2-08 | note | spec.md FR-033; FR-023; US2 scenario 12 | "Never inside the prefix or inside a group" overrides FR-023's `overflow-wrap: anywhere`, and the spec does not say which wins when the prefix or one group is wider than the line (a long prefix in a very narrow container). Never breaking would make the page scroll sideways, against WCAG 1.4.10. At 288 px the case does not arise, so no scenario fails either way. | State the rule for an unbreakable unit wider than the line (it breaks anywhere, as FR-023, or it overflows the block). The README digest rule should say the same. |
+| SPEC-2-09 | note | spec.md FR-007, last sentence; constitution III ("ARIA state set on a host (`aria-expanded`, …) reaches the real inner control") | A host `aria-expanded` on a disclosure is "not supported" under the README's rule, so it stays on the host and axe flags it. Constitution III lists `aria-expanded` as state that must reach the inner control. The disclosure's state is `open`, and the native summary exposes it, so the outcome is defensible, but the spec does not say so. | Say in FR-007 that a host `aria-expanded` is not moved, because `open` is the state, and have the README tell consumers to use `open`. If that reads as an exception to Principle III, record it in the plan's Complexity Tracking. |
+
+No row is `blocking` or `operator`, so the verdict is clean.

@@ -5,6 +5,11 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
 
 ## Unreleased
 
+`base.css`'s four blocks for the data records (the `ocelle-data-table` rules, their prose override, the pre-upgrade
+rules of `ocelle-event-timeline` and `ocelle-evidence-chain`, and the numeric-cell rule), the `data-ocelle-align`
+hook with its value `end`, and the base-style hook `--data-table-box-size` and `--data-table-end-fade` that
+`ocelle-data-table` writes are additions to the public surface: a minor change. No token is added.
+
 ### Added
 
 - `base.css`: the base layer for host pages, linked after `@ocelle/tokens` `tokens.css`: a minimal reset, the body
@@ -30,3 +35,17 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
   ones, so fact values follow the region's scale.
 - `ocelle-facts` before upgrade: each `ocelle-fact` child of an undefined `ocelle-facts` is a block, one value per line,
   at specificity (0,0,0); a hidden fact stays hidden.
+- `ocelle-event-timeline` before upgrade: each visible `ocelle-timeline-event` child of an undefined
+  `ocelle-event-timeline` is a block, one event per line, and an `aria-hidden="true"` one is not shown, at specificity
+  (0,0,0); a hidden event stays hidden.
+- `ocelle-evidence-chain` before upgrade: each visible `ocelle-evidence-step` child of an undefined
+  `ocelle-evidence-chain` is a block, one step per line, and an `aria-hidden="true"` one is not shown, at specificity
+  (0,0,0); a hidden step stays hidden.
+- The `ocelle-data-table` rules: the direct table of an `ocelle-data-table`, defined or not, at specificity (0,0,0):
+  compact cells, eyebrow column headers, row headers, the row rules, the identifier wrap of `wrap="anywhere"`, the
+  pinned header row of `sticky-header`, the stripes of `striped`, the row hover on a device that can hover and the
+  forced-colours row band; and their prose override at (0,1,0).
+- The base-style hook `--data-table-box-size` and `--data-table-end-fade`: the caption's cap reads them, and
+  `ocelle-data-table` writes them; a consumer does not set them.
+- `data-ocelle-align`: with `end`, a cell end-aligned with tabular figures, at (0,1,0) after the data-table prose
+  override. Any other value has no effect.

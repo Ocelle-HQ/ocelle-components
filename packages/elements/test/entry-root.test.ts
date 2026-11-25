@@ -9,8 +9,10 @@ import * as root from "../src/index.ts";
 // 011 `ocelle-card`, `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and
 // `ocelle-personal-rail` (T042); since 010 `ocelle-notice` (phase 2), `ocelle-form-input` (phase 3) and
 // `ocelle-form-select` (phase 4); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051);
-// and since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. This file's own iframe
-// (Vitest browser mode, isolate on) holds only what this import defines.
+// since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; since 014 (research.md R-16,
+// T017) `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`,
+// `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`; and since 020 (T006) `ocelle-disclosure` and (T026)
+// `ocelle-code-block`, and since 019 the data table, event timeline and evidence chain with their items. This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-notice, ocelle-form-input and ocelle-form-select as the OcelleIcon, OcelleBrandMark, OcelleNotice, OcelleFormInput and OcelleFormSelect it exports", () => {
     const exported = root as Record<string, unknown>;
@@ -111,5 +113,92 @@ describe("importing src/index.ts", () => {
       progress: customElements.get("ocelle-progress"),
       track: document.getElementById("p")?.shadowRoot?.querySelector('[part="track"]') !== null && document.getElementById("p")?.shadowRoot !== null,
     }).toEqual({ type: "function", progress: exported.OcelleProgress, track: true });
+  });
+
+  it("defines ocelle-event-timeline and ocelle-timeline-event as the OcelleEventTimeline and OcelleTimelineEvent it exports, and a timeline renders its event in a listitem (019 phase 2)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-event-timeline id="t"><ocelle-timeline-event id="ev" time="14:02">Mission created</ocelle-timeline-event></ocelle-event-timeline>';
+    await (document.getElementById("t") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      types: [typeof exported.OcelleEventTimeline, typeof exported.OcelleTimelineEvent],
+      timeline: customElements.get("ocelle-event-timeline"),
+      event: customElements.get("ocelle-timeline-event"),
+      assigned: document.getElementById("t")?.shadowRoot?.querySelector<HTMLSlotElement>("li > slot")?.assignedElements().map((each) => each.id),
+    }).toEqual({ types: ["function", "function"], timeline: exported.OcelleEventTimeline, event: exported.OcelleTimelineEvent, assigned: ["ev"] });
+  });
+
+  it("defines ocelle-evidence-chain and ocelle-evidence-step as the OcelleEvidenceChain and OcelleEvidenceStep it exports, and a chain renders its step in a listitem (019 phase 3)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-evidence-chain id="c"><ocelle-evidence-step id="st">Spec</ocelle-evidence-step></ocelle-evidence-chain>';
+    await (document.getElementById("c") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      types: [typeof exported.OcelleEvidenceChain, typeof exported.OcelleEvidenceStep],
+      chain: customElements.get("ocelle-evidence-chain"),
+      step: customElements.get("ocelle-evidence-step"),
+      assigned: document.getElementById("c")?.shadowRoot?.querySelector<HTMLSlotElement>("li > slot")?.assignedElements().map((each) => each.id),
+    }).toEqual({ types: ["function", "function"], chain: exported.OcelleEvidenceChain, step: exported.OcelleEvidenceStep, assigned: ["st"] });
+  });
+
+  it("defines ocelle-data-table as the OcelleDataTable it exports, and a data table renders its region with the table assigned (019)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-data-table id="d"><table id="t"><tbody><tr><td>WP01</td></tr></tbody></table></ocelle-data-table>';
+    await (document.getElementById("d") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleDataTable,
+      table: customElements.get("ocelle-data-table"),
+      assigned: document.getElementById("d")?.shadowRoot?.querySelector<HTMLSlotElement>(".region-box slot")?.assignedNodes().map((node) => (node as Element).id),
+    }).toEqual({ type: "function", table: exported.OcelleDataTable, assigned: ["t"] });
+  });
+
+  it("defines ocelle-listbox and ocelle-option as the OcelleListbox and OcelleOption it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect([exported.OcelleListbox, exported.OcelleOption].map((each) => typeof each)).toEqual(["function", "function"]);
+    expect({ listbox: customElements.get("ocelle-listbox"), option: customElements.get("ocelle-option") }).toEqual({ listbox: exported.OcelleListbox, option: exported.OcelleOption });
+  });
+
+  it("defines ocelle-tabs, ocelle-tab and ocelle-tab-panel as the OcelleTabs, OcelleTab and OcelleTabPanel it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect([exported.OcelleTabs, exported.OcelleTab, exported.OcelleTabPanel].map((each) => typeof each)).toEqual(["function", "function", "function"]);
+    expect({ tabs: customElements.get("ocelle-tabs"), tab: customElements.get("ocelle-tab"), panel: customElements.get("ocelle-tab-panel") }).toEqual({ tabs: exported.OcelleTabs, tab: exported.OcelleTab, panel: exported.OcelleTabPanel });
+  });
+
+  it("defines ocelle-segmented-choice and ocelle-segment as the OcelleSegmentedChoice and OcelleSegment it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect([exported.OcelleSegmentedChoice, exported.OcelleSegment].map((each) => typeof each)).toEqual(["function", "function"]);
+    expect({ group: customElements.get("ocelle-segmented-choice"), segment: customElements.get("ocelle-segment") }).toEqual({ group: exported.OcelleSegmentedChoice, segment: exported.OcelleSegment });
+  });
+
+  it("defines ocelle-copy-field as the OcelleCopyField it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect(typeof exported.OcelleCopyField).toBe("function");
+    expect(customElements.get("ocelle-copy-field")).toEqual(exported.OcelleCopyField);
+  });
+
+  it("defines ocelle-link as the OcelleLink it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect(typeof exported.OcelleLink).toBe("function");
+    expect(customElements.get("ocelle-link")).toEqual(exported.OcelleLink);
+  });
+
+  it("defines ocelle-disclosure as the OcelleDisclosure it exports, and a disclosure renders its summary (020 phase 1)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-disclosure id="d"><span slot="summary">Advanced settings</span><p>Panel</p></ocelle-disclosure>';
+    await (document.getElementById("d") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleDisclosure,
+      disclosure: customElements.get("ocelle-disclosure"),
+      summary: document.getElementById("d")?.shadowRoot?.querySelectorAll('[part="summary"]').length,
+    }).toEqual({ type: "function", disclosure: exported.OcelleDisclosure, summary: 1 });
+  });
+
+  it("defines ocelle-code-block as the OcelleCodeBlock it exports, and a code block renders its text in its code part (020 phase 2)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-code-block id="c">git push origin main</ocelle-code-block>';
+    await (document.getElementById("c") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleCodeBlock,
+      codeBlock: customElements.get("ocelle-code-block"),
+      text: document.getElementById("c")?.shadowRoot?.querySelector('[part="code"]')?.textContent ?? null,
+    }).toEqual({ type: "function", codeBlock: exported.OcelleCodeBlock, text: "git push origin main" });
   });
 });

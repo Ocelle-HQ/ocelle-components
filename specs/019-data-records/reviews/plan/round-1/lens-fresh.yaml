@@ -1,0 +1,134 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "The data table's sticky caption cannot move and does not wrap at the visible width: the plan dropped what makes 003's caption work"
+    evidence:
+      - artifact: "research.md § R-07: \"The caption is sticky at the inline start (R-06) so the table's name stays visible while the region scrolls; it wraps within the region's visible width because the track's inline padding and the box clip it.\" research.md § R-06 caption row: \"position: sticky; inset-inline-start: 0\", with no max-inline-size. contracts/styles-data-table.md § Block 2: caption \"max-inline-size: none\", table \"container-type: normal\"."
+      - code: "packages/styles/src/base.css:190-209 on main. 003's prose caption works only because the table has `container-type: inline-size` and the caption has `max-inline-size: var(--ocelle-measure-container)`. The comment there reads \"The caption wraps inside the table's visible width and stays at its start edge while the table scrolls\". packages/tokens/src/source.ts:189-190: `measure-container` is `100cqi`, \"caps a prose caption at its table's visible width (003)\"."
+      - code: "CSS Positioned Layout 3 § sticky: a sticky box is only offset within its containing block. A table caption's containing block is the table wrapper box, and with no max-inline-size the caption is as wide as the table grid, so the sticky offset is always 0."
+    claim: |
+      Outside prose the data-table caption has no inline-size cap, so it is as wide as the table. A sticky box as wide
+      as its containing block has no room to move: the caption scrolls away with the table. It also wraps at the
+      table's full width, not the region's visible width, so at 320 px a long caption runs off-screen past the box's
+      visible edge. Clipping by the box is not wrapping. Inside prose the override goes further and sets
+      `max-inline-size: none` and `container-type: normal`, removing the two declarations that make 003's caption
+      work. US1-10 compares the caption's `position` inside and outside prose, and that check passes on both sides with
+      a caption that does nothing. So the design claim in R-07 is false, and the planned tests cannot catch it. The
+      phase-1 spike "the caption at 320 px, sticky" might catch it, but only after the design is set.
+    remedies:
+      - "(a) Keep the caption at the start edge with a query container. Measure in the phase-1 spike whether a slotted caption can use `cqi` against a shadow node (Chromium resolves containers through the flat tree). If it can, set the container on a shadow node whose inline size comes from its context, not its content (the frame or the box, keeping 009's \"no container-type on a shrink-to-fit host\" rule in view). Cap the caption at that width minus the track's ring room. Add a geometry body: at 320 px, scrolled to the end, the caption's rect lies inside the box's visible rect."
+      - "(b) Drop the sticky claim. The caption scrolls with the table and wraps at the table's width. Restate R-06, R-07, the styles contract and the README, and record against the spec edge case \"either way it is never cut at 320 px\" that the off-screen part can be reached by scrolling."
+  - id: PLAN-FRESH-1-002
+    severity: 2
+    title: "In a consumer's flex or grid column the data table widens the column instead of scrolling; no host rule, test or README note"
+    evidence:
+      - artifact: "contracts/ocelle-data-table.md § Shadow structure: the element's own styles are `:host { display: block; }`, `:host([hidden])` and the track rule only. spec.md US1-4 and US1-1 test only \"a 320 px block container\" and \"a 1280 px block container\". spec.md US1 story: \"A Kitty Desktop inspector lists a mission's work packages\"."
+      - code: "origin/claude/015-workflow-layouts:packages/elements/README.md:225-227 (ocelle-scroller, the same module): \"Sizing. In a shrink-to-fit host (a default flex item, a dialog, a table cell) the scroller takes its content's size and does not overflow, so the page may scroll sideways instead\". origin/claude/015-workflow-layouts:packages/elements/src/ocelle-list-detail.ts:89,145,151 set `min-inline-size: 0` on its pane wrappers for this reason."
+      - code: "CSS Flexbox 1 § 4.5 and CSS Grid 1 § 6.6: an item that is not a scroll container has a content-based automatic minimum. The host is the item, and its overflow is visible. Its min-content is the box's content, which with R-03's `fit-content` track is the table's min-content width."
+    claim: |
+      A data table placed as a default flex item, or in a `1fr` grid track, inside a consumer's own pane cannot shrink
+      below its table's min-content width. The pane, and then the page, scrolls sideways, and the region never
+      overflows, so it is never a tab stop. FR-009 says a data table "scrolls inside its own region, never the page".
+      The plan's tests use block containers only, so they cannot see this, and the README section planned for the
+      data table carries none of 009's Sizing note. The case is common for the stated consumer (an inspector pane;
+      `shell-inspector-width` is 19rem, 304 px). It is safe only inside 009's `ocelle-list-detail`, whose panes
+      already set `min-inline-size: 0`.
+    remedies:
+      - "(a) Add `:host { min-inline-size: 0; }` to the data table's own styles, so the host as a flex or grid item can shrink. Add bodies at 320 px with the element as a default flex item and as a `1fr` grid item: the page scroll width equals the viewport width and the region overflows. Add the README note for a host that is not itself the item (wrap it, or give the wrapper `min-inline-size: 0`)."
+      - "(b) Keep the styles. Copy 009's Sizing note into the data table's README section, and add a body that documents the behaviour as a flex item. The operator accepts that FR-009 holds only in block and list-detail contexts, and the spec says so."
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "The timeline reads the event's `time` attribute, but `time` is not reflected: a time set from script misplaces the marker"
+    evidence:
+      - artifact: "research.md § R-10: \"the container reads the item's `time` attribute and sets a class on the `<li>`\". contracts/ocelle-event-timeline.md § Behaviour: \"A MutationObserver watches the child list and each child's hidden, aria-hidden and time\"."
+      - artifact: "contracts/ocelle-timeline-event.md § Public surface: `time` is \"property / attribute\", not \"(reflected)\", while `wrap` is \"(reflected)\". plan.md § Constitution Check I: \"`wrap` and `variant` reflect, because the styles select on them\". research.md § R-12 gives the same reason for the step: \"so the container's ::slotted() selectors and the MutationObserver see a property set from script\"."
+      - artifact: "contracts/ocelle-timeline-event.md: the time span renders \"only when time is non-empty\". data-model.md: \"empty or absent renders no time box\". No contract says which test the container uses for `has-time`."
+    claim: |
+      The container's choice of line box for the marker (`has-time`) and its re-render both depend on the `time`
+      attribute. A consumer that sets `event.time = "14:02"` from script (any framework binding properties, or a later
+      update) changes the event's own render, but not the attribute. The container's MutationObserver never fires, and
+      the marker stays centred on the content's line, against FR-021 ("centred on the first line of the event"). The
+      reverse case breaks too: removing the time by property leaves the class set. `time=""` is a third case. The event
+      renders no time box, but a container that tests the attribute's presence sets `has-time`. The plan applies the
+      reflect-for-observation rule to `variant` and `wrap` and leaves out the one property the container actually
+      observes.
+    remedies:
+      - "Make `time` reflected in the event's contract, manifest and data model. Define one predicate, shared by the event and the container, for \"has a time\" (non-empty, or non-blank after trimming; pick one and state it). Add bodies for a time set and cleared by property after first render, and for `time=\"\"`, asserting the marker's centre against the first line. Add a plant: `time` not reflected must fail that body."
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "Before upgrade, the timeline and chain run their items together on one line and show no times; 013 solved the same case for facts, and this plan is silent"
+    evidence:
+      - code: "packages/styles/src/base.css:47-52 on main: \":where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }\", \"ocelle-facts before upgrade (013 research.md R-01, R-07): each value on its own line until the elements are defined\"."
+      - code: "origin/claude/013-data-display:packages/elements/README.md:43-44: \"until then ... one with light-DOM content shows that content as plain inline text\", and :194 \"Before upgrade\" for facts."
+      - artifact: "spec.md § Edge Cases and plan.md cover pre-upgrade for the data table only (FR-012, R-07). research.md, contracts/ocelle-event-timeline.md and contracts/ocelle-evidence-chain.md say nothing about the undefined state. The event's time is an attribute rendered only in its shadow root (contracts/ocelle-timeline-event.md)."
+    claim: |
+      The web console renders these server-side and upgrades later (spec Consumers). Until upgrade, undefined custom
+      elements are inline, so "Mission created", "Plan approved" and "Review requested" render as one run of text with
+      no separators, and no time appears at all, because the time lives only in an attribute. Chain steps run together
+      the same way. The page also shifts at upgrade. Mission 013 judged the same situation worth a `base.css` rule and a
+      README statement for `ocelle-facts`. Here the case has no decision, test or README line, so it will reach review
+      as an unplanned gap.
+    remedies:
+      - "(a) Add (0,0,0) pre-upgrade rules to the `@ocelle/styles` block: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]))` and the chain's steps as `display: block`. Optionally show the time with `::before { content: attr(time) }` and state that it is not exposed. Add styles browser bodies for both, a README \"Before upgrade\" line per container, and an edge case in the spec."
+      - "(b) Record as a decision that no pre-upgrade rule is added. Add a README \"Before upgrade\" line per container stating the run-together text and the missing times, and an edge-case body asserting nothing throws once defined."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "A chip step has no marker, but its connector is placed relative to the marker; connector height and row alignment around chips are undefined"
+    evidence:
+      - artifact: "research.md § R-12: the connector is \"vertically centred on the marker\". The chain's `align-items: flex-start`. Chip: \"renders no marker in its <li>\", 20.4 px tall. Default step: marker `--ocelle-size-step` (22.4 px), with content \"vertically centred with the marker on its first line\"."
+      - code: "packages/tokens/src/source.ts:165,169: ring-step 1.5px, size-step 1.4rem (22.4 px). A chip is 17.4 + 3 = 20.4 px (R-12's own sum)."
+    claim: |
+      Every connector after a chip step, and the connector into one, has no defined block position: there is no marker
+      in a chip's `<li>` to centre on. With `flex-start`, a chip's centre sits at 10.2 px and a default marker's at
+      11.2 px, so a row mixing them has connectors at different heights, and the chip's text baseline differs from the
+      default step's. US3-2 and US3-3 measure connectors only on six default steps. The mixed-chips story will get a
+      baseline of whatever falls out, and no test states what is right. This is US3's own headline case ("a compact
+      summary uses variant=chip on some steps").
+    remedies:
+      - "State in R-12 and the chain contract how a chip `<li>` aligns: for example, a `--ocelle-size-step` tall `1lh`-style box, with the chip centred in it so all connectors share the marker's centre line. State where its connector sits. Add a geometry body for the mixed-chips case: each connector's vertical centre equals the row's marker centre within 0.5 px, and the chip is centred on that line."
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "An attribute-only `time` cannot carry a `<time datetime>` or any markup; the event-history consumer's likely need is not asked at the plan gate"
+    evidence:
+      - artifact: "contracts/ocelle-timeline-event.md: `time` is `string | undefined`, rendered as `<span part=\"time\">14:02</span>` in the shadow root. spec.md FR-023: \"the event's time as the consumer formats it ... The element does not parse or format times.\" research.md § Open questions Q-C asks only for the time's position."
+    claim: |
+      A server-rendered event history usually shows a short or relative time ("14:02", "2 min ago") and keeps the
+      absolute instant machine-readable (`<time datetime="2026-11-15T14:02Z">`), often with a title or tooltip. An
+      attribute string rendered in a closed shadow span can carry neither. It cannot be a `<time>` element, take
+      `lang`/`dir` apart from the event, hold a link, or be targeted by an htmx swap that refreshes relative times. The
+      unread #470 is exactly where this would be specified. Choosing attribute-only now means a later named slot is a
+      surface change on an element that has just shipped.
+    remedies:
+      - "(a) Add a named `time` slot that takes precedence over the attribute (the consumer writes `<time slot=\"time\" datetime=\"…\">14:02</time>`), styled through `::slotted()`, with item text unchanged (time first). Add it to the contract, manifest, data model and tests."
+      - "(b) Keep attribute-only. Add it to the plan gate's open questions as Q-E (\"does #470's history need machine-readable or marked-up times?\"), and state the limitation in the README."
+  - id: PLAN-FRESH-1-007
+    severity: 1
+    title: "`list-name.ts` is planned \"if 009 has none\", but 009's module already exports `resolveName` with exactly the blank-counts-as-absent rule"
+    evidence:
+      - artifact: "plan.md Source Code: \"list-name.ts # new, internal: the blank-counts-as-absent list name (R-09), if 009 has none\". research.md § R-09 names only `naming.ts`'s `accessibleName` as the existing helper."
+      - code: "origin/claude/015-workflow-layouts:packages/elements/src/overflow-region.ts:91 `export function resolveName(hostAriaLabel: string | null, label: string | undefined): string | undefined`: host non-blank trimmed, else non-blank label, else none."
+    claim: |
+      The plan leaves open whether a new module is created, although the answer is already on the branch it reads. A
+      conditional file gives T001 and the tasks nothing firm to check. It also hides a real choice: import
+      `resolveName` from the overflow-region module into two list elements (coupling them to a module whose contract
+      says changing it changes every user), or duplicate eleven lines and keep two copies that must agree.
+    remedies:
+      - "Decide in R-09: either the containers import `resolveName` from `overflow-region.ts`, and the README's list of module users says so, or `list-name.ts` is added with a test that it agrees with `resolveName` on the same cases. Add `resolveName` to T001's recheck list."
+  - id: PLAN-FRESH-1-008
+    severity: 1
+    title: "Internal miscounts: \"about 34 stories\" against 27 listed, and the ordinal's line height given as both 1 and 1.15"
+    evidence:
+      - artifact: "plan.md § Technical Context, Scale/Scope: \"about 34 stories (each with two baselines)\". contracts/checks.md § Stories lists 11 data-table, 7 timeline and 9 chain stories: 27."
+      - artifact: "research.md § R-15: `visual:update` must report \"<n> added\" with \"<n> twice the phase's new stories\", an exact check."
+      - artifact: "research.md § R-12: \"line height 1 (`--ocelle-line-height-tight` is 1.15; the plan uses it)\". The two-digit-fit sum uses 13.8 px (12 × 1.15). plan.md § Constraints allows only token values, so a bare `1` would fail `style-lint`."
+    claim: |
+      The baseline check in R-15 is exact per phase, so the story count must be exact. "About 34" against 27 listed
+      means either some stories are missing from the contract or the plan's number is wrong. The ordinal line height is
+      stated two ways. Both are small, but the tasks will copy whichever number they read first.
+    remedies:
+      - "Make plan.md's count match contracts/checks.md § Stories (27, or list the missing seven) and give the per-phase counts (11, 7, 9) that R-15's check uses. In R-12 write \"line height `--ocelle-line-height-tight` (1.15)\" and drop \"line height 1\"."

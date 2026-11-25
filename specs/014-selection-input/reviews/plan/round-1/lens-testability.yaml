@@ -1,0 +1,219 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The node tests of roving.ts and selection.ts never run when Stryker mutates them, so their mutants come out NoCoverage or Survived"
+    evidence:
+      - artifact: "plan.md § Constitution Check, VIII: `pure logic in node-tested modules so mutants die fast`; plan.md § Source Code: `node/roving.test.ts, node/selection.test.ts`; research.md R-04: `unit-tested over every key and edge ... so each mutant has a killing test (#23's gate)`; R-05: `as pure functions they are testable without a browser and mutation-tested cheaply`; R-13: `each mutant is killed by a fast node test`"
+      - code: "gates/bin/mutation.ts:61-74: every changed path under `packages/elements/src/` is mutated under stryker.elements.config.json"
+      - code: "vitest.mutation.elements.config.ts:6-8: that configuration keeps only the Vitest project named `elements`"
+      - code: "vitest.config.ts:74-76: the `elements` project excludes `packages/elements/test/node/**`, which is the `elements-node` project (vitest.config.ts:90-92)"
+      - code: "gates/lib/mutation/report.ts:71: `Survived` and `NoCoverage` both count as findings"
+      - code: "specs/005-icons-brand-mark/plan.md § Constitution Check VIII: `Stryker runs the in-process tests only, so every scenario body is shared by the in-process and the fixture harness`"
+    claim: |
+      The plan's mutation strategy depends on a test placement that the mutation gate cannot see. `src/roving.ts` and
+      `src/selection.ts` are element source, so the gate mutates them only under the elements-only Stryker
+      configuration, which runs the in-process `elements` project and never `elements-node`. The node tests the plan
+      relies on (every key, edge and FR-009 to FR-011a transition) would not run against a single mutant. Any branch
+      the browser scenarios happen to miss, such as rtl swaps, the all-disabled `null`, the single-child edge, or the
+      remembered-value precedence in each fallback, is NoCoverage or Survived. That is a blocking finding under
+      Principle VIII, and each phase would hit it only at the mutation gate, after green. The "fast node test kills
+      each mutant" claim in R-04, R-05 and R-13 is false for this repository.
+    remedies:
+      - "Put the pure-function tests of roving.ts and selection.ts in the in-process `elements` project (for example `packages/elements/test/roving.test.ts` and `selection.test.ts`, plain `it` cases with no DOM). They then run under the elements Stryker configuration with per-test coverage. Correct R-04, R-05, R-13, the Constitution Check row VIII and the Source Code tree to match."
+      - "Or have the plan change stryker.elements.config.json / vitest.mutation.elements.config.ts to also run `elements-node`. That is a gate-configuration change and needs its own test in gates/test/vitest-config.test.ts plus a mutation plant showing a node-only kill of an element-source mutant. Name it in the plan as a gate change, not as `no new gate`."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "ocelle-link's protocol filter and navigation are only observed on the unmutated fixture, so FR-047's security logic cannot be mutation-tested"
+    evidence:
+      - artifact: "spec.md § The strict-CSP fixture: `outcomes that need a real navigation run on the fixture only`; research.md R-08: `calls location.assign(resolved)` after `the href is allowed`; data-model.md § Link state: `allowed ... resolved.protocol in {http:, https:, location.protocol}`; plan.md phase 6 names no in-process observation of navigation"
+      - code: "vitest.mutation.config.ts:28-36 and vitest.mutation.elements.config.ts:6-8: `elements-browser` (the fixture suites) never runs under Stryker; only the in-process `elements` project does"
+      - code: "gates/lib/mutation/report.ts:71: NoCoverage is a finding"
+    claim: |
+      Every outcome that tells navigating apart from not navigating (US5-4, 5, 9, 10, 11, 12) is planned for the fixture
+      only. The mutants that matter most in ocelle-link are not killed in process: the `allowed` check, the comparison
+      with `location.protocol`, the `defaultPrevented` check before `location.assign`, and the `resolved === null`
+      guard. A mutant that drops the protocol check would let `javascript:` through and still survive.
+      In-process runs also carry a hazard. A plain or modified activation of a link whose `href` points to another
+      document navigates, or opens a page in, the Vitest runner frame. A mutant that removes the native
+      `preventDefault()` then shows up as a Timeout or a broken run instead of a kill, and under #23 a Timeout is a
+      report line, not a finding. The spec's positive "the browser's own behaviour (new tab or window) is kept"
+      (US5-13) has no planned observation at all.
+    remedies:
+      - "Extract the decision into a pure internal function, for example `navigationTarget(href, baseURI, documentProtocol)` returning the URL or null, and test it in process (see PLAN-TESTABILITY-1-001) on every scenario-9 to -12 input: padded `javascript:`, tab inside the scheme, `data:`, protocol-relative, a custom base, `file:`. In-process element tests use same-document fragment hrefs (`#nav-1`), whose navigation is observed by `location.hash` without unloading the runner, plus a `javascript:` href whose body would set a marker if it ran. This kills the `defaultPrevented`, `allowed` and `assign` mutants in process. Plain and modified clicks on a cross-document href run on the fixture only, and the fixture tests observe US5-13's kept behaviour through Playwright's `context.on('page')` (a new page opened) beside the unchanged URL. The plan must also say how a fragment href is read under `Observing navigation` (SPEC-2-08, still open)."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "No scaffold step: each phase's red commit fails on missing modules and a broken Storybook build, not on missing behaviour"
+    evidence:
+      - artifact: "plan.md § Phases: `Every phase from 2 on: red commit (tests, scenario bodies, fixtures, stories and the story test, test-only files) -> red.sh record -> green commit(s) (source, ...)`. No scaffold is named."
+      - code: ".specify/extensions/story/scripts/scaffold.sh:3-4: `the new modules with their signatures and no behaviour, so the red tests that follow fail on their assertions, not on a missing module`; tdd-check.sh:7-8: `against the base a missing module alone makes them fail, so only the scaffold run shows they test behaviour`"
+      - code: "specs/005-icons-brand-mark/reviews/phase-2/scaffold.sha and origin/claude/010-storybook-workbench specs/006-storybook-workbench/reviews/phase-2/scaffold.sha, phase-3/scaffold.sha: both earlier missions used scaffolds"
+      - code: "origin/claude/010-storybook-workbench specs/006-storybook-workbench/contracts/gates.md § storybook-build: the Storybook reads package source, and `import that does not resolve` is a `build-error`; storybook/test/integration/elements-stories.test.ts depends on the global setup building the Storybook"
+      - code: ".specify/extensions/story/scripts/red.sh:20-22: `red` is only `exit code != 0` of the whole `pnpm test`"
+    claim: |
+      In phase 2's red commit, `test/listbox.test.ts` imports `../src/ocelle-listbox.ts`, which does not exist yet, and
+      `storybook/stories/listbox.stories.ts` imports the same missing source. The in-process file then fails at import,
+      and the Storybook build fails in storybook-integration's global setup, which takes down every story test,
+      including mission 005's. red.sh records any non-zero exit as red. So the recorded red run shows only import and
+      setup errors, and Principle VIII forbids exactly that as the red reason (`not a syntax, import or setup error`).
+      Without a scaffold, tdd-check also has no scaffold run, and that run is the only automatic proof that the final
+      tests test behaviour rather than a module's existence. The same applies to the phase-1 driver extensions and to
+      roving.ts and selection.ts.
+    remedies:
+      - "Add a scaffold step to every phase from 2 on, before the red commit and recorded with scaffold.sh. The new modules get their signatures and no behaviour: element classes defined with their properties and an empty render, entry points, and `target()` / the selection functions returning a neutral value. The story files must import and build against it. State in the plan that the red log must show assertion failures in the new scenario and story tests while the existing story tests still pass."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "The Pairings table names plants for only part of the spec's `does not` outcomes"
+    evidence:
+      - artifact: "spec.md § `Does not` outcomes are paired: `An outcome that says something does not happen (no event, no focus move, no navigation, no clipboard write, no node, no style attribute) ... The plan names, for each, a planted defect that makes it fail.`"
+      - artifact: "contracts/elements.md § Pairings: 14 rows. Missing: Space does not scroll the page (US1-6, US2-13, US3-13, FR-014, FR-028); letters move nothing / no typeahead (US1-12); a click on a disabled child selects and emits nothing (US1-10, US2-7, US3-7); a disabled selected option cannot be reselected and emits nothing (US1-18); no event when the selected child is removed or disabled (US1-14, US2-18, US3-15, FR-011a); the remembered value forgotten so the appended child is not selected (second halves of US1-19, US2-19, US3-16); unpaired tabs or panels not exposed and no error thrown (US2-9); the tab row and the copy field do not scroll sideways (US2-10, US4-2); the field draws no colour or icon of its own (US4-7); the text is not prevented from selection (US4-12); Space on a link emits nothing and its default is not prevented (US5-2); a modified activation's default is not prevented by the element (US5-13, beside the emission row); setting `value` at first render clears no `status` (Edge Cases); no console error during continuous resize (Edge Cases)"
+      - artifact: "plan.md § Constitution Check VIII: `every does not outcome paired with a named plant (contracts/elements.md § Pairings)`. research.md R-11: `the review checks that each paired test fails on it`, with no record named"
+    claim: |
+      Each missing row is an outcome that already holds when the element is undefined or the behaviour is absent, so a
+      test of it can pass vacuously. Some are vacuous even when paired, unless the setup makes them falsifiable. "The page
+      did not scroll from Space" holds trivially on a page no taller than the viewport, and "no horizontal scroll"
+      holds trivially if the viewport is never narrowed to 320 px. The plan's claim that every such outcome has a named
+      plant is false. Nor does it say where the review records that each plant made its paired test fail (005 kept
+      `reviews/phase-N/plants.md`).
+    remedies:
+      - "Complete contracts/elements.md § Pairings with one row per outcome listed above, each with its positive pair and plant. Examples: no `preventDefault` on Space, with the fixture page made taller than the viewport and the scroll offset read; typeahead on letters; `disabled` ignored in the click handler; change dispatched from the model's fallback; remembered value never forgotten; `white-space: pre` / `nowrap`; `user-select: none`; Space handled on the link; `preventDefault()` on every click. State that the plant runs are recorded per phase in `reviews/phase-N/plants.md`."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 3
+    title: "US5 scenario 11 (custom-scheme base) can pass for the wrong reason, and its required positive pair cannot hold on the same page (SPEC-2-05 unanswered)"
+    evidence:
+      - artifact: "spec.md US5 scenario 11: `Given the fixture page with <base href=kitty-app://app/> ... the page does not navigate ... (paired with scenario 4's navigation)`; spec.md § Observing navigation: the `does not navigate` half is `paired in the same test with a later activation of scenario 4's link, whose navigation is then observed`"
+      - artifact: "reviews/spec/check-2.md SPEC-2-05: `If the base is in the markup from the start, the element never loads, and the scenario passes for the wrong reason ... The plan states how the base is applied ... confirms that the document base becomes kitty-app://app/ before the activation, by reading document.baseURI`. check-3.md SPEC-3-04 leaves it for the plan; research.md R-14 answers SPEC-1-14, -16, 2-07, 2-11, 3-02, 3-03 but not SPEC-2-05"
+    claim: |
+      With the base in the fixture's markup, the module script, tokens.css, the font and `link-target.html` all resolve
+      against `kitty-app://app/`. The element never loads and no navigation happens, for the wrong reason. Pairing does
+      not rescue it on the same page: scenario 4's `href="link-target.html"` also resolves to `kitty-app:` while the
+      base is in place, so the positive half cannot navigate either. The test then either fails against correct code or
+      gets weakened. Plant `checking the written string` would not be caught either, because `x` is not a disallowed
+      scheme as written. The plan says nothing about how this scenario is built.
+    remedies:
+      - "In R-11 or a new R entry, state that the fixture test inserts `<base href=kitty-app://app/>` after load through the driver (DOM evaluation is not governed by the CSP, and `base-uri` is not in the policy). It asserts `document.baseURI === 'kitty-app://app/'`, activates `href=x` and asserts the event `{ href: 'x' }` with no navigation, then removes the base, asserts the base URI is back, and activates scenario 4's link for the observed navigation. Add the plant `allowed() reads the written string or the document URL instead of the resolved URL` to § Pairings."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "The driver cannot mutate children in one task or address children without ids, which most selection scenarios and SC-003 need"
+    evidence:
+      - artifact: "plan.md phase 1: the driver extensions are `press`, `click` with button and modifiers, `activeElement`, the keydown recorder and `axTree` properties. Nothing appends, removes, moves or toggles several children at once, and nothing reaches a child without an id"
+      - code: "packages/elements/test/scenarios/driver.ts:82-147: every method addresses one element by `id`; `setProperty` and `setAttribute` each await a full settle (in-process.ts:66-75), so two calls are two tasks"
+      - artifact: "spec.md US2-20 / US3-17 / FR-010a Precedence: children `appended ... in one operation`, `removes disabled from Spec and Tasks in one operation`; US1-14, US1-19, US2-18, US2-19, US3-15, US3-16, R-14 SPEC-3-03 (reorder as one batch): child insertion, removal and moves; SC-003 and US2-12: `a page whose tabs, panels and their contents carry no id`; research.md R-02: `A child that already has an id keeps it and that id is used`"
+    claim: |
+      No driver method can build the precedence and reorder scenarios. Adding them ad hoc in each harness breaks the
+      shared-body rule. The id-only addressing has a second effect: every scenario that names a tab or panel by id
+      exercises R-02's `keep the host's id` branch, not the generated-id branch. Generated ids, their rewrite on a
+      pairing change (FR-011) and SC-003 would then rest on the single US2-12 page. The reorder rule (R-14: `same node
+      removed and re-added in one task`) cannot be driven at all. The `activeElement()` read also needs an identity for
+      an id-less child.
+    remedies:
+      - "Add to the phase-1 driver extensions, tests first: `mutate(id, steps)`, which applies a list of DOM steps (append markup, remove child n, move child n before m, set or remove an attribute on child n) synchronously in one task and then settles; child addressing by `(parentId, kind, index)` for focus, click, box, computed and ax reads; and `activeElement()` returning `{ id, parentId, kind, index }`. State that the tab and panel scenarios give children no id unless the scenario is about a host id, so the generated-id path is the one under test everywhere."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "R-06's claim that one requestAnimationFrame after a resize sees the ResizeObserver's update is false in Chromium (measured)"
+    evidence:
+      - artifact: "research.md R-06: `The callback runs before paint of the next frame, so the spec's await one requestAnimationFrame measurement holds.` spec.md US3-10: `measured by awaiting one requestAnimationFrame after the resize, then reading the segments' computed corner radii`"
+      - code: "Probe (Chromium 1243 at /opt/pw-browsers/chromium-1243, playwright-core): an element observed by a ResizeObserver; its container's width changed in an ordinary task, then `await new Promise(r => requestAnimationFrame(r))`. Result `{before:1, afterOne:1, afterTwo:2}`: after one rAF the observer had not run, after two it had. When the width change happened inside a rAF continuation, it had run after one (`afterOne:2`). Animation-frame callbacks run before the rendering step that delivers resize observations"
+      - code: "packages/elements/test/in-process.ts:36-40, 81-84: `driver.style` already awaits `settle()`, which includes one rAF, so a scenario using it gets a hidden extra frame"
+    claim: |
+      A US3-10 test written as the spec says reads stale radii against a correct implementation when the resize
+      comes from an ordinary task, for example the fixture's Playwright `evaluate`. Or it passes only because of the
+      driver's hidden extra frame. In the second case the "within one frame" claim (US3-10, Edge Cases) is untested,
+      and a mutant that defers the update by a frame (an extra rAF or a microtask chain) survives. The result depends on
+      which harness performs the resize.
+    remedies:
+      - "Correct R-06 and specify the measurement: the resize is done in an ordinary task by a driver method that does not settle. Then await the frame in which observations are delivered: two rAFs, or a test-side ResizeObserver registered before the element's that resolves after the element's callback in the same delivery. Read the radii there. Pair it with a plant that defers the state update by one extra frame, so the bound is shown to fail."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "The new elements-browser-file project's test file also matches elements-browser's include, and the default Stryker run would launch it"
+    evidence:
+      - artifact: "plan.md § Source Code: `browser/file/link-file.test.ts # elements-browser-file (R-09)`; phase 1: `vitest.config.ts gains elements-browser-file (R-09) with gates/test/vitest-config.test.ts first`"
+      - code: "vitest.config.ts:112-114: `elements-browser` includes `packages/elements/test/browser/**/*.test.ts`, which matches `test/browser/file/link-file.test.ts`"
+      - code: "vitest.mutation.config.ts:28-36: the default Stryker run excludes projects by a fixed name list; a new browser project not added there runs under every default-config mutation run"
+    claim: |
+      As placed, the `file:` test runs twice: once in `elements-browser` without `--allow-file-access-from-files`,
+      where it fails or is skipped around, and once in its own project. And unless the plan names the exclusion, the
+      default Stryker configuration starts Chromium with file access for gate-source mutants. The plan's phase-1
+      config test does not say it checks either.
+    remedies:
+      - "Put the file under a directory outside `test/browser/` (for example `packages/elements/test/browser-file/`), or add it to elements-browser's `exclude`. Add `elements-browser-file` to the excluded set of vitest.mutation.config.ts. Extend gates/test/vitest-config.test.ts first with `ownersOf('packages/elements/test/browser-file/x.test.ts')` equal to exactly `['elements-browser-file']` and the excluded list."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "The no-clipboard-write observation and its plant cover only navigator.clipboard.writeText"
+    evidence:
+      - artifact: "spec.md US4-3: `the page's clipboard write methods are observed and not called`; SC-006: `Zero clipboard calls by any element across all tests`; contracts/elements.md § Pairings: plant `a navigator.clipboard.writeText call`; plan.md phase 5: `the clipboard observer`, not defined"
+    claim: |
+      An element could write the clipboard through `navigator.clipboard.write`, `document.execCommand('copy')` or
+      `'cut'`, or a `copy` event handler that sets `clipboardData`. An observer of `writeText` alone passes for all of
+      them. SC-006 also says `across all tests`, but the plan installs the observer only in the copy-field scenarios.
+    remedies:
+      - "Define the clipboard observer in R-11: it wraps `navigator.clipboard.write`, `writeText`, `document.execCommand` (with `copy` / `cut`) and records any `copy` / `cut` event with modified `clipboardData`. It is installed by the in-process driver at mount and by the fixture's init script for every scenario, and every scenario's outcome asserts zero calls. Add a second plant using `document.execCommand('copy')`."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "Paint and line outcomes have no stated observation, which leaves visual baselines as their only evidence"
+    evidence:
+      - artifact: "spec.md § Selected-state paint and US1-5, US1-15, US2-11, US3-8, US3-9, US3-11, US4-9 (`flush: no gap and no double border`), US4-11, US5-6 (`ring drawn around each line's fragment`), US5-7; research.md R-01, R-06, R-08 say how things are styled, never which property, part or pixel the tests read"
+      - code: "packages/elements/test/scenarios/driver.ts:120-125: `computed(id, property)` reads the host's computed style only; there is no reader for a pseudo-element or a shadow part other than `box` and `pixels`"
+      - artifact: "constitution VIII: `snapshots as the only assertion of behaviour` is forbidden"
+    claim: |
+      Whether a bar is a border, an inset box-shadow, an outline or a `::before` decides which reads can fail. So does
+      whether the Highlight edge is a forced-colours border, and whether the shared line is one border or two borders
+      collapsed by a negative margin. None of that is planned. "One line, not two" (US3-9), "no double border"
+      (US4-9) and "each fragment outlined" (US5-6) are geometry and pixel claims. If the plan leaves them unspecified,
+      phase tests will either read whatever the implementation happens to use (decided after green, which is not
+      red-first) or lean on the visual baselines.
+    remedies:
+      - "Add an R entry fixing the observation per claim. The selected bar is read as the computed `border-*` or `box-shadow` of the named host or part, with the width equal to `--ocelle-bar-width` and the colour equal to `resolveColour` of the token (and `Highlight` under `forcedColors`). Shared lines are read by pixels across each boundary with `driver.pixels`, counted as a run of `--ocelle-border-width` device pixels. The per-fragment ring is read by pixels on each client rect from `driver.lines`. Extend the driver with a part or pseudo-element computed-style read where needed. Each read gets a plant: the bar drawn by colour only, two borders, the ring on the first fragment only."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "US4 scenario 6 can pass while the user need fails: a synchronous host status set within the request (SPEC-2-12 unanswered)"
+    evidence:
+      - artifact: "spec.md US4-6 and FR-041: after a clear, a new set `goes from empty to that text again (a recorded mutation), so a host's new status is a new live-region change`; research.md R-07: `emptied before the request event is dispatched`, nothing about the order relative to the tree"
+      - artifact: "reviews/spec/check-2.md SPEC-2-12: a listener that sets status synchronously clears and refills in one task; `The MutationObserver records both changes, so the scenario passes. The accessibility tree may still see no change ... Let the plan state whether the clear must reach the tree before the host's set ... or record this limitation in the README.` Left to the plan by check-3 SPEC-3-04"
+    claim: |
+      The planned observation is a MutationObserver, which records both mutations even when they fall in the same task.
+      A Chromium tree snapshot taken before and after then shows the same text, with no change that a screen reader
+      would announce. The test therefore asserts a proxy that holds whether or not the need is met. The plan must make
+      the outcome falsifiable or record it as a limitation.
+    remedies:
+      - "Decide in R-07: either the element dispatches the request after the cleared region has reached the accessibility tree (for example after a frame), and the test reads the tree between the clear and the host's set (`axSubtree` shows the empty region while the listener runs), with a plant that dispatches synchronously; or the README states the limitation for synchronous listeners, the scenario's listener sets the status in a later task, and a documentation test checks the README statement."
+  - id: PLAN-TESTABILITY-1-012
+    severity: 2
+    title: "The `icon` slot on option, tab and segment is declared surface with no scenario, story or test (SPEC-1-15 unanswered)"
+    evidence:
+      - artifact: "spec.md FR-009: `the slot convention's icon slot is available on ocelle-option, ocelle-tab and ocelle-segment`; contracts/elements.md lists slot `icon` on all three; FR-050's story list has no icon state; plan.md phases 2 to 4 name no icon scenario"
+      - artifact: "reviews/spec/check-1.md SPEC-1-15: `the icon slot of FR-009 ... has no scenario or story`; carried by check-2 SPEC-2-14 and check-3 SPEC-3-04 to the plan; research.md R-14 does not answer it"
+    claim: |
+      Three public slots would ship with no test of placement, size, decorative exposure or the name they add. The
+      mutants in the slot markup and iconSlotStyles adoption of the three children would be NoCoverage, and #10's visual
+      gate would never capture the slot.
+    remedies:
+      - "Add a scenario per child (an `ocelle-icon slot=icon` on one option, one tab and one segment) asserting the convention's placement and size from 005 US3 (shared through scenarios/slot.ts helpers), that the icon adds nothing to the child's name, and the selected paint unchanged. Add one icon story per element to FR-050's list in the plan."
+  - id: PLAN-TESTABILITY-1-013
+    severity: 1
+    title: "Two spec edge cases are left untestable as worded, with no planned test or rewording (SPEC-1-27, SPEC-2-13)"
+    evidence:
+      - artifact: "spec.md § Edge Cases: `Setting value to the current value is a no-op (no event, no re-render flicker)`; `Reduced motion: none of these elements animates selection or focus changes beyond the token durations, which drop to 0 ms under reduced motion`"
+      - artifact: "reviews/spec/check-1.md SPEC-1-27 (`No re-render flicker cannot be tested as worded`) and check-2.md SPEC-2-13 (`If none does, the case is empty`), both left to the plan by SPEC-3-04; research.md R-14 answers neither"
+    claim: |
+      "Flicker" has no observable, and the reduced-motion case is empty or unnamed until the plan says which property,
+      if any, transitions. Both will reach tasks with no test that can fail.
+    remedies:
+      - "In R-14, map `no flicker` to an observation: a MutationObserver on the parent and its children records no attribute or child mutation for a set of the current value, with the plant `rewriting aria-selected on every set`. State whether any element declares a transition. If none does, say so and assert in one test that the computed `transition-duration` of each child is `0s`. If one does, name the property and duration token and assert `0s` under emulated reduced motion, with a plant."
+  - id: PLAN-TESTABILITY-1-014
+    severity: 1
+    title: "Extending the axTree node shape may break the existing scenarios' exact expectations; the plan does not say how they are kept"
+    evidence:
+      - artifact: "research.md R-11 and plan.md phase 1: `The axTree command of mission 005 is extended to report selected, pressed, disabled, controls and live-region properties`"
+      - code: "packages/elements/test/commands.ts:12-15: `AxNode` is `{ role, name }`; scenarios/icon.ts:55, slot.ts:264, 368-369 and brand-mark.ts:365 compare whole node lists with `toEqual` against `{ role, name }` objects"
+    claim: |
+      If every node gains properties, the 005 scenarios fail on unchanged code, and fixing their expectations changes
+      tests outside this feature. If the properties are added only when present, the `controls` relation still needs a
+      comparable value (CDP returns backend node ids). Neither choice is stated, and the phase-1 unit test of the
+      extension cannot be written red-first without it.
+    remedies:
+      - "State in R-11 that the states come from a separate command or scope (for example `axTree(id, 'states')` returning `{ role, name, selected?, pressed?, disabled?, live?, controls? }` with `controls` mapped to the controlled node's `{ role, name }`), so the 005 expectations are untouched. Its red unit test runs on a fixed page with a native `<select>` and an `aria-controls` pair."

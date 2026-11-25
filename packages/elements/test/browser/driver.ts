@@ -21,13 +21,13 @@
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { runningOf } from "../animations.ts";
-import { audit, axDetails, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
+import { audit, axDetails, axNodes, axeSetup, axStateOf, axStatesOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readScrollWidth, readTextBoxes, recordAxUpdates } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { fixtureCapture } from "../live.ts";
 import type { Snapshot } from "../live-reading.ts";
-import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
+import { activeInnerOf, activePath, characterBoxes, clickElement, computedOf, copyElement, copySentinel, currentOf, dropSentinel, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, selectSentinel, selectShadowRun, sentinelId, shadowClientRects, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
-import { heardTypes } from "../scenarios/driver.ts";
+import { heardTypes, itemTextsOf } from "../scenarios/driver.ts";
 import type { Bounds, Box, Drawing, ElementTarget, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, TreeNode, Validity } from "../scenarios/driver.ts";
 import { installProbe } from "../scenarios/probe.ts";
 import type { Probe } from "../scenarios/probe.ts";
@@ -36,6 +36,9 @@ import type { Served } from "./serve.ts";
 
 /** The most Tab presses `tabOrder` makes before it stops. */
 const maxSteps = 64;
+
+/** The page's helpers (test/page-helpers.ts), which the fixture's init script installed; inside `page.evaluate` only. */
+type Helpers = import("../page-helpers.ts").PageHelpers;
 
 /**
  * Waits in the page for two animation frames, then until every `ocelle-*` element has rendered and the fonts the page
@@ -151,9 +154,7 @@ function deepActive(): string {
 /** The viewport rectangle of a target's border box. */
 function rectOf(page: Page, target: ElementTarget): Promise<{ readonly x: number; readonly y: number; readonly width: number; readonly height: number }> {
   return page.evaluate(({ target }) => {
-    const host = document.getElementById(typeof target === "string" ? target : target.id);
-    const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
-    if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+    const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
     const rect = element.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   }, { target });
@@ -181,11 +182,43 @@ async function inShadow(page: Page, id: string, inner: string, act: "append" | "
   await settle(page);
 }
 
+/** The number of `findText` calls so far, on every page: each navigates to a fragment of its own. */
+let finds = 0;
+
+/** Puts the copy sentinel on the clipboard with a user copy of a scratch field (020 phase 2, `copyShadow`). */
+async function sentinelOnClipboard(page: Page): Promise<void> {
+  await page.evaluate(selectSentinel, copySentinel);
+  await page.keyboard.press("ControlOrMeta+C");
+  await page.evaluate(dropSentinel);
+}
+
+/** The clipboard's `text/plain`, read from the `clipboardData` of a user paste into a scratch field. */
+async function pastedText(page: Page): Promise<string> {
+  await page.evaluate(() => {
+    const field = document.createElement("textarea");
+    field.id = "ocelle-driver-paste";
+    document.body.append(field);
+    field.addEventListener("paste", (event) => {
+      field.dataset.pasted = event.clipboardData?.getData("text/plain") ?? "";
+    });
+    field.focus();
+  });
+  await page.keyboard.press("ControlOrMeta+V");
+  return page.evaluate(() => {
+    const field = document.getElementById("ocelle-driver-paste");
+    const pasted = field?.dataset.pasted ?? "";
+    field?.remove();
+    getSelection()?.removeAllRanges();
+    return pasted;
+  });
+}
+
 /**
  * The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css,
  * `served` the fixture server (its submission recorder answers `submit`).
  */
 export function fixtureDriver(page: Page, log: readonly string[], withBase = false, served?: Served): FixtureDriver {
+  let moduleRuns = 0;
   let since = log.length;
   let lastEnd = 0;
   let last: readonly Snapshot[] = [];
@@ -201,6 +234,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.evaluate(resetPage);
       await page.evaluate(installProbe);
       await page.evaluate((html) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.reset();
         const holder = globalThis as unknown as { ocelleFormListening?: (() => void)[]; ocelleFormHeard?: unknown[] };
         for (const stop of (holder.ocelleFormListening ?? []).splice(0)) stop();
         holder.ocelleFormHeard = [];
@@ -264,15 +298,14 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null) throw new Error(`no #${id} on the page`);
         return [...element.getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }));
       }, id),
-    box: (id, inner) =>
-      page.evaluate(({ id, inner }): Box => {
-        const host = document.getElementById(id);
-        if (host === null) throw new Error(`no #${id} on the page`);
-        const target = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
-        if (target === null || target === undefined) return { x: 0, y: 0, width: 0, height: 0, display: "absent" };
-        const rect = target.getBoundingClientRect();
-        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(target).display };
-      }, { id, inner }),
+    box: (target, inner) =>
+      page.evaluate(({ target, inner }): Box => {
+        const host = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        const measured = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
+        if (measured === null || measured === undefined) return { x: 0, y: 0, width: 0, height: 0, display: "absent" };
+        const rect = measured.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(measured).display };
+      }, { target, inner }),
     drawing: (id) =>
       page.evaluate((id): Drawing => {
         const host = document.getElementById(id);
@@ -343,6 +376,8 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
         return getComputedStyle(element).getPropertyValue(property);
       }, { target, property }),
+    computedNode: (target, property) =>
+      page.evaluate(({ target, property }) => getComputedStyle((window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target)).getPropertyValue(property), { target, property }),
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
@@ -365,6 +400,14 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       const session = await page.context().newCDPSession(page);
       try {
         return await axSubtree(session, id);
+      } finally {
+        await session.detach();
+      }
+    },
+    itemTexts: async (id) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return itemTextsOf(await axSubtree(session, id));
       } finally {
         await session.detach();
       }
@@ -392,6 +435,93 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
+    focusNode: async (target) => {
+      await page.evaluate((target) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).focus();
+      }, target);
+      await settle(page);
+    },
+    pressKeys: async (key, modifiers = []) => {
+      await page.keyboard.press([...modifiers, key].join("+"));
+      await settle(page);
+    },
+    clickTarget: async (target, options = {}) => {
+      const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
+      try {
+        await handle.click({ button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1, force: options.force ?? false });
+      } finally {
+        await handle.dispose();
+      }
+      await settle(page);
+    },
+    hoverTarget: async (target) => {
+      const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
+      try {
+        await handle.hover();
+      } finally {
+        await handle.dispose();
+      }
+      await settle(page);
+    },
+    focusedElement: () => page.evaluate(() => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.focused()),
+    mutate: async (target, steps) => {
+      await page.evaluate(({ target, steps }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.mutate(target, steps);
+      }, { target, steps });
+      await settle(page);
+    },
+    resize: async (target, inlineSize) => {
+      await page.evaluate(({ target, inlineSize }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).style.setProperty("inline-size", `${String(inlineSize)}px`);
+      }, { target, inlineSize });
+    },
+    afterResizeDelivery: (target) =>
+      page.evaluate((target) => {
+        const observed = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        return new Promise<void>((done) => {
+          const observer = new ResizeObserver(() => {
+            observer.disconnect();
+            done();
+          });
+          observer.observe(observed);
+        });
+      }, target),
+    computedPart: (target, which, property) =>
+      page.evaluate(({ target, which, property }) => {
+        const host = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        const at = which.indexOf("::");
+        const name = at === -1 ? which : which.slice(0, at);
+        const pseudo = at === -1 ? null : which.slice(at);
+        const part = name === "" ? host : host.shadowRoot?.querySelector(`[part~="${name}"]`);
+        if (part === null || part === undefined) throw new Error(`no part ${name} in the shadow root`);
+        return getComputedStyle(part, pseudo).getPropertyValue(property);
+      }, { target, which, property }),
+    scrollOffset: () => page.evaluate(() => ({ x: window.scrollX, y: window.scrollY })),
+    setViewportSize: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
+    keydownRecord: () => page.evaluate(() => [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.keydowns]),
+    clipboardCalls: () => page.evaluate(() => [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.clipboard]),
+    activationRecord: async (target, options) => {
+      await page.evaluate(({ target, options }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.activation(target, options);
+      }, { target, options });
+      return () =>
+        page.evaluate(async () => {
+          await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+          await new Promise((done) => setTimeout(done, 0));
+          return [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.activations];
+        });
+    },
+    axStates: async (target, scope) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return await axStatesOf(session, target, scope);
+      } finally {
+        await session.detach();
+      }
+    },
     liveCapture: {
       start: (containerId) => capture.start(containerId),
       startDocument: (url) => capture.startDocument(new URL(url, page.url()).href),
@@ -597,6 +727,17 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         await session.detach();
       }
     },
+    axUpdates: async (target) => {
+      const session = await page.context().newCDPSession(page);
+      const stop = await recordAxUpdates(session, target);
+      return async () => {
+        try {
+          return await stop();
+        } finally {
+          await session.detach();
+        }
+      };
+    },
     listenFor: async (ids, types) => {
       await page.evaluate(({ ids, types }) => {
         const holder = globalThis as unknown as { ocelleFormListening?: (() => void)[]; ocelleFormHeard?: unknown[] };
@@ -777,6 +918,19 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.evaluate(copyElement, { id, via, into });
       await settle(page);
     },
+    copyText: async (id) => {
+      await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }, id);
+      await page.keyboard.press("ControlOrMeta+C");
+      return pastedText(page);
+    },
     morph: async (id, markup) => {
       await page.evaluate(morphElement, { id, markup });
       await settle(page);
@@ -862,30 +1016,36 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await settle(page);
     },
     scrollLeft: (target) => page.evaluate(({ target }) => {
-      const host = document.getElementById(typeof target === "string" ? target : target.id);
-      const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
-      if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+      const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
       return element.scrollLeft;
     }, { target }),
     setScrollLeft: async (target, value) => {
       await page.evaluate(({ target, value }) => {
+        const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        element.scrollTo({ left: value, behavior: "instant" });
+      }, { target, value });
+      await settle(page);
+    },
+    scrollTop: (target) => page.evaluate(({ target }) => {
+      const host = document.getElementById(typeof target === "string" ? target : target.id);
+      const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+      if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+      return element.scrollTop;
+    }, { target }),
+    setScrollTop: async (target, value) => {
+      await page.evaluate(({ target, value }) => {
         const host = document.getElementById(typeof target === "string" ? target : target.id);
         const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
         if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
-        element.scrollTo({ left: value, behavior: "instant" });
+        element.scrollTo({ top: value, behavior: "instant" });
       }, { target, value });
       await settle(page);
     },
     lastKeyPrevented: () => page.evaluate(() => (window as unknown as { ocelleLastKey?: KeyboardEvent }).ocelleLastKey?.defaultPrevented ?? false),
     frameRecord: async (target, read) => {
       const handle = await page.evaluate(({ target, read }) => {
-        const host = document.getElementById(typeof target === "string" ? target : target.id);
-        const subject = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
-        if (subject === null || subject === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
-        const of = read.of;
-        const ofHost = of === undefined ? null : document.getElementById(typeof of === "string" ? of : of.id);
-        const source = of === undefined ? subject : typeof of === "string" ? ofHost : ofHost?.shadowRoot?.querySelector(of.inner);
-        if (source === null || source === undefined) throw new Error(`no reading target ${JSON.stringify(of)} on the page`);
+        const subject = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        const source = read.of === undefined ? subject : (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(read.of);
         const take = (): string => {
           if ("property" in read) return String((source as unknown as Record<string, unknown>)[read.property]);
           if ("computed" in read) return getComputedStyle(source).getPropertyValue(read.computed);
@@ -1138,7 +1298,10 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, inner, property }),
     module: async (code) => {
       // Served as `/module.js` of the page's origin under the fixture's policy; a page that runs it allows that path.
-      const url = new URL("/module.js", page.url()).href;
+      // Since 019 (T006, T079): each run has its own query, so a body may run several modules on one page (the module
+      // map would otherwise return the first run's module without evaluating the new code).
+      moduleRuns += 1;
+      const url = new URL(`/module.js?run=${String(moduleRuns)}`, page.url()).href;
       await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", headers: { "Content-Security-Policy": policy }, body: code }));
       // A string expression, so the test runner's transform does not rewrite the page's own `import()`.
       await page.evaluate(`import(${JSON.stringify(url)}).then(() => true)`);
@@ -1212,6 +1375,49 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }
       return await stop();
     },
+    findText: async (word) => {
+      finds += 1;
+      await page.evaluate((fragment) => {
+        location.href = fragment;
+      }, `#ocelle-find-${String(finds)}:~:text=${encodeURIComponent(word)}`);
+      await settle(page);
+      await settle(page);
+    },
+    setProperties: async (id, name, values) => {
+      await page.evaluate(({ id, name, values }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        for (const value of values) (element as unknown as Record<string, unknown>)[name] = value;
+      }, { id, name, values });
+    },
+    visible: (id) =>
+      page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return element.checkVisibility();
+      }, id),
+    reflected: (id, inner, property) =>
+      page.evaluate(({ id, inner, property }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+        const value = (target as unknown as Record<string, unknown>)[property] as readonly Element[] | null | undefined;
+        return value === null || value === undefined ? null : value.map((each) => (each.id !== "" ? each.id : [each.localName, ...each.classList].join(".")));
+      }, { id, inner, property }),
+    copyShadow: async (id, inner) => {
+      await sentinelOnClipboard(page);
+      await page.locator(`[id="${id}"]`).locator(inner).first().click({ clickCount: 3, force: true, position: { x: 2, y: 2 } });
+      await page.keyboard.press("ControlOrMeta+C");
+      return await pastedText(page);
+    },
+    copyShadowRun: async (id, inner, from, to) => {
+      await sentinelOnClipboard(page);
+      await page.evaluate(selectShadowRun, { id, inner, from, to });
+      await page.keyboard.press("ControlOrMeta+C");
+      return await pastedText(page);
+    },
+    ariaSnapshot: (id, inner) => page.locator(`[id="${id}"]`).locator(inner).first().ariaSnapshot(),
+    clientRects: (id, inner) => page.evaluate(shadowClientRects, { id, inner }),
+    characters: (id, inner) => page.evaluate(characterBoxes, { id, inner }),
   };
   // Every step ends at its own page time, from which `after` measures.
   const step = <T extends (...args: never[]) => Promise<unknown>>(run: T): T =>

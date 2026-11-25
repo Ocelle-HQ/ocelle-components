@@ -53,6 +53,7 @@ const a8: readonly (readonly [readonly string[], "text" | "non-text", readonly s
   [["color-on-accent"], "text", ["color-accent-hover"]],
   [["color-chrome-ink"], "text", ["color-chrome-active"]],
   [["color-disabled-ink"], "text", ["color-chrome", "color-chrome-hover"]],
+  // 014 research.md R-17's selected bars of the listbox, tabs and segmented choice are among these main grounds.
   [["color-accent-strong"], "non-text", ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-chrome", "color-chrome-hover"]],
   // 012 research.md R-08 item 2 (phase 5): the action row's description and tags ink on the state grounds.
   [["color-ink-soft"], "text", stateGrounds],

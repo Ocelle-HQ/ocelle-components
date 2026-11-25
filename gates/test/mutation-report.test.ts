@@ -497,3 +497,140 @@ describe("classifyMutants: the report of undecided mutants and zero-mutant entri
     });
   });
 });
+
+// 019 gate gap, rule (c) (019 reviews/phase-1/operator-mutation-decisions.md § Gate gap rule; 001 contracts/gate-cli.md,
+// mutation row, amendment 2026-11-19): a changed file whose mutants on its changed lines are all CompileError, every
+// one of them carrying one same diagnostic of the file itself (path, line and TS code) on a line none of them spans,
+// was rejected by Stryker's type checker for what the file already is, not for any mutant: the gate could not
+// mutation-test it (exit 2). The recorded report (fixtures/stryker/checker-failure.report.json) is a real Stryker
+// 10.1.1 run, trimmed to its file: packages/tokens/src/x.ts, whose un-annotated field `#region` passes `this` to a
+// constructor with a callback while the class is in the global HTMLElementTagNameMap; tsc accepts it, Stryker's
+// checker reports TS7022 at (21,12) and TS7023 at (22,5) for each of the six mutants of the added lines 40 to 42.
+describe("classifyMutants: a checker failure (019, gate gap rule (c))", () => {
+  const recorded = fixture("checker-failure.report.json");
+  const x = "packages/tokens/src/x.ts";
+  const added = [{ start: 39, end: 42 }];
+  const cause = `mutation: could not run: Stryker's type checker rejects ${x} itself, not its mutants: ${x}(21,12): error TS7022; fix that type error (an explicit type often does) and rerun`;
+  const diagnosticLine = /^(\S.*)\((\d+),(\d+)\): error TS(\d+): (.+)$/;
+  interface RecordedMutant {
+    readonly status: string;
+    readonly statusReason?: string;
+  }
+  const recordedMutants = (): readonly RecordedMutant[] => (JSON.parse(recorded) as { files: Record<string, { mutants: RecordedMutant[] }> }).files[x]?.mutants ?? [];
+  function mutant(id: string, line: number, status: string, statusReason?: string, endLine = line): object {
+    return { id, mutatorName: `M${id}`, replacement: `r${id}`, status, ...(statusReason === undefined ? {} : { statusReason }), location: { start: { line, column: 1 }, end: { line: endLine, column: 9 } } };
+  }
+  const reportOf = (files: Readonly<Record<string, readonly object[]>>): string =>
+    JSON.stringify({ files: Object.fromEntries(Object.entries(files).map(([path, mutants]) => [path, { mutants }])) });
+  const ts = (path: string, line: number, code: number, message = "a message."): string => `${path}(${String(line)},3): error TS${String(code)}: ${message}`;
+  const compileError = (line: number, mutator = `M${String(line)}`): object => ({ path: x, line, mutator, replacement: `r${mutator.slice(1)}` });
+
+  it("pins Stryker 10.1.1's diagnostic form: each CompileError's statusReason opens with `<path>(<line>,<col>): error TS<code>: <message>`, other lines a diagnostic or indented", () => {
+    const mutants = recordedMutants();
+    expect(mutants.map((each) => each.status)).toEqual(Array.from({ length: 6 }, () => "CompileError"));
+    const first = mutants.map((each) => {
+      const lines = (each.statusReason ?? "").split("\n").filter((line) => line !== "");
+      const match = diagnosticLine.exec(lines[0] ?? "");
+      return {
+        first: match === null ? null : { path: match[1], line: Number(match[2]), column: Number(match[3]), code: Number(match[4]) },
+        rest: lines.slice(1).every((line) => diagnosticLine.test(line) || /^\s/.test(line)),
+      };
+    });
+    expect(first).toEqual(Array.from({ length: 6 }, () => ({ first: { path: x, line: 21, column: 12, code: 7022 }, rest: true })));
+  });
+
+  it("cannot run on the recorded report: every mutant on the changed lines is a CompileError on one diagnostic of the file, off their lines", () => {
+    const run = { report: recorded, exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, added)])).toEqual({ ok: false, cause });
+  });
+
+  it("cannot run on the recorded report when another changed file of the run has a survivor (exit 2 wins)", () => {
+    const parsed = JSON.parse(recorded) as { files: Record<string, unknown> };
+    const files = { [sample]: { mutants: [mutant("90", 3, "Survived")] }, ...parsed.files };
+    const run = { report: JSON.stringify({ ...parsed, files }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 3, end: 3 }]), changed(x, added)])).toEqual({ ok: false, cause });
+  });
+
+  it("cannot run in a --files run whose range entry holds the recorded mutants", () => {
+    const run = { report: recorded, exitCode: 0, output: "" };
+    expect(classifyMutants(run, [{ ...changed(x, [{ start: 40, end: 42 }]), entry: `${x}:40-42` }])).toEqual({ ok: false, cause });
+  });
+
+  it("passes pass-compile-error's shape: one CompileError whose diagnostic is on the mutant's own line", () => {
+    const own = mutant("3", 3, "CompileError", `${ts(x, 3, 2322, `Type '""' is not assignable to type '"planted"'.`)}\n`);
+    const run = { report: reportOf({ [x]: [own] }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 3, end: 3 }])])).toEqual({ ok: true, mutants: 1, findings: [], timeouts: [], compileErrors: [compileError(3)], zeroEntries: [] });
+  });
+
+  it("passes when every mutant is a CompileError but no diagnostic is in all of them", () => {
+    const mutants = [mutant("5", 5, "CompileError", `${ts(x, 1, 7022)}\n`), mutant("6", 6, "CompileError", `${ts(x, 2, 7022)}\n${ts(x, 1, 2322)}\n`)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
+  it("passes when a diagnostic off the mutants' lines is shared but one mutant on the changed lines is Killed", () => {
+    const shared = `${ts(x, 1, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "Killed"), mutant("7", 7, "CompileError", shared)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 7 }])])).toEqual({ ok: true, mutants: 3, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(7)], zeroEntries: [] });
+  });
+
+  it("passes when the shared diagnostic is in another path: only the file's own path counts", () => {
+    const shared = `${ts("packages/tokens/src/caller.ts", 1, 2345)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "CompileError", shared)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
+  // T089 (T025's mutation of report.ts): the rule's parts at their edges.
+  it("passes when every mutant carries the diagnostic but one on the changed lines is Killed (its test's message quoting it)", () => {
+    const shared = `${ts(x, 1, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "Killed", shared)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5)], zeroEntries: [] });
+  });
+
+  it("passes when one CompileError of three lacks the diagnostic the other two share", () => {
+    const shared = `${ts(x, 1, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "CompileError", shared), mutant("7", 7, "CompileError", `${ts(x, 2, 2322)}\n`)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 7 }])])).toEqual({ ok: true, mutants: 3, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6), compileError(7)], zeroEntries: [] });
+  });
+
+  it("passes when the other mutant has the same line and code in another path only: the path is part of the diagnostic", () => {
+    const mutants = [mutant("5", 5, "CompileError", `${ts(x, 1, 7022)}\n`), mutant("6", 6, "CompileError", `${ts("packages/tokens/src/caller.ts", 1, 7022)}\n`)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
+  it("passes when the shared text is only on indented lines: a continuation is not a diagnostic", () => {
+    const indented = `${ts(x, 9, 2345)}\n  ${ts(x, 1, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", indented), mutant("6", 6, "CompileError", `${ts(x, 6, 2322)}\n  ${ts(x, 1, 7022)}\n`)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
+  it("cannot run when the shared diagnostic is below every mutant's lines, as above them", () => {
+    const shared = `${ts(x, 9, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "CompileError", shared, 7)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 7 }])])).toEqual({
+      ok: false,
+      cause: `mutation: could not run: Stryker's type checker rejects ${x} itself, not its mutants: ${x}(9,3): error TS7022; fix that type error (an explicit type often does) and rerun`,
+    });
+  });
+
+  it("passes when the shared diagnostic is on a line one of the mutants spans", () => {
+    const shared = `${ts(x, 5, 2322)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "CompileError", shared)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
+  it("passes when a statusReason has no parsable diagnostic line: it shares none", () => {
+    const unparsable = "x.ts:1:3 - error TS7022: a message.\n";
+    const mutants = [mutant("5", 5, "CompileError", unparsable), mutant("6", 6, "CompileError", unparsable)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+});

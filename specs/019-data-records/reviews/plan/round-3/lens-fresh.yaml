@@ -1,0 +1,80 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Round 3 attacks the round-2 fixes: the measured caption cap with `contain: inline-size` (PLAN-FRESH-2-001 (a)), the
+# non-sticky caption (PLAN-FRESH-2-002 (c)), `timeline-time.ts` (2-003), the gapped connector (2-004) and the
+# pre-upgrade `aria-hidden` rules (2-005). Read: spec.md, plan.md, research.md, data-model.md, contracts/*,
+# quickstart.md, the constitution, round-1 and round-2 refute, fixes and verify records. Checked against
+# origin/claude/015-workflow-layouts (overflow-region.ts, tokens source.ts, src/ listing) and origin/claude/013-data-display-2
+# (build.test.ts). Probes ran in Google Chrome for Testing 153.0.8010.12 headless (files in the session scratchpad,
+# not in the repository). They model 009's box and track with its figures (ring room 5 px a side, fade 32 px), the R-03
+# track, block 1's caption rule and R-07's observer writing `clientWidth` into a per-instance sheet on the track.
+# The gapped connector, `timeline-time.ts` (015 already has lane-count.ts and list-detail-measure.ts as internal
+# precedents) and the block 3 rules were checked and gave no finding.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "R-07's ResizeObserver on .region-box raises a ResizeObserver loop error in a plain block host: the cap it writes rewraps the caption, which changes the observed box's block size"
+    evidence:
+      - artifact: "research.md R-07 'A measured width': 'The element observes `.region-box` with its own `ResizeObserver` ... On each callback the observer writes the box's client inline size'. 'No feedback': 'Without it [contain: inline-size] the measured width would cap the caption, the capped caption would narrow the box, and so on, a loop'. This reasoning covers the inline axis only."
+      - artifact: "research.md R-07 caption bodies 'No loop': the check runs 'Around the three shrink-to-fit bodies' only. plan.md phase 1 Red: 'the no-`ResizeObserver`-loop check around the shrink-to-fit bodies'. contracts/checks.md:93 guards the no-loop check with only the plant 'contain: inline-size removed'."
+      - code: "Probe loop.html: a 400 px block wrapper at a 1280 px viewport, an `x-dt` with box `overflow-x:auto; padding-block:5px`, track `fit-content` with 5 px inline padding, a three-cell table and a two-line caption under block 1's rule (`contain: inline-size; max-inline-size: calc(var(--data-table-box-size, 100cqi) - 32px - 5px)`). Log: 'cb inline=400.0 block=62.0', then 'ResizeObserver loop completed with undelivered notifications.', then 'cb inline=400.0 block=80.0'. Before the first write, the fallback cap is the viewport's, so the caption fills the table's 390 px. The measured cap is 363 px, the caption gains a line, and the box grows from 62 to 80 px in block size."
+      - code: "Probe loop-sizer.html: the same page, plus an inline-block host. The observer watches a `block-size: 0` div that is a sibling of the box in the shadow root, and still writes `.region-box`'s `clientWidth`. Log: 'cb 400 | cb 267', no error. The caps are the same as with the box observed (363 and 230 px)."
+      - code: "origin/claude/015-workflow-layouts packages/elements/src/overflow-region.ts:7: the module's own per-instance writes are mask figures, which change no box size, so 009 has no precedent for a write that changes the observed box."
+    claim: |
+      A `ResizeObserver` reports a change in either axis of the observed box. The observer writes the cap, and the cap
+      changes where the caption breaks its lines. That changes the caption's block size, so it changes the table's and
+      `.region-box`'s block size too. The box sits at the same depth as in the broadcast just delivered, so the
+      platform cannot deliver that notification in the same frame and fires the loop error on `window`. This happens
+      in the ordinary case, a block host on first load: the fallback cap (`100cqi`, the viewport with no query
+      container) is always wider than the measured one. It happens again on every resize that changes the caption's
+      line count, and whenever a `hidden` data table is shown (its box was measured at 0). `contain: inline-size` does
+      not help, because the feedback is in the block axis. The planned no-loop check wraps only the three
+      shrink-to-fit bodies. Whether it sees the error there depends on the caption text, and in the probe's
+      inline-block case it did not, so green can pass its own check while every consumer page with a wrapping caption
+      logs the error. Consumers' error monitors and test runners that fail on uncaught errors will report it. The
+      phase 1 spike's "no loop error" item is planned only in the three shrink-to-fit hosts too.
+    remedies:
+      - "Observe a box whose size does not depend on the caption: an empty `block-size: 0` measuring element in the data table's shadow root, a sibling of `.region-frame` and outside 009's structure. Keep writing `.region-box`'s `clientWidth`, which equals the measuring element's inline size in every host. Record in R-07 and contracts/ocelle-data-table.md § Shadow structure that this adds one internal node and changes nothing of the module (FR-008). Run the no-loop check around a block host too, on first load with a caption that wraps differently at the fallback and at the measured width, around the narrow-column resize, and when a `hidden` host is shown. Add an element plant, the observer moved back to `.region-box`, that must fail that check."
+      - "Keep observing `.region-box`, but write in the next animation frame and skip a write when the inline size is unchanged. The caption is then capped one frame late on load and on each resize, and the first frame shows the fallback cap. Record that in R-07, and add the same no-loop bodies and a plant (a synchronous write) that must fail them."
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "The round-2 cap always subtracts the end fade and only one side's ring room, and with `contain: inline-size` a caption word wider than the cap makes a fitting table's region overflow and contradicts R-02's planned bodies"
+    evidence:
+      - artifact: "research.md R-07 'The cap': `calc(var(--data-table-box-size, var(--ocelle-measure-container)) - var(--ocelle-scroller-fade-size) - var(--ocelle-focus-offset) - var(--ocelle-focus-width))`. The fade is subtracted with no condition, and only one side's ring room. contracts/styles-data-table.md block 1, caption row, has the same."
+      - artifact: "research.md R-02 'Shrink-to-fit hosts': each body 'runs with a fitting table' and asserts 'The caption is not narrower than its longest word' and 'A long caption over a narrow table wraps at the table's width and does not widen the host'. plan.md phase 1 Red repeats both."
+      - artifact: "spec.md FR-008: 'while it fits, the box has no tab stop, role or name'."
+      - code: "origin/claude/015-workflow-layouts overflow-region.ts:131-136: `.region-track { padding-inline: calc(var(--ocelle-focus-offset) + var(--ocelle-focus-width)) }`, the ring room on both inline sides. tokens source.ts:165,166 set it to 3px + 2px = 5 px, and :152,158 set the fade to 2rem = 32 px. So in a shrink-to-fit host the box is the table plus 10 px, and the cap is the table less 27 px."
+      - code: "Probe probe.html at 468 px (fitting tables, box `clientWidth` written). Block host: table 458.0, caption 431.0. Inline-block host, three-cell table: host 230.5, table 220.5, caption 194.0. Inline-block host, two-cell table 'Ok | 3' with caption 'Deployment approvals pending': host 71.4, table 61.4, caption 34.0, longest line box 85 px, box scrollWidth 90 against clientWidth 71. A start-aligned column flex gives the same figures."
+    claim: |
+      Round 2 made three changes: the measured cap, the always-subtracted fade and the caption's inline-size
+      containment. Together they have three effects that no round reviewed. First, a fitting table shows no fade, yet
+      its caption always wraps 27 px before the table's end, in every host. In a shrink-to-fit host the planned body
+      says it "wraps at the table's width", and the design makes it wrap 27 px short, so the body is red by design.
+      Second, containment removes the caption's min-content from the table's width. CSS tables otherwise widen the
+      table to fit it. So any caption word wider than the cap overflows the caption. That overflow is scrollable
+      overflow of `.region-box`, so the region of a table that fits switches to overflowing: a tab stop, a `group`
+      role, a fade and a scrollbar, all for one caption word, which breaks FR-008's "while it fits". The planned body
+      "the caption is not narrower than its longest word" fails for any table narrower than its caption's longest word
+      plus 27 px. Third, below 27 px of table the cap goes negative and clamps to 0. A narrow status table in a dialog
+      or popover is the likely case, and nothing in the plan states the limit.
+    remedies:
+      - "Take the fade off the cap unless the end fade shows, and subtract the ring room on both sides. The data table's own shadow styles set an inherited private property on `.region-box[data-fade=\"end\"]` and `[data-fade=\"both\"]` (the fade depth, 0 otherwise), and block 1 and the override read `calc(var(--data-table-box-size, ...) - 2 * (focus-offset + focus-width) - var(<that property>, 0px))`. A fitting table's cap is then the table's width. Decide whether the caption's containment stays. If it goes, the caption's longest word widens the table again, as CSS tables do, and the phase 1 spike checks that a fitting shrink-to-fit host is stable (the cap equals the table width, so no shrink step). If it stays, state in R-02, R-07 and the README that a caption word wider than the table overflows and makes the region scroll, and correct R-02's two bodies to the figures the design gives. Either way, add a body: a two-column narrow table whose caption has one long word, in an inline-block, whose region does not overflow (no tab stop, no `data-fade`)."
+      - "Keep the cap as written, and correct R-02's bodies and the README to what it gives: the caption wraps 27 px inside the table's end, a caption word wider than the table less 27 px makes the region overflow, and a table under 27 px wide has a zero-width caption. This is a spec question for the operator, because a fitting table that becomes a tab stop goes against FR-008's 'while it fits, the box has no tab stop'."
+  - id: PLAN-FRESH-3-003
+    severity: 1
+    title: "The narrow-column caption body, the only guard for the 'measured box size never written' plant, does not say its table overflows, and with a fitting table the plant survives"
+    evidence:
+      - artifact: "research.md R-07: 'A narrow column (a 400 px wrapper at a 1280 px viewport, then resized to 600 px). After `settle`, every caption line box lies inside the box's unmasked extent at each width. This proves the cap follows the measured box and not the viewport.' The body does not say whether the table overflows at 400 or 600 px."
+      - artifact: "contracts/checks.md:92: plant 'The measured box size never written, so the cap falls back to `--ocelle-measure-container`', guarded by 'the narrow-column caption body' only."
+      - code: "Probe probe.html: with `contain: inline-size`, the caption is never wider than the table (block host: table 458.0, caption 431.0). A fitting table lies inside the box, so its caption's line boxes lie inside the box whatever the cap is. With the plant applied, the fallback resolves to the 1280 px viewport (no query container), and a fitting table's caption takes the table's width, still inside the box and with no fade, so the body passes."
+    claim: |
+      The cap is observable only when the table is wider than the box. If the narrow-column body uses a fitting table
+      (the US1-1 table may fit at 600 px with R-03's `fit-content` track), the body passes whether or not the element
+      writes the measured width. The element plant then survives, and the phase stops for the operator, or it passes
+      for the wrong reason if the guard is read loosely. The body's own claim, "the cap follows the measured box and
+      not the viewport", is then untested.
+    remedies:
+      - "State in R-07 and contracts/checks.md that the narrow-column body's table overflows at both 400 and 600 px, so `data-fade=\"end\"` shows at rest, and that the body asserts this before it checks the line boxes. Its caption must be longer than the box at both widths."

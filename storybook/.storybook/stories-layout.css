@@ -2,8 +2,10 @@
  * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
  * base.css, selectors on data-story attributes only (no class, no style attribute). Since 008, also the ocelle-dialog,
  * ocelle-drawer and ocelle-tooltip stories' blocks; since 009, the tested frames, keyed on data-frame attributes;
- * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; and since 013 the
- * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
+ * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; since 013 the
+ * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers; since 014 the scrolling listbox and the
+ * wrapped tabs, segmented-choice, copy-field and link stories' sizes; and since 020 the ocelle-disclosure long
+ * summary's frame and the ocelle-code-block stories' frame (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -142,4 +144,151 @@
   inline-size: calc(var(--ocelle-space-10) * 6);
   max-inline-size: 100%;
   background-color: var(--ocelle-color-inset);
+}
+
+/* The scrolling listbox story (014 FR-050): a listbox limited to four option heights, so its list part scrolls. */
+[data-story="listbox-scrolling"] ocelle-listbox {
+  max-block-size: calc(4 * var(--ocelle-target-min));
+}
+
+/* The wrapped tabs story (014 FR-050, FR-022): a row narrower than the tabs, so they wrap onto a second row. */
+[data-story="tabs-wrapped"] ocelle-tabs {
+  inline-size: 320px;
+}
+
+/* The joined wrapped segmented-choice story (014 FR-050, FR-029): a group narrower than its four segments, so Done
+ * wraps alone onto a second row. */
+[data-story="segmented-choice-wrapped"] ocelle-segmented-choice {
+  inline-size: 220px;
+}
+
+/* The wrapped copy-field story (014 FR-050, FR-032): a field 320 px wide, so its long command wraps onto several lines. */
+[data-story="copy-field-wrapped"] ocelle-copy-field {
+  inline-size: 320px;
+}
+
+/* The wrapped link story (014 FR-050, FR-048): a sentence 240 px wide, so its long link wraps onto three lines (with two, axe-core 4.14.0 reports a serious color-contrast incomplete, reviews/phase-6/notes.md). */
+[data-story="link-wrapped"] p {
+  inline-size: 240px;
+}
+
+[data-story="top-bar-narrow"] {
+  inline-size: 320px;
+  max-inline-size: 100%;
+}
+
+[data-story="compact-nav"] {
+  inline-size: var(--ocelle-size-rail-item);
+  min-block-size: calc(2 * var(--ocelle-size-rail-item));
+  --ocelle-tooltip-delay: 0ms;
+}
+
+[data-story="app-shell-collapsed"] {
+  inline-size: 52rem;
+  max-inline-size: 100%;
+}
+
+[data-story="app-shell-detail"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, var(--ocelle-shell-inspector-width));
+}
+
+[data-story="app-shell-detail"] aside {
+  padding: var(--ocelle-gutter);
+  background: var(--ocelle-color-rail);
+}
+
+[data-story="app-shell-narrow"] {
+  inline-size: min(20rem, 100%);
+}
+
+[data-story="inline-navigation-narrow"] {
+  inline-size: min(20rem, 100%);
+}
+
+[data-story="skip-link-content"] {
+  padding-block-start: var(--ocelle-space-10);
+}
+
+/*
+ * The ocelle-disclosure Long summary story's frame (020 research.md R-09): a 288 px block, capped at the viewport, so
+ * the summary wraps inside the element; with the [data-story] padding it fills a 320 px viewport exactly.
+ */
+[data-story="disclosure-narrow"] {
+  inline-size: 288px;
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-code-block stories' frame (020 research.md R-09; tasks.md T028): a 288 px block, capped at the viewport,
+ * so a long line wraps (wrap mode) or overflows the scroll box (scroll mode) inside the element; with the [data-story]
+ * padding it fills a 320 px viewport exactly.
+ */
+[data-story="code-block-narrow"] {
+  inline-size: 288px;
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-data-table stories' wrappers (019 contracts/checks.md § Stories): a wide block, a 320 px block (the
+ * overflowing stories), and the two bounded sticky-header stories, whose host takes the page's block bound: five
+ * rows' worth in the bounded story, and in the room-rule story less than twice the fade depth below the header row.
+ * Each is capped at the viewport, so no story scrolls sideways.
+ */
+[data-story="data-table"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-bounded"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-bounded"] > ocelle-data-table {
+  max-block-size: calc(var(--ocelle-space-10) * 5);
+}
+
+[data-story="data-table-room-rule"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="data-table-room-rule"] > ocelle-data-table {
+  max-block-size: calc(var(--ocelle-space-10) + var(--ocelle-space-3));
+}
+
+/*
+ * The ocelle-event-timeline stories' wrappers (019 contracts/checks.md § Stories): a reading-width block and a 320 px
+ * block (the long-identifier, right-to-left and 320 px stories). Each is capped at the viewport, so no story scrolls
+ * sideways.
+ */
+[data-story="event-timeline"] {
+  inline-size: calc(var(--ocelle-space-10) * 9);
+  max-inline-size: 100%;
+}
+
+[data-story="event-timeline-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-evidence-chain stories' wrappers (019 contracts/checks.md § Stories): a reading-width block and a 320 px
+ * block (the wrapped, long-step, wrap and right-to-left stories). Each is capped at the viewport, so no story scrolls
+ * sideways.
+ */
+[data-story="evidence-chain"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="evidence-chain-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
 }

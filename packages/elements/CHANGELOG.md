@@ -5,6 +5,18 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Responsive app frames and keyboard navigation are a MINOR addition (mission 015, #12).** Applications can share
+one shell across mission, project and personal screens. The shell measures its own width, presents the same
+destinations in a narrow drawer and supports a keyboard shortcut to the main content.
+
+**Selection and input elements, a MINOR change: nine elements, `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`,
+`ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`,
+and six events, `ocelle-listbox-change`, `ocelle-listbox-activate`, `ocelle-tabs-change`,
+`ocelle-segmented-choice-change`, `ocelle-copy-field-request` and `ocelle-link-activate`, all additions to the
+surface.** `ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4, within the
+release's engine floor of Chromium 135 and WebKit 17.4 (set by `ocelle-button`, below); each element, event and entry
+point is listed under Added.
+
 `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`, their attributes,
 properties, slots and entry points, `remeasure()`, the overflow-region module convention and the container-tier
 convention are additions to the public surface: a minor change.
@@ -23,7 +35,51 @@ asked, and both fields take part in their form like native controls (value, vali
 a description and a host-set error; the elements, their properties, slots, parts, events and entry points are
 additions (a minor change).
 
+**Hosts get a disclosure, `ocelle-disclosure` (mission 020; part of #13).** Before, a host styled its own `<details>`
+for an inspector's advanced settings or a raw payload, with no shared chevron, focus ring or event, and a server swap
+could lose the state. Now the element renders a native `details` and `summary` in the Ocelle look, keeps its state in
+the `open` attribute through morphs and reports each change with one event.
+`ocelle-disclosure`, its property `open`, its moved attributes and their mirrors, the mapped `aria-expanded`, its slots
+`summary` and `icon` and its default slot, its parts `details`, `summary` and `panel`, the event
+`ocelle-disclosure-toggle`, the state `open` and its entry point are additions to the public surface: a minor change.
+
+**Hosts get a code block, `ocelle-code-block` (mission 020; part of #13).** Before, a host styled its own `<pre>` for
+a command, a log or a commit digest, in the user agent's monospace and with no shared wrap or scroll policy. Now the
+element shows the text in the library's sans with tabular figures on the inset ground, wraps it or scrolls it as an
+overflow region, and shows a digest in groups that copy and read unbroken.
+`ocelle-code-block`, its properties `overflow`, `label` and `digest`, its parts `block` and `code` and its entry point
+are additions to the public surface: a minor change. The README's element conventions gain the digest rule: a prefix
+to the last colon, groups of four code points with a `--ocelle-space-1` gap, copied and read text unbroken.
+
+The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an
+internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
+
+`ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain` and
+`ocelle-evidence-step`, their properties (`label`, `wrap`, `stickyHeader` as `sticky-header`, `striped`, `time` and
+`variant`), the event's `time` slot, the parts `list`, `time` and `content`, their entry points and the base-style hook
+`--data-table-box-size` and `--data-table-end-fade` are additions to the public surface: a minor change. None of them
+dispatches an event, and no token is added.
+
 ### Added
+
+- **Selectable workflow steps (#72).** `ocelle-workflow-node` shows the supplied title, accountable role and
+  outcomes, and sends `ocelle-workflow-node-select` with the stable step ID. The host owns selection and can
+  coordinate Tab order with `selectionTabIndex`. Selected, waiting and invalid states can appear together.
+  The optional `status` slot adds readable context for read-only run inspection.
+  `@ocelle/elements/ocelle-workflow-node.js` registers the element as a standalone MINOR addition.
+
+- **Workflow reviewers can enter multiline decisions (#74).** `ocelle-form-textarea` supports native editing and
+  validation, submits before its first render, and exposes accessible help and errors. Import
+  `@ocelle/elements/ocelle-form-textarea.js` to register it individually. This is a MINOR addition to the public surface.
+- `ocelle-app-shell` with named rail and sidebar regions, an adaptive top bar and navigation drawer, independent
+  main padding controls, the `tier` and `contentTarget` properties, `remeasure()` and the
+  `ocelle-app-shell-tier-change` event.
+- `ocelle-top-bar` for product branding, application actions and the `ocelle-top-bar-menu-request` event.
+- `ocelle-nav-item` for native destination links with current and compact modes, and `ocelle-nav-pill` for a
+  wrapping inline list of destinations.
+- `ocelle-breadcrumbs` for an ordered trail with a text current page, and `ocelle-skip-link` for focusing
+  main content by reference or selector.
+- Standalone entry points for all six elements and their registrations in the package root and browser build.
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
   unless a `label` or a host `aria-label` names it; its properties `name` (reflected) and `label`.
@@ -114,10 +170,65 @@ additions (a minor change).
   value text at its inline end), `size` (reflected, `size="compact"`) and `ground` (reflected, `ground="tinted"` for
   tinted grounds); its parts `track`, `fill`, `label` and `value-text`. Entry point
   `@ocelle/elements/ocelle-progress.js` (defines `ocelle-progress` only).
+- `ocelle-disclosure`, a disclosure on a native `details` and `summary`: a summary that opens and closes a panel
+  inline, with the `chevron-end` icon while closed and `chevron-down` while open, or a consumer icon in the `icon` slot;
+  its property `open` (reflected), its `summary`, `icon` and default slots, its parts `details`, `summary` and
+  `panel`, the custom state `:state(open)` and the event `ocelle-disclosure-toggle` (`detail.open`, after each change,
+  changes before the native `toggle` coalesced); host `aria-label`, `aria-labelledby`, `aria-describedby` and `title`
+  moved onto the summary with their mirrors, and a host `aria-expanded` mapped onto `open`. Entry point
+  `@ocelle/elements/ocelle-disclosure.js` (defines `ocelle-disclosure` and the `ocelle-icon` it renders).
+- `ocelle-code-block`, a preformatted block for code, commands, logs and digests in the sans with tabular figures on
+  the inset ground, capped at the reading measure; its properties `overflow` (reflected; `scroll` scrolls long lines
+  sideways as an overflow region, a tab stop and a named group only while it overflows, anything else wraps), `label`
+  and `digest` (reflected; a prefix to the last colon and groups of four code points with a gap, copied and read
+  unbroken), its parts `block` and `code`; no slot, the text is the light DOM's text content. Entry point
+  `@ocelle/elements/ocelle-code-block.js` (defines `ocelle-code-block` only).
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer
   `animation-iteration-count` (the bounded sweep). No token is added.
+- `ocelle-listbox`, a single-select listbox of `ocelle-option` children with one tab stop, the keys ArrowUp,
+  ArrowDown, Home, End, Enter and Space, and pointer selection; its properties `value` and `label`, its part `list`,
+  and its events `ocelle-listbox-change` (a user selection) and `ocelle-listbox-activate` (Enter on the selected
+  option or a double-click), each with `detail` `{ value }`. The listbox sets its tab stop as soon as it is connected,
+  so a dialog that is open at page load with a listbox inside focuses the selected option first.
+- `ocelle-option`, an option of the listbox, with its properties `value` and `disabled` (reflected) and its `icon` slot.
+- Entry points `@ocelle/elements/ocelle-listbox.js` (defines `ocelle-listbox` and `ocelle-option`) and
+  `@ocelle/elements/ocelle-option.js` (defines `ocelle-option` only). A parent element's module now also defines the
+  elements it owns as children.
+- `ocelle-tabs`, a tablist of `ocelle-tab` children with their `ocelle-tab-panel` panels paired by order, with one
+  tab stop, selection following focus on ArrowRight, ArrowLeft, Home and End (wrapping), Enter, Space and pointer
+  selection, the tab-to-panel association written in the page's own scope, and the tab row wrapping onto rows; its
+  properties `value` and `label` (its only name source: a host `aria-label` does not name the tablist), its parts
+  `tablist` and `panels`, and its event `ocelle-tabs-change` with `detail` `{ value }`.
+- `ocelle-tab`, a tab of the tabs, with its properties `value` and `disabled` (reflected) and its `icon` slot; and
+  `ocelle-tab-panel`, a panel of the tabs, shown while its tab is selected.
+- Entry points `@ocelle/elements/ocelle-tabs.js` (defines `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`),
+  `@ocelle/elements/ocelle-tab.js` and `@ocelle/elements/ocelle-tab-panel.js` (each defines its element only).
+- `ocelle-segmented-choice`, a toolbar of `ocelle-segment` toggle buttons with exactly one pressed, one tab stop, focus
+  moving on the arrow keys (wrapping), Home and End, pressing on Enter, Space and a click, and the `joined` variant
+  (reflected), whose touching segments share one line and whose rows are rounded at their ends by the element itself
+  when it wraps; its properties `value`, `label` and `joined`, and its event `ocelle-segmented-choice-change` with
+  `detail` `{ value }`.
+- `ocelle-segment`, a segment of the segmented choice, with its properties `value` and `disabled` (reflected) and its
+  `icon` slot.
+- Entry points `@ocelle/elements/ocelle-segmented-choice.js` (defines `ocelle-segmented-choice` and `ocelle-segment`)
+  and `@ocelle/elements/ocelle-segment.js` (defines `ocelle-segment` only).
+- `ocelle-copy-field`, a command or identifier with a flush Copy control that never touches the clipboard: activating
+  the control emits `ocelle-copy-field-request` with `detail` `{ text }` after the next rendering update, and the host
+  reports the outcome in `status`, shown in a polite live region; its properties `value`, `status` and `copyLabel`
+  (attribute `copy-label`), and its parts `value` and `copy-control`, whose box, accessible name and events stay when
+  the control becomes `ocelle-button`.
+- Entry point `@ocelle/elements/ocelle-copy-field.js` (defines `ocelle-copy-field` and `ocelle-icon`).
+- `ocelle-link`, a link in running text, underlined in the link colour, that emits the cancelable
+  `ocelle-link-activate` with `detail` `{ href }` on Enter or a plain click; without `href` it never navigates, and
+  with `href`, unless the event is cancelled, it navigates only to an `href` that resolves to `http:`, `https:` or the
+  document's own protocol; a modified activation is left to the browser (a new tab or window for Ctrl, Shift and a
+  middle click, the platform's convention for Meta); its properties `href` (reflected) and `label` (its name instead
+  of its text: a host `aria-label` does not name the link), and its part `anchor`.
+- Entry point `@ocelle/elements/ocelle-link.js` (defines `ocelle-link` only).
+- `ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4: within the engine floor
+  of Chromium 135 and WebKit 17.4 that `ocelle-button` sets (below).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - `ocelle-scroller`, a horizontal strip that scrolls in the inline direction and is a tab stop, and with a `label` a
@@ -215,3 +326,34 @@ additions (a minor change).
   the text's baseline); nothing inside the control moves. A control with no label puts the class `bare` on its row,
   which the rule skips, so an icon-only control stays where it was, its icon where a native `<button>` with an svg
   puts it.
+
+- `ocelle-data-table`: a native `<table>` child in a scroll region, a tab stop and a named group only while it
+  overflows, with `label`, `wrap` (reflected), the property `stickyHeader` as `sticky-header` (reflected) and `striped`
+  (reflected), its default slot and no part; its entry point
+  `@ocelle/elements/ocelle-data-table.js`; and the base-style hook `--data-table-box-size` and `--data-table-end-fade`,
+  which it writes for `@ocelle/styles`' caption cap.
+- `ocelle-event-timeline`, an event history as one ordered list of its `ocelle-timeline-event` children in source
+  order, each with a dot on a line that joins the events, named by `label` or a non-blank host `aria-label`, with its
+  part `list`; and `ocelle-timeline-event`, one event, its time above its content, with `time` (reflected) and `wrap`
+  (reflected), its default slot and the `time` slot (a marked-up time, for example a `<time datetime>`, which takes
+  precedence over the `time` attribute while it has visible text), and its parts `time` and `content`. Entry points
+  `@ocelle/elements/ocelle-event-timeline.js` (defines `ocelle-event-timeline` and its item `ocelle-timeline-event`)
+  and `@ocelle/elements/ocelle-timeline-event.js` (defines `ocelle-timeline-event` only).
+- `ocelle-evidence-chain`, an evidence chain as one ordered list of its `ocelle-evidence-step` children in source
+  order, each default step with a round marker showing its ordinal, joined by connectors on each line and wrapping onto
+  further lines in a narrow container, named by `label` or a non-blank host `aria-label`, with its part `list`; and
+  `ocelle-evidence-step`, one step, with `variant` (reflected) and `wrap` (reflected), `variant="chip"` drawing a
+  compact chip with no marker, its default slot and its part `content`. Entry points
+  `@ocelle/elements/ocelle-evidence-chain.js` (defines `ocelle-evidence-chain` and its item `ocelle-evidence-step`) and
+  `@ocelle/elements/ocelle-evidence-step.js` (defines `ocelle-evidence-step` only).
+
+### Fixed
+
+- `ocelle-dialog` and `ocelle-drawer`: a link or other focusable element inside a closed `<details>` is no longer
+  counted as a Tab stop, so Tab from the summary of a closed `<details>` at the end of the panel wraps to the panel's
+  first stop instead of leaving the dialog (op 022, #57).
+- `ocelle-button`: an icon in the `icon` slot is hidden from the accessibility tree, and a button with a slotted icon
+  that is not named by `aria-labelledby`, `aria-label` or `label` is named by its default slot's text alone, so a
+  bare `<svg>` with a `<title>` no longer adds its title to the button's name, in the button and the link mode. Name
+  an icon-only button with `label`. Known limitation: with a slotted icon and a one-character text label, axe reports
+  `label-content-name-mismatch` as needing review; the button's name is correct (op 022, #57).

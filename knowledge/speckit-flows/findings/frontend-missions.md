@@ -155,6 +155,12 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 
 # Testing pitfalls
 
+- **015 phases 2 and 6** — For a browser timing failure, replay the same file on the pristine base and check the
+  full hosted suite before changing a timing assertion. When adding an element, check the exact manifest, Storybook
+  index, pinned light and dark baselines, and injected accessibility fixture together. Keep a tests-only checkpoint
+  with isolated red and green evidence for the changed behavior.
+  [Mission verification](../../../specs/015-app-frame-navigation/verification.md)
+
 - "Does not" assertions pass against an empty file, so they cannot go red alone. Pair each with the positive
   assertion it guards, and prove it with a planted defect. (003 SPEC-1-03, TESTABILITY-1-001)
 - A plant must be measured, not assumed: several planned plants did not make their guard fail in Chromium
@@ -210,3 +216,5 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 - **Spec template additions for frontend features.** Stating the browsers and engines up front (WebKit hosts), the
   CSP of every fixture, the shrink-to-fit hosts and the shadow-DOM interaction, so the spec checks do not have to
   find them.
+- **Subpixel text in pixel tests.** CI's Chromium antialiases text in colour. A pixel sampled a few px from a glyph, under a translucent ring or overlay, can differ by one channel unit from the local grayscale render. Keep neighbouring glyphs clear of sampled bands, and run such tests once under a subpixel fontconfig.
+- **Elements composed into a container that picks focus at load.** A Lit element's first render is deferred, so a parent such as an `ocelle-dialog` open at load can look for a focus target before the child's shadow DOM exists. A child that must be focusable at that moment renders at connect (`performUpdate()` at the end of `connectedCallback`).

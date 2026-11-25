@@ -1,7 +1,9 @@
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { defineDriverHelpers, driverAdditionScenarios } from "../scenarios/driver-additions.ts";
-import type { InsertHow } from "../scenarios/driver.ts";
+import { codeBlockDriverScenarios, defineCodeHelper, defineDetailsHelper, defineDriverHelpers, disclosureDriverScenarios, driverAdditionScenarios } from "../scenarios/driver-additions.ts";
+import { driverCommandScenarios } from "../scenarios/driver-commands.ts";
+import { driverRecorderScenarios } from "../scenarios/driver-recorders.ts";
+import type { InPage, InsertHow } from "../scenarios/driver.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served, Visit } from "./serve.ts";
@@ -27,7 +29,14 @@ import type { Served, Visit } from "./serve.ts";
 // T003): every shared body of scenarios/driver-additions.ts on its own `facts.html` page, its helper elements defined
 // through `page.evaluate` (the DevTools protocol, which the page's CSP does not govern), with zero CSP violations, no
 // request outside the allowed list, no failed request and no console message, as every fixture test asserts.
+//
+// The driver commands and recorders of 014 on the strict-CSP fixture (research.md R-07, R-11, T002, T003): the bodies of
+// scenarios/driver-commands.ts and scenarios/driver-recorders.ts marked `fixture`, each on its own `driver.html` page,
+// which loads the browser build and nothing else; the clipboard observer is installed by the page's init script
+// (serve.ts), so a body that calls the clipboard on a fixture page proves it is there. Every test asserts zero CSP
+// violations, no request outside the allowed list, no failed request and no console message or uncaught error.
 const built = inject("elementsFixture");
+const scenarios = [...driverCommandScenarios, ...driverRecorderScenarios].filter((scenario) => scenario.fixture);
 const scripts = ["ocelle-elements.js", "live-regions.js", "submit"];
 let served: Served | undefined;
 let browser: Browser | undefined;
@@ -80,6 +89,20 @@ function started(): { readonly browser: Browser; readonly origin: string } {
   if (browser === undefined || served === undefined) throw new Error("the suite did not start");
   return { browser, origin: served.origin };
 }
+
+describe("the driver commands and recorders on the strict-CSP fixture (014 R-11)", { timeout: 60_000 }, () => {
+  it("runs the fixture bodies of both scenario lists", () => {
+    expect(scenarios.length).toBeGreaterThan(15);
+  });
+
+  it.each(scenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "driver.html");
+    const inPage: InPage = (fn, arg) => page.page.evaluate(fn as (arg: unknown) => never, arg);
+    const observed = await run(fixtureDriver(page.page, page.log), inPage);
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
 
 /** Opens a plain fixture page (009's `open`, named `openPlain` beside 010's `open` at the landing's second merge): frames.html, or icon.html with the browser build. */
 async function openPlain(page = "frames.html"): Promise<Visit> {
@@ -692,6 +715,39 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: { before: [0, 0], after: [120, 300], inner: 300, scrolls: [120] }, recorded: clean });
   });
 
+  // 019 T029 (research R-11): the item-text oracle of the timeline and chain bodies.
+  it("itemTexts(id) gives each listitem's StaticText names joined and collapsed, without hidden or aria-hidden text, a time element's text included, an empty item as \"\" and [] with no list", async () => {
+    const page = await openPlain();
+    const driver = fixtureDriver(page.page, page.log);
+    await driver.mount('<ol id="l"><li>One <span hidden>gone</span><span aria-hidden="true">unread</span> <b>bold   and</b> <i>nested <em>inline</em></i></li><li></li><li><time datetime="2026-11-15">14:20</time> Two</li></ol><p id="after">Outside</p>');
+    const observed = { texts: await driver.itemTexts("l"), none: await driver.itemTexts("after") };
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: { texts: ["One bold and nested inline", "", "14:20 Two"], none: [] }, recorded: clean });
+  });
+
+  // 019 T079: the block-axis readers of the overflow-region module's block-axis option, as scrollLeft and setScrollLeft.
+  it("scrollTop(target) reads and setScrollTop(target, value) writes an instant scroll, on a light-DOM box with smooth scroll-behavior and on a shadow box", async () => {
+    const page = await openPlain();
+    const driver = fixtureDriver(page.page, page.log);
+    await defineHost(page.page);
+    await driver.mount('<div id="box"><div id="tall"></div></div><driver-host id="h"></driver-host>');
+    await driver.rules("#box { block-size: 100px; overflow-y: auto; scroll-behavior: smooth; } #tall { inline-size: 20px; block-size: 1000px; }");
+    const before = [await driver.scrollTop("box"), await driver.scrollTop({ id: "h", inner: ".scroll" })];
+    await page.page.evaluate(() => {
+      const at: number[] = [];
+      (window as unknown as { at: number[] }).at = at;
+      const box = document.getElementById("box");
+      box?.addEventListener("scroll", () => at.push(box.scrollTop));
+    });
+    await driver.setScrollTop("box", 120);
+    const observed = {
+      before,
+      after: await driver.scrollTop("box"),
+      scrolls: await page.page.evaluate(() => (window as unknown as { at: number[] }).at),
+      left: await page.page.evaluate(() => document.getElementById("box")?.scrollLeft),
+    };
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: { before: [0, 0], after: 120, scrolls: [120], left: 0 }, recorded: clean });
+  });
+
   it("lastKeyPrevented() is false after mount, true after a key the page prevents and false after one it does not", async () => {
     const page = await openPlain();
     const driver = fixtureDriver(page.page, page.log);
@@ -851,6 +907,32 @@ describe("the driver additions on the strict-CSP fixture (013 T003)", { timeout:
     if (browser === undefined || served === undefined) throw new Error("the suite did not start");
     const page = await visit(browser, served.origin, "facts.html");
     await page.page.evaluate(defineDriverHelpers);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
+
+// The driver additions of 020 phase 1 on the strict-CSP fixture (contracts/checks.md § Driver additions; tasks.md
+// T003): every body of `disclosureDriverScenarios` on its own `facts.html` page, the `ocelle-test-details` helper
+// defined through `page.evaluate`, with the page's recorders clean as every fixture test asserts.
+describe("the driver additions of 020 on the strict-CSP fixture (T003)", { timeout: 60_000 }, () => {
+  it.each(disclosureDriverScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "facts.html");
+    await page.page.evaluate(defineDetailsHelper);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
+
+// The driver additions of 020 phase 2 on the strict-CSP fixture (contracts/checks.md § Driver additions; tasks.md
+// T023): every body of `codeBlockDriverScenarios` on its own `facts.html` page, the `ocelle-test-code` helper defined
+// through `page.evaluate`, with the page's recorders clean as every fixture test asserts.
+describe("the driver additions of 020 phase 2 on the strict-CSP fixture (T023)", { timeout: 60_000 }, () => {
+  it.each(codeBlockDriverScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "facts.html");
+    await page.page.evaluate(defineCodeHelper);
     const observed = await run(fixtureDriver(page.page, page.log));
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
   });

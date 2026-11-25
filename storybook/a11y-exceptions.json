@@ -88,5 +88,1103 @@
     "reason": "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)",
     "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
     "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"epsilon\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"zeta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"eta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"theta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"iota\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"kappa\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"epsilon\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"zeta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"eta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"theta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"iota\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"kappa\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-overflowing",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-overflowing",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-middle",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-middle",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-end",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-end",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-focused",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-focused",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(11)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(13)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(15)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(17)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(19)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(21)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(23)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(25)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(27)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(29)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(31)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(33)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(11)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(13)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(15)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(17)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(19)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(21)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(23)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(25)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(27)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(29)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(31)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(33)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--right-to-left-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--right-to-left-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-unlabelled",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-unlabelled",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-caption",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-unnamed",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-named-by-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--overflows-blank-host-aria-label",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--right-to-left",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--empty-body",
+    "theme": "light",
+    "rule": "th-has-data-cells-incomplete",
+    "selector": "ocelle-data-table > table",
+    "reason": "header cells of a table with an empty `<tbody>` (spec edge case), so axe cannot decide which data cells they name",
+    "sunset": "the op that settles axe's th-has-data-cells incomplete result on `ocelle-data-table`'s empty-body state, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--empty-body",
+    "theme": "dark",
+    "rule": "th-has-data-cells-incomplete",
+    "selector": "ocelle-data-table > table",
+    "reason": "header cells of a table with an empty `<tbody>` (spec edge case), so axe cannot decide which data cells they name",
+    "sunset": "the op that settles axe's th-has-data-cells incomplete result on `ocelle-data-table`'s empty-body state, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(2) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--width-320",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(4) > td:nth-child(2)",
+    "reason": "cell partly clipped at the inline end of the overflowing data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(1)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(2)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(3)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(4)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(1)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(2)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(3)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-bounded",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(10) > td:nth-child(4)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(1)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(3)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(4)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(1)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(2)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(3)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
+  },
+  {
+    "story": "elements-ocelle-data-table--sticky-header-room-rule",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-data-table > table > tbody > tr:nth-child(3) > td:nth-child(4)",
+    "reason": "cell partly clipped at the block end of the bounded data table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box, to be opened by the operator",
+    "plan": "specs/019-data-records/plan.md"
   }
 ]

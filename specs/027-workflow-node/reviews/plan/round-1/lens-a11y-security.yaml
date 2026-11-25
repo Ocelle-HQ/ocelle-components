@@ -1,0 +1,38 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Host ARIA needs a handoff to the native selection button"
+    evidence:
+      - artifact: "contracts/workflow-node.md:3–16 derives the button name from the visible title and its description from internal metadata and states. research.md:5,9 mentions the action-row precedent but specifies only shadow-local references for this node."
+      - code: ".specify/memory/constitution.md:49–55 requires shadow-safe references and host naming or state to reach the real control. The action row explicitly forwards the host name and description to its inner action in packages/elements/src/ocelle-action-row.ts:24–31,668–678."
+      - code: "In a generic Chromium shadow-button probe, placing aria-label='Security review action', aria-describedby pointing to 'Security review details', and aria-current='step' on the host left the inner button’s computed name as 'Security review' and description as 'Waiting'. The host attributes did not transfer."
+    claim: |
+      The proposed name and description work for standalone metadata. The contract leaves no path for a canvas host to add accessible context or current-step state to the focused button. Native shadow behavior drops that information from the action, contrary to Principle III. Applying ordinary host name precedence blindly could also remove the full visible title promised by FR-002.
+    remedies:
+      - "Define how applicable host name, description and state reach the native button through the repository’s shadow-safe mechanisms. Preserve the full visible title in the computed name and the node’s own status text in its description. Add a real accessibility-tree test for host context, an applicable state such as aria-current='step', and attribute replacement or removal."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "The native selection target needs an explicit size floor"
+    evidence:
+      - artifact: "plan.md:15,25–26 assigns focus and layout to the node without a target size constraint. The narrow-layout quickstart at quickstart.md:12–14 exercises focus and text without measuring the clickable target."
+      - code: ".specify/memory/constitution.md:56 mandates --ocelle-target-min for the primary action. packages/tokens/src/source.ts:212 defines the 2.75rem token, and packages/elements/src/ocelle-button.ts:143–149 applies it to both dimensions of the actual button."
+    claim: |
+      The dedicated button is the primary selection action. A compact node can leave the whole card large enough while its title-only button remains smaller than the required target. The current plan has no assertion that distinguishes these outcomes.
+    remedies:
+      - "Require the button’s interactive box to meet --ocelle-target-min in both dimensions and verify its computed size in the narrow node fixture. Measure the button itself, including when nearby descriptive content wraps."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "Separate the card decoration from the selection control’s contrast cues"
+    evidence:
+      - artifact: "research.md:5 adopts the card’s border and ground patterns for a node with a native action. plan.md:26,32–33 specifies focus and general gate coverage without identifying which boundary makes the primary action discernible."
+      - code: "packages/elements/src/ocelle-card.ts:36–42 uses --ocelle-color-rule for the static card. .specify/memory/constitution.md:37,47,58–59 reserves that token for decoration and requires automated text and non-text contrast checks. packages/tokens/src/source.ts:37,42,62–69,95–109 lists the checked token pairings."
+      - code: "Using the source token sRGB values and WCAG luminance, color-rule against color-sheet is 1.43:1 in light and 1.35:1 in dark. Even color-control-border against color-inset is 2.80:1 in light and 2.95:1 in dark. Its registered grounds exclude inset."
+    claim: |
+      The proposed card border can be used as decoration. If it is the only visible boundary of the selection action, or the plan substitutes the normal control-border token on an inset surface, the interactive boundary lacks the required contrast. Passing the existing registry check does not establish contrast for an unregistered foreground and ground pairing.
+    remedies:
+      - "Specify a visible selection affordance with token pairings that meet contrast on its actual adjacent grounds. Keep any card rule decorative and verify the action, focus and state cues in both themes and forced colors."

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>App shell keyboard navigation</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="app-shell.css">
+<script type="module" src="ocelle-elements.js"></script>
+<script type="module" src="app-shell.js"></script>
+</head>
+<body>
+<div id="frame">
+  <ocelle-app-shell id="shell" product-name="Projects" menu-label="Show navigation" drawer-label="Projects navigation">
+    <ocelle-skip-link id="skip" slot="skip-link">Zum Inhalt</ocelle-skip-link>
+    <a id="plan" slot="sidebar" href="#plan">Project plan</a>
+    <h1>Project overview</h1>
+    <button id="main-action" type="button">Review project</button>
+  </ocelle-app-shell>
+</div>
+<button id="resize" type="button">Narrow frame</button>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Spec check 2: fixes
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| SPEC-2-01 | fixed | spec.md FR-011 (one focus target for all three parents when the focused child is removed: the next enabled child after it in document order, else the nearest enabled child before it, else focus leaves the parent as for any removed element; in tabs and the segmented choice, when the removed child was focused and selected or pressed, the focus target and FR-011a's selection target are the same child); US1 scenario 14 (rule restated with "enabled", worked example `alpha`, `beta` focused, `gamma` disabled, `delta`: focus goes to `delta`); US2 scenario 18 (focus and selection land on the same tab) |
+| SPEC-2-02 | fixed | spec.md FR-010 (setting the current value is always a no-op on the selection and wins over the other clauses, even when it names a disabled selected child); US1 scenario 18 (host sets `listbox.value = "gamma"` while disabled `gamma` is selected: nothing changes, no event) |
+| SPEC-2-03 | answered | Operator (2026-11-13, human:jeroennouwsdev), Q1 (b): spec.md operator decisions at spec check 2; FR-010a (new: the last non-empty host value no enabled child has is remembered; listbox `value` reads `""`, tabs and segmented choice keep current or first enabled child; when a matching child becomes enabled and present (added, value changed, moved in, `disabled` removed) the first such child is selected with no event; forgotten on that selection, on the next user selection and on the next host set of any value, `""` and the current value included; FR-011a moves do not forget it); US1 scenario 11 (pointer to FR-010a) and new scenario 19; US2 new scenario 19; US3 new scenario 16 |
+| SPEC-2-04 | answered | Operator (2026-11-13, human:jeroennouwsdev), Q2 (b): spec.md operator decisions at spec check 2; FR-046 (without `href`, every modified activation, Ctrl, Meta or Shift held or a middle click, emits no event; only plain activations emit; Alt alone stays a plain activation); FR-049 (README says a modified activation of a link without `href` does nothing); US5 scenario 13 (case without `href`: no event, no navigation, paired with a plain click's `{ "href": null }`) |
+
+Notes SPEC-2-05 to SPEC-2-14 are not changed in this fix; they remain open for the plan or the next check. SPEC-2-07
+(Alt-click with `href`) is untouched: FR-046 still makes Alt alone a plain activation, and the outcome of an Alt-click
+with `href` in Chromium is left to the plan or the next check.

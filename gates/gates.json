@@ -28,6 +28,7 @@
     "check": "Unit tests",
     "command": "pnpm run gate:unit-tests",
     "plantCommand": "node gates/bin/test.ts --root {root}",
+    "helperJobs": ["unit-tests-plan", "unit-tests-shard", "unit-tests-full"],
     "plantForm": "repo-tree",
     "scope": "every test file in the repository (FR-028), through the projects of vitest.config.ts"
   },

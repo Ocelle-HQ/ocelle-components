@@ -1,0 +1,189 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Connectors are pseudo-elements, but the geometry oracle measures them with getBoundingClientRect, and no driver can read them"
+    evidence:
+      - artifact: "contracts/checks.md § Oracles, geometry row: \"`getBoundingClientRect`: marker size, centring on the first line, connector ends inside the chain\" for US2-2, US3-2, US3-3"
+      - artifact: "research.md R-10: \"The connector is the `<li>`'s `::before`\"; R-12: \"its connector (`::after`)\" and \"`li[data-line-end]::after { content: none }`\"; contracts/ocelle-event-timeline.md: \"The connector is `li:not(:last-child)::before`\""
+      - artifact: "contracts/checks.md § Plants: \"The connector shown on the last `<li>`\" must fail US2-2; \"`data-line-end` never set\" must fail US3-3; plan.md Scale/Scope: \"1 driver addition\" (itemTexts only)"
+      - code: "origin/claude/013-data-display packages/elements/test/scenarios/driver.ts: `box`, `boxes`, `styles(id, inner, properties)` all select real elements with querySelector in the shadow root; no method reads a pseudo-element's computed style or box. origin/claude/015-workflow-layouts driver.ts: same (Target is an id or an `inner` selector)."
+      - code: "Platform: a pseudo-element has no DOM node, so getBoundingClientRect cannot be called on it; only getComputedStyle(el, '::before') reads it, and that gives used insets and sizes, not page geometry."
+    claim: |
+      US2-2 ("a connector joins each marker to the next one; the last event has no connector"), US3-2 ("a connector
+      between each pair of consecutive steps on the row") and US3-3 ("no connector extends past the chain's inline
+      edges or crosses from one line to the next") are geometry claims about boxes the planned oracle cannot measure.
+      With no driver addition, an implementer either asserts a proxy (the `data-line-end` attribute, or the
+      `content` of `::after`), which tests the implementation and not FR-034's "never crosses a line", or writes a
+      body that cannot fail. The two plants in checks.md would then be judged against a proxy that the plant itself
+      flips, and the line-end measurement's mutants (for example `>` against `>=` on the block offsets) are killed
+      only if some body sees connectors present where they should be. In forced colours (US2-8, US3-8) "connectors
+      are drawn in a system colour and visible" also needs the pseudo-element's computed colour and size.
+    remedies:
+      - "Add a driver addition, with its own test in both harnesses, that reads a pseudo-element of a shadow element: its computed `content`, `display`, colour, border and inset values, plus its box derived from the host element's box and those used values (or render the connector as a real aria-hidden `<span>` so `boxes` measures it), and state in checks.md which bodies assert connector presence and extent with it: US2-2, US3-2, US3-3 (each connector's inline extent inside the `<ol>`'s box and on its step's line), US2-8, US3-8. Each body that asserts an absent connector also asserts a present one in the same chain."
+      - "Render connectors as aria-hidden `<span class=\"connector\">` elements instead of pseudo-elements, so the existing `boxes` and `styles` readers measure them, and update R-10, R-12 and the contracts."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "red.sh judges the red commit by the suite's exit code, yet the plan names no per-body check and no list of bodies that pass on the scaffold"
+    evidence:
+      - code: ".specify/extensions/story/scripts/red.sh lines 19-22: `code=$(story_run_tests_at ...)`; `red=false; (( code != 0 )) && red=true`. tdd-check.sh lines 38, 54, 61 use the same suite-level exit codes."
+      - artifact: "spec.md SC-006: \"Every acceptance scenario has at least one test that fails against the code before its phase (the red/green check)\""
+      - artifact: "contracts/checks.md § Oracles, one sentence: \"The bodies that pass on light DOM alone also assert something only the element gives\"; plan.md Phases step 2: \"so the red bodies fail on their assertions\""
+      - code: "origin/claude/013-data-display specs/013-data-display/contracts/checks.md § Bodies that the platform alone could pass (PLAN-TESTABILITY-1-002): a table naming each such body, the outcome the platform gives anyway and the assertion only the element gives; and \"The red log must show each scenario body failing on an assertion\"."
+    claim: |
+      A single failing body makes the whole red run red, so neither script proves SC-006 per scenario. Several
+      planned bodies hold against the scaffold (empty `render()`, no `base.css` rules) or against `main`:
+      US1-14 (a consumer `td` padding wins: with no data-table rules it always wins), the nested-table "not styled"
+      edge case, the FR-007 "no overflow-wrap on header cells" body, US2-7 and FR-026 (no added tab stop, no live
+      region, no landmark), the "throws nothing" halves of the empty-container and item-outside bodies, US2-6 and
+      US3-7's "other children not shown" half (nothing is shown on the scaffold), and the no-pill node test (the
+      scaffold has no "pill" string). 013 needed a table of these. Here only some are guarded by a plant
+      (US1-14, FR-007 header), and plants run at green, not red.
+    remedies:
+      - "Add to contracts/checks.md a table like 013's: each body whose outcome the platform or the scaffold gives (at least the bodies named above), the assertion only the element gives that is paired with it in the same body, or the plant that must make it fail. Require the red log to be read per body: every scenario body fails on an assertion (not an import or setup error), and the review checks that list against `red-phase.log`."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The contrast oracle is a token-table lookup that holds whatever the element paints, and no plant guards a structural mark's colour"
+    evidence:
+      - artifact: "contracts/checks.md § Oracles, contrast row: \"US2-8, US3-8 | token-pair lookup in the token source (the contrast gate's data), not pixels\""
+      - artifact: "contracts/checks.md computed-style row lists US1-2, US1-3, US1-10, US1-14, US2-3, US3-2, US3-4, not US1-11, US2-8 or US3-8; US1-11 appears only under forced colours"
+      - artifact: "contracts/checks.md § Plants: no plant changes a marker, ring or chip-outline colour; FR-013 forbids `--ocelle-color-rule`, `-rule-strong`, `-control-border`, `-focus` for structural marks"
+      - code: "packages/tokens/src/source.ts on this branch already declares text contrast for `color-ink`, `-ink-soft`, `-ink-muted` on the main grounds (spec check 3 confirms), so a lookup of those pairs passes before any element code exists."
+      - code: "stryker.elements.config.json mutates TypeScript; checks.md § Plants itself says Stryker does not mutate `css` templates, where the marker, ring and outline colours live (R-10, R-12)."
+    claim: |
+      A body that looks up "ink-muted declares text on the nine grounds" asserts the token source, not the element:
+      it passes on `main`, on the scaffold and on an element whose ring is drawn in `--ocelle-color-rule` (the
+      decorative token FR-013 bans for structural marks). FR-013 and constitution III make structural contrast
+      non-negotiable, yet nothing in the plan would fail if the marker, the step ring or the chip outline were
+      drawn in a non-qualifying token, and Stryker cannot reach the CSS. US1-11's text contrast for cells and
+      headers in light and dark has no oracle at all.
+    remedies:
+      - "Make the contrast oracle two-step in every body that uses it (US1-11, US2-8, US3-8): read the rendered colour (computed `color`, `background-color`, `border-color` of the cell, header, time, marker, ring, ordinal and chip outline) and assert it equals the probe-resolved value of the named token in light and in dark; then look up that token's declaration on the nine grounds. Add plants: the timeline marker in `--ocelle-color-rule-strong`, the step ring in `--ocelle-color-rule`, the chip outline in `--ocelle-color-control-border`, the header text in `--ocelle-color-rule-strong`; each must fail its body."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "The element plants have no run step and no record, the red commit is said to hold them, and plants.md is already op 016's gate-plant record"
+    evidence:
+      - artifact: "plan.md § Phases, US1 Red: \"The plants of contracts/checks.md for the data table.\"; US2 and US3 Red: \"the story-test extension and the plants\""
+      - artifact: "plan.md § Phases, every phase: \"Plants. It runs the plants its diff affects: `pnpm run gate:plants -- --affected <phase base>` (op 016), recorded in `reviews/phase-<N>/plants.md`\""
+      - code: "origin/claude/041-plants-affected .specify/extensions/story/commands/speckit.story.implement.md step 9: plants.md has a fixed form (base, command, exit, verbatim output); speckit.story.review.md: a review compares its `note: affected:` lines with `--affected --list` and any other content is a blocking mismatch; speckit.story.fix.md replaces plants.md in each fix round."
+      - code: "origin/claude/013-data-display specs/013-data-display/reviews/phase-1/plants.md: 013's element plants (source edited, guard bodies run, restored) were recorded in that same file name, as a table of plant, guard run and result."
+      - code: "Constitution VIII: \"Red first ... in a commit that changes only test files.\" A plant is a mutated copy of green source; it cannot be in the red commit or run before green exists."
+    claim: |
+      Because Stryker does not mutate `css` templates or `base.css`, the checks.md plants are the only evidence that
+      the CSS-only bodies can fail. The plan puts them in the red commit, where there is no green source to mutate,
+      and names no green step that runs them, no record file and no review check. The obvious file,
+      `reviews/phase-<N>/plants.md`, now belongs to op 016's gate-plant run in a fixed form that the review compares
+      line by line and the fix step overwrites, so 013's way of recording element plants there would either be
+      rejected or erased.
+    remedies:
+      - "Move the element plants to the green step: after green, each plant of checks.md is applied to the green source (or base.css), its guard bodies are run in process, and the source is restored, with nothing committed. Record the result in a separate file, for example `reviews/phase-<N>/element-plants.md` (plant, guard bodies, bites or not), and state that a plant that does not bite stops the phase for the operator, as in 013. Leave `plants.md` to op 016's record."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The plant 'the marker's aria-hidden removed' cannot fail US2-1: an empty marker span is already ignored in Chromium's tree"
+    evidence:
+      - artifact: "contracts/checks.md § Plants: \"The marker's `aria-hidden` removed | US2-1, US3-1\"; contracts/ocelle-event-timeline.md: `<span class=\"marker-line\" aria-hidden=\"true\"><span class=\"marker\"></span></span>` (no text)"
+      - code: "Probe run in this session: google-chrome headless, a shadow `<ol role=list>` whose first `<li>` holds `<span class=marker-line><span class=marker></span></span>` with no aria-hidden, and whose third holds `<span class=marker>1</span>`; Accessibility.getFullAXTree, unignored nodes: the first listitem holds only `StaticText \"14:02 Mission created\"` (the empty marker is not in the unignored tree); the third holds `generic > StaticText \"1\"` before `StaticText \"Spec\"`."
+    claim: |
+      For the chain the plant bites (the ordinal's text appears in the item text). For the timeline the marker and
+      its wrapper hold no text, so removing `aria-hidden` changes nothing that the AX oracle or `itemTexts` can see:
+      the plant cannot bite US2-1, and the review would stop on it. The `aria-hidden` on the timeline marker is an
+      equivalent change for Chromium (it guards WebKit and future content only).
+    remedies:
+      - "Split the plant: keep \"the step marker's aria-hidden removed\" for US3-1 and US3-10; record the timeline marker's aria-hidden as an equivalent change in checks.md with the probe as the reason (no plant), and keep a DOM assertion that the marker wrapper carries `aria-hidden=\"true\"` only if the operator wants the WebKit guard pinned."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "The timeline sets the marker line from the event's time attribute, but time is not reflected, and no body sets time by property or to an empty string"
+    evidence:
+      - artifact: "plan.md Constitution Check row I: \"`wrap` and `variant` reflect, because the styles select on them\" (time is not listed); contracts/ocelle-timeline-event.md surface table: `time` not marked reflected, `wrap` (reflected)"
+      - artifact: "research.md R-10: \"the container reads the item's `time` attribute and sets a class on the `<li>`\"; contracts/ocelle-event-timeline.md: \"A `MutationObserver` watches ... each child's `hidden`, `aria-hidden` and `time`\""
+      - artifact: "data-model.md, Timeline event: \"empty or absent renders no time box\"; spec.md US2-3 uses only markup `time=\"14:02\"` and an event with no time"
+    claim: |
+      An event whose `time` is set from script (`event.time = "14:02"`, the natural path for a consumer outside
+      htmx) renders its time box, but no attribute changes, so the container's observer never fires and the `<li>`
+      keeps the no-time class: the marker is centred on the content's line, not the time's (FR-021). `time=""`
+      gives the opposite: the attribute is present, the event shows no time box, and the container still sets
+      `has-time`. Every planned body writes `time` as markup, so neither case is reachable by a test and the
+      Stryker run on the container's class decision cannot be killed for them.
+    remedies:
+      - "Add US2-2 and US2-3 cases: `time` set by property after mount, changed by property, set to `\"\"` and to white space, each asserting the marker's centre on the first rendered line (time's or content's) and the item text. Then either reflect `time` (and treat empty as absent in the container's class), or have the container decide from the event's rendered state rather than its attribute; record the choice in R-10 and the contract."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "The chain writes data-line-end from a ResizeObserver callback with no settle wait named and no test that no observer loop error occurs"
+    evidence:
+      - artifact: "research.md R-12: \"the write happens in the observer callback ... the observer cannot loop\"; checks.md names no layout wait for the chain bodies"
+      - code: "origin/claude/013-data-display driver.ts `layout(id)`: \"reads the border box of the element with `id` and of the first `dl` of its shadow root once per animation frame\" (the chain has an `ol`, no `dl`); 013 checks.md § No ResizeObserver loop error: a recorder test of window `error` events and console.error with a synthetic-error self-check, and a plant (the measure run synchronously in the callback) that must fail it."
+    claim: |
+      The no-loop claim is reasoned, not tested: an implementation that toggles any size-affecting property in the
+      callback would raise "ResizeObserver loop completed with undelivered notifications", which Playwright's
+      fixture harness does not record (013 measured this), so the line-end bodies would still pass. The bodies that
+      read line ends after a resize, an added or hidden step, a text change or a late font need a named settle
+      wait that reads the chain's list, or they may read the previous layout.
+    remedies:
+      - "In checks.md, name the wait the chain and timeline bodies use after a change (013's `layout` generalised to the first `ol`, or 009's `settle`), and add the in-process no-loop-error test of 013 around a run of chain resizes 1280 → 320 → 1280 px and a step added and hidden, paired with an assertion that the line ends changed, with a plant that writes a size-changing property in the callback."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "The prose-override node test reads a fixed list of 003 selectors, so a new 003 table rule does slip through"
+    evidence:
+      - artifact: "research.md R-06: \"A node test reads 003's prose table rules from `base.css` and fails when one of their properties is not restated in the override (so a later 003 change cannot slip through)\"; contracts/styles-data-table.md names the parsed selectors: `:where(table…)`, `:where(th, td)`, `:where(th)`, `:where(caption)` and the shared `:where(p, ul, ol, blockquote, pre, table, hr)`"
+      - code: "packages/styles/src/base.css:199 `[data-ocelle-prose=\"\"] :where(table:focus-visible)` is a prose table rule already outside the four named selector forms (whether `table…` covers it is not stated)."
+      - artifact: "spec.md US1-10 compares a listed set of properties only."
+    claim: |
+      A later 003 rule on `tr`, `thead`, `tbody`, `tfoot`, `col` or a pseudo-class of a table element is not in the
+      list, so neither the node test nor US1-10's property list sees it, and the table inside prose would differ
+      from the table outside with every test green. FR-012 says "Every property" governs.
+    remedies:
+      - "Change the oracle to cover what FR-012 says: in US1-10, compare the full computed style (every property `getComputedStyle` lists) of the table, caption, every row group, row and cell inside and outside prose, excluding only inherited-from-container properties the spec names; or have the node test select every `[data-ocelle-prose]` rule whose selector can match a table, caption, row group, row, column or cell element, not a fixed selector list."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "FR-052 asks for a body per behavioural edge case, but three have none in the plan"
+    evidence:
+      - artifact: "spec.md Edge Cases: \"Caption while the region scrolls ... either way it is never cut at 320 px (it wraps)\"; \"Two copies of the package on a page ... the first definition wins\"; \"A table with no rows ... It renders as the consumer wrote it ... the element adds no text\""
+      - artifact: "plan.md US1 Spike: \"the caption at 320 px, sticky\" (spike only); plan.md US1, US2, US3 Red edge-case lists name none of these three"
+      - code: "origin/claude/013-data-display packages/elements/test/browser/fixtures/define-twice.html: the existing fixture for the two-copies rule, which 019's elements are not planned to join."
+    claim: |
+      FR-052 says browser tests MUST cover every edge case that states behaviour. The caption case is especially
+      at risk: under R-03's `fit-content` track the caption's box is as wide as the table, so a sticky caption can
+      still run past the box's visible edge at 320 px. A spike measures it once, and nothing keeps it true after
+      green.
+    remedies:
+      - "Add bodies to the phase 1 red commit: the caption's text boxes (driver `lines`) lie inside the region box's visible inline extent at 320 px, scrolled to the start and to the end; a table with a `<thead>` and an empty `<tbody>` renders unchanged with no added text; and the five elements join the define-twice fixture."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "The recheck covers 013's driver but not 009's, and the two drivers disagree on shared method signatures"
+    evidence:
+      - artifact: "plan.md Technical Context: \"013's `viewport`, `scrollWidth`, `copy`, `pressTab`, `focused` and `text` and 009's keyboard and scroll helpers are reused as merged\"; R-14 lists \"013's ... driver functions\" and 009's module, not 009's driver"
+      - code: "origin/claude/013-data-display test/scenarios/driver.ts: `reducedMotion(mode: ReducedMotion)`, `computed(id: string, property)`, `pressTab()`, `focused()`. origin/claude/015-workflow-layouts test/scenarios/driver.ts: `reducedMotion(on: boolean)`, `computed(target: Target, property)`, `press(key)`, `tabWalk`, `activeElement`, `settle`."
+      - artifact: "plan.md Project Structure: `test/scenarios/driver.ts, in-process.ts, browser/driver.ts`; on 013's branch the harness files are `test/in-process.ts` and `test/browser/driver.ts`."
+    claim: |
+      The keyboard oracle (US1-5, US1-8, US1-13) mixes 013's `pressTab`/`focused` with 009's arrow and scroll
+      helpers. Whichever branch merges second must reconcile `reducedMotion`, `computed` and the focus readers; the
+      shared bodies are written against whatever comes out. T001 would not stop on a renamed or reshaped 009 helper.
+    remedies:
+      - "Add to R-14 and T001: 009's driver additions as merged (`press`, `tabWalk`, `activeElement`, `focus`, `scrollLeft`, `setScrollLeft`, `frameRecord`, `settle`, the `Target` form of `computed`) and how `reducedMotion` and the focus readers were reconciled; name in checks.md which helper each keyboard body uses; fix the harness file paths."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "US1-16's caption change is not pinned to a characterData edit, so the observer's characterData option can survive mutation"
+    evidence:
+      - artifact: "research.md R-04: the observer watches \"`childList` and `characterData` (a swapped table, a replaced or edited caption, US1-16)\"; spec.md US1-16: \"When the caption's text changes\""
+      - code: "origin/claude/013-data-display driver.ts `text(id, value)`: \"Sets the data of the first text node child ... (a `characterData` change, not a `childList` one)\"; 013 phase 1 plants.md: \"`characterData` removed from the observer\" bit only because a body used `text`."
+    claim: |
+      If US1-16 replaces the caption's text with `textContent =` (a childList change), Stryker's mutant that drops
+      `characterData: true` survives and a real in-place edit (htmx `innerHTML` on a text node is a childList change
+      too, but a framework patch is not) is untested.
+    remedies:
+      - "State in checks.md that US1-16 runs twice: once with the driver's `text` on the caption's text node (characterData) and once replacing the caption element (childList), each asserting the new region name."
+  - id: PLAN-TESTABILITY-1-012
+    severity: 1
+    title: "The oracle table leaves out several scenarios"
+    evidence:
+      - artifact: "contracts/checks.md § Oracles: no row lists US1-12, US2-5, US2-6, US2-9, US3-5, US3-6, US3-7 or US3-9; US3-6 appears only as a plant guard"
+    claim: |
+      The RTL scenarios (first column at the right, markers on the right, lines filling leftward) and the dynamic
+      update scenarios need a geometry or AX oracle each; without one the tasks have no stated way to assert them,
+      and an RTL body could check only the `dir` attribute.
+    remedies:
+      - "Add the missing scenarios to the oracle rows: US1-12, US2-9, US3-9 to geometry (inline-start edge positions relative to the container); US2-5, US2-6, US3-6, US3-7 to the AX tree and `itemTexts`; US3-5 to geometry and scroll width."

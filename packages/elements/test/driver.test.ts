@@ -3,7 +3,7 @@ import "../src/ocelle-icon.ts";
 import { FirstLoadBase, OcelleTestProbe, OcelleTestRegion } from "./fixtures/live-regions.ts";
 import { inProcessDriver, timing } from "./in-process.ts";
 import type { InsertHow } from "./scenarios/driver.ts";
-import { defineDriverHelpers, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
+import { codeBlockDriverScenarios, defineCodeHelper, defineDetailsHelper, defineDriverHelpers, disclosureDriverScenarios, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
 
 // The driver steps in process (specs/010-feedback-forms T001b; contracts/testing.md § Driver steps, § Forms): each
 // step on test-only elements of test/fixtures/live-regions.ts and plain controls, so each test fails without its step.
@@ -23,6 +23,8 @@ const driver = inProcessDriver();
 // The helper elements of the driver additions of 013 phase 1 (scenarios/driver-additions.ts), defined in this file's
 // frame for the shared bodies at the end of this file.
 defineDriverHelpers();
+defineDetailsHelper();
+defineCodeHelper();
 
 function byId(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -543,6 +545,23 @@ describe("the in-process driver", () => {
     }).toEqual({ before: [0, 0], after: [120, 300], inner: 300, scrolls: [120] });
   });
 
+  // 019 T029 (research R-11): the item-text oracle of the timeline and chain bodies.
+  it("itemTexts(id) gives each listitem's StaticText names joined and collapsed, without hidden or aria-hidden text, a time element's text included, an empty item as \"\" and [] with no list", async () => {
+    await driver.mount('<ol id="l"><li>One <span hidden>gone</span><span aria-hidden="true">unread</span> <b>bold   and</b> <i>nested <em>inline</em></i></li><li></li><li><time datetime="2026-11-15">14:20</time> Two</li></ol><p id="after">Outside</p>');
+    expect({ texts: await driver.itemTexts("l"), none: await driver.itemTexts("after") }).toEqual({ texts: ["One bold and nested inline", "", "14:20 Two"], none: [] });
+  });
+
+  // 019 T079: the block-axis readers of the overflow-region module's block-axis option, as scrollLeft and setScrollLeft.
+  it("scrollTop(target) reads and setScrollTop(target, value) writes an instant scroll, on a light-DOM box with smooth scroll-behavior and on a shadow box", async () => {
+    await driver.mount('<div id="box"><div id="tall"></div></div><driver-host id="h"></driver-host>');
+    await driver.rules("#box { block-size: 100px; overflow-y: auto; scroll-behavior: smooth; } #tall { inline-size: 20px; block-size: 1000px; }");
+    const before = [await driver.scrollTop("box"), await driver.scrollTop({ id: "h", inner: ".scroll" })];
+    const at: number[] = [];
+    document.getElementById("box")?.addEventListener("scroll", () => at.push(document.getElementById("box")?.scrollTop ?? -1));
+    await driver.setScrollTop("box", 120);
+    expect({ before, after: await driver.scrollTop("box"), scrolls: at, left: document.getElementById("box")?.scrollLeft }).toEqual({ before: [0, 0], after: 120, scrolls: [120], left: 0 });
+  });
+
   it("lastKeyPrevented() is false after mount, true after a key the page prevents and false after one it does not", async () => {
     await driver.mount('<button id="a" type="button">A</button>');
     const button = document.getElementById("a");
@@ -653,6 +672,24 @@ describe("the in-process driver", () => {
 
 describe("the driver additions, in process (013 T003)", () => {
   it.each(driverAdditionScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// The driver additions of 020 phase 1 in process (contracts/checks.md § Driver additions; tasks.md T003): `findText`,
+// `setProperties` and the two readers `visible` and `reflected`, on plain `details` and the `ocelle-test-details` helper
+// defined above. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
+describe("the driver additions of 020, in process (T003)", () => {
+  it.each(disclosureDriverScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// The driver additions of 020 phase 2 in process (contracts/checks.md § Driver additions; tasks.md T023): `copyShadow`,
+// `copyShadowRun`, `ariaSnapshot` and the two readers `clientRects` and `characters`, on the `ocelle-test-code` helper
+// defined above. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
+describe("the driver additions of 020 phase 2, in process (T023)", () => {
+  it.each(codeBlockDriverScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
   });
 });

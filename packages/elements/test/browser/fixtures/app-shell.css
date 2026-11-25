@@ -1,0 +1,7 @@
+#frame {
+  inline-size: 72rem;
+}
+
+#frame.narrow {
+  inline-size: 26rem;
+}

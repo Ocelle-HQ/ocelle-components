@@ -150,10 +150,40 @@ Per round, under `reviews/plan/round-R/`:
 | Mutation testing (`mutation_command`) | tests that run the code but would not notice it changing |
 | Gate plants in CI | a gate that passes everything |
 
+## Focused phase verification and complete CI
+
+The repository's story runner uses Vitest's configured project/file inventory. It runs the phase's changed test files
+at each red commit and the phase head. For the final proof, it runs the related cases with the final test files overlaid
+on the phase base, any scaffold, or the parent of a red review-fix commit. Red evidence records the changed assertion site
+and its diagnostic. A shared assertion can provide red evidence when the stack maps it to a changed caller in the selected
+test. The caller and helper assertion must both match on replay. A missing implementation module is accepted on a pre-scaffold base only when the scaffold supplies that
+module and the assertions fail on the scaffold. Setup, collection, non-assertion, unrelated and incomplete failures
+block review.
+
+When a phase changes shared test helpers or fixtures, list every additional runnable consumer, one repository-relative
+path per line, in `reviews/phase-N/test-scope.txt`. The reviewer checks the list against the shared changes. A shared
+change without a list triggers the full suite for that sub-check. Completed, matching sub-checks can resume from the
+local `reports/story-evidence/` directory. The check logs say which project and files ran, which inputs were tested, and
+whether evidence was reused. Remove that local directory for a fresh execution.
+
+Use `ci-only <repository-relative path>` in the same file to run a changed collateral integration test in required
+CI. The eligible suites are `gates/test/integration/visual.test.ts` and `gates/test/integration/axe.test.ts`, each
+discovered in `gates-integration`. Use this for maintenance of existing assertions such as exact story or baseline
+counts. A suite with a recorded red assertion or helper, a build or browser behavior proof, or a suite also listed
+as a local consumer must stay local. At least one changed runnable test must remain in the focused head run.
+The phase report lists the deferred project/file identities in `tdd-check.json` under `deferred_ci`. The reviewer verifies each against
+the successful required `Unit tests` inventory and shard results for the same candidate and checks the corresponding
+required visual or accessibility job before approval.
+
+The required GitHub `Unit tests` check verifies the complete discovered inventory across isolated runners, with timing-sensitive
+projects retaining their Vitest settings. The local `pnpm test` command still runs the complete suite. To compare both paths
+on a same-repository PR, include `<!-- verify-unit-test-parity -->` in its description before opening or pushing to the PR.
+That run requires the normal full gate to pass too and compares project, file, test identity and outcome with the shards.
+
 ## Configuration
 
 `.specify/extensions/story/story-config.yml` (source copy in `extensions/story/`): `test_command`,
-`setup_command`, `test_pathspec`, `mutation_command`. Until `test_command` is set the check reports
+`focused_runner`, `setup_command`, `test_pathspec`, `mutation_command`. Until `test_command` is set the check reports
 `unavailable`, which the review treats as blocking for any phase with behaviour, so the first feature
 must set up the test runner and fill these in.
 

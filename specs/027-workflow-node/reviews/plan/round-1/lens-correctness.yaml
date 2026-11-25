@@ -1,0 +1,46 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "Define which host ARIA reaches the selection button"
+    evidence:
+      - artifact: "contracts/workflow-node.md:3–16 defines a title-derived name and description, with no host ARIA handling; plan.md:13–15 only requires shadow-local references."
+      - code: ".specify/memory/constitution.md:49–56 requires host-supplied accessible names and ARIA state to reach the real control. packages/elements/src/ocelle-action-row.ts:634–657 and 668–676 show how the repository distinguishes the host's name and element references from those on the native control."
+    claim: |
+      A host author can place an accessible name or relevant ARIA state on the custom element while the node silently exposes its default title and state on the actual button. Keeping the default references in one shadow root avoids broken ID references but leaves the host-to-control contract unspecified. Name customization also needs a clear rule that preserves the complete visible title required by FR-002.
+    remedies:
+      - "Specify which host name and applicable state attributes reach the selection control, their update and removal behavior, and how the full visible title and required built-in state description are preserved. Add contract and actual-button accessibility assertions for those cases, using the repository's same-root or element-reference patterns."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Include the minimum accessible control in the first shippable phase"
+    evidence:
+      - artifact: "plan.md:25 introduces the working standalone selection button in phase 1, while line 26 adds its token-based focus and layout in phase 2; line 27 finishes the full state and theme baselines. research.md:5 cites the card's border pattern without distinguishing the action boundary."
+      - code: ".specify/memory/constitution.md:37 makes the rule token decorative only, lines 47–58 require an accessible primary action and token focus ring, and lines 77–82 require stories and baselines for states the element ships. packages/elements/src/ocelle-card.ts:23–31 uses the decorative rule token on a noninteractive card."
+    claim: |
+      A literal phase-1 implementation can expose a public selection action before the plan calls for compliant focus and full light/dark evidence for the states present in that phase. The card precedent could also be applied to the selection button's boundary even though the constitution reserves that token for decoration.
+    remedies:
+      - "Make the standalone action's token focus, target size, conforming control boundary, and light/dark fixtures for the states introduced in phase 1 part of that phase's approval. Add fixtures and baselines as later states ship, and document the card boundary as decorative when it uses the rule token."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "Separate each phase’s new behavior from its existing regression assertions"
+    evidence:
+      - artifact: "plan.md:25–27 implements the native standalone action in phase 1, then calls for red assertions on a standalone tab stop in phase 2 and inspection selection in phase 3. contracts/workflow-node.md:13–18 makes the native button tabbable by default and gives inspection the same selection path."
+      - code: ".specify/memory/constitution.md:115–126 requires a test-only red to fail for missing behavior and the final assertions to fail against pre-phase code. packages/elements/src/ocelle-action-row.ts:654–658 provides the precedent for a native button with its default tab participation."
+    claim: |
+      Once phase 1 ships the native button, standalone focus and ordinary selection already work. Because the approved scope uses the same selection in read-only inspection, phase 3 has no distinct mode or selection change to turn those existing assertions red. Literal implementation of the delivery sequence risks a false red or the introduction of a separate mode that the spec does not require.
+    remedies:
+      - "Name the new red behavior for each phase explicitly. Retain the single standalone tab stop and ordinary selection as regression checks, use host-controlled removal/restoration and accessible combined states as the phase-2 reds, and make newly readable host status the phase-3 red while exercising existing selection with that status present."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 2
+    title: "Specify the selection request's dispatch and cancellation contract"
+    evidence:
+      - artifact: "contracts/workflow-node.md:18 gives the event name, payload, bubbling and composition, but omits its dispatch target, cancelability and relation to the native click. spec.md:68 and 73 require one action and a documented handoff to the host."
+      - code: "specs/012-button-action-row/contracts/elements-package.md:100,137 distinguishes the custom event contract from its underlying click. contracts/checks.md:12 under that feature records target, flags, detail and dispatch order. packages/elements/src/ocelle-action-row.ts:622–626 illustrates deliberately different cancellation semantics when navigation exists."
+    claim: |
+      The canvas will subscribe to a public request that accompanies a native click. The plan leaves it to the implementer whether the request originates at the host or its inner button, whether hosts can cancel it, and how the canvas should avoid listening to both paths for selection. Those differences become observable after phase 1 and are significant once a consumer integrates with the event.
+    remedies:
+      - "Define the selection event's host dispatch target, cancellation behavior and relationship to the originating click. Document that a canvas uses the selection request as its single selection input and verify the target, flags and exactly one request through an ancestor listener."

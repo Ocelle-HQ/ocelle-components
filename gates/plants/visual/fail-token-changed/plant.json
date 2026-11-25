@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the one hundred and eighty-nine light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the thirty of mission 010's notice, form-input and form-select stories (all of them), the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16), the four ocelle-drawer stories on the sheet ground (all but the two on the chrome ground, measured in phase 3), the nine ocelle-tooltip stories (measured in phase 4), the ten of 009's board and lane stories that show color-ink (all but elements-ocelle-workflow-board--no-lanes, an empty board; measured in the pinned container), the six of 009's list-detail stories, whose panes show text in color-ink, the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2), the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3) and the eleven of 011's context sidebar stories, which all show it (measured in the pinned container under docker for 011 phase 4), the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), the fourteen of 012's ocelle-button stories that show color-ink (all but primary, disabled and chrome, measured in the pinned container at phase 2), the five of 012's phase 3 link and state stories that show color-ink (all but link-disabled, measured in the pinned container at phase 3), the four of 012's phase 4 busy stories (measured in the pinned container at phase 4), the twelve of 012's phase 5 action row stories (all but chrome, measured in the pinned container at phase 5), the eight of 012's phase 6 row state and card stories (all but unavailable, unavailable current and chrome current, whose text is in disabled ink or chrome-ink, measured in the pinned container at phase 6), and none in dark. None of 011's eight personal rail stories shows it: the rail is drawn in the chrome ink on the chrome, and nothing else in those stories is text (measured in the pinned container under docker for 011 phase 5). A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the three hundred and thirty-one light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the thirty of mission 010's notice, form-input and form-select stories (all of them), the four textarea stories of mission 026 (every story has a color-ink label), the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16), the four ocelle-drawer stories on the sheet ground (all but the two on the chrome ground, measured in phase 3), the nine ocelle-tooltip stories (measured in phase 4), the ten of 009's board and lane stories that show color-ink (all but elements-ocelle-workflow-board--no-lanes, an empty board; measured in the pinned container), the six of 009's list-detail stories, whose panes show text in color-ink, the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2), the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3) and the eleven of 011's context sidebar stories, which all show it (measured in the pinned container under docker for 011 phase 4), the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), the fourteen of 012's ocelle-button stories that show color-ink (all but primary, disabled and chrome, measured in the pinned container at phase 2), the five of 012's phase 3 link and state stories that show color-ink (all but link-disabled, measured in the pinned container at phase 3), the four of 012's phase 4 busy stories (measured in the pinned container at phase 4), the twelve of 012's phase 5 action row stories (all but chrome, measured in the pinned container at phase 5), the eight of 012's phase 6 row state and card stories (all but unavailable, unavailable current and chrome current, whose text is in disabled ink or chrome-ink, measured in the pinned container at phase 6), the seven listbox stories of 014 (every option's text is color-ink), 014's composed story of the listbox inside an open dialog (the dialog's text and the options are color-ink; added for O2-01, measured in the pinned container under docker), the eight tabs stories of 014 (every tab's text is color-ink) the nine segmented-choice stories of 014 (every segment's text is color-ink) four of the five copy-field stories of 014 (the command's text is color-ink; the empty field shows no text and its disabled icon is color-disabled-ink) and the five link stories of 014 (the sentence around each link is color-ink), the thirteen ocelle-code-block stories of 020 that show it (all but empty, which shows no text) and the eight ocelle-disclosure stories of 020 (every summary is color-ink; both measured in the pinned container under docker at 020's landing pass, no podman cross-check possible), and none in dark. None of 011's eight personal rail stories shows it: the rail is drawn in the chrome ink on the chrome, and nothing else in those stories is text (measured in the pinned container under docker for 011 phase 5). Phase 2 adds five light navigation item stories whose foreground or surrounding text uses color-ink. Phase 3 adds nine light app-shell stories whose content text uses color-ink, verified with two pinned captures. Phase 4 adds six light narrow-shell stories with the navigation drawer open or closed, verified with two pinned captures. Phase 5 adds five light breadcrumb stories and three light nav-pill stories whose current link or surrounding page heading uses color-ink, measured under pinned Docker. Phase 6 adds the three light skip-link stories, whose page heading or focused shortcut uses color-ink, verified with two pinned Docker captures. Mission 019 adds forty-three light data-record stories that show color-ink and were measured in the pinned container. The nine workflow-node stories of mission 027 show color-ink in their action and metadata, verified in the pinned container. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -108,6 +108,22 @@
     },
     {
       "location": "elements-ocelle-form-select--option-groups/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-textarea--editable/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-textarea--invalid/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-textarea--read-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-textarea--disabled/light",
       "rule": "differs"
     },
     {
@@ -400,6 +416,42 @@
     },
     {
       "location": "elements-ocelle-workflow-lane--untitled-with-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--security-review/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--planning/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--selected/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--waiting/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--invalid/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--combined-focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-node--read-only-inspection/light",
       "rule": "differs"
     },
     {
@@ -756,6 +808,522 @@
     },
     {
       "location": "elements-ocelle-action-row--card-right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--no-selection/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--selected/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--disabled-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--focused-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--hovered-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--scrolling-listbox/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--option-with-icon/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--inside-an-open-dialog/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--first-selected/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--another-selected/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--disabled-tab/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--wrapped-rows/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--focused-tab/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--hovered-tab/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--focused-tab-panel/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tabs--tab-with-icon/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--joined-one-row/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--joined-wrapped/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--pressed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--disabled-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--focused-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--hovered-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--hovered-joined-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--segment-with-icon/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-copy-field--short/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-copy-field--wrapped-long-command/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-copy-field--with-status/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-copy-field--focused-copy-control/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-link--in-a-paragraph/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-link--wrapped-across-lines/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-link--focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-link--hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-link--with-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-item--text-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-item--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-item--compact-current/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-item--compact-hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-item--compact-focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--mission-expanded/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--mission-collapsed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--project-expanded/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--project-collapsed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--personal/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--omitted-regions/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--flush-block-end/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--flush-inline-end/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--flush-both-ends/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--mission-narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--mission-drawer-open/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--project-narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--project-drawer-open/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--personal-narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-app-shell--personal-drawer-open/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-breadcrumbs--current/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-breadcrumbs--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-breadcrumbs--empty/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-breadcrumbs--keyboard-focus/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-breadcrumbs--long-content/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-pill--current/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-pill--empty/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-nav-pill--long-content/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-skip-link--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-skip-link--keyboard-focus/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-skip-link--localized-narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--short/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--wrap-long-line/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--scroll-overflowing/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--scroll-middle/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--scroll-end/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--scroll-focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--scroll-fitting/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--digest/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--digest-wrapping/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--digest-scroll/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--right-to-left-scroll/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-code-block--scroll-unlabelled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--closed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--open/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--long-summary/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--consumer-icon/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-disclosure--nested/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--fits/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--overflows-named-by-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--overflows-named-by-caption/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--overflows-named-by-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--overflows-blank-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--row-headers/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--corner-header/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--wrap-anywhere/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--inside-prose/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--empty-body/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--width-320/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--sticky-header-bounded/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--sticky-header-unbounded/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--numeric-column/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--striped/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--row-hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-data-table--striped-even-row-hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--three-events/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--without-time/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--marked-up-times/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--long-identifier-wrap/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--link-in-event/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--one-event/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--hidden-event/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--width-320/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--standalone-events/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--named-by-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-event-timeline--blank-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--six-steps/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--wrapped-320/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--mixed-chips/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--all-chips/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--twenty-steps/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--long-step/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--wrap-anywhere/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--hidden-step/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--unnamed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--standalone-steps/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--named-by-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-evidence-chain--blank-host-aria-label/light",
       "rule": "differs"
     }
   ]
