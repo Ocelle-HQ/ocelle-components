@@ -107,6 +107,24 @@ describe("ci.yml axe job (006 FR-017)", () => {
   });
 });
 
+// Op 023 (#60, FR-004; plan.md *Files to change*): the job `sandbox-paths`, named "Sandbox paths", has the shape of
+// config-copies: it checks out without persisted credentials, sets up and runs the gate, nothing else.
+describe("ci.yml sandbox-paths job (op 023)", () => {
+  it("is named Sandbox paths and runs pnpm run gate:sandbox-paths after checkout and setup", () => {
+    expect(job("sandbox-paths")).toEqual([
+      "  sandbox-paths:",
+      "    name: Sandbox paths",
+      "    runs-on: ubuntu-24.04",
+      "    steps:",
+      "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+      "        with:",
+      "          persist-credentials: false",
+      "      - uses: ./.github/actions/setup",
+      "      - run: pnpm run gate:sandbox-paths",
+    ]);
+  });
+});
+
 // 006 FR-017, FR-018, FR-026 and US2 scenario 12 (contracts/gates.md § `visual`, § The registry; research.md R-07, R-11):
 // the job `visual`, named "Visual regression", runs the gate under both engines, records the runner's free disk after
 // both pulls, and uploads storybook/.visual/ (the captures in baseline layout among it) when it fails; the Plants job

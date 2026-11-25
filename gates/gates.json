@@ -136,5 +136,13 @@
     "plantCommand": "node gates/bin/axe.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "every story of the built Storybook index in light and dark, in the host browser with the capture's context options: axe-core 4.14.0 with the FR-016 rule set on the whole document less Storybook's harness nodes, one finding per serious or critical node of a violation or an incomplete result, the empty, outside-root, closed-shadow-root, pointer-target and render checks, and the exceptions of storybook/a11y-exceptions.json honoured only with their plan's Complexity Tracking row (006 FR-013 to FR-016, FR-029)"
+  },
+  {
+    "id": "sandbox-paths",
+    "check": "Sandbox paths",
+    "command": "pnpm run gate:sandbox-paths",
+    "plantCommand": "node gates/bin/sandbox-paths.ts --root {root}",
+    "plantForm": "tracked-tree",
+    "scope": "every tracked file of the checkout but the four allowed files of gates/lib/sandbox-paths.ts (op 023, #60): no line may match the sandbox-path rule"
   }
 ]

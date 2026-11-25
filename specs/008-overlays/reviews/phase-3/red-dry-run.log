@@ -1,5 +1,5 @@
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ❯ |gates| gates/test/vitest-config.test.ts (10 tests | 1 failed) 205ms
    ❯ vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12) (2)

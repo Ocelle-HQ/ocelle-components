@@ -1,5 +1,5 @@
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ❯ |elements (chromium)| packages/elements/test/drawer.test.ts (395 tests | 2 failed | 386 skipped) 9361ms
    ❯ ocelle-drawer, in process (US2) (395)

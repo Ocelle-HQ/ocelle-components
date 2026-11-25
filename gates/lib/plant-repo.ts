@@ -1,15 +1,16 @@
 // Temporary repositories for plants (research.md R-10, contracts/plants.md): `repo-tree` lays a plant's `tree/` over
 // the repository's configuration set (with the token source since 002, contracts/gates.md § Configuration set),
 // `commit-repo` builds a git history from a plant's commits.txt on an empty signed-off base commit, and
-// `mutation-repo` commits the configuration set with the plant's `base/`, then its `head/`. node_modules is linked from
-// the repository in each. A repo-tree plant may state its change of the token source, the pair list or the generator
+// `mutation-repo` commits the configuration set with the plant's `base/`, then its `head/`, and since op 023
+// `tracked-tree` commits the plant's `tree/` alone, its sandbox markers expanded (expandMarkers). node_modules is linked from
+// the repository in each but a tracked-tree root. A repo-tree plant may state its change of the token source, the pair list or the generator
 // in a delta.json, by key (002 contracts/gates.md § Configuration set, *Plant deltas*). Since 006 (research.md R-16)
 // the configuration set holds the Storybook workspace, storybook/node_modules is linked as well (unless plant.json
 // lists it in `unlinked`), and a repo-tree root gets its own storybook/a11y-exceptions.json (with the repository's
 // entries and their plan files for delta.json `exceptions: "repository"`). The decisions (configurationSet,
 // packagePaths, carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv, baseCommit, ignoreMissing,
 // parseDelta, treeProblems, moduleLinks, exceptionPlans, rootExceptions, checkWrapper, applyPairChanges,
-// overridesText) are pure and tested in process (gates/test/plant-repo.test.ts); the builders only copy and write
+// overridesText, expandMarkers) are pure and tested in process (gates/test/plant-repo.test.ts); the builders only copy and write
 // files and run git with their results (the process boundary, tested by gates/test/integration/plant-repo.test.ts).
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -653,6 +654,58 @@ export async function buildCommitRepo(plant: string, into: string): Promise<{ re
   await git(into, ["reset", "-q", "--hard", String(hashes.at(-1))]);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
   return { base: String(hashes[0]), commits: hashes.slice(1) };
+}
+
+/** The markers of a tracked-tree plant (op 023) and the sandbox paths they stand for, built at run time. */
+const sandboxMarkers: readonly (readonly [string, string])[] = [
+  ["@SANDBOX_ROOT@", "/" + "root"],
+  ["@SANDBOX_HOME_USER@", "/" + "home/user"],
+];
+
+/**
+ * A tracked-tree plant file's bytes with every marker expanded (op 023, plan.md *Plant form*): `@SANDBOX_ROOT@` becomes
+ * the root home and `@SANDBOX_HOME_USER@` the user home, byte for byte; every other byte stays, in any file.
+ */
+export function expandMarkers(bytes: Buffer): Buffer {
+  let out = Buffer.from(bytes);
+  for (const [marker, path] of sandboxMarkers) {
+    const parts: Buffer[] = [];
+    let at = 0;
+    for (let found = out.indexOf(marker, at); found !== -1; found = out.indexOf(marker, at)) {
+      parts.push(out.subarray(at, found), Buffer.from(path));
+      at = found + marker.length;
+    }
+    out = Buffer.concat([...parts, out.subarray(at)]);
+  }
+  return out;
+}
+
+/**
+ * A git repository in `into` (op 023, plan.md *Plant form*): the plant's `tree/` copied with its markers expanded, and,
+ * if it holds a file, committed by Plant Base. No configuration set and no node_modules: the gate reads only the
+ * root's tracked files. Without a `tree/`, or with an empty one, the repository tracks nothing.
+ */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+export async function buildTrackedTree(plant: string, into: string): Promise<void> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+  const tree = join(plant, "tree");
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) gives a git repository with no tracked file for $name"
+  const paths = filePaths(await readdir(tree, { recursive: true, withFileTypes: true }).catch(ignoreMissing) ?? [], tree);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+  for (const path of paths) {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+    await mkdir(dirname(join(into, path)), { recursive: true });
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+    await writeFile(join(into, path), expandMarkers(await readFile(join(tree, path))));
+  }
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+  await git(into, ["init", "-q", "-b", "main"]);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) gives a git repository with no tracked file for $name"
+  if (paths.length === 0) return;
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+  await git(into, ["add", "-A"]);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
+  await git(into, ["commit", "-q", "-m", "Plant base"], identityEnv(baseCommit().author));
 }
 
 /** A git repository in `into`: the configuration set and the plant's `base/`, then a commit with its `head/`. */

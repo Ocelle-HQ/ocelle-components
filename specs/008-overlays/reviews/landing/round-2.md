@@ -60,7 +60,7 @@ There is no blocking finding.
 
 ## Checks run
 
-These ran at `57764c6` in `/home/user/ocelle-components`. The environment had `OCELLE_CHROMIUM_PATH` pointing at
+These ran at `57764c6` in `<repo>`. The environment had `OCELLE_CHROMIUM_PATH` pointing at
 chromium-1243, the given `PLAYWRIGHT_BROWSERS_PATH`, and `OCELLE_VISUAL_ENGINE=auto`, with `CI` and `GITHUB_ACTIONS`
 unset.
 

@@ -17,6 +17,17 @@ story_require_phase() {
   [[ "${1:-}" =~ ^[0-9]+$ ]] || { echo "story: phase must be a number, got '${1:-}'" >&2; exit 2; }
 }
 
+# The redaction script (op 023, #60): every log and JSON record the story scripts write passes through it, so no
+# sandbox path reaches a committed file.
+story_redactor() { printf '%s/tooling/speckit/bin/redact-sandbox-paths.sh' "$(story_repo_root)"; }
+
+# Fails, before anything is written, unless the redaction script is there and executable.
+story_require_redactor() {
+  local redactor
+  redactor=$(story_redactor)
+  [[ -x "$redactor" ]] || { echo "story: $redactor is missing; it redacts the logs this script writes" >&2; exit 2; }
+}
+
 story_json_escape() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
 
 # Highest review round recorded for a phase, 0 when none.
@@ -70,15 +81,17 @@ story_test_changes() {
   git diff --name-only --diff-filter=d "$1" "$2" -- "${specs[@]}"
 }
 
-# Runs setup and tests in a detached worktree of a commit; prints the test exit code.
+# Runs setup and tests in a detached worktree of a commit; prints the test exit code. The output goes to the log
+# through the redaction script (op 023).
 # $1 commit, $2 log file, $3 optional: commit whose versions of $4.. files are checked out on top.
 story_run_tests_at() {
-  local commit="$1" log="$2" overlay="${3:-}" wt code setup tests
+  local commit="$1" log="$2" overlay="${3:-}" wt code setup tests redactor
   shift 3
+  redactor=$(story_redactor)
   # Commands come from the current configuration, never from the commit being checked out: an old commit may
   # predate the test runner, and its empty test_command would make every run "pass".
   setup=$(story_config setup_command); tests=$(story_config test_command)
-  [[ -n "$tests" ]] || { echo "story: test_command is not set" > "$log"; echo 2; return; }
+  [[ -n "$tests" ]] || { echo "story: test_command is not set" | "$redactor" > "$log"; echo 2; return; }
   wt=$(mktemp -d)
   git worktree add --quiet --detach "$wt" "$commit" >/dev/null
   if [[ -n "$overlay" && $# -gt 0 ]]; then (cd "$wt" && git checkout --quiet "$overlay" -- "$@"); fi
@@ -86,8 +99,8 @@ story_run_tests_at() {
   (
     cd "$wt"
     { [[ -z "$setup" ]] || bash -c "$setup"; } && bash -c "$tests"
-  ) > "$log" 2>&1
-  code=$?
+  ) 2>&1 | "$redactor" > "$log"
+  code=${PIPESTATUS[0]}
   set -e
   git worktree remove --force "$wt" >/dev/null 2>&1 || rm -rf "$wt"
   echo "$code"

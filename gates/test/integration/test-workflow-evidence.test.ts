@@ -6,6 +6,7 @@ import { expect, it } from "vitest";
 import type { Assertion, ShardResult } from "../../lib/test-evidence.ts";
 
 const repository = resolve(import.meta.dirname, "../../..");
+const redactor = "tooling/speckit/bin/redact-sandbox-paths.sh";
 const storyFiles = [
   "gates/bin/story-evidence.ts",
   "gates/lib/story-cache.ts",
@@ -43,6 +44,9 @@ function fixture(): string {
   write(root, ".gitignore", "node_modules\n/reports/\n/specs/\n");
   write(root, "package.json", '{"type":"module"}\n');
   write(root, "vitest.config.mjs", 'export default { test: {name:"fixture", include:["test/**/*.test.ts"]} };\n');
+  // The runner redacts every log and record through the repository's redaction script (op 023, O4-01).
+  mkdirSync(join(root, dirname(redactor)), { recursive: true });
+  copyFileSync(join(repository, redactor), join(root, redactor));
   return root;
 }
 

@@ -1,5 +1,5 @@
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ↓ |elements (chromium)| packages/elements/test/tooltip.test.ts > ocelle-tooltip, in process (US3) > Hover delay (US3-1, FR-031, R-15): the pointer resting on the trigger with the test delay of 300 ms: not shown at any frame before 150 ms, shown by 450 ms from the first entry; persistence (a) (US3-3, FR-032): then shown at every frame of a 900 ms wait, the bubble in the top layer, focus nowhere
  ↓ |elements (chromium)| packages/elements/test/tooltip.test.ts > ocelle-tooltip, in process (US3) > Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the pointer enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before the delay: the timer is not restarted, not shown before the 300 ms delay from the first entry, shown before 300 ms from the move back and by 450 ms

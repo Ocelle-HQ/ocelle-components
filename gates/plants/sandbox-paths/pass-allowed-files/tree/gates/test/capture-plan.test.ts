@@ -1,0 +1,1 @@
+// Content-addressable store is at: @SANDBOX_ROOT@/.local/share/pnpm/store/v10
