@@ -70,6 +70,11 @@ const navigationKeys: ReadonlySet<string> = new Set<WorkflowCanvasNavigationKey>
 ]);
 const withoutScroll = { preventScroll: true };
 
+interface CanvasReveal extends WorkflowCanvasPendingReveal {
+  readonly initiator: HTMLButtonElement;
+  readonly relationship: WorkflowCanvasRelationship | null;
+}
+
 interface NodeSize {
   readonly width: number;
   readonly height: number;
@@ -406,10 +411,8 @@ export class OcelleWorkflowCanvas extends LitElement {
   #namedId: string | null = null;
   #generation = 0;
   #focusEpoch = 0;
-  #pendingReveal: (WorkflowCanvasPendingReveal & {
-    readonly initiator: HTMLButtonElement;
-    readonly relationship: WorkflowCanvasRelationship | null;
-  }) | null = null;
+  #pendingReveal: CanvasReveal | null = null;
+  #renderedViewport: WorkflowCanvasViewport | null = null;
   #retainedFocus: { readonly id: string; readonly order: readonly string[] } | null = null;
   #watched = new Set<Element>();
   #onGeometryChange = (): void => { this.#refresh(); };
@@ -701,6 +704,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   }
 
   protected override render(): unknown {
+    this.#renderedViewport = this.viewport;
     const { nodes, drawableConnections } = this.#projection;
     const labelCounts = new Map<string, number>();
     for (const { label } of nodes) labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
@@ -1424,9 +1428,22 @@ export class OcelleWorkflowCanvas extends LitElement {
     if (relationship !== null && !this.#canFollow(relationship)) return;
     initiator.focus(withoutScroll);
     // Focus listeners can synchronously replace the graph, layout or focused control.
-    if (relationship !== null && (this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship))) return;
+    if (relationship !== null && this.shadowRoot?.activeElement !== initiator) return;
     // Stryker disable next-line UpdateOperator: either direction stores the same current value in the sole pending reveal.
-    this.#pendingReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator, relationship };
+    const pending: CanvasReveal = { nodeId: id, generation: ++this.#generation, focusEpoch: this.#focusEpoch, initiator, relationship };
+    this.#pendingReveal = pending;
+    this.#continueReveal(pending, map);
+  }
+
+  #continueReveal(pending: CanvasReveal, map: SVGSVGElement): void {
+    const { nodeId: id, relationship, initiator } = pending;
+    if (relationship !== null) {
+      if (this.#pendingReveal !== pending || this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship)) return;
+      if (this.#renderedViewport !== this.viewport) {
+        void this.updateComplete.then(() => { this.#continueReveal(pending, map); });
+        return;
+      }
+    }
     const actions = this.#actions();
     const { contained, eligible, bounds } = this.#measureEligibility(actions, map);
     if (contained.has(id)) {
@@ -1452,7 +1469,7 @@ export class OcelleWorkflowCanvas extends LitElement {
   ): void {
     const pending = this.#pendingReveal;
     if (pending === null || this.shadowRoot?.activeElement !== pending.initiator) return;
-    if (pending.relationship !== null && !this.#canFollow(pending.relationship)) return;
+    if (pending.relationship !== null && (this.#renderedViewport !== this.viewport || !this.#canFollow(pending.relationship))) return;
     const navigator = pending.initiator.parentElement;
     if (navigator !== null && !this.#withLiveClip(navigator, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
       this.#pendingReveal = null;
