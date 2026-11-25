@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 
 // The time limit of the visual integration tests (012 reviews/phase-6/round-7.md O7-01, operator round of 2026-11-19;
 // tasks.md T078). At 194 stories (388 story-themes) the whole-repository capture timed out at the 600 s limit on CI
-// run 44481594952, so the limit was raised to 1200 s for gates/test/integration/visual.test.ts only. This test, in the
-// `gates` project that runs no integration test, reads that file as text: it pins the one `const timeout` between
+// run 44481594952, so the limit was raised to 1200 s for Visual integration tests. This test, in the
+// `gates` project that runs no integration test, reads the shared fixture as text. It pins the one timeout between
 // 1200 s and 1800 s and requires the reason and the measurements in the comment directly above it, so that a later
 // edit cannot lower the limit again without its reason.
-const source = readFileSync(new URL("integration/visual.test.ts", import.meta.url), "utf8");
+const source = readFileSync(new URL("integration/visual-fixture.ts", import.meta.url), "utf8");
 const lines = source.split("\n");
-const constant = /^const timeout = ([0-9_]+);$/;
+const constant = /^export const timeout = ([0-9_]+);$/;
 
 /** The indexes of the lines that declare `const timeout = <number>;`. */
 function declarations(): number[] {

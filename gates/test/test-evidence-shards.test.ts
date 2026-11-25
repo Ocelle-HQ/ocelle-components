@@ -13,7 +13,10 @@ const betaResult = { ...beta, state: "passed", errors: [], durationMs: 1, tests:
 const firstShard = { revision, index: 0, errors: [], files: [alphaResult] };
 const secondShard = { revision, index: 1, errors: [], files: [betaResult] };
 const measuredFiles = [
-  { project: "gates-integration", file: "gates/test/integration/visual.test.ts", seconds: 2095 },
+  { project: "gates-integration", file: "gates/test/integration/visual.test.ts", seconds: 900 },
+  { project: "gates-integration", file: "gates/test/integration/visual-findings.test.ts", seconds: 900 },
+  { project: "gates-integration", file: "gates/test/integration/visual-cli.test.ts", seconds: 30 },
+  { project: "gates-integration", file: "gates/test/integration/visual-capture.test.ts", seconds: 880 },
   { project: "gates-integration", file: "gates/test/integration/axe.test.ts", seconds: 530 },
   { project: "elements-browser", file: "packages/elements/test/browser/drawer.test.ts", seconds: 349 },
   { project: "elements (chromium)", file: "packages/elements/test/drawer.test.ts", seconds: 332 },
@@ -153,7 +156,7 @@ describe("unit test shard plans", () => {
     expect(plan.shards).toEqual([[build, browser], [stories, integration, node, alpha]]);
   });
 
-  it.each(measuredFiles)("uses rollout timing for $project/$file", ({ project, file, seconds }) => {
+  it.each(measuredFiles)("uses scheduled timing for $project/$file", ({ project, file, seconds }) => {
     expect(estimateTestSeconds({ project, file })).toBe(seconds);
   });
 
@@ -174,13 +177,19 @@ describe("unit test shard plans", () => {
     expect(estimateTestSeconds({ project: "elements (chromium)", file: "packages/elements/test/browser/drawer.test.ts" })).toBe(10);
   });
 
-  it("isolates the long visual integration test without losing inventory", () => {
+  it("places the expensive Visual files in different shards without losing inventory", () => {
     const measured = measuredFiles.map(({ project, file }) => ({ project, file }));
-    const visual = { project: "gates-integration", file: "gates/test/integration/visual.test.ts" };
+    const expensive = [
+      "gates/test/integration/visual.test.ts",
+      "gates/test/integration/visual-findings.test.ts",
+      "gates/test/integration/visual-capture.test.ts",
+    ];
     const inventory = [...measured, alpha, beta];
     const planned = planTestShards(revision, inventory, 6);
 
-    expect(planned.shards.find((shard) => shard.some(({ file }) => file === visual.file))).toEqual([visual]);
+    const placements = expensive.map((file) => planned.shards.findIndex((shard) => shard.some((entry) => entry.file === file)));
+    expect(placements).not.toContain(-1);
+    expect(new Set(placements).size).toBe(expensive.length);
     expect(planned.shards.flat()).toEqual(expect.arrayContaining(inventory));
     expect(planned.shards.flat()).toHaveLength(inventory.length);
     expect(planTestShards(revision, [...inventory].reverse(), 6)).toEqual(planned);

@@ -24,6 +24,9 @@ export type StorySelection<T extends TestFile> =
 const testName = /\.(?:test|spec)\.[cm]?[jt]sx?$/;
 const collateralFiles = new Set([
   "gates/test/integration/visual.test.ts",
+  "gates/test/integration/visual-findings.test.ts",
+  "gates/test/integration/visual-cli.test.ts",
+  "gates/test/integration/visual-capture.test.ts",
   "gates/test/integration/axe.test.ts",
 ]);
 
