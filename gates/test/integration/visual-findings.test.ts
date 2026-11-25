@@ -28,7 +28,7 @@ describe("visual gate (gates/bin/visual.ts)", () => {
         findings: ["tokens--colour/light: visual: differs", "tokens--colour/dark: visual: missing-baseline"],
         stderr: [],
       });
-      expect(ran.stdout.at(-1)).toBe(`visual: 2 findings in 784 story-themes (docker ${docker}`);
+      expect(ran.stdout.at(-1)).toBe(`visual: 2 findings in 788 story-themes (docker ${docker}`);
       const kept = files(join(at, "storybook/.visual"));
       expect([...kept.keys()]).toEqual(["baselines/tokens--colour.dark.png", "baselines/tokens--colour.light.png", "tokens--colour.light.actual.png", "tokens--colour.light.diff.png"]);
       expect(kept.get("baselines/tokens--colour.light.png")?.equals(kept.get("tokens--colour.light.actual.png") ?? Buffer.alloc(0))).toBe(true);
