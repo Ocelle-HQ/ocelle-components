@@ -36,3 +36,9 @@
   command, scanner, local registry, workflow layout) are left to the plan.
 - Points deliberately left to the plan: the first-publish bootstrap (Q2 (a)), the evidence per gap row, the
   changelog comparison, the secret patterns and the install-check retry bound.
+- Check 1 fixes (2026-11-25): the readiness Independent Test and Story 2 Scenario 2 name the three unmet gap rows on
+  today's `main` (`#498`, `#509`, `#524 #526`), matching FR-010; Story 4 Scenario 1 and SC-001 install all three
+  packages, matching FR-030; FR-034 and SC-008 prove the signature and provenance verification on real registry
+  inputs before release; the dry run is the dry-run-only path of FR-027 (operator answer to SPEC-1-04, option (b)),
+  with FR-020, FR-026, Story 3 and SC-009 following it. No operator step is added for the dry run: it is started by a
+  pull request or a manual dispatch and cannot publish.

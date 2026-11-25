@@ -40,6 +40,10 @@ install the three packages from the public npm registry instead of a workspace l
 - Q4 (a): 1.0.0 does not wait for #73, #75, #76 or #59.
 - Q5 (a): the operator pushes a protected `v1.0.0` tag; the publish waits for the environment reviewer (FR-020).
 - Q6 (a): no new release tool; changelogs stay hand-written (FR-005).
+- SPEC-1-04 (answered 2026-11-25, human:jeroennouwsdev, option (b)): the release workflow's dry run is a
+  dry-run-only path, started by a pull request or a manual dispatch, that runs every pre-publish step but has no
+  publish job and no identity-token permission at all (FR-020, FR-027). The publish path itself still starts only
+  from the operator's protected `v*` tag (Q5 (a)).
 - Already done by the operator: the npm org `ocelle` is claimed (O1). Private vulnerability reporting is on per op
   023's decision Q3 (a) (O2, re-confirmed at release).
 
@@ -96,16 +100,18 @@ a single ready / not-ready verdict and never publishes anything.
 **Why this priority**: #11 says v1.0.0 ships only when every row of #1's gap table is met and the history contains
 no secrets. The operator needs that as evidence, not as memory, at the one moment that cannot be undone.
 
-**Independent Test**: run the readiness check on the current `main` (before #7 lands): it reports not-ready and
-names exactly the rows that #7 owns; run it on a fixture where every row is met and the history is clean: it
-reports ready.
+**Independent Test**: run the readiness check on the current `main` (before mission 018 lands): it reports
+not-ready and names exactly three unmet gap-table rows, identified by their first upstream number and whatever their
+owner: the `#498` row (owned by #13; the status-indicator part of #498 is still missing), the `#509` row (#7, #9,
+#5) and the `#524 #526` row (#7); every other row is reported met. Run it on a fixture where every row is met and
+the history is clean: it reports ready.
 
 **Acceptance Scenarios**:
 
 1. **Given** a commit where every gap-table row of `sources/issue-1-gap-table.md` maps to evidence in the
    repository, **When** the readiness check runs, **Then** it lists each row with its evidence and reports ready.
-2. **Given** a commit where any row's evidence is missing (for example before mission 018 lands, the rows for
-   upstream #509, #524 and #526), **When** the readiness check runs, **Then** it reports not-ready and names each
+2. **Given** a commit where any row's evidence is missing (for example today's `main`, before mission 018 lands:
+   the `#498` row, the `#509` row and the `#524 #526` row), **When** the readiness check runs, **Then** it reports not-ready and names each
    unmet row and the evidence it expected.
 3. **Given** a repository history in which any commit reachable from the release commit adds a file containing a
    credential pattern (an npm token, a GitHub token, a private key block, or a generic high-entropy secret the plan
@@ -129,10 +135,11 @@ nobody can skip the approval.
 **Why this priority**: it is the release itself, but it depends on Story 1's tarballs and Story 2's readiness, and
 it runs once per release.
 
-**Independent Test**: on a test tag in a non-publishing mode (a dry run that packs and verifies but does not
-publish, defined in the plan), the workflow runs every pre-publish step, stops at the environment approval, and the
-publish job's permissions, environment and pinned actions are as FR-021 says; a static check of the workflow file
-fails on each planted misconfiguration.
+**Independent Test**: the dry-run path (FR-027, operator answer to SPEC-1-04), started by a pull request or a
+manual dispatch, runs every pre-publish step on its commit and ends without publishing, because it has no publish
+job and no job in it can request an identity token; the release path's publish job permissions, environment and
+pinned actions are as FR-021 says; a static check of the workflow files fails on each planted misconfiguration,
+including a dry-run path that gains a publish step, an environment binding or an identity-token permission.
 
 **Acceptance Scenarios**:
 
@@ -151,13 +158,16 @@ fails on each planted misconfiguration.
    other than the publish job may request an identity token, if the default token permissions exceed read-only
    contents, if the publish job is not bound to the protected environment, if any action is referenced by anything
    other than a full commit SHA, if a checkout keeps credentials, or if the workflow reads a long-lived npm token.
+7. **Given** a pull request (or a manual dispatch of the dry run), **When** the dry-run path runs, **Then** it runs
+   every pre-publish step of FR-022 and reports the result, contains no publish job, binds no job to the protected
+   environment, grants no job an identity-token permission and writes nothing to any registry.
 
 ---
 
 ### User Story 4 - A consumer installs the released packages with no token and can verify where they came from (Priority: P2)
 
-A developer on a clean machine with no npm credentials adds `@ocelle/elements` (and its peer `@ocelle/tokens`) to a
-project, imports an element, links the token and base stylesheets, and verifies the packages' signatures and
+A developer on a clean machine with no npm credentials adds `@ocelle/elements`, `@ocelle/styles` and their peer
+`@ocelle/tokens` to a project, imports an element, links the token and base stylesheets, and verifies the packages' signatures and
 provenance. The release workflow does this automatically after publishing, as the last proof that the release
 worked.
 
@@ -168,13 +178,14 @@ proven after a publish, so it follows Story 3.
 release version: in an empty project with an empty credentials file it installs them, imports every declared entry
 point, resolves the stylesheets and the browser build, and verifies signatures and provenance; it fails when any of
 these fails. Before the real release it is exercised against packed tarballs and a local registry (the plan names
-how), so it is proven before it matters.
+how), and its signature and provenance verification is exercised on real registry inputs with a pass case and
+planted failures (FR-034), so every part of it is proven before it matters.
 
 **Acceptance Scenarios**:
 
 1. **Given** the three packages published at the release version, **When** the post-publish check runs in an empty
-   project with no registry credentials, **Then** installing `@ocelle/elements` and `@ocelle/tokens` succeeds, and
-   importing every entry point each package declares succeeds.
+   project with no registry credentials, **Then** installing `@ocelle/tokens`, `@ocelle/styles` and
+   `@ocelle/elements` succeeds, and importing or resolving every entry point each package declares succeeds.
 2. **Given** the installed packages, **When** the check verifies them, **Then** every package's registry signature
    and provenance attestation verify, and the attestation names this repository and the release commit.
 3. **Given** a package version not yet visible on the registry (propagation delay), **When** the check runs,
@@ -225,8 +236,9 @@ of FR-040 to FR-045 against them.
   gate; otherwise it fails before approval.
 - **Someone other than the operator pushes a `v*` tag.** The tag ruleset (O5) blocks it; the environment approval
   (O4) is a second barrier.
-- **A fork's pull request.** The release workflow does not run on pull requests at all; the workflow's static check
-  runs on pull requests without any secret or identity token.
+- **A fork's pull request.** The publish path does not run on pull requests at all. The dry-run path (FR-027) and
+  the workflow's static check run on pull requests, including from forks, without any secret, identity token or
+  publish job, so a fork cannot reach a publish.
 - **Registry outage or slow propagation.** The publish job and the post-publish check retry for a bounded time and
   then fail with the package named; nothing is overwritten on re-run.
 - **A secret found in history.** The readiness check reports not-ready and names the commit and path but never the
@@ -288,9 +300,10 @@ of FR-040 to FR-045 against them.
 
 **Release workflow (Story 3)**
 
-- **FR-020**: The release workflow MUST start only from a pushed tag matching the release tag pattern (`v*`, Q5 (a));
-  it MUST NOT run on pull requests, branch pushes or schedules. It MUST check out exactly the tagged commit and fail
-  unless that commit is on `main`.
+- **FR-020**: The release workflow's publish path (the path that contains the publish job) MUST start only from a
+  pushed tag matching the release tag pattern (`v*`, Q5 (a)); it MUST NOT run on pull requests, branch pushes,
+  schedules or manual dispatch. It MUST check out exactly the tagged commit and fail unless that commit is on `main`.
+  The only other way to run the release steps is the dry-run path of FR-027.
 - **FR-021**: The workflow MUST use least privilege: default token permissions read-only for contents and nothing
   else; only the publish job may request an identity token (`id-token: write`) and it may hold no other write
   permission the plan does not justify; every third-party action MUST be pinned by full commit SHA; checkouts MUST
@@ -311,7 +324,16 @@ of FR-040 to FR-045 against them.
   the registry and skips it (reporting so), and it MUST NOT unpublish, deprecate or overwrite anything.
 - **FR-026**: A static check of the release workflow file MUST run on every pull request as a named check (with
   plants), failing on each violation of FR-020, FR-021 and FR-023 that a file can show (trigger, permissions,
-  environment binding, unpinned action, persisted credentials, a token secret read).
+  environment binding, unpinned action, persisted credentials, a token secret read) and of FR-027 (a publish job or
+  publish step, an environment binding or an identity-token permission in the dry-run path; a trigger other than a
+  `v*` tag push that can reach the publish job).
+- **FR-027**: A dry-run path MUST exist (operator answer to SPEC-1-04, option (b)), started by a pull request or a
+  manual dispatch (the plan chooses one or both). It MUST run every pre-publish step of FR-022 on its commit
+  (build, pack, the pack-contents gate, the readiness check on those tarballs, the publish command's no-write mode)
+  and report the result. It MUST contain no publish job, bind no job to the protected environment and grant no job an
+  identity-token permission, so that nothing started by it can publish. The plan states how the pre-publish steps
+  are shared between the dry-run path and the publish path so both run the same steps. On today's `main` the
+  readiness step of a dry run reports not-ready by design (Story 2); the dry run still shows every other step.
 
 **Post-publish install check (Story 4)**
 
@@ -325,7 +347,14 @@ of FR-040 to FR-045 against them.
   failing.
 - **FR-033**: Before the first real release, the install check MUST be exercised against the packed tarballs served
   from a local registry or equivalent (the plan names how), including a planted failure, so it is proven before it
-  is relied on; this rehearsal performs no write to the public registry.
+  is relied on; this rehearsal performs no write to the public registry. Locally served tarballs carry no registry
+  signature or provenance attestation, so this rehearsal does not prove FR-031; FR-034 does.
+- **FR-034**: Before the first real release, the signature and provenance verification of FR-031 MUST be proven on
+  real registry inputs (constitution VIII, "Gates are proven, too"): it MUST pass on a pass case (a package version
+  already on the public registry with a valid signature and a valid provenance attestation) and fail, naming the
+  package and the reason, on each planted failure: a package version with no provenance attestation, an attestation
+  that names another repository, and an attestation that names a commit other than the expected one. The plan picks
+  the inputs; proving it performs no write to the public registry.
 
 **Governance and docs (Story 5)**
 
@@ -375,7 +404,9 @@ consumer migrations; rewriting git history; automated version bumps or a release
 - **Readiness report**: per-row evidence, secret-scan result, version check, changelog check and one verdict for a
   commit (and optionally a tag).
 - **Release tag**: `v<version>` on a commit of `main`, protected by ruleset; its push is the only trigger of the
-  release workflow.
+  release workflow's publish path.
+- **Dry-run path**: the pull-request or manually dispatched run of every pre-publish step, with no publish job and
+  no identity-token permission (FR-027).
 - **Protected environment**: the GitHub environment the publish job runs in; its required reviewer is the human
   approval.
 - **Provenance attestation**: the registry's signed statement linking each published version to this repository,
@@ -386,8 +417,8 @@ consumer migrations; rewriting git history; automated version bumps or a release
 
 ### Measurable Outcomes
 
-- **SC-001**: From a clean machine with no registry credentials, adding `@ocelle/elements` and `@ocelle/tokens` at
-  `1.0.0` and importing every declared entry point succeeds on the first attempt (100% of entry points, 3 of 3
+- **SC-001**: From a clean machine with no registry credentials, adding `@ocelle/tokens`, `@ocelle/styles` and
+  `@ocelle/elements` at `1.0.0` and importing or resolving every declared entry point succeeds on the first attempt (100% of entry points, 3 of 3
   packages).
 - **SC-002**: 3 of 3 published packages carry a provenance attestation that verifies and names this repository and
   the `v1.0.0` commit.
@@ -403,6 +434,12 @@ consumer migrations; rewriting git history; automated version bumps or a release
   credential revoked, confirmed in O8), and zero credentials or sandbox paths are in the repository.
 - **SC-007**: Every operator-only step appears in the release procedure, and none is performed by an agent or by the
   workflow on the operator's behalf.
+- **SC-008**: Before the `v1.0.0` tag is pushed, the install check's signature and provenance verification passes on
+  1 of 1 pass case and fails on 3 of 3 planted failures (no attestation, another repository, another commit) on real
+  registry inputs (FR-034).
+- **SC-009**: Every dry-run path run (FR-027) completes the pre-publish steps with zero registry writes, and the
+  static check fails on 100% of its planted dry-run misconfigurations (publish step, environment binding,
+  identity-token permission).
 
 ## Assumptions
 
