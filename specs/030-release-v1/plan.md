@@ -12,10 +12,12 @@ into this branch before the first red commit (the only merge of `main` during th
 
 Make the three packages publishable as `1.0.0` and publish them only through a reviewed, provenance-attested
 workflow. Three new merge gates (pack contents, release readiness, release workflow) with plants keep the packages
-releasable on every pull request; a tag-triggered `release.yml` runs every gate on the tagged commit, packs and
-verifies the tarballs, waits for the operator's approval of the `npm-publish` environment, publishes with npm trusted
-publishing (OIDC, no token), and proves the result with a credential-free install and provenance check. A
-dry-run workflow rehearses everything but the publish on pull requests. The first publish uses an operator-run
+releasable on every pull request; a tag-triggered `release.yml` computes the release range, runs every gate on the
+tagged commit, packs the tarballs and takes their digests at once, verifies them, proves the provenance check on
+real registry inputs, waits for the operator's approval of the `npm-publish` environment, publishes the verified
+bytes with npm trusted publishing (OIDC, no token), and proves the result with a credential-free install under the
+strict CSP and a provenance check of repository, workflow, ref and commit. A dry-run workflow rehearses everything
+but the publish on pull requests. The first publish uses an operator-run
 placeholder bootstrap (research D1), so the workflow never reads a token. The constitution, READMEs and a new
 `RELEASING.md` say how releases work, with every operator-only step marked.
 
@@ -28,25 +30,29 @@ workflows.
 the publish job asserts ≥ 11.5.1), Playwright 1.64.1 (install check's browser load), vitest. New: `yaml` (exact pin,
 dev only, for the release-workflow gate; research R-13).
 
-**Storage**: committed JSON data under `gates/release/` (pack manifest, gap rows, secret allow list, provenance
-reference).
+**Storage**: committed data under `gates/release/` (pack manifest, gap rows, secret allow list, provenance
+reference, first-release base); recorded registry responses under `gates/test/fixtures/install-check/`.
 
-**Testing**: vitest unit and integration tests under `gates/test/` (the gate tests' home); plants under
-`gates/plants/<gate>/` run by the plant job; a stub registry (Node `http`) inside tests for the install check.
+**Testing**: vitest unit and integration tests under `gates/test/` (the gate tests' home), all offline; plants under
+`gates/plants/<gate>/` run by the plant job; for the install check, recorded real registry responses with an injected
+signature and attestation verifier, and a stub registry (Node `http`) for the install paths (research R-11). The
+provenance proof on real registry inputs is `install-check --rehearse`, run in the dry run and in `release.yml`'s
+`prepare` job.
 
 **Target Platform**: GitHub-hosted `ubuntu-24.04` runners; the public npm registry.
 
 **Project Type**: library monorepo, release tooling.
 
 **Performance Goals**: `release-readiness` under 60 s on the full history in CI; `pack-contents` under the build time
-plus 30 s; install check's visibility retry bounded at 10 min.
+plus 30 s; install check's visibility retry and the publish step's registry-error retry each bounded at 10 min.
 
 **Constraints**: no long-lived token anywhere (Q2 (a), D1); least-privilege workflow permissions; every action
 pinned by SHA; no sandbox paths or credentials in any new file (op 023); CI-first: locally only fast gates and
 `gate:plants -- --affected <base>`.
 
-**Scale/Scope**: 3 packages, 17 gap rows, 3 new gates, 2 new workflows, 1 composite action, 1 workflow change
-(`ci.yml` gains `workflow_call`).
+**Scale/Scope**: 3 packages, 17 gap rows, 3 new gates, 2 new commands (install check, release step), 2 new
+workflows, 1 composite action, 1 workflow change (`ci.yml` gains `workflow_call`), 2 plant-form changes
+(`commit-repo` files, new `pack-tree`).
 
 ## Constitution Check
 
@@ -57,13 +63,16 @@ pinned by SHA; no sandbox paths or credentials in any new file (op 023); CI-firs
 | I. Framework-free elements | No element change. | pass |
 | II. Tokens only | No style change. | pass |
 | III. Accessible | No UI change. | pass |
-| IV. Strict CSP, offline | Packages unchanged in behaviour; the install check loads `browser.js` from the installed package with no network (registry reads are the install, not the page). | pass |
+| IV. Strict CSP, offline | Packages unchanged in behaviour. The install check serves the installed packages from `127.0.0.1` with the constitution's CSP header, aborts and records every off-origin request, and fails on any CSP violation or request (`csp-violation`, `network-request`; research R-11), so the published bytes are checked, not only the CI build (registry reads are the install, not the page). | pass |
 | V. Storybook | No story change. | pass |
 | VI. Consumer needs | Consumers named in the spec (kitty-mission-ui, Ocelle console); no code copied. | pass |
 | VII. Semver | First public release `1.0.0`; per-package changelog entries (FR-005, R-09). | pass |
-| VIII. Test-first, gates proven | Each new gate red-first with fail, pass and breaking plants; the install check proven by unit tests with a stub registry (including a bad signature) and by the dry-run rehearsal against a real provenance-attested package; workflow YAML proven through the release-workflow gate. Docs and constitution phases are behaviour-free and claim the exemption in review. | pass |
-| Supply chain: "repository is internal until then and goes public with 1.0.0"; "npm publish token lives only in CI secrets"; "every dependency is pinned exactly" | False today / contradicted by Q2 (a) / the peer range of Q3 (a). Amended in this mission (Q1 (a), FR-040, research R-14), PATCH 1.3.1 → 1.3.2. Until the amendment phase lands, the plan relies on the operator's Q1 decision. | pass, by amendment (recorded in Complexity Tracking) |
-| Workflow: gates listed | Three gates added to spec 001 FR-020 by amendment (FR-044), as op 023 did. | pass |
+| VIII. Test-first, gates proven | Each new gate red-first with fail, pass and breaking plants, on plant forms planned for them (research R-17: `commit-repo` with files, `pack-tree`); no committed credential-shaped literal (R-08). The install check and the release steps live in `gates/lib` + `gates/bin`, in the mutation gate's scope; the install check is unit-tested offline on recorded real registry responses with an injected verifier, each test asserting its rule, and proven on real registry inputs by `--rehearse` (1 pass, 5 planted failures including no attestation) in the dry run and before the approval in `release.yml`; the publish loop (order, skip, retry, digests) is unit-tested with an injected npm runner; workflow YAML (job graph, publish job, digests, sign-off scope) proven through the release-workflow gate's plants. Story 2's independent test is a gates-integration test against `183b20f`. Docs and constitution phases are behaviour-free and claim the exemption in review. | pass |
+| Supply chain: "repository is internal until then and goes public with 1.0.0"; "npm publish token lives only in CI secrets"; "every dependency is pinned exactly" | False today / contradicted by Q2 (a) / the peer range of Q3 (a). Amended in this mission (Q1 (a), FR-040, research R-14), MINOR 1.3.1 → 1.4.0 (operator decision PLAN-CORRECTNESS-1-007 (b): the peer-range exception is an expansion, not a clarification). Until the amendment phase lands, the plan relies on the operator's Q1 and squad-round decisions. | pass, by amendment (recorded in Complexity Tracking) |
+| Supply chain: "No secrets, tokens ... in the repository, fixtures" | Secret-scan tests and plants assemble credential-shaped values at run time; no committed file matches a rule, checked by a test on this repository's own history (R-08, FR-045). | pass |
+| Workflow: gates listed | Three gates (pack contents, release readiness, release workflow) added to spec 001 FR-020 by amendment (FR-044), as op 023 did; spec FR-014, FR-044 and O6 name the readiness gate (operator decision PLAN-CORRECTNESS-1-006 (a)). | pass |
+| Workflow: DCO check | Still required on every pull request before merge. The release run skips only ci.yml's Sign-off job (`release: true`), because `main`'s squash commits cannot pass it; the release-workflow gate keeps the skip out of pull-request runs (R-10, R-13; operator decision PLAN-FRESH-1-001 (a)). | pass |
+| Workflow: the operator merges, agents never act for the operator | Operator-only steps stay the operator's: the agents' GitHub identity is off the tag ruleset's bypass list and is not an environment reviewer (O4, O5, R-16); the agent-side deny rules are an operator task, not an agent edit. | pass |
 
 **Post-design re-check:** unchanged; the design adds no element, token or story, and no exception beyond the one
 below.
@@ -96,17 +105,22 @@ gates/bin/release-readiness.ts                     # gate (Story 2)
 gates/bin/release-workflow.ts                      # gate (Story 3)
 gates/lib/pack-contents.ts, release-readiness.ts, secret-scan.ts, gap-rows.ts, release-workflow-rules.ts
 gates/lib/pins-rules.ts                            # accepts workspace:^<own version> in peerDependencies (R-03)
-gates/release/pack-manifest.json, gap-rows.json, secret-allowlist.json, provenance-reference.json
-gates/release/install-check.ts                     # Story 4 (not a gate)
+gates/lib/install-check.ts, gates/bin/install-check.ts   # Story 4 (not a gate; mutation scope, R-11)
+gates/lib/release-steps.ts, gates/bin/release-step.ts    # base, check-tag, digest, publish (R-10)
+gates/lib/plant-repo.ts, gates/bin/plants.ts       # commit-repo files/delete/secret headers, pack-tree form,
+                                                   #   configuration set extended (R-17)
+gates/release/pack-manifest.json, gap-rows.json, secret-allowlist.json, provenance-reference.json,
+              first-release-base                   # data only
 gates/plants/{pack-contents,release-readiness,release-workflow}/
-gates/test/…                                       # tests of the above
+gates/test/…, gates/test/integration/…             # tests of the above; 183b20f gap test; own-history scan test
+gates/test/fixtures/install-check/                 # recorded real registry responses (R-11)
 gates/gates.json, gates/lib/registry.ts, gates/README.md   # three new gate entries
 .github/workflows/ci.yml                           # three new jobs; on: workflow_call (inputs base, head)
 .github/workflows/release.yml, release-dry-run.yml
 .github/actions/release-prepare/action.yml
 .specify/memory/constitution.md                    # PATCH amendment (FR-040, FR-041)
 specs/001-repository-foundation/spec.md, contracts/ci-checks.md, contracts/plants.md, contracts/gate-cli.md  # FR-044
-RELEASING.md, CONTRIBUTING.md                      # FR-043
+RELEASING.md, CONTRIBUTING.md                      # FR-043, R-15, R-16
 ```
 
 **Structure Decision**: release tooling lives with the gates (`gates/`), because three of its four parts are gates
@@ -116,20 +130,30 @@ and share the gate CLI, finding format and plant job; release-only data sits in 
 
 0. **Setup** (no behaviour): merge `main` (after 018 and 023). Each gate's registry entry (`gates.json`, the FR-020
    list, its `ci.yml` job) lands in its own story's green commit, since the plant job requires the three sets equal.
-1. **US1, P1 — pack contents**: metadata, licence files, peer, pins-rule change (test-first), pack manifest, gate,
-   plants, CI job. Changelogs move to `1.0.0` here only as far as the gate needs (no date yet).
-2. **US2, P1 — release readiness**: gap rows (member-level evidence completed against merged `main`), secret scan,
-   allow list, version, changelog rules, gate, plants, CI job (`fetch-depth: 0`). The `1.0.0` changelog entries are
-   written here (dated the day the phase is implemented; R-09 allows any date).
-3. **US3, P2 — workflows**: `yaml` dependency, release-workflow gate and plants first (red), then `ci.yml`'s
-   `workflow_call`, the composite action, `release.yml`, `release-dry-run.yml`.
-4. **US4, P2 — install check**: stub-registry tests (red), the check, tarball rehearsal, provenance reference and
-   `--rehearse`, wired into both workflows.
-5. **US5, P3 — governance and docs** (behaviour-free): constitution PATCH via `/speckit-constitution`, spec 001
-   amendment (FR-044), READMEs, `RELEASING.md`, `CONTRIBUTING.md` link.
+1. **US1, P1 — pack contents**: metadata, licence files, peer, pins-rule change (test-first), pack manifest, the
+   `pack-tree` plant form and the configuration-set extension (test-first, R-17), gate, plants, the build-path
+   integration test, CI job. Changelogs move to `1.0.0` here only as far as the gate needs (no date yet).
+2. **US2, P1 — release readiness**: the `commit-repo` extension (`files:`, `delete:`, `secret:`; test-first, R-17);
+   the 183b20f gates-integration test, red before the gap-row evidence is completed (R-07); gap rows (member-level
+   evidence completed against merged `main`), secret scan with run-time-assembled test values and the own-history
+   test (R-08), allow list keyed by path, rule and value hash, version, changelog rules with the token-prefix
+   comparison (R-09), gate, plants, CI job (`fetch-depth: 0`). The `1.0.0` changelog entries are written here, dated
+   the day the phase is implemented; the pre-tag pull request sets the release date later (R-15, operator decision
+   PLAN-FRESH-1-007 (b)).
+3. **US3, P2 — workflows**: `yaml` dependency, release-workflow gate and plants first (red), the `release-step`
+   module and its unit tests (red), then `ci.yml`'s `workflow_call` (with the `release` input and the Sign-off
+   skip), the composite action, `release.yml` (with `release-base`), `release-dry-run.yml`.
+4. **US4, P2 — install check**: unit tests on recorded real responses and the stub registry (red), the check in
+   `gates/lib` + `gates/bin` (environment allow list, strict-CSP browser load, peer step, workflow and ref
+   comparison), tarball rehearsal, provenance reference (with and without provenance) and `--rehearse`, wired into
+   the composite action (so both workflows run it) and `release.yml`'s `install-check` job.
+5. **US5, P3 — governance and docs** (behaviour-free): constitution MINOR 1.3.1 → 1.4.0 via `/speckit-constitution`,
+   spec 001 amendment (FR-044: gates and plant forms), READMEs, `RELEASING.md` (O4 and O5 settings, identities, the
+   agent-side deny rules as an operator task, the pre-tag pull request), `CONTRIBUTING.md` link.
 
-The release itself (O3 to O8) happens after the mission's pull request is merged, by the operator; "ALL PHASES DONE"
-reports it as pending.
+The release itself (the pre-tag pull request, O3 to O8) happens after the mission's pull request is merged, by the
+operator; "ALL PHASES DONE" reports it as pending, together with the operator task of adding the agent-side deny
+rules to the agent permission settings (O5, research R-16), which no agent performs.
 
 ## Plan decisions for the gate
 
@@ -137,14 +161,28 @@ reports it as pending.
 |---|---|---|
 | D1 | First publish: operator publishes a placeholder `0.0.0-bootstrap.0` per package interactively, configures trusted publishers, then the workflow publishes `1.0.0` via OIDC (R-01) | D1-b one-time granular token in the environment secret; D1-c operator publishes 1.0.0 locally (rejected) |
 | D2 | Peer `workspace:^1.0.0` in source, pins rule accepts it in peers only (R-03) | exact peer (Q3 (b)) |
-| D3 | Readiness is a required merge gate on every pull request (R-06) | release-only script |
+| D3 | Readiness is a required merge gate on every pull request (R-06); accepted by the operator, PLAN-CORRECTNESS-1-006 (a) | release-only script |
 | D4 | `release.yml` reuses `ci.yml` via `workflow_call` to run every gate on the tag (R-10) | rerun fast gates only |
 | D5 | The dry run is a named check, not required (R-10) | required |
 | D6 | Own secret-scan rules, no gitleaks or trufflehog (R-08) | a scanner action |
+
+**Operator decisions, plan squad round 1** (`reviews/plan/round-1/refute.md`, Decision column):
+
+| Finding | Option | Effect |
+|---|---|---|
+| PLAN-A11Y-SECURITY-1-008 | (a) | Anthropic, OpenAI, Google and env-assignment rules with fail plants; scan stays reachable-only (R-08) |
+| PLAN-CORRECTNESS-1-002 | (a) | `install-check --rehearse` runs in the composite action, so in `release.yml`'s `prepare` before the approval (R-10) |
+| PLAN-CORRECTNESS-1-005 | (a) | tokens compared by name or prefix mention against the tokens changelog (R-09) |
+| PLAN-CORRECTNESS-1-006 | (a) | D3 accepted; spec FR-014, FR-044, O6 name the readiness gate |
+| PLAN-CORRECTNESS-1-007 | (b) | constitution amendment MINOR 1.3.1 → 1.4.0, spec FR-040 names the peer-range exception (R-14) |
+| PLAN-FRESH-1-001 | (a) | `release-base` job; Sign-off skipped in `workflow_call` runs only, guarded by gate rules (R-10, R-13) |
+| PLAN-FRESH-1-006 | (a) | Story 4 scenario 4 reworded; install-check peer step, rule `peer-unresolved` (R-11) |
+| PLAN-FRESH-1-007 | (b) | no date rule; the pre-tag pull request sets the release date, the operator confirms (R-15) |
+| PLAN-TESTABILITY-1-003 | (a) | `commit-repo` carries files; pack-contents plants on `pack-tree` fixture trees, build path in an integration test (R-17) |
 
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Constitution "Technology, Licence and Supply Chain" contradicted (internal until 1.0.0; token in CI secrets; exact pins for every dependency) until the US5 amendment lands. Scope: this branch until US5. Sunset: the amendment commit. Approved: operator Q1 (a). | The facts changed (public early) and the operator chose OIDC and a peer range. | Leaving the text (Q1 (c)) was rejected by the operator. |
+| Constitution "Technology, Licence and Supply Chain" contradicted (internal until 1.0.0; token in CI secrets; exact pins for every dependency) until the US5 amendment (MINOR 1.4.0) lands. Scope: this branch until US5. Sunset: the amendment commit. Approved: operator Q1 (a) for the public and credential statements; operator Q3 (a) for the peer range and plan squad round 1 PLAN-CORRECTNESS-1-007 (b) for adding the pin exception to the constitution as a MINOR amendment. | The facts changed (public early) and the operator chose OIDC and a peer range. | Leaving the text (Q1 (c)) was rejected by the operator; a PATCH for the pin exception (PLAN-CORRECTNESS-1-007 (a)) was not chosen. |
 | New dev dependency `yaml` | Nested workflow YAML must be read exactly for permission and environment rules. | The line-based readers in `gates/lib/registry.ts` cannot see nesting reliably; a hand-written YAML parser is more code to mutation-test than the gate itself. |

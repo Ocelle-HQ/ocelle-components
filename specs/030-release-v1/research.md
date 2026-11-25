@@ -93,10 +93,13 @@ scenario 2's list (which names the browser build) is covered because the browser
 
 ## R-06. Release-readiness check: a gate on every pull request (FR-010 to FR-015; SPEC-2-03, SPEC-2-04)
 
-**Decision (D3).** `release-readiness` is a merge gate (check "Release readiness") with plants, run on every pull
-request and by the release workflows. It works on a **commit** (the checkout), never on tarballs (SPEC-2-04: the
-spec's "readiness on the tarballs" is read as "on the commit the tarballs were packed from"; the tarballs are the
-pack-contents gate's). It checks: the gap rows (R-07), the history secret scan (R-08), one shared version (and, with
+**Decision (D3, accepted by the operator: plan squad round 1, PLAN-CORRECTNESS-1-006 (a)).** `release-readiness` is
+a required merge gate (check "Release readiness") with plants, run on every pull request and by the release
+workflows; spec FR-014, FR-044 and O6 name it. It works on the **checkout** (`HEAD` of `--root`), never on tarballs
+(SPEC-2-04: the spec's "readiness on the tarballs" is read as "on the commit the tarballs were packed from"; the
+tarballs are the pack-contents gate's). It has no `--commit` option (PLAN-CORRECTNESS-1-011): every input is read
+from the working tree of the checkout and the history scan starts at that checkout's `HEAD`, so the verdict always
+belongs to one commit. It checks: the gap rows (R-07), the history secret scan (R-08), one shared version (and, with
 `--tag`, the tag), and the changelogs (R-09). It exits 1 when not-ready. Because implementation starts after mission
 018 lands, the gate is green from its first commit on this branch; on `main` today it would be red by design.
 
@@ -115,116 +118,325 @@ directory with `verification.md`, the record of a landed feature). Every row nee
 `token` or `style-hook` item (a `spec` item alone does not meet a row). The initial evidence per row is in
 `data-model.md`; the member-level items for the rows mission 018 delivers are completed after `main` is merged.
 
-## R-08. History secret scan (FR-011, #11 "the history contains no secrets")
+**Proof against the pre-018 tree (Story 2's independent test, PLAN-TESTABILITY-1-006).** A gates-integration test,
+written red before the gap-row evidence is completed, runs the gap check with the committed `gap-rows.json` against
+the custom-elements manifest, token source and stylesheets of commit `183b20f` (the pre-018 `main`, read with
+`git show 183b20f:<path>` into a temporary tree) and asserts that exactly rows 6 (`#498 ...`), 10 (`#509`) and 15
+(`#524 #526`) are `gap-row-unmet`, each naming the mission 018 evidence it expected, and every other row is met. It
+fails if a row of 018 is given evidence that already existed before 018, so the evidence cannot be vacuous.
 
-**Decision.** The gate runs `git log -p -m --no-color --no-ext-diff <commit>` (every commit reachable from
-the checked commit, all parents) and scans added lines with these patterns: npm tokens (`npm_` + 36 alphanumerics),
-GitHub tokens (`gh[pousr]_` + 36 or more, `github_pat_` + 82), PEM private-key headers (`-----BEGIN ... PRIVATE
-KEY-----`), AWS access key ids (`AKIA` + 16), Slack tokens (`xox[abpr]-`), and an `.npmrc` auth line
-(`_authToken=` or `_auth=` followed by a literal, not `${...}`). A hit is reported as `<commit>:<path>` and the rule
-name; the matched text is never printed. Exceptions are listed in `gates/release/secret-allowlist.json`
-(commit, path, rule, reason); an entry with no reason, or one that matches nothing, is a finding. No generic
-high-entropy rule: it would flag every baseline digest and lockfile integrity hash, and its exceptions would drown the
-real rules. GitHub's own secret scanning (on for public repositories) is a complement the release procedure asks the
-operator to re-check (O2 step).
+## R-08. History secret scan (FR-011, FR-045, #11 "the history contains no secrets")
+
+**Decision.** The gate runs `git log -p -m --no-color --no-ext-diff HEAD` (every commit reachable from the checked
+commit, all parents; binary diffs skipped) and scans added lines with these rules:
+
+- `npm-token`: `npm_` + 36 alphanumerics;
+- `github-token`: `gh[pousr]_` + 36 or more, `github_pat_` + 82;
+- `private-key`: PEM private-key header lines (`-----BEGIN ... PRIVATE KEY-----`, any key type);
+- `aws-key-id`: `AKIA` + 16;
+- `slack-token`: `xox[abpr]-` + a token body;
+- `anthropic-key`: `sk-ant-` followed by at least 32 characters of `[A-Za-z0-9_-]`;
+- `openai-key`: `sk-proj-` followed by at least 32 characters of `[A-Za-z0-9_-]`;
+- `google-api-key`: `AIza` + exactly 35 characters of `[0-9A-Za-z_-]`;
+- `npmrc-auth`: in a file named `.npmrc` or `*.npmrc` only, an `_authToken=` or `_auth=` assignment followed by a
+  literal (not `${...}`);
+- `env-assignment`: in a file named `.env`, `.env.*` or `*.env` only, a line `NAME=value` whose name ends in `KEY`,
+  `TOKEN`, `SECRET` or `PASSWORD` and whose value is a non-empty literal (not `${...}`).
+
+The four agent-era rules (Anthropic, OpenAI, Google, env assignment) were added by operator decision
+PLAN-A11Y-SECURITY-1-008 (a); the implementation re-checks the documented key shapes and records the source of each.
+The scope stays "reachable from the release commit", as FR-011 states: other refs (abandoned branches, pull-request
+heads) are not scanned; GitHub's own secret scanning (on for public repositories) covers them, and the release
+procedure asks the operator to re-check its alerts (O2 step). The two path-bound rules match only files with those
+names, so prose that describes the rules (this file, the contract, the README) is never a hit.
+
+A hit is reported as `<commit>:<path>` and the rule name; the matched text is never printed, logged or written.
+**No committed literal** (PLAN-TESTABILITY-1-002; FR-045): no file in the repository matches any rule. Unit tests
+assemble each credential-shaped value at run time from fragments that match no rule on their own (for example a
+prefix constant joined with a generated body), and readiness plants name the rule instead of holding the value (a
+`secret:` line in a commit-repo record, which the plant builder expands into a generated value at plant time,
+R-17). A gates-integration test runs the history scan on this repository's own `HEAD` and asserts zero hits with an
+empty allow list for the gate's own fixtures; the test file itself holds no literal.
+
+**Allow list.** Exceptions are listed in `gates/release/secret-allowlist.json` as `{ path, rule, valueSha256,
+reason }`: the path the hit is in, the rule, the SHA-256 of the matched text (hex) and a reason. An entry is keyed by
+content, not by commit, so it survives a rebase, an amend and a squash merge (`main` lands every pull request as one
+squash commit). An entry with no reason, or one that matches no hit, is a finding (`allowlist-no-reason`,
+`allowlist-stale`). The file starts empty.
+
+No generic high-entropy rule: it would flag every baseline digest and lockfile integrity hash, and its exceptions
+would drown the real rules.
 
 **Alternatives.** gitleaks (a Go binary or a third-party action: one more pinned supply-chain dependency for a
-handful of rules); trufflehog (same).
+handful of rules); trufflehog (same). An `--all-refs` mode over a mirror clone (PLAN-A11Y-SECURITY-1-008 (b)) was
+not chosen by the operator.
 
 ## R-09. Changelog check (FR-013; SPEC-1-10, SPEC-2-05)
 
 **Decision.** For the version in the manifests (not a literal `1.0.0`), each package's `CHANGELOG.md` must have a
 `## <version> - <YYYY-MM-DD>` heading. Every element tag in the manifest must appear (as `` `ocelle-x` ``) in
-`packages/elements/CHANGELOG.md` (any section, so post-1.0 additions under "Unreleased" pass between releases). Token
-names and base-style hooks are not compared one by one (more than 300 tokens; the hooks have no machine list): the
-tokens and styles entries must each be non-empty. With `--tag v<x>`, the `<x>` entry must exist and "Unreleased"
-must be empty (everything released is named under the version).
+`packages/elements/CHANGELOG.md` (any section, so post-1.0 additions under "Unreleased" pass between releases).
+
+**Tokens (operator decision PLAN-CORRECTNESS-1-005 (a)).** Every token in `packages/tokens/src/source.ts` must be
+covered by `packages/tokens/CHANGELOG.md` (any section), either by its full name (`` `--ocelle-<name>` ``) or by a
+prefix mention `` `--ocelle-<prefix>-*` `` that covers every token whose name starts with `<prefix>-` (for example
+`` `--ocelle-color-*` ``, `` `--ocelle-space-*` ``). A hand-written changelog meets this at group level; a token added
+in a new family that the changelog never names is a finding `changelog-missing-token`, which lists the uncovered
+names grouped by their first name segment. Base-style hooks have no machine list, so the styles entry must be
+non-empty only.
+
+With `--tag v<x>`, the `<x>` entry must exist and "Unreleased" must be empty (everything released is named under
+the version). The entry's date is not compared with the tag (operator decision PLAN-FRESH-1-007 (b)): the release
+procedure has a pre-tag pull request that sets each entry's date to the release day and empties "Unreleased", and
+the operator confirms the date before merging it (R-15).
 
 ## R-10. The release workflows (FR-020 to FR-027)
 
-**Decision (D4).** Two workflow files and one composite action:
+**Decision (D4).** Two workflow files, one composite action, one `ci.yml` change and one release-step module:
 
-- `.github/actions/release-prepare/action.yml`: build, `readiness --tag` (when a tag is given), pack, pack-contents
-  gate on the tarballs, `npm publish <tgz> --dry-run` for each, the tarball install rehearsal (R-12), and a
-  `SHA256SUMS` of the tarballs.
+- `gates/lib/release-steps.ts` with the process boundary `gates/bin/release-step.ts` (PLAN-TESTABILITY-1-005): the
+  release logic that would otherwise be inline shell, unit-tested with an injected git and npm runner and in mutation
+  scope. Subcommands: `base` (the previous `v*` tag reachable from `<sha>^`, else the SHA in
+  `gates/release/first-release-base`), `check-tag` (the tag equals `v<version>` of all three manifests, and the commit
+  is an ancestor of `origin/main`), `digest` (SHA-256 of each tarball, written as step outputs) and `publish`
+  (below). It imports only Node built-ins and other `gates/lib` modules with no package dependency (a unit test
+  asserts the import graph), so the publish job runs it without `pnpm install`.
+- `.github/actions/release-prepare/action.yml`, the steps both paths share: build; `release-readiness` (with `--tag`
+  when a tag is given); `pnpm pack` of the three packages; **immediately after the pack**, before any other step,
+  `release-step digest`, whose digests the action exposes as outputs `sha256-tokens`, `sha256-styles`,
+  `sha256-elements` (PLAN-A11Y-SECURITY-1-004); the pack-contents gate on the tarballs; `npm publish <tgz> --dry-run`
+  for each; the tarball install rehearsal (R-12) on a **copy** of the tarballs in a temporary directory; and
+  `install-check --rehearse` (R-11; operator decision PLAN-CORRECTNESS-1-002 (a): the provenance proof runs in the
+  release path, before the approval, so a failing proof blocks the publish).
 - `.github/workflows/release.yml`: `on: push: tags: ['v*']` only. Jobs:
-  1. `gates`: `uses: ./.github/workflows/ci.yml` (ci.yml gains `on: workflow_call` with inputs `base` and `head`),
-     so every merge gate runs on the tagged commit (#11 "run every check"); `base` is the previous release tag, or
-     the commit before this mission's merge for the first release (the release procedure names it), so the sign-off
-     and mutation gates cover what the release adds.
-  2. `prepare` (needs `gates`): checkout of the tag with full history, `persist-credentials: false`; fails unless the
-     commit is an ancestor of `origin/main` and the tag equals `v<version>`; runs the composite action; uploads the
-     tarballs and `SHA256SUMS` as an artifact.
-  3. `publish` (needs `prepare`): `environment: npm-publish`; `permissions: { contents: read, id-token: write }`;
-     no checkout; pinned `actions/setup-node` with the registry URL; downloads the artifact and checks `SHA256SUMS`;
-     for tokens, styles, elements in order: skips a version already on the registry (`npm view <name>@<v> version`),
-     else `npm publish <tgz> --access public --provenance`. Never `unpublish`, `deprecate` or `dist-tag rm`.
-  4. `install-check` (needs `publish`): the install check (R-11) against the public registry with the expected
-     repository and commit.
+  1. `release-base`: checkout of the tag with full history, `persist-credentials: false`; `release-step base`;
+     output `base` (PLAN-FRESH-1-001). For the first release, `gates/release/first-release-base` holds the parent of
+     this mission's squash commit on `main`; the pre-tag pull request (R-15) writes it.
+  2. `gates` (needs `release-base`): `uses: ./.github/workflows/ci.yml` with `base: ${{
+     needs.release-base.outputs.base }}`, `head: ${{ github.sha }}` and `release: true`, so every merge gate runs on
+     the tagged commit (#11 "run every check"), the mutation gate over what the release adds.
+  3. `prepare` (needs `gates`): checkout of the tag with full history, `persist-credentials: false`; `release-step
+     check-tag`; the composite action; job outputs `sha256-tokens`, `sha256-styles`, `sha256-elements` from the
+     action's outputs; uploads the tarballs (only) as the artifact `release-tarballs`.
+  4. `publish` (needs `prepare`): `environment: npm-publish`; `permissions: { contents: read, id-token: write }`;
+     sparse checkout of the tag (`.node-version` and `gates/` only, `persist-credentials: false`,
+     PLAN-CORRECTNESS-1-010); pinned `actions/setup-node` with `node-version-file: .node-version` and the registry
+     URL; asserts `npm --version` ≥ 11.5.1; downloads the artifact; runs `release-step publish` with the three
+     expected digests from `needs.prepare.outputs.*` passed through `env:`. No build, pack or install step.
+  5. `install-check` (needs `publish`): checkout of the tag (`persist-credentials: false`) and
+     `./.github/actions/setup` (pinned Node, pnpm, dependencies, Playwright's browser), then the install check (R-11)
+     against the public registry with the expected repository, workflow, ref and commit (PLAN-CORRECTNESS-1-010).
 - `.github/workflows/release-dry-run.yml`: `on: pull_request` and `workflow_dispatch`; one job running the composite
-  action and the install check's rehearsal (R-11, R-12); `permissions: contents: read`; no environment, no
-  `id-token`. It is a named check but **not required** (D5): its pack, contents and readiness parts are already
-  required gates, and its rehearsal reaches the public registry for reading, which a required check should not depend
-  on.
+  action without a tag (so it includes the tarball rehearsal and `install-check --rehearse`); `permissions:
+  contents: read`; no environment, no `id-token`. It is a named check but **not required** (D5): its pack, contents
+  and readiness parts are already required gates, its rehearsal reaches the public registry for reading, which a
+  required check should not depend on, and the release path now runs the same rehearsal before the approval.
+
+**`release-step publish`** (FR-023, FR-025, edge case "Registry outage"; PLAN-CORRECTNESS-1-009): first it compares
+each downloaded tarball's SHA-256 with the expected digest from `prepare`'s job outputs (not a file in the artifact)
+and stops on any difference, naming the package (`digest-mismatch`). Then, for `@ocelle/tokens`, `@ocelle/styles`,
+`@ocelle/elements` in that fixed order (a constant of the module): `npm view <name>@<v> version --json`; a version
+found means skip and report; an `E404` answer means publish (`npm publish <tgz> --access public --provenance`); any
+other failure (network, 5xx, timeout) is retried every 30 seconds for at most 10 minutes, then fails naming the
+package. A failed `npm publish` is re-checked with `npm view` before any retry: if the version is now on the
+registry it is reported as published and skipped, otherwise the publish is retried within the same bound. A failure
+of one package stops the run before the next package (so the order holds on a re-run). It never runs `npm
+unpublish`, `npm deprecate` or `npm dist-tag`. Unit tests with an injected npm runner and clock cover: all new;
+already published; partial (tokens published, styles failing); `npm view` network error then success; `npm view`
+error past the bound; publish error after which the version is visible; digest mismatch; and the order.
+
+**Sign-off in the release run (operator decision PLAN-FRESH-1-001 (a)).** `main` lands every pull request as one
+single-parent squash commit committed by GitHub, which the sign-off gate (spec 001 FR-023) cannot pass: its range
+check fails on every release range. `ci.yml` therefore gains a boolean `workflow_call` input `release` (default
+`false`), and its Sign-off job runs with `if: ${{ !inputs.release }}`. On `pull_request`, `inputs` is empty, so the
+job always runs; the DCO check is enforced on every pull request before merge and `main`'s ruleset requires it. The
+release-workflow gate keeps the skip out of pull-request runs (rules `signoff-skip-scope`, `release-input-caller`,
+R-13).
 
 Workflow-level `permissions: contents: read`; `concurrency: release` with `cancel-in-progress: false`.
 
 **Alternatives.** Rerun only the fast gates in the release (faster, but #11 says every check); require the dry run
-(adds a registry dependency to merges).
+(adds a registry dependency to merges); a sign-off exemption for commits committed by GitHub
+(PLAN-FRESH-1-001 (b), not chosen); a `SHA256SUMS` file inside the artifact (detects only transport corruption, since
+whoever can change the tarballs can change the file).
 
 ## R-11. Install check and its proof (FR-030 to FR-034; SPEC-2-01, SPEC-2-02)
 
-**Decision.** `gates/release/install-check.ts`, a command with inputs `--version`, `--repository`, `--commit`,
-`--registry` (default the public registry) and `--from-tarballs <dir>` (rehearsal). In a fresh temporary directory
-with `npm_config_userconfig` and `npm_config_globalconfig` pointing at empty files and no `NODE_AUTH_TOKEN`, it
-installs the three packages at the version, resolves every declared entry point (R-05), imports `@ocelle/tokens` in
-Node, and loads `@ocelle/elements/browser.js` with `tokens.css` and `base.css` in Chromium (Playwright, already a
-pinned dependency) to check that `ocelle-button` is defined. It then runs `npm audit signatures` in that project
-(registry signatures and attestations) and reads each package's provenance attestation from the registry's
-attestations endpoint, decoding the in-toto statement to compare the source repository and the commit with the
-inputs. A version not yet visible is retried every 30 seconds for at most 10 minutes (FR-032).
+**Decision.** The logic lives in `gates/lib/install-check.ts` (entry-point list, child environment, attestation
+decode and compare, retry schedule, peer check, rehearse judgement), with a thin process boundary
+`gates/bin/install-check.ts` (spawning npm, Chromium and the HTTP server); `gates/release/` holds data only. Both are
+in the mutation gate's scope (`gates/bin`, `gates/lib`; PLAN-TESTABILITY-1-001). It is not a merge gate and has no
+`gates.json` entry. Inputs: `--version`, `--repository`, `--commit`, `--workflow` (default
+`.github/workflows/release.yml`), `--ref` (default `refs/tags/v<version>`), `--registry` (default the public
+registry), `--from-tarballs <dir>` (rehearsal) and `--rehearse`.
+
+**Credential-free environment (FR-030; PLAN-A11Y-SECURITY-1-010).** Every child process gets an environment built
+from an allow list, not the parent's minus named variables: `PATH`; `HOME` and `TMPDIR` set to the temporary
+directory; `npm_config_userconfig` and `npm_config_globalconfig` pointing at empty files; `npm_config_cache` in the
+temporary directory; `npm_config_registry` set to `--registry`; and, if present in the parent, the proxy variables
+(`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, either case) and the CA variables (`NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`).
+Nothing else passes: no other variable matching `/^npm_config_/i`, no `NODE_AUTH_TOKEN`, `NPM_TOKEN`, `GITHUB_TOKEN`
+or `GH_TOKEN`. A unit test plants an upper-case per-registry auth-token variable (`NPM_CONFIG_` + the registry key +
+`:_authToken`, assembled at run time) and other npm variables in the parent and asserts none reaches the child.
+
+**Steps.** In a fresh temporary project with `{"private": true}`: install the three packages at the version (npm,
+`--ignore-scripts`); resolve every declared entry point (R-05); import `@ocelle/tokens` in Node; load the browser
+build (below); verify signatures and provenance (below). Then the peer step (operator decision PLAN-FRESH-1-006 (a)):
+in a second empty project, install `@ocelle/elements@<version>` alone; the installed
+`node_modules/@ocelle/elements/package.json` must declare `peerDependencies` `{ "@ocelle/tokens": "^<version>" }` and
+`node_modules/@ocelle/tokens/package.json` must exist with a version that satisfies it (`peer-unresolved`
+otherwise). In `--from-tarballs` mode, before any publish, the tokens version cannot resolve from the registry, so
+the peer step checks the declared peer only; the resolution half runs in registry mode after the publish.
+
+**Browser load under the strict CSP (FR-030, Constitution IV; PLAN-A11Y-SECURITY-1-009).** Chromium will not load
+module scripts from `file://`, so the check serves the installed `node_modules/@ocelle/` tree and a generated page
+from `127.0.0.1` on an ephemeral port, every response carrying `Content-Security-Policy: default-src 'none';
+script-src 'self'; style-src 'self'; font-src 'self'`, the same pattern as `packages/elements/test/browser/serve.ts`
+(reimplemented in `gates/lib`, since a gate does not import package test code). The page links `tokens.css` and
+`base.css` and loads `browser.js` as a module. Playwright routes every request: one not to the page's origin is
+aborted and recorded (`network-request`); every `securitypolicyviolation` event and CSP console report is recorded
+(`csp-violation`); `ocelle-button` must be defined (`element-undefined`).
+
+**Signatures and provenance (FR-031; PLAN-FRESH-1-005, PLAN-A11Y-SECURITY-1-007).** `npm audit signatures` always
+initialises Sigstore's TUF client over the network and a stub cannot produce a Sigstore-valid bundle, so the
+verifier is an injected adapter: the real adapter runs `npm audit signatures --json` in the project and fetches each
+package's attestations from the registry's attestations endpoint (network: the public registry and Sigstore's TUF
+CDN); the pure logic in `gates/lib/install-check.ts` decides from the adapter's results. It decodes the SLSA
+provenance statement of each package and compares the source repository, the commit, the workflow path and the ref
+with the inputs (`repository-mismatch`, `commit-mismatch`, `workflow-mismatch`, `ref-mismatch`); a package with no
+provenance attestation is `attestation-missing`; a failed signature audit is `signature-invalid`.
+
+**Retry (FR-032).** A version not yet visible is retried every 30 seconds for at most 10 minutes (`not-visible`), with
+an injected clock in tests.
 
 **Proof before the release (FR-033, FR-034).**
-- Unit tests with a stub registry (a Node `http` server in the test, no new dependency) cover: a pass, a missing
-  attestation, another repository, another commit, a **bad registry signature** (the stub's keys endpoint does not
-  match the signature, so `npm audit signatures` fails: SPEC-2-01), a version that never appears (retry bound with an
-  injected clock), and a failing entry-point import.
-- The dry-run workflow's rehearsal runs the provenance part against a **real** published package that already has
-  provenance, given by `gates/release/provenance-reference.json` (name, version, repository, commit, recorded at
-  implementation time from the registry), once with the right expectations (pass) and once each with a wrong
-  repository and a wrong commit (planted failures, which must fail); and runs the install part against the packed
-  tarballs (R-12). The check takes the expected repository and commit as inputs (SPEC-2-02).
+- Unit tests, all offline: the decode-and-compare and decision functions run on **recorded real responses**
+  committed under `gates/test/fixtures/install-check/` (recorded from the public registry at implementation time:
+  the attestations response of a package version with provenance, the answer for a version without one, and `npm
+  audit signatures --json` output for a passing and a failing audit), with the injected verifier returning them;
+  each test asserts the specific rule line (`attestation-missing`, `repository-mismatch`, `commit-mismatch`,
+  `workflow-mismatch`, `ref-mismatch`, `signature-invalid`), not only a non-zero exit. The install, entry-point,
+  peer, retry and environment paths use a stub registry (a Node `http` server in the test, no new dependency) that
+  advertises no `dist.attestations`, so no Sigstore verification runs against it. The browser rules use fixture
+  tarballs whose browser build injects an inline style (`csp-violation`) or fetches a remote URL
+  (`network-request`). Recorded responses hold public registry data only (no credential).
+- `--rehearse` runs the real adapter against the public registry, on the two entries of
+  `gates/release/provenance-reference.json`: the pass case (a real package version with valid provenance, with its
+  recorded repository, commit, workflow and ref), then planted failures that must each fail with their own rule: a
+  wrong repository (`repository-mismatch`), a wrong commit (`commit-mismatch`), a wrong workflow path
+  (`workflow-mismatch`), a wrong ref (`ref-mismatch`), and a real package version that has a registry signature but
+  no provenance attestation (`attestation-missing`; PLAN-CORRECTNESS-1-001). It prints each case's expected and
+  actual rule and exits 0 only if the pass case passes and every planted failure fails with its expected rule. It
+  runs in the composite action, so in the dry run on every pull request and in `release.yml`'s `prepare` job before
+  the approval (SC-008: 1 of 1 pass, 3 of 3 of FR-034's planted failures, plus the workflow and ref cases).
 
 ## R-12. Tarball install rehearsal (FR-033)
 
-**Decision.** `install-check --from-tarballs <dir>` installs the three tarballs into the empty project (no
-registry write, registry reads only for `lit`), then runs the same entry-point and browser checks. A planted failure
-(a tarball with a declared export removed) must make it fail; that is a unit test with a fixture tarball.
+**Decision.** `install-check --from-tarballs <dir>` installs the three tarballs into the empty project (no registry
+write, registry reads only for `lit`), then runs the same entry-point, browser and declared-peer checks. A planted
+failure (a tarball with a declared export removed) must make it fail; that is a unit test with a fixture tarball. In
+the composite action it runs on a copy of the tarballs, after the digests are taken (R-10).
 
 ## R-13. Workflow static check (FR-026)
 
 **Decision.** Gate `release-workflow` (check "Release workflow"), plant form `repo-tree`, reads
-`.github/workflows/release.yml`, `release-dry-run.yml` and `.github/actions/release-prepare/action.yml` with the
-`yaml` package (new exact-pinned dev dependency; the repository's line-based YAML readers are not enough for nested
-`permissions`, `environment` and `with` blocks). Rules: release trigger is exactly `push.tags` with `v*` (no
-`pull_request`, `pull_request_target`, `workflow_dispatch`, `schedule`, branch push); workflow-level permissions
-exactly `contents: read`; `id-token: write` only on the job bound to environment `npm-publish`, and that job holds no
-other write permission; the dry-run workflow has no `id-token`, no `environment` and no `npm publish` without
-`--dry-run`; every `uses:` of a remote action is `owner/repo@<40 hex>`; every `actions/checkout` has
-`persist-credentials: false`; no expression reads `secrets.*` other than `secrets.GITHUB_TOKEN`, and no step sets
-`NODE_AUTH_TOKEN` or `NPM_TOKEN`; no step runs `npm unpublish`, `npm deprecate` or `npm dist-tag`.
+`.github/workflows/release.yml`, `release-dry-run.yml`, `ci.yml` and `.github/actions/release-prepare/action.yml`
+with the `yaml` package (new exact-pinned dev dependency; the repository's line-based YAML readers are not enough
+for nested `permissions`, `environment` and `with` blocks). Rules:
 
-## R-14. Constitution amendment (FR-040, FR-041, Q1 (a))
+- trigger: release trigger is exactly `push.tags` with `v*` (no `pull_request`, `pull_request_target`,
+  `workflow_dispatch`, `schedule`, branch push);
+- permissions: workflow-level permissions exactly `contents: read`; `id-token: write` only on the job bound to
+  environment `npm-publish`, and that job holds no other write permission;
+- dry run: the dry-run workflow has no `id-token`, no `environment` and no `npm publish` without `--dry-run`;
+- pinning and credentials: every `uses:` of a remote action is `owner/repo@<40 hex>`; every `actions/checkout` has
+  `persist-credentials: false`; no expression reads `secrets.*` other than `secrets.GITHUB_TOKEN`, and no step sets
+  `NODE_AUTH_TOKEN` or `NPM_TOKEN`; no step runs `npm unpublish`, `npm deprecate` or `npm dist-tag`;
+- job graph (PLAN-TESTABILITY-1-005, PLAN-FRESH-1-001): `gates` needs `release-base` and takes its `base` input only
+  from `needs.release-base.outputs.base` (`gates-inputs`); `prepare` needs `gates` (`prepare-needs-gates`);
+  `publish` needs `prepare` (`publish-needs-prepare`); `install-check` needs `publish`
+  (`install-check-needs-publish`);
+- publish job: no build, pack or install step and no `pnpm` command (`publish-builds`); exactly one publishing step,
+  `release-step publish`, and no `npm publish` in any `run:` of the job (`publish-order`: the order is the module's,
+  unit-tested); that step receives all three `needs.prepare.outputs.sha256-*` digests (`publish-verifies-checksums`);
+  the job's checkout is sparse (`.node-version`, `gates/`) and `setup-node` reads `node-version-file: .node-version`
+  (`publish-node-pin`);
+- composite action: the digest step comes directly after the pack step (`digest-after-pack`); it runs
+  `install-check --rehearse` (`rehearse-in-prepare`);
+- sign-off scope: `ci.yml`'s Sign-off job has no `if` other than `${{ !inputs.release }}` (`signoff-skip-scope`);
+  the `release` input is declared only under `workflow_call` with default `false`, and only `release.yml` passes it
+  (`release-input-caller`).
 
-**Decision.** Through `/speckit-constitution`, version 1.3.1 → 1.3.2 (PATCH), "Technology, Licence and Supply Chain"
-reworded: packages publish to the public npm registry from 1.0.0 with provenance through the release workflow's
-OIDC identity; the repository has been public since 2026-11, before 1.0.0; no publish credential is stored in the
-repository or in CI secrets, and a bootstrap credential, if any, is the operator's own and never reaches CI
-(D1); a peer range on a workspace package is the one exception to exact pins (R-03); and `SECURITY.md` "exists"
-(present tense; op 023 owns its content).
+## R-14. Constitution amendment (FR-040, FR-041, Q1 (a), PLAN-CORRECTNESS-1-007 (b))
 
-## R-15. Release procedure location (FR-043)
+**Decision.** Through `/speckit-constitution`, version 1.3.1 → 1.4.0 (MINOR: the peer-range exception materially
+expands the supply-chain guidance; operator decision PLAN-CORRECTNESS-1-007 (b), approved again at the amendment's
+pull request as Governance requires), "Technology, Licence and Supply Chain" reworded: packages publish to the public
+npm registry from 1.0.0 with provenance through the release workflow's OIDC identity; the repository has been public
+since 2026-11, before 1.0.0; no publish credential is stored in the repository or in CI secrets, and a bootstrap
+credential, if any, is the operator's own and never reaches CI (D1); a peer range on a workspace package
+(`@ocelle/tokens` at `^<version>`) is the one exception to exact pins (R-03); and `SECURITY.md` "exists" (present
+tense; op 023 owns its content). Spec FR-040 lists every one of these statements.
+
+## R-15. Release procedure location and content (FR-043)
 
 **Decision.** A new `RELEASING.md` at the root, linked from `CONTRIBUTING.md` and each package README. It is the
-operator's script: readiness, O1 to O8 with exact settings and commands, the dry run, the tag, the approval, the
-install check, failures and their remedies (a wrong tarball means `1.0.1`).
+operator's script: readiness, O1 to O8 with exact settings and commands, the dry run, the pre-tag pull request, the
+tag, the approval, the install check, failures and their remedies (a wrong tarball means `1.0.1`).
+
+- **Pre-tag pull request** (operator decision PLAN-FRESH-1-007 (b)): sets each package's `1.0.0` changelog date to
+  the planned release day, empties "Unreleased", and for the first release writes `gates/release/first-release-base`
+  (R-10). The operator confirms the date before merging it, and pushes the tag (O7) on the merged commit; if the tag
+  slips past that day, a new pre-tag pull request corrects the date first.
+- **O4 settings** (PLAN-A11Y-SECURITY-1-002): environment `npm-publish`; required reviewer: the operator's account
+  only; deployment branches and tags: tags `v*` only; "Allow administrators to bypass configured protection rules"
+  off; "Prevent self-review" off (the operator pushes the tag and is the only reviewer, so with it on the release
+  could never be approved); no environment secrets. The implementation re-checks GitHub's exact labels.
+- **O5 settings**: a tag ruleset on `refs/tags/v*` restricting creation, update, deletion and force pushes; bypass
+  list: the operator's account only (no app, team, role or agent identity; an empty list would block the operator
+  too).
+- **Identities** (PLAN-A11Y-SECURITY-1-001, R-16): O4 and O5 each record how the operator confirmed the agents'
+  GitHub identity, and O8 re-confirms every setting of O4 and O5.
+
+## R-16. Release identities and the agent side (FR-043, SC-007; PLAN-A11Y-SECURITY-1-001)
+
+**Facts.** Agent sessions in this repository act on GitHub with a token, and the agent permission settings
+(`.claude/settings.json`) deny pushes to `main`, `npm publish` and some `gh` verbs, but not tag pushes, `gh release`
+or the npm account verbs. Both release barriers (O4, O5) are GitHub identity checks.
+
+**Decision.** The barrier is GitHub's: the identity agents use MUST NOT be the operator's account, MUST NOT be on the
+`v*` tag ruleset's bypass list and MUST NOT be a required reviewer of `npm-publish`; O4 and O5 record how the
+operator confirmed it (FR-043). The agent-side deny rules are a convenience on top, and agents do not change their
+own permission settings, so adding them is an **operator task** listed under O5 in `RELEASING.md`: deny `git push`
+of `refs/tags/*` and of `v*` refs, `git push --tags`, `git push --follow-tags`, `git tag`, `gh release`, `gh workflow
+run release.yml`, and the npm verbs `login`, `adduser`, `token`, `trust`, `deprecate`, `dist-tag`, `unpublish`,
+`access` and `owner`. This mission writes no change to the agent permission settings.
+
+## R-17. Plant forms for the new gates (FR-006, FR-015, FR-026, FR-044; PLAN-TESTABILITY-1-003 (a))
+
+**Facts.** `gates/lib/plant-repo.ts` builds `commit-repo` plants with `commit-tree` on the empty tree and accepts only
+`author`, `parent` and `merge` headers, so no commit carries a file; the `workspace` form (`gates/bin/plants.ts`)
+copies the plant directory only, so nothing can be built in it; the configuration set has no `.github/`,
+`gates/release/`, changelogs, styles sources beyond `base.css`, gap-table source or `verification.md` files.
+
+**Decision (operator decision PLAN-TESTABILITY-1-003 (a)).** Planned explicitly, test-first, with spec 001
+`contracts/plants.md` amended (FR-044):
+
+- **Readiness (`commit-repo`, extended in US2).** A `commits.txt` record may carry `files: <dir>` (a directory of the
+  plant laid over the previous commit's tree), `delete: <path>` and `secret: <rule> <path>` (the plant builder
+  appends a generated value of that rule to the file at plant time, so no plant holds a literal, R-08) headers. For
+  the readiness gate the base commit holds the configuration set instead of the empty tree (sign-off plants keep the
+  empty base). `parseCommits` and `buildCommitRepo` change test-first with `plant-repo` integration tests.
+- **Pack contents (new form `pack-tree`, US1).** A plant's `tree/` holds small committed package trees
+  (`packages/<name>/` with a `package.json`, `dist/` files and licence files, no build), laid over the configuration
+  set; the plant builder archives each package directory under `package/` into `<tmp>/tarballs/<name>.tgz` (plain
+  `tar`, no `pnpm pack`, so a plant can ship a `workspace:` specifier or a stray file as-is) and runs the gate with
+  `--root <tmp> --tarballs <tmp>/tarballs`. The build-and-pack path (no `--tarballs`) is proven once by a
+  gates-integration test on the real workspace.
+- **Configuration set.** Extended with `.github/workflows/`, `.github/actions/`, `gates/release/`, the gap-table
+  source, `packages/*/CHANGELOG.md`, `packages/styles/src/*.css`, `specs/*/verification.md` and the root `LICENSE`,
+  `NOTICE` and `THIRD_PARTY_NOTICES`, so the `pass-repository` plants of `release-workflow` and `release-readiness`
+  see their inputs.
+
+**Alternative.** A form that lays plant files over a full repository copy with `node_modules` linked and builds for
+real (PLAN-TESTABILITY-1-003 (b)): closer to CI, slower; not chosen.

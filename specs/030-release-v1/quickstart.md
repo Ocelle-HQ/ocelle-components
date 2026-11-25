@@ -15,12 +15,13 @@ Expect one line per package (`@ocelle/tokens@1.0.0: <n> files, <m> entry points`
 ## 2. Readiness (Story 2)
 
 ```sh
-pnpm run gate:release-readiness                # every pull request
+pnpm run gate:release-readiness                # every pull request (required check "Release readiness")
 pnpm run gate:release-readiness -- --tag v1.0.0  # what the release workflow runs
 ```
 
-Expect `ready (17/17 rows, 0 secrets, version 1.0.0)`. On `main` before mission 018 the first form reports rows 6,
-10 and 15 unmet (data-model.md).
+Expect `ready (17/17 rows, 0 secrets, version 1.0.0)`. The gates-integration test runs the gap check against the
+pre-018 commit `183b20f` and expects exactly rows 6, 10 and 15 unmet (research.md R-07); another test expects the
+history scan of this repository's own `HEAD` to have zero hits (R-08).
 
 ## 3. Workflow static check and dry run (Story 3)
 
@@ -29,25 +30,32 @@ pnpm run gate:release-workflow
 ```
 
 Expect exit 0. The **Release dry run** check on the pull request (or a manual dispatch of
-`release-dry-run.yml`) runs the composite action: build, pack, pack-contents on the tarballs, `npm publish
---dry-run` per tarball, the tarball install rehearsal, and the provenance rehearsal.
+`release-dry-run.yml`) runs the composite action: build, readiness, pack, the tarball digests, pack-contents on the
+tarballs, `npm publish --dry-run` per tarball, the tarball install rehearsal, and the provenance rehearsal.
 
 ## 4. Install check (Story 4)
 
 ```sh
-node gates/release/install-check.ts --from-tarballs <dir with the three .tgz>
-node gates/release/install-check.ts --rehearse
+node gates/bin/install-check.ts --from-tarballs <dir with the three .tgz>
+node gates/bin/install-check.ts --rehearse
 ```
 
-Both exit 0. After the release: `--version 1.0.0 --repository Ocelle-HQ/ocelle-components --commit <tag sha>`.
+Both exit 0. `--rehearse` prints six cases (one pass; wrong repository, commit, workflow and ref; a real package with
+no provenance), each with its expected and actual rule. After the release: `--version 1.0.0 --repository
+Ocelle-HQ/ocelle-components --commit <tag sha>` (workflow and ref default to `release.yml` and `refs/tags/v1.0.0`).
 
 ## 5. The release (operator, RELEASING.md)
 
-1. **Operator** confirms O1, O2; creates the `npm-publish` environment (O4) and the `v*` tag ruleset (O5); adds the
-   required checks (O6) once this mission is merged.
-2. **Operator** runs the readiness gate with `--tag v1.0.0` on the release commit.
-3. **Operator** bootstraps and configures the trusted publishers (O3, research D1), then within 2 days pushes
+1. **Operator** confirms O1, O2; creates the `npm-publish` environment with the settings of data-model.md (O4) and
+   the `v*` tag ruleset (O5), confirming the agents' GitHub identity is neither the operator's account, a reviewer,
+   nor on the bypass list, and adds the agent-side deny rules (research.md R-16); adds the required checks Pack
+   contents, Release readiness and Release workflow (O6) once this mission is merged.
+2. A pre-tag pull request sets each `1.0.0` changelog date to the release day, empties "Unreleased" and writes
+   `gates/release/first-release-base`; the **operator** confirms the date and merges it.
+3. **Operator** runs the readiness gate with `--tag v1.0.0` on the release commit.
+4. **Operator** bootstraps and configures the trusted publishers (O3, research D1), then within 2 days pushes
    `v1.0.0` (O7).
-4. The release workflow runs gates, prepare, then waits; **operator** approves the `npm-publish` deployment.
-5. Publish and install check run; **operator** completes O8 (deprecate the placeholder versions, confirm no
-   credential remains, close #11).
+5. The release workflow runs release-base, gates, prepare (including the provenance rehearsal), then waits;
+   **operator** approves the `npm-publish` deployment.
+6. Publish and install check run; **operator** completes O8 (deprecate the placeholder versions, confirm no
+   credential remains, re-confirm the O4 and O5 settings, close #11).

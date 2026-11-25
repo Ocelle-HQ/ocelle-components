@@ -33,7 +33,9 @@ install the three packages from the public npm registry instead of a workspace l
 **Operator decisions while specifying** (2026-11-25, human:jeroennouwsdev, `triage/decisions/030-q1-q6-release-design.md`):
 
 - Q1 (a): the constitution's "internal until then and goes public with 1.0.0" and "publish token lives only in CI
-  secrets" are amended in this mission, as a PATCH-level clarification (FR-040, FR-041).
+  secrets" are amended in this mission (FR-040, FR-041). Q1 asked for a PATCH-level clarification; because the
+  amendment also adds the peer-range exception to exact pins (Q3 (a)), the operator chose a MINOR bump instead (plan
+  squad round 1, PLAN-CORRECTNESS-1-007 (b)).
 - Q2 (a): npm trusted publishing (OIDC from the publish workflow, no long-lived token). The first-publish bootstrap
   is settled in the plan; any bootstrap credential is held by the operator and revoked after use (FR-024).
 - Q3 (a): lockstep versions, all three at `1.0.0`; `@ocelle/tokens` is a peer at `^1.0.0` (FR-003).
@@ -44,6 +46,11 @@ install the three packages from the public npm registry instead of a workspace l
   dry-run-only path, started by a pull request or a manual dispatch, that runs every pre-publish step but has no
   publish job and no identity-token permission at all (FR-020, FR-027). The publish path itself still starts only
   from the operator's protected `v*` tag (Q5 (a)).
+- Plan squad round 1 (2026-11-25, operator fork decisions in `reviews/plan/round-1/refute.md`): the readiness check
+  is also a required pull-request gate (PLAN-CORRECTNESS-1-006 (a), FR-014, FR-044); the constitution amendment is
+  MINOR, 1.3.1 to 1.4.0, and names the peer-range exception (PLAN-CORRECTNESS-1-007 (b), FR-040); the release date of
+  each changelog entry is set by a pre-tag pull request the operator confirms, not by a gate rule
+  (PLAN-FRESH-1-007 (b), FR-043); Story 4 scenario 4 is an observable peer check (PLAN-FRESH-1-006 (a)).
 - Already done by the operator: the npm org `ocelle` is claimed (O1). Private vulnerability reporting is on per op
   023's decision Q3 (a) (O2, re-confirmed at release).
 
@@ -114,11 +121,13 @@ the history is clean: it reports ready.
    the `#498` row, the `#509` row and the `#524 #526` row), **When** the readiness check runs, **Then** it reports not-ready and names each
    unmet row and the evidence it expected.
 3. **Given** a repository history in which any commit reachable from the release commit adds a file containing a
-   credential pattern (an npm token, a GitHub token, a private key block, or a generic high-entropy secret the plan
-   names), **When** the readiness check runs, **Then** it reports not-ready and names the commit and path, without
-   printing the matched secret.
+   credential pattern (an npm token, a GitHub token, a private key block, or a further pattern the plan names in
+   research.md R-08), **When** the readiness check runs, **Then** it reports not-ready and names the commit and path,
+   without printing the matched secret.
 4. **Given** packages whose versions differ from each other or from the tag being prepared, **When** the readiness
    check runs, **Then** it reports not-ready and names the mismatch.
+5. **Given** a pull request, **When** CI runs, **Then** the readiness check runs as its own named required check and
+   the plant job runs its plants (spec 001 FR-020, FR-025; FR-014, FR-044).
 
 ---
 
@@ -153,7 +162,8 @@ including a dry-run path that gains a publish step, an environment binding or an
    each with a provenance attestation that names this repository, the workflow and the tagged commit.
 5. **Given** a re-run after a partial publish (for example tokens published, styles failed), **When** the publish
    job runs again, **Then** it skips each package version already on the registry (reporting it) and publishes the
-   rest; it never fails because a version already exists and never tries to overwrite one.
+   rest; it never fails because a version already exists and never tries to overwrite one. A registry error other
+   than "not found" is retried for the bounded time the plan states and is never read as "not published".
 6. **Given** the workflow file, **When** its static check runs on every pull request, **Then** it fails if any job
    other than the publish job may request an identity token, if the default token permissions exceed read-only
    contents, if the publish job is not bound to the protected environment, if any action is referenced by anything
@@ -185,13 +195,17 @@ planted failures (FR-034), so every part of it is proven before it matters.
 
 1. **Given** the three packages published at the release version, **When** the post-publish check runs in an empty
    project with no registry credentials, **Then** installing `@ocelle/tokens`, `@ocelle/styles` and
-   `@ocelle/elements` succeeds, and importing or resolving every entry point each package declares succeeds.
+   `@ocelle/elements` succeeds, importing or resolving every entry point each package declares succeeds, and the
+   browser build defines its elements under the constitution's strict CSP with no request off the page's origin.
 2. **Given** the installed packages, **When** the check verifies them, **Then** every package's registry signature
-   and provenance attestation verify, and the attestation names this repository and the release commit.
+   and provenance attestation verify, and the attestation names this repository, the release workflow, the release
+   tag's ref and the release commit.
 3. **Given** a package version not yet visible on the registry (propagation delay), **When** the check runs,
    **Then** it retries for a bounded time the plan states and then fails, naming the package.
-4. **Given** `@ocelle/elements` installed without its peer, **When** the consumer's package manager resolves it,
-   **Then** the peer requirement `@ocelle/tokens@^1.0.0` is reported, as the README's install section says.
+4. **Given** `@ocelle/elements` installed alone (its peer not named) in an empty project, **When** the post-publish
+   check inspects the result, **Then** the installed `@ocelle/elements` manifest declares the peer
+   `@ocelle/tokens` at `^1.0.0` and `@ocelle/tokens` resolves at a `1.x` version, as the README's install section
+   says (npm and pnpm install missing peers instead of reporting them, so the check asserts what is installed).
 
 ---
 
@@ -225,7 +239,8 @@ of FR-040 to FR-045 against them.
 
 - **A blocker lands after the changelog cut.** If mission 018, op 023, or any other change to the public surface
   merges after the `1.0.0` changelog entries were written, the readiness check (Story 2) still passes only if the
-  entries name every surface the manifest and token list contain; the plan defines how it compares them.
+  entries name every surface the manifest and token list contain; the plan defines how it compares them (research.md
+  R-09: every element tag, and every token by name or by a name-prefix mention).
 - **Partial publish.** Covered by Story 3, scenario 5: re-runs skip versions already on the registry.
 - **Wrong tarball published.** npm versions cannot be republished; the fix is a `1.0.1`. The pack-contents gate and
   the dry run exist to make this unlikely; the release procedure says so.
@@ -235,7 +250,8 @@ of FR-040 to FR-045 against them.
 - **Tag pushed on the wrong commit.** The workflow checks that the tagged commit is on `main` and passed every merge
   gate; otherwise it fails before approval.
 - **Someone other than the operator pushes a `v*` tag.** The tag ruleset (O5) blocks it; the environment approval
-  (O4) is a second barrier.
+  (O4) is a second barrier. This includes an agent: the GitHub identity agents use is not the operator's account, is
+  not on the tag ruleset's bypass list and is not a reviewer of the environment (O4, O5, FR-043).
 - **A fork's pull request.** The publish path does not run on pull requests at all. The dry-run path (FR-027) and
   the workflow's static check run on pull requests, including from forks, without any secret, identity token or
   publish job, so a fork cannot reach a publish.
@@ -287,14 +303,17 @@ of FR-040 to FR-045 against them.
 - **FR-011**: The readiness check MUST scan every commit reachable from the checked commit for committed secrets
   (at least npm tokens, GitHub tokens, private key blocks, and the further patterns the plan names) and report each
   hit by commit and path without printing the matched value. A hit makes the verdict not-ready. A pattern exception
-  MUST be listed in a committed allow list with a reason per entry.
+  MUST be listed in a committed allow list with a reason per entry, keyed so that it stays valid when a commit is
+  rebased or squash-merged (the plan says how; not by commit).
 - **FR-012**: The readiness check MUST verify that the three packages share one version and, when given a tag, that
   the tag is `v` followed by that version.
 - **FR-013**: The readiness check MUST verify that each package's `1.0.0` changelog entry exists and is dated, and
   that the plan's chosen comparison between the manifest and token list and the changelog finds no public element or
   token missing from the changelogs.
 - **FR-014**: The readiness check MUST end in one verdict (ready / not-ready), exit non-zero when not-ready, perform
-  no network write and never publish. It MUST be runnable locally by the operator and in the release workflow.
+  no network write and never publish. It MUST be runnable locally by the operator, as a required pull-request gate
+  (its own named check, with plants run by the plant job; operator decision PLAN-CORRECTNESS-1-006 (a)) and in the
+  release workflow.
 - **FR-015**: The readiness check MUST itself be proven: tests cover each verdict path, and its secret scan and gap
   mapping are each shown failing on a planted input (constitution VIII, "Gates are proven, too").
 
@@ -321,7 +340,9 @@ of FR-040 to FR-045 against them.
   credential is scoped, kept out of the repository and revoked (O3, O8), and how the bootstrap still yields the
   `1.0.0` tarballs this mission verified with provenance or states, for the operator's decision, what it cannot.
 - **FR-025**: The publish job MUST be safe to re-run: for each package it checks whether the version is already on
-  the registry and skips it (reporting so), and it MUST NOT unpublish, deprecate or overwrite anything.
+  the registry and skips it (reporting so), and it MUST NOT unpublish, deprecate or overwrite anything. Only a "not
+  found" answer means "not published"; any other registry error is retried for a bounded time (the plan states it)
+  and then fails naming the package.
 - **FR-026**: A static check of the release workflow file MUST run on every pull request as a named check (with
   plants), failing on each violation of FR-020, FR-021 and FR-023 that a file can show (trigger, permissions,
   environment binding, unpinned action, persisted credentials, a token secret read) and of FR-027 (a publish job or
@@ -339,10 +360,12 @@ of FR-040 to FR-045 against them.
 
 - **FR-030**: After the publish job, the workflow MUST run an install check in an empty project with no registry
   credentials (no token in any user, project or environment configuration) that installs the three packages at the
-  released version from the public registry, imports or resolves every entry point each package declares, and
-  fails naming the package and entry point on any failure.
+  released version from the public registry, imports or resolves every entry point each package declares, loads the
+  browser build under the constitution's strict CSP with every off-origin request blocked and recorded, and fails
+  naming the package and entry point (or the violation or request) on any failure.
 - **FR-031**: The install check MUST verify each installed package's registry signature and provenance attestation
-  and that the attestation names this repository and the tagged commit.
+  and that the attestation names this repository, the release workflow (`.github/workflows/release.yml`), the
+  release tag's ref (`refs/tags/v<version>`) and the tagged commit.
 - **FR-032**: The install check MUST retry a not-yet-visible version for a bounded time (the plan states it) before
   failing.
 - **FR-033**: Before the first real release, the install check MUST be exercised against the packed tarballs served
@@ -358,12 +381,14 @@ of FR-040 to FR-045 against them.
 
 **Governance and docs (Story 5)**
 
-- **FR-040**: The constitution's "Technology, Licence and Supply Chain" section MUST be amended (Q1 (a), PATCH) so it
-  states: the packages publish to the public npm registry from 1.0.0 with provenance; the repository has been public
-  since before 1.0.0 (2026-11); no long-lived publish credential is stored in the repository or CI secrets, publishing
-  uses the release workflow's OIDC identity, and a one-time bootstrap credential, if the plan needs one, is held by
-  the operator only and revoked after use. The amendment goes through `/speckit-constitution`, bumps the version as
-  a PATCH and updates "Last Amended".
+- **FR-040**: The constitution's "Technology, Licence and Supply Chain" section MUST be amended (Q1 (a); MINOR by
+  operator decision PLAN-CORRECTNESS-1-007 (b)) so it states: the packages publish to the public npm registry from
+  1.0.0 with provenance; the repository has been public since before 1.0.0 (2026-11); no long-lived publish
+  credential is stored in the repository or CI secrets, publishing uses the release workflow's OIDC identity, and a
+  one-time bootstrap credential, if the plan needs one, is held by the operator only and revoked after use; a peer
+  range on a workspace package (`@ocelle/tokens` at `^<version>`, Q3 (a)) is the one exception to exact pins. The
+  amendment goes through `/speckit-constitution`, bumps the version as a MINOR (1.3.1 to 1.4.0, materially expanded
+  guidance: a new exception to a supply-chain rule) and updates "Last Amended".
 - **FR-041**: The constitution's line that `SECURITY.md` exists "before the repository goes public" MUST be kept
   true as a past fact or reworded, without changing op 023's `SECURITY.md` or spec 001 FR-032.
 - **FR-042**: Each package README MUST have an install section: the registry install command, the `@ocelle/tokens`
@@ -371,11 +396,18 @@ of FR-040 to FR-045 against them.
   provenance. The `workspace:0.0.0` statements in the styles and elements READMEs MUST be replaced.
 - **FR-043**: A release procedure (in `CONTRIBUTING.md` or a new `RELEASING.md`; the plan chooses) MUST list, in
   order, the readiness check, every operator-only step O1 to O8 (below) marked as operator-only, the dry run, the
-  tag push, the environment approval, the post-publish check and what to do on each failure (including "a wrong
-  tarball means 1.0.1").
+  pre-tag pull request that sets each `1.0.0` changelog entry's date to the release day and empties "Unreleased"
+  (the operator confirms the date before merging it; operator decision PLAN-FRESH-1-007 (b)), the tag push, the
+  environment approval, the post-publish check and what to do on each failure (including "a wrong tarball means
+  1.0.1"). It MUST state that the GitHub identity agents use is not the operator's account, is not on the `v*` tag
+  ruleset's bypass list and is not a reviewer of the protected environment, and O4 and O5 MUST record how the
+  operator confirmed it.
 - **FR-044**: Spec 001's FR-020 and `contracts/ci-checks.md` MUST gain the new gates (pack contents, release
-  workflow static check) by amendment, in op 023's style; FR-032 is not touched.
-- **FR-045**: No new file in this mission may contain a sandbox path (op 023's rule) or a credential.
+  readiness, release workflow static check) by amendment, in op 023's style, and spec 001's `contracts/plants.md`
+  MUST gain the plant-form changes the plan needs for them; FR-032 is not touched.
+- **FR-045**: No new file in this mission may contain a sandbox path (op 023's rule) or a credential. Tests and
+  plants that need a credential-shaped input assemble it at run time, so no committed file matches a secret-scan
+  rule (research.md R-08).
 
 **Operator-only steps** (never performed by an agent or by the workflow on the operator's behalf; the release
 procedure lists them, FR-043):
@@ -385,9 +417,9 @@ procedure lists them, FR-043):
 | O1 | Claim the npm org `ocelle` | done (operator, before triage) |
 | O2 | Private vulnerability reporting on | done per op 023 decision Q3 (a); re-confirm in settings before the tag |
 | O3 | Configure the trusted publisher for each package on the registry (after the bootstrap the plan defines, if one is needed); hold and revoke any bootstrap credential | before the release |
-| O4 | Create the protected environment the publish job uses, with a required reviewer and, if wanted, limited to release tags | before the release |
-| O5 | Add a ruleset protecting release tags (`v*`): only the operator may create, update or delete them | before the release |
-| O6 | Add the new required checks (FR-006, FR-026) to the `main` ruleset | after this mission merges |
+| O4 | Create the protected environment the publish job uses: the operator's account as the only required reviewer, deployments limited to `v*` tags, administrator bypass off, "Prevent self-review" off (the operator is both the tag pusher and the only reviewer), no environment secrets; confirm the agents' GitHub identity is not a reviewer | before the release |
+| O5 | Add a ruleset protecting release tags (`v*`): creation, update, deletion and force push restricted, bypass list naming only the operator's account; confirm the agents' GitHub identity is not the operator's and is not on the bypass list; add the agent-side deny rules for tag pushes, `gh release` and the npm account verbs to the agent permission settings (the plan lists them; the ruleset is the barrier, the deny rules a convenience) | before the release |
+| O6 | Add the new required checks (FR-006, FR-014, FR-026) to the `main` ruleset | after this mission merges |
 | O7 | Push the `v1.0.0` tag on the release commit and approve the environment deployment | at release |
 | O8 | After the install check passes, revoke any bootstrap credential, confirm none remains, close #11 | after release |
 
@@ -420,11 +452,11 @@ consumer migrations; rewriting git history; automated version bumps or a release
 - **SC-001**: From a clean machine with no registry credentials, adding `@ocelle/tokens`, `@ocelle/styles` and
   `@ocelle/elements` at `1.0.0` and importing or resolving every declared entry point succeeds on the first attempt (100% of entry points, 3 of 3
   packages).
-- **SC-002**: 3 of 3 published packages carry a provenance attestation that verifies and names this repository and
-  the `v1.0.0` commit.
-- **SC-003**: The pack-contents gate and the release-workflow static check each fail on 100% of their planted
-  defects, accept 100% of their pass plants and report their breaking plants as "could not run", in the plant job on
-  every pull request.
+- **SC-002**: 3 of 3 published packages carry a provenance attestation that verifies and names this repository, the
+  release workflow, the `v1.0.0` tag's ref and the `v1.0.0` commit.
+- **SC-003**: The pack-contents gate, the readiness check and the release-workflow static check each fail on 100% of
+  their planted defects, accept 100% of their pass plants and report their breaking plants as "could not run", in
+  the plant job on every pull request.
 - **SC-004**: On the release commit, the readiness report shows 17 of 17 gap-table rows met with evidence, zero
   secret hits in history, and one shared version.
 - **SC-005**: No publish happens without a recorded human approval of the protected environment; a re-run of the
@@ -455,5 +487,5 @@ consumer migrations; rewriting git history; automated version bumps or a release
 - "Every check" in #11 means the merge gates of spec 001 FR-020 plus this mission's new gates; the slow suites
   (mutation, visual) are trusted from the tagged commit's CI results when the plan shows that result cannot be
   bypassed, and re-run otherwise.
-- The constitution amendment is PATCH (clarification of a fact and a credential mechanism), not MINOR: no principle
-  is added or removed.
+- The constitution amendment is MINOR (operator decision PLAN-CORRECTNESS-1-007 (b)): no principle is added or
+  removed, but the peer-range exception materially expands the supply-chain guidance.
