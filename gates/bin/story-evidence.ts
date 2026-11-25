@@ -437,6 +437,7 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   const exemption = join(dir, "tdd-exempt.md");
   if (tools.exists(exemption) && redRecords.length === 0) {
     if (ciOnly.length > 0) throw new Error("ci-only scope requires recorded local proof");
+    if (implementationStories.size > 0) throw new Error("implementation-story scope requires recorded local proof");
     emit({ phase, status: "exempt", reason_file: exemption, head: current }, out);
     return;
   }

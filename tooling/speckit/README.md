@@ -165,9 +165,10 @@ whether evidence was reused. Remove that local directory for a fresh execution.
 When a Storybook story implements the requested behavior, add a reviewed `implementation-story <path>`
 line to the same file. For example, `implementation-story storybook/stories/change-list-plan.stories.ts`
 keeps that file at its base, scaffold, review-fix parent, or head revision during replay. The phase's
-separate test must supply the named red assertion. Use an exact repository-relative `.stories.ts` path
-under `storybook/stories/`. The runner rejects conflicting local or CI-only declarations and red commits
-that change a declared implementation story. Ordinary story fixtures retain the usual test-overlay behavior.
+separate test must supply the named red assertion, including when `tdd-exempt.md` exists. Use an exact
+repository-relative `.stories.ts` path under `storybook/stories/`. The runner rejects conflicting local or
+CI-only declarations and red commits that change a declared implementation story. Ordinary story fixtures
+retain the usual test-overlay behavior.
 
 Use `ci-only <repository-relative path>` in the same file to run a changed collateral integration test in required
 CI. The eligible suites in the `gates-integration` project are:
