@@ -495,11 +495,11 @@ export class OcelleWorkflowCanvas extends LitElement {
       this.#recoverUnavailableFollow(previousControl);
       const pending = this.#pendingReveal;
       if (pending !== null) {
-        const available = pending.relationship === null
-          ? this.#projection.positions.has(pending.nodeId) : this.#canFollow(pending.relationship);
-        if (!available) {
+        if (pending.relationship !== null) {
+          if (!this.#canFollow(pending.relationship)) this.#pendingReveal = null;
+        } else if (!this.#projection.positions.has(pending.nodeId)) {
           this.#pendingReveal = null;
-          if (pending.relationship === null && !this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
+          if (!this.#canRevealNamed && this.shadowRoot?.activeElement === pending.initiator) {
             this.#focusNamed(pending.initiator.parentElement, "select");
           }
         }
@@ -677,14 +677,11 @@ export class OcelleWorkflowCanvas extends LitElement {
     </div>`;
   }
 
-  #renderRelationships(nameContext: (node: WorkflowCanvasNode) => string): unknown {
+  #renderRelationships(nameContext: (node: WorkflowCanvasNode, prefix?: string) => string): unknown {
     const { nodes, positions, relationships } = this.#projection;
     if (nodes.length === 0) return html`<p class="empty" id="empty-label" role="status">No workflow steps</p>`;
     if (relationships.length === 0) return nothing;
-    const name = (node: WorkflowCanvasNode) => {
-      const context = nameContext(node);
-      return context === "" ? node.label : `${node.label} ${context}`;
-    };
+    const name = (node: WorkflowCanvasNode) => `${node.label}${nameContext(node, " ")}`;
     return html`<ul class="relationships" role="list" aria-label="Outcome connections" @scroll=${this.#onGeometryChange}>
       ${repeat(relationships, ({ source, outcome }) => JSON.stringify([source.id, outcome.id]), (relationship) => {
         const { source, outcome, destination } = relationship;
@@ -709,8 +706,8 @@ export class OcelleWorkflowCanvas extends LitElement {
     const { nodes, drawableConnections } = this.#projection;
     const labelCounts = new Map<string, number>();
     for (const { label } of nodes) labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
-    const nameContext = (node: WorkflowCanvasNode) => (labelCounts.get(node.label) ?? 0) > 1
-      ? `(${node.accountableRole}, ${node.kind}, ${node.id})` : "";
+    const nameContext = (node: WorkflowCanvasNode, prefix = "") => (labelCounts.get(node.label) ?? 0) > 1
+      ? `${prefix}(${node.accountableRole}, ${node.kind}, ${node.id})` : "";
     const raised = nodes.find(({ id }) => id === this.#raisedId);
     const painted = raised === undefined ? nodes : [...nodes.filter((node) => node !== raised), raised];
     return html`
@@ -1411,7 +1408,6 @@ export class OcelleWorkflowCanvas extends LitElement {
     const id = this.#relationshipDestination(followSource, followOutcome);
     if (id !== null && this.#projection.positions.has(id)) return;
     this.#focusNamed(this.renderRoot.querySelector(".navigator"));
-    control.blur();
   }
 
   #canFollow({ source, outcome, destination }: WorkflowCanvasRelationship): boolean {
@@ -1439,7 +1435,11 @@ export class OcelleWorkflowCanvas extends LitElement {
   #continueReveal(pending: CanvasReveal, map: SVGSVGElement): void {
     const { nodeId: id, relationship, initiator } = pending;
     if (relationship !== null) {
-      if (this.#pendingReveal !== pending || this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship)) return;
+      if (this.#pendingReveal !== pending) return;
+      if (this.shadowRoot?.activeElement !== initiator || !this.#canFollow(relationship)) {
+        this.#pendingReveal = null;
+        return;
+      }
       if (this.#renderedViewport !== this.viewport) {
         void this.updateComplete.then(() => { this.#continueReveal(pending, map); });
         return;
@@ -1471,10 +1471,10 @@ export class OcelleWorkflowCanvas extends LitElement {
     const pending = this.#pendingReveal;
     if (pending === null || this.shadowRoot?.activeElement !== pending.initiator) return;
     if (pending.relationship !== null && (this.#renderedViewport !== this.viewport || !this.#canFollow(pending.relationship))) return;
-    const navigator = pending.initiator.parentElement;
-    if (navigator !== null && !this.#withLiveClip(navigator, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
+    const surface = pending.initiator.parentElement;
+    if (surface !== null && !this.#withLiveClip(surface, (clip) => clip.contains(pending.initiator.getBoundingClientRect()))) {
       this.#pendingReveal = null;
-      this.#focusNamed(pending.relationship === null ? navigator : this.renderRoot.querySelector(".navigator"));
+      this.#focusNamed(this.renderRoot.querySelector(".navigator"));
       pending.initiator.blur();
       return;
     }

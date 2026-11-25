@@ -515,9 +515,36 @@ async function assertNonPanningPointerInputs(): Promise<void> {
   const { canvas, requests } = await arranging();
   const map = mapOf(canvas);
   const bounds = map.getBoundingClientRect();
-  const origin = { x: bounds.right - 50, y: bounds.bottom - 75 };
-  await commands.pointerPath([{ ...origin, down: true, up: true }]);
-  await commands.pointerPath([{ ...origin, down: true, button: "right" }, { x: origin.x - 32, y: origin.y + 24, up: true, button: "right" }]);
+  const origin = { x: bounds.right - 8, y: bounds.bottom - 55 };
+  expect(canvas.shadowRoot?.elementFromPoint(origin.x, origin.y), "the stationary gesture starts on the painted map background").toBe(map);
+  let pointerId = -1;
+  const down: boolean[] = [];
+  const released: boolean[] = [];
+  map.addEventListener("pointerdown", (event) => {
+    pointerId = event.pointerId;
+    down.push(event.isTrusted && event.isPrimary && event.composedPath()[0] === map);
+  }, { once: true });
+  map.addEventListener("pointerup", (event) => {
+    released.push(event.isTrusted && event.pointerId === pointerId && map.hasPointerCapture(pointerId));
+  }, { capture: true, once: true });
+  await commands.pointerPath([{ ...origin, down: true }]);
+  expect(down).toEqual([true]);
+  expect(map.hasPointerCapture(pointerId), "the trusted stationary press acquires native pointer capture").toBe(true);
+  await commands.pointerPath([{ ...origin, up: true }]);
+  expect(released).toEqual([true]);
+  expect(map.hasPointerCapture(pointerId)).toBe(false);
+  expect(requests, "releasing the captured primary press at the same origin emits no presentation request").toEqual([]);
+
+  let rightPointerId = -1;
+  const rightDown: boolean[] = [];
+  map.addEventListener("pointerdown", (event) => {
+    rightPointerId = event.pointerId;
+    rightDown.push(event.isTrusted && event.button === 2 && event.composedPath()[0] === map);
+  }, { once: true });
+  await commands.pointerPath([{ ...origin, down: true, button: "right" }]);
+  expect(rightDown).toEqual([true]);
+  expect(map.hasPointerCapture(rightPointerId), "a trusted right press on the same background cannot acquire capture").toBe(false);
+  await commands.pointerPath([{ x: origin.x - 32, y: origin.y + 24, up: true, button: "right" }]);
   await settle(canvas);
   expect(displayedOrigin(canvas, "publish")).toEqual([288, 94]);
   expect(requests).toEqual([]);
@@ -3340,6 +3367,145 @@ describe("workflow canvas named run inspection in process", () => {
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
   });
 
+  it.each([true, false])("preserves a focused Follow across a graph update only if its destination stayed current (%s)", async (preserve) => {
+    const { canvas, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1880 } : entry);
+    await settle(canvas);
+    const original = canvas.graph;
+    const follow = followAction("Follow Publish from Initial review via Approved");
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    await keyboardActivate(follow);
+    const proposal = lastViewport(requests);
+    expect(active()).toBe(follow);
+
+    if (preserve) {
+      canvas.graph = { ...original, nodes: original.nodes.map((node) => node.id === "review" ? { ...node, label: "Updated review" } : node) };
+    } else {
+      canvas.graph = { ...original, connections: original.connections.map((entry) => entry.outcomeId === "approved"
+        ? { ...entry, destinationId: "revise" } : entry) };
+    }
+    await settle(canvas);
+    const updated = preserve ? "Follow Publish from Updated review via Approved" : "Follow Revise from Initial review via Approved";
+    expect(followAction(updated)).toBe(follow);
+    expect(active()).toBe(follow);
+    canvas.graph = original;
+    await settle(canvas);
+    expect(followAction("Follow Publish from Initial review via Approved")).toBe(follow);
+    expect(active()).toBe(follow);
+
+    canvas.viewport = proposal;
+    await settle(canvas);
+    const publish = action(canvas, "publish");
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+    expect(active(), "only an uninterrupted relationship can hand focus to its destination").toBe(preserve ? publish : follow);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+  });
+
+  it("preserves a newer Follow activated synchronously from the first control's native focus listener", async () => {
+    const { canvas, before, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1880 } : entry);
+    await settle(canvas);
+    const publish = followAction("Follow Publish from Initial review via Approved");
+    const revise = followAction("Follow Revise from Initial review via Rejected");
+    before.focus({ preventScroll: true });
+    publish.addEventListener("focus", () => { revise.click(); }, { once: true });
+    publish.click();
+    const proposal = lastViewport(requests);
+    expect(active()).toBe(revise);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+    canvas.viewport = proposal;
+    await settle(canvas);
+    expect(focusId(canvas), "the first focus listener cannot discard the newer viewport handoff").toBe("revise");
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+  });
+
+  it("checks that deferred Follow still owns focus when a host intercepts the blur event", async () => {
+    const { canvas, before, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.layout = canvas.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1080 } : entry);
+    await settle(canvas);
+    const follow = followAction("Follow Publish from Initial review via Approved");
+    const supplied = { x: -42, y: 18, scale: 1 };
+    before.focus({ preventScroll: true });
+    follow.addEventListener("focus", () => { canvas.viewport = supplied; }, { once: true });
+    let intercepted = false;
+    const preventBlurPropagation = (event: FocusEvent) => {
+      if (event.composedPath()[0] !== follow) return;
+      intercepted = true;
+      event.stopPropagation();
+    };
+    canvas.addEventListener("blur", preventBlurPropagation, { capture: true });
+    follow.click();
+    expect(active()).toBe(follow);
+    expect(requests).toEqual([]);
+    before.focus({ preventScroll: true });
+    canvas.removeEventListener("blur", preventBlurPropagation, { capture: true });
+    expect(intercepted, "the host intercepted the native blur before the relationship control handled it").toBe(true);
+    await settle(canvas);
+    expect(active()).toBe(before);
+    expect(canvas.viewport).toBe(supplied);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    expect(requests, "the deferred action cannot publish once the host has taken focus").toEqual([]);
+  });
+
+  it.each(["horizontal position", "vertical position", "another step at the old position"] as const)("refuses a stale Follow before taking focus after a same-task change to %s", async (change) => {
+    const { canvas, before, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    const original = canvas.layout.find(({ nodeId }) => nodeId === "revise");
+    if (original === undefined) throw new Error("The positioning fixture needs Revise in the rendered layout");
+    const updated = change === "horizontal position" ? { ...original, x: original.x + 40 }
+      : change === "vertical position" ? { ...original, y: original.y + 40 } : { ...original, nodeId: "review" };
+    before.focus({ preventScroll: true });
+    canvas.layout = canvas.layout.map((entry) => entry === original ? updated : entry);
+    follow.click();
+    expect(active(), "an outdated rendered destination must not take focus").toBe(before);
+    expect(requests).toEqual([]);
+    await settle(canvas);
+    expect(active()).toBe(before);
+    expect(requests).toEqual([]);
+  });
+
+  it.each(["relationship", "layout", "viewport"] as const)("checks the live %s before a scroll-driven Follow handoff in the same task", async (change) => {
+    const { canvas, pane, sheet, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const target = action(canvas, "publish");
+    const targetBounds = target.getBoundingClientRect();
+    const paneBounds = pane.getBoundingClientRect();
+    const left = targetBounds.left - paneBounds.left - 10;
+    const top = targetBounds.top - paneBounds.top - 8;
+    const bottom = targetBounds.bottom - paneBounds.top + 8;
+    sheet.insertRule(`#canvas-pane.hide-follow-destination { clip-path: polygon(0 0, 100% 0, 100% ${String(top)}px,
+      ${String(left)}px ${String(top)}px, ${String(left)}px ${String(bottom)}px, 100% ${String(bottom)}px, 100% 100%, 0 100%); }`, sheet.cssRules.length);
+    pane.classList.add("hide-follow-destination");
+    await settle(canvas);
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(true);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bPublish\b/i);
+    await keyboardActivate(follow);
+    const expected = [presentationRequest(viewport, { viewport: lastViewport(requests) })];
+    expect(active()).toBe(follow);
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+
+    if (change === "relationship") {
+      canvas.graph = { ...canvas.graph, connections: canvas.graph.connections.map((edge) => edge.destinationId === "publish" ? { ...edge, destinationId: "revise" } : edge) };
+    } else if (change === "layout") {
+      canvas.layout = canvas.layout.filter(({ nodeId }) => nodeId !== "publish");
+    } else {
+      canvas.viewport = { ...canvas.viewport, x: 720 };
+    }
+    pane.classList.remove("hide-follow-destination");
+    pane.dispatchEvent(new Event("scroll"));
+    expect(getNode(canvas, "publish")?.parentElement?.inert).toBe(false);
+    expect(active(), "the old painted target does not receive focus during the host update").toBe(follow);
+    expect(requests).toEqual(expected);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
   it.each(["relationship", "layout"] as const)("recovers Step when an unactivated Follow loses its %s", async (removed) => {
     const { canvas, pane, requests } = await mount(true);
     canvas.mode = "read-only";
@@ -3543,6 +3709,10 @@ describe("workflow canvas named run inspection in process", () => {
     const nativeNames = async () => (await axButtons()).filter((name) => name.startsWith("Follow "));
     expect(await nativeNames()).toEqual(names);
     const controls = names.map(followAction);
+    expect(controls.map((button) => button.getAttribute("aria-label"))).toEqual(names);
+    expect([...revealControls(canvas).picker.options].map((option) => option.label)).toEqual([
+      rows[0]?.source, rows[3]?.source, rows[0]?.destination, rows[1]?.destination, rows[2]?.destination,
+    ]);
     expect(controls.map((button) => button.closest("li")?.textContent.replace(/\s+/g, " ").trim())).toEqual(
       rows.map(({ source, outcome, destination }) => `${source} · ${outcome} → ${destination} Follow`),
     );
@@ -3565,6 +3735,8 @@ describe("workflow canvas named run inspection in process", () => {
     await settle(canvas);
     const stepDescription = async () => (await commands.axTree(canvas.id, "details"))
       .find(({ role, name }) => role === "combobox" && name === "Step")?.description;
+    const { picker } = revealControls(canvas);
+    expect(picker.getAttribute("aria-describedby"), "a non-empty Step has no dangling description reference").toBeNull();
     expect(await stepDescription()).toBe("");
     action(canvas, "review").focus({ preventScroll: true });
     canvas.graph = { nodes: [], connections: [] };
@@ -3573,6 +3745,7 @@ describe("workflow canvas named run inspection in process", () => {
     const names = (await commands.axTree("workflow-canvas-host", "subtree")).map(({ name }) => name);
     expect(names.some((name) => /\b(?:empty (?:workflow|run|canvas)|no (?:workflow )?(?:steps|nodes))\b/i.test(name)),
       "the empty graph presents a named state in Chromium's accessibility tree").toBe(true);
+    expect(picker.ariaDescribedByElements?.map((element) => element.textContent)).toEqual(["No workflow steps"]);
     expect(await stepDescription()).toBe("No workflow steps");
     const recovered = active();
     expect(recovered?.getRootNode()).toBe(canvas.shadowRoot);
