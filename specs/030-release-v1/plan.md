@@ -115,10 +115,11 @@ gates/plants/{pack-contents,release-readiness,release-workflow}/
 gates/test/…, gates/test/integration/…             # tests of the above; 183b20f gap test; own-history scan test
 gates/test/fixtures/install-check/                 # recorded real registry responses (R-11)
 gates/gates.json, gates/lib/registry.ts, gates/README.md   # three new gate entries
-.github/workflows/ci.yml                           # three new jobs; on: workflow_call (inputs base, head)
+.github/workflows/ci.yml                           # three new jobs; on: workflow_call (inputs base, head,
+                                                   #   release); Sign-off if: ${{ !inputs.release }} (R-10)
 .github/workflows/release.yml, release-dry-run.yml
 .github/actions/release-prepare/action.yml
-.specify/memory/constitution.md                    # PATCH amendment (FR-040, FR-041)
+.specify/memory/constitution.md                    # MINOR amendment 1.3.1 → 1.4.0 (FR-040, FR-041, R-14)
 specs/001-repository-foundation/spec.md, contracts/ci-checks.md, contracts/plants.md, contracts/gate-cli.md  # FR-044
 RELEASING.md, CONTRIBUTING.md                      # FR-043, R-15, R-16
 ```
