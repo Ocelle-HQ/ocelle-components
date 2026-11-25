@@ -3246,6 +3246,39 @@ describe("workflow canvas named run inspection in process", () => {
     expect(requests).toEqual([]);
   });
 
+  it.each([true, false])("uses the rendered host viewport supplied during Follow focus when it already reveals the target (%s)", async (alreadyReveals) => {
+    const { canvas, after, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    const initial = canvas.viewport;
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    await keyboardActivate(follow);
+    const suitable = lastViewport(requests);
+    const proposal = presentationRequest(viewport, { viewport: suitable });
+    expect(canvas.viewport).toBe(initial);
+    expect(requests).toEqual([proposal]);
+
+    after.focus({ preventScroll: true });
+    const accepted = alreadyReveals ? suitable : { ...suitable, x: suitable.x / 10, y: suitable.y / 10 };
+    follow.addEventListener("focus", () => { canvas.viewport = accepted; }, { once: true });
+    follow.click();
+    expect(canvas.viewport).toBe(accepted);
+    expect(requests, "Follow sends no proposal from geometry rendered before the host viewport update").toEqual([proposal]);
+    await settle(canvas);
+
+    const destination = action(canvas, "revise");
+    expect(active()).toBe(alreadyReveals ? destination : follow);
+    expect(requests).toEqual(alreadyReveals ? [proposal] : [proposal, proposal]);
+    expect(canvas.viewport).toBe(accepted);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+    canvas.viewport = suitable;
+    await settle(canvas);
+    expect(active()).toBe(destination);
+    expect(requests).toEqual(alreadyReveals ? [proposal] : [proposal, proposal]);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
   it.each(["relationship", "layout"] as const)("recovers Step when an unactivated Follow loses its %s", async (removed) => {
     const { canvas, pane, requests } = await mount(true);
     canvas.mode = "read-only";
