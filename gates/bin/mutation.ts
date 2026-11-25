@@ -4,7 +4,9 @@
 // verbatim as a `mutate` input, is exit 2 naming the header or every such path (phase 3 round 7, O7-01 and O7-02),
 // so the gate never passes with changed code it did not check; nor does it after Stryker runs: a `mutate` entry
 // Stryker's output reports it did not read (a file under a folder such as `.next`) is exit 2 naming each such entry,
-// in the whole-diff and `--files` runs alike (phase 3 round 12, O12-01); a changed file Stryker read that is absent
+// in the whole-diff and `--files` runs alike (phase 3 round 12, O12-01); so is a file Stryker's type checker rejects
+// itself, every mutant on its changed lines a CompileError on one diagnostic of the file off their lines (019 gate gap
+// rule (c), report.ts); a changed file Stryker read that is absent
 // from its report has no mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards, splitting a file of more than
 // 30 changed lines into `path:start-end` entries (002 phase 5 round 6, O6-01: 60; 007 spec FR-014, 2026-11-11: 30),
 // two entries of one file never in one shard, and writes the number of shards and of cuts within files to stderr, the JSON on stdout staying one array for

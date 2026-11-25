@@ -27,7 +27,7 @@ import { fixtureCapture } from "../live.ts";
 import type { Snapshot } from "../live-reading.ts";
 import { activeInnerOf, activePath, characterBoxes, clickElement, computedOf, copyElement, copySentinel, currentOf, dropSentinel, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, selectSentinel, selectShadowRun, sentinelId, shadowClientRects, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
-import { heardTypes } from "../scenarios/driver.ts";
+import { heardTypes, itemTextsOf } from "../scenarios/driver.ts";
 import type { Bounds, Box, Drawing, ElementTarget, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, TreeNode, Validity } from "../scenarios/driver.ts";
 import { installProbe } from "../scenarios/probe.ts";
 import type { Probe } from "../scenarios/probe.ts";
@@ -218,6 +218,7 @@ async function pastedText(page: Page): Promise<string> {
  * `served` the fixture server (its submission recorder answers `submit`).
  */
 export function fixtureDriver(page: Page, log: readonly string[], withBase = false, served?: Served): FixtureDriver {
+  let moduleRuns = 0;
   let since = log.length;
   let lastEnd = 0;
   let last: readonly Snapshot[] = [];
@@ -399,6 +400,14 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       const session = await page.context().newCDPSession(page);
       try {
         return await axSubtree(session, id);
+      } finally {
+        await session.detach();
+      }
+    },
+    itemTexts: async (id) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return itemTextsOf(await axSubtree(session, id));
       } finally {
         await session.detach();
       }
@@ -909,6 +918,19 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.evaluate(copyElement, { id, via, into });
       await settle(page);
     },
+    copyText: async (id) => {
+      await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }, id);
+      await page.keyboard.press("ControlOrMeta+C");
+      return pastedText(page);
+    },
     morph: async (id, markup) => {
       await page.evaluate(morphElement, { id, markup });
       await settle(page);
@@ -1001,6 +1023,21 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.evaluate(({ target, value }) => {
         const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
         element.scrollTo({ left: value, behavior: "instant" });
+      }, { target, value });
+      await settle(page);
+    },
+    scrollTop: (target) => page.evaluate(({ target }) => {
+      const host = document.getElementById(typeof target === "string" ? target : target.id);
+      const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+      if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+      return element.scrollTop;
+    }, { target }),
+    setScrollTop: async (target, value) => {
+      await page.evaluate(({ target, value }) => {
+        const host = document.getElementById(typeof target === "string" ? target : target.id);
+        const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+        if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+        element.scrollTo({ top: value, behavior: "instant" });
       }, { target, value });
       await settle(page);
     },
@@ -1261,7 +1298,10 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, inner, property }),
     module: async (code) => {
       // Served as `/module.js` of the page's origin under the fixture's policy; a page that runs it allows that path.
-      const url = new URL("/module.js", page.url()).href;
+      // Since 019 (T006, T079): each run has its own query, so a body may run several modules on one page (the module
+      // map would otherwise return the first run's module without evaluating the new code).
+      moduleRuns += 1;
+      const url = new URL(`/module.js?run=${String(moduleRuns)}`, page.url()).href;
       await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", headers: { "Content-Security-Policy": policy }, body: code }));
       // A string expression, so the test runner's transform does not rewrite the page's own `import()`.
       await page.evaluate(`import(${JSON.stringify(url)}).then(() => true)`);

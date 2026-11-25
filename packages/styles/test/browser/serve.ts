@@ -44,6 +44,8 @@ const types: Readonly<Record<string, string>> = {
   ".css": "text/css; charset=utf-8",
   ".woff2": "font/woff2",
   ".svg": "image/svg+xml",
+  // Since 019: data-table-defined.html's stand-in definition of `ocelle-data-table` (define-data-table.js).
+  ".js": "text/javascript; charset=utf-8",
 };
 
 const tokensLink = '<link rel="stylesheet" href="tokens.css">\n';

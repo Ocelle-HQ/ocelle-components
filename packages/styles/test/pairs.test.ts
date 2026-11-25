@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildPlan } from "../scripts/build.ts";
-import { familyPairings, uncheckedPairings } from "./pairings.ts";
+import { dataTableGrounds, dataTablePairings, familyPairings, uncheckedPairings } from "./pairings.ts";
 import type { PairEntry } from "./pairings.ts";
 import { parse } from "./source-checks.ts";
 
@@ -27,7 +27,9 @@ function declared(properties: readonly string[]): string[] {
 
 describe("the colour pairings of the prose and value families", () => {
   it("are the colours base.css sets as text, ring and ground, and each is a checked pair in both themes of pairs.json", () => {
-    const listed = [...new Set(familyPairings.flatMap((pairing) => [pairing.fg, pairing.bg]))].sort();
+    // Since 019 (research.md R-13): base.css also holds the data table's colours, whose pairings are
+    // data-table-pairs.test.ts's; the list here is the union, so a colour of either family without its pairing fails.
+    const listed = [...new Set([...familyPairings.flatMap((pairing) => [pairing.fg, pairing.bg]), ...dataTablePairings.map((pairing) => pairing.fg), ...dataTableGrounds])].sort();
     expect(declared(["color", "background-color", "outline-color"])).toEqual(listed);
     expect(uncheckedPairings(pairs, familyPairings)).toEqual([]);
     // R-10 plant: a pairing that is not in the file is reported in both themes.
