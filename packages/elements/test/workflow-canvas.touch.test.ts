@@ -208,7 +208,8 @@ describe("workflow canvas real touch inspection", () => {
     await tap(follow);
     expect(down).toEqual([{ trusted: true, type: "touch" }]);
     const proposed = (requests[0]?.detail as WorkflowCanvasViewportRequestDetail | undefined)?.viewport;
-    expect(proposed).toMatchObject({ x: expect.any(Number), y: expect.any(Number), scale: supplied.scale });
+    expect([proposed?.x, proposed?.y].every(Number.isFinite)).toBe(true);
+    expect(proposed?.scale).toBe(supplied.scale);
     if (proposed === undefined) throw new Error("Native follow request missing");
     const reveal = request(viewport, { viewport: proposed });
     expect(requests).toEqual([reveal]);

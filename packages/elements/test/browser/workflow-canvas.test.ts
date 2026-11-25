@@ -1673,6 +1673,57 @@ describe("workflow canvas outcome editing in the strict-CSP aggregate", () => {
 });
 
 describe("workflow canvas run inspection in the strict-CSP aggregate", () => {
+  it("recovers the visible Step on a native wheel while the host still withholds Follow", async () => {
+    const { page, finish } = await mount();
+    const canvas = page.locator("#canvas");
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas) => {
+      const source = element.graph.nodes[0];
+      if (source === undefined) throw new Error("The scroll fixture requires its Review source");
+      const more = Array.from({ length: 18 }, (_, index) => ({ ...source, id: `review-${String(index)}`, label: `Review step ${String(index)}` }));
+      element.mode = "read-only";
+      element.graph = {
+        nodes: [...element.graph.nodes, ...more],
+        connections: [source, ...more].map(({ id }) => ({ sourceId: id, outcomeId: "approved", destinationId: "publish" })),
+      };
+      element.layout = element.layout.map((entry) => entry.nodeId === "publish" ? { ...entry, x: 1080 } : entry);
+      await element.updateComplete;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
+    });
+    const initial = await controlledState(canvas);
+    const list = canvas.getByRole("list", { name: "Outcome connections" });
+    const follow = list.getByRole("button", { name: "Follow Publish from Initial review via Approved", exact: true });
+    const step = canvas.getByRole("combobox", { name: "Step" });
+    await follow.click();
+    expect(await follow.evaluate((button) => button.matches(":focus"))).toBe(true);
+    const proposal = await requests(page) as readonly { type: string; detail: WorkflowCanvasViewportRequestDetail }[];
+    expect(proposal).toHaveLength(1);
+    expect(proposal[0]?.type).toBe(viewport);
+    const accepted = proposal[0]?.detail.viewport;
+    expect([accepted?.x, accepted?.y].every(Number.isFinite)).toBe(true);
+    expect(accepted?.scale).toBe(1);
+    const bounds = await list.boundingBox();
+    if (bounds === null) throw new Error("The long relationship list needs its browser viewport");
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+    await page.mouse.wheel(0, 1200);
+    await page.waitForFunction(() => (document.querySelector("ocelle-workflow-canvas")?.shadowRoot?.querySelector(".relationships")?.scrollTop ?? 0) > 100);
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); }))));
+    expect(await follow.evaluate((button) => button.getBoundingClientRect().bottom < (button.closest("ul")?.getBoundingClientRect().top ?? 0))).toBe(true);
+    expect(await controlledState(canvas)).toEqual(initial);
+    expect(await step.evaluate((picker) => picker.matches(":focus")), "native list scroll recovers a visible named focus target before a host response").toBe(true);
+    const internal = await list.evaluate((element) => element.scrollTop);
+    if (accepted === undefined) throw new Error("The withheld viewport proposal must be available for the host");
+    await canvas.evaluate(async (element: OcelleWorkflowCanvas, value) => {
+      element.viewport = value;
+      await element.updateComplete;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); })));
+    }, accepted);
+    expect(await step.evaluate((picker) => picker.matches(":focus"))).toBe(true);
+    expect(await list.evaluate((element) => element.scrollTop)).toBe(internal);
+    expect(await controlledState(canvas)).toEqual({ ...initial, viewport: accepted });
+    expect(await requests(page)).toEqual(proposal);
+    expect(await finish()).toEqual(clean);
+  });
+
   it.each(["light", "dark", "forced colors"] as const)("keeps full repeated names and distinct selected, invalid and focus cues at narrow width in %s", async (display) => {
     const { page, finish } = await mount();
     await page.setViewportSize({ width: 400, height: 920 });
@@ -1726,10 +1777,9 @@ describe("workflow canvas run inspection in the strict-CSP aggregate", () => {
     const accessibility = await axDetails(session, "phase-4-inspection-source");
     const namedActions = (await axSubtree(session, "canvas")).filter(({ role }) => role === "button").map(({ name }) => name);
     await session.detach();
-    expect(accessibility).toEqual(expect.arrayContaining([expect.objectContaining({
-      role: "button", name: expect.stringMatching(new RegExp(`${label}.*Reviewer.*Approval`)),
-      description: expect.stringMatching(new RegExp(`${outcome}.*Selected.*Invalid`)), focused: true,
-    })]));
+    const nativeFocus = accessibility.find(({ role, focused }) => role === "button" && focused);
+    expect(nativeFocus?.name).toMatch(new RegExp(`${label}.*Reviewer.*Approval`));
+    expect(nativeFocus?.description).toMatch(new RegExp(`${outcome}.*Selected.*Invalid`));
     expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label} \\([^)]*\\b(?:Publication|publish)\\b[^)]*\\)`, "i").test(name)),
       "the narrow relationship view exposes the full first repeated destination with distinct context").toHaveLength(1);
     expect(namedActions.filter((name) => new RegExp(`\\b(?:follow|reveal)\\b.*${label} \\([^)]*\\b(?:Planning|revise)\\b[^)]*\\)`, "i").test(name)),
