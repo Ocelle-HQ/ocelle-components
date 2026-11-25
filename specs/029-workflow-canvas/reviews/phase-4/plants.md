@@ -10,6 +10,8 @@ The list selects 21 of 318 Plants for the exact combined Phase 4 changes. The re
 
 The selector again chose the same 21 of 318 cases. The local run `pnpm run gate:plants -- --affected 9a3aba8bb67b6364b95cb15596fd80f7726c88b8 --skip-container` exited 0 on the Step reveal fix at validation snapshot `bf7aff3f`. All 16 selected non-container Plants matched their expectations, including repository Axe (800.0 s). The follow-up tests exercise the focus boundary and the fallback resolves the initiating control's actual named navigator. The five selected Visual Plants use the pinned hosted engines. [Fix and browser evidence](round-2-fixes.md)
 
+Hosted run `45661475347` judged all 318 Plants on published `7a57fd4a7806d32191e3d613e66524b32fb26dc6` and matching tested merge `112093f4aad2235f80bf88af84b98f40b1107ab1`. Every Plant matched its expected verdict, including the five Visual Plants deferred from the local affected run. [Exact hosted Plants aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45661475347/job/139385204305)
+
 ```text
 $ node gates/bin/plants.ts -- --affected 9a3aba8bb67b6364b95cb15596fd80f7726c88b8 --list
 note: affected: contrast/repository-values, by packages/elements/custom-elements.json
