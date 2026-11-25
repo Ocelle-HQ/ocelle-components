@@ -8,3 +8,5 @@ ci-only gates/test/integration/visual.test.ts
 ci-only gates/test/integration/axe.test.ts
 ci-only gates/test/integration/visual-findings.test.ts
 ci-only gates/test/integration/visual-capture.test.ts
+implementation-story storybook/stories/change-list-plan.stories.ts
+implementation-story storybook/stories/change-list-upgrade.stories.ts
