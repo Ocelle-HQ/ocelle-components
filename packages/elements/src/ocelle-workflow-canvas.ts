@@ -677,14 +677,11 @@ export class OcelleWorkflowCanvas extends LitElement {
     </div>`;
   }
 
-  #renderRelationships(nameContext: (node: WorkflowCanvasNode) => string): unknown {
+  #renderRelationships(nameContext: (node: WorkflowCanvasNode, prefix?: string) => string): unknown {
     const { nodes, positions, relationships } = this.#projection;
     if (nodes.length === 0) return html`<p class="empty" id="empty-label" role="status">No workflow steps</p>`;
     if (relationships.length === 0) return nothing;
-    const name = (node: WorkflowCanvasNode) => {
-      const context = nameContext(node);
-      return context === "" ? node.label : `${node.label} ${context}`;
-    };
+    const name = (node: WorkflowCanvasNode) => `${node.label}${nameContext(node, " ")}`;
     return html`<ul class="relationships" role="list" aria-label="Outcome connections" @scroll=${this.#onGeometryChange}>
       ${repeat(relationships, ({ source, outcome }) => JSON.stringify([source.id, outcome.id]), (relationship) => {
         const { source, outcome, destination } = relationship;
@@ -709,8 +706,8 @@ export class OcelleWorkflowCanvas extends LitElement {
     const { nodes, drawableConnections } = this.#projection;
     const labelCounts = new Map<string, number>();
     for (const { label } of nodes) labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
-    const nameContext = (node: WorkflowCanvasNode) => (labelCounts.get(node.label) ?? 0) > 1
-      ? `(${node.accountableRole}, ${node.kind}, ${node.id})` : "";
+    const nameContext = (node: WorkflowCanvasNode, prefix = "") => (labelCounts.get(node.label) ?? 0) > 1
+      ? `${prefix}(${node.accountableRole}, ${node.kind}, ${node.id})` : "";
     const raised = nodes.find(({ id }) => id === this.#raisedId);
     const painted = raised === undefined ? nodes : [...nodes.filter((node) => node !== raised), raised];
     return html`

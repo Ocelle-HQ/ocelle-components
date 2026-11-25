@@ -3682,6 +3682,10 @@ describe("workflow canvas named run inspection in process", () => {
     const nativeNames = async () => (await axButtons()).filter((name) => name.startsWith("Follow "));
     expect(await nativeNames()).toEqual(names);
     const controls = names.map(followAction);
+    expect(controls.map((button) => button.getAttribute("aria-label"))).toEqual(names);
+    expect([...revealControls(canvas).picker.options].map((option) => option.label)).toEqual([
+      rows[0]?.source, rows[3]?.source, rows[0]?.destination, rows[1]?.destination, rows[2]?.destination,
+    ]);
     expect(controls.map((button) => button.closest("li")?.textContent.replace(/\s+/g, " ").trim())).toEqual(
       rows.map(({ source, outcome, destination }) => `${source} · ${outcome} → ${destination} Follow`),
     );
