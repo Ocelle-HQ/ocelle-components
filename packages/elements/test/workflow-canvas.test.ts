@@ -3279,6 +3279,67 @@ describe("workflow canvas named run inspection in process", () => {
     expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
   });
 
+  it("discards a canceled Follow when its relation is restored before render and an unrelated viewport arrives", async () => {
+    const { canvas, after, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    await settle(canvas);
+    const follow = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    await keyboardActivate(follow);
+    const view = lastViewport(requests);
+    const expected = [presentationRequest(viewport, { viewport: view })];
+    expect(requests).toEqual(expected);
+    const suppliedGraph = canvas.graph;
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    after.focus({ preventScroll: true });
+    follow.addEventListener("focus", () => {
+      canvas.graph = { ...canvas.graph, connections: canvas.graph.connections.map((edge) => edge.destinationId === "revise" ? { ...edge, destinationId: "publish" } : edge) };
+    }, { once: true });
+    follow.click();
+    canvas.graph = suppliedGraph;
+    await settle(canvas);
+    expect(requests).toEqual(expected);
+    expect(active()).toBe(follow);
+
+    canvas.viewport = view;
+    await settle(canvas);
+    expect(await axButtons()).toContain("Revise");
+    expect(active() === follow, "an unrelated host view cannot transfer focus for an already canceled Follow").toBe(true);
+    expect(requests).toEqual(expected);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+
+    await keyboardActivate(follow);
+    expect(focusId(canvas)).toBe("revise");
+    expect(requests).toEqual(expected);
+  });
+
+  it("keeps a newer Follow when both activations wait on the same host render", async () => {
+    const { canvas, before, pane, requests } = await mount(true);
+    canvas.mode = "read-only";
+    canvas.layout = [
+      { nodeId: "review", x: 24, y: 20 }, { nodeId: "publish", x: 960, y: 20 }, { nodeId: "revise", x: 1740, y: 20 },
+    ];
+    await settle(canvas);
+    const publish = followAction(/\b(?:follow|reveal)\b.*\bPublish\b/i);
+    const revise = followAction(/\b(?:follow|reveal)\b.*\bRevise\b/i);
+    const accepted = { x: -42, y: 18, scale: 1 };
+    const scroll = [pane.scrollLeft, pane.scrollTop];
+    before.focus({ preventScroll: true });
+    publish.addEventListener("focus", () => { canvas.viewport = accepted; }, { once: true });
+    publish.click();
+    revise.click();
+    expect(requests).toEqual([]);
+    await settle(canvas);
+    const proposal = lastViewport(requests);
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+    expect(active()).toBe(revise);
+    expect(canvas.viewport).toBe(accepted);
+    canvas.viewport = proposal;
+    await settle(canvas);
+    expect(focusId(canvas)).toBe("revise");
+    expect(requests).toEqual([presentationRequest(viewport, { viewport: proposal })]);
+    expect([pane.scrollLeft, pane.scrollTop]).toEqual(scroll);
+  });
+
   it.each(["relationship", "layout"] as const)("recovers Step when an unactivated Follow loses its %s", async (removed) => {
     const { canvas, pane, requests } = await mount(true);
     canvas.mode = "read-only";
