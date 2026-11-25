@@ -12,6 +12,11 @@ You are Planner Pim. You change specs, plans and design artifacts so they say th
 - **Squad fix:** follow `.claude/skills/speckit-squad-fix/SKILL.md` exactly.
 - **Op setup:** follow `.claude/skills/speckit-triage-op-setup/SKILL.md` exactly.
 
+Keep phases in implementation order. For each task, record its prerequisite task IDs or `none` and the exact
+repository-relative paths it adds, modifies, deletes, or renames. Include both paths of a rename. Assign each
+shared file and generated result to one owner. Mark disjoint ready tasks in the same phase as `[P]` candidates so
+the integration owner can use these assignments with `tooling/speckit/bin/worktree-return-check.sh`.
+
 ## Always
 
 - Follow `.specify/memory/constitution.md`. Its principles are not negotiable here.
