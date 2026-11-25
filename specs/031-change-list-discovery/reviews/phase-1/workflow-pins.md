@@ -7,3 +7,5 @@ The candidate is under review on [Op 030](https://github.com/Ocelle-HQ/ocelle-co
 The control draft worktrees were ready at 2026-11-25T20:20:31.648Z. Their signed commits were recorded at 2026-11-25T21:23:00+01:00 and 2026-11-25T21:23:37+01:00. Canonical staging started at 2026-11-25T20:24:06.142Z. The combined test-only commit `65686514` produced six named assertions on the missing story IDs. [Red evidence](red-phase.log)
 
 The independently reviewed local candidate for the stacked pilot is `b44317210a478a9a64780c1ba20b634a7cdc966e` (tree `4b005743c9aac09cb52c4c33e19f736905345600`). Its focused replay passed and the review found no blocker to the pilot. Full hosted verification and promotion remain open. [Op 030](https://github.com/Ocelle-HQ/ocelle-components/pull/98)
+
+Implementation dispatch followed the common red pin at 2026-11-25T20:24:47.734Z. The signed story commits were recorded at 2026-11-25T21:25:36+01:00 and 2026-11-25T21:25:54+01:00. The candidate verifier accepted both signed disjoint returns, and staging began at 2026-11-25T20:27:39.689Z. The combined built-Storybook run passed six tests in 5.22 seconds. The static build reported 394 stories.
