@@ -10,11 +10,17 @@ function requireObservation(condition: unknown, problem: string): asserts condit
   if (!condition) throw new ObservationError(problem);
 }
 
-function command(name: string, args: readonly string[]): string {
+const exactVersion = /^\d+\.\d+\.\d+(?:[.+~:-][\w.+~:-]+)?$/;
+
+function command(name: string, args: readonly [string, ...string[]], { file = name, timeout = 8_000 } = {}): string {
   try {
-    return execFileSync(name, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 8_000, maxBuffer: 128 * 1024 }).trim();
-  } catch {
-    throw new ObservationError(`could not observe ${name} in the Visual job`);
+    return execFileSync(file, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout, killSignal: "SIGKILL", maxBuffer: 128 * 1024 }).trim();
+  } catch (error: unknown) {
+    const stage = `${name} ${args[0]}`;
+    if (error instanceof Error && "code" in error && error.code === "ETIMEDOUT") {
+      throw new ObservationError(`timed out observing ${stage} in the Visual job after ${String(timeout)} ms`);
+    }
+    throw new ObservationError(`could not observe ${stage} in the Visual job`);
   }
 }
 
@@ -83,14 +89,19 @@ function record(env: NodeJS.ProcessEnv): object {
     dockerBuildx !== undefined && buildx.Version === `v${dockerBuildx}`,
   "could not identify the selected local Docker Buildx executable");
 
-  const podmanLocal = command("podman", ["info", "--format", "{{.Host.ServiceIsRemote}}"]) === "false";
+  const podmanPath = executable("podman", path);
+  // The local info report gets its version from the same build as `podman version`.
+  // The first info call can initialize the rootless namespace and storage on a fresh runner.
+  const podmanInfo = command("podman", ["info", "--format", "{{.Host.ServiceIsRemote}} {{.Version.Version}}"], { file: podmanPath, timeout: 30_000 });
+  const [, remote, podman] = /^(true|false) (\S+)$/.exec(podmanInfo) ?? [];
+  requireObservation(podman !== undefined && exactVersion.test(podman), "podman info did not report locality and an exact version");
+  const podmanLocal = remote === "false";
   requireObservation(podmanLocal, "the Visual job did not report a local Podman engine");
-  const podman = command("podman", ["version", "--format", "{{.Client.Version}}"]);
   const skopeo = /^skopeo version (\S+)$/.exec(command("skopeo", ["--version"]))?.[1];
   const node = /^v(\S+)$/.exec(command("node", ["--version"]))?.[1];
   const pnpm = command("pnpm", ["--version"]);
   requireObservation(node !== undefined && node === process.versions.node && skopeo !== undefined &&
-    [node, pnpm, dockerClient, dockerServer, dockerBuildx, podman, skopeo].every((version) => /^\d+\.\d+\.\d+(?:[.+~:-][\w.+~:-]+)?$/.test(version)),
+    [node, pnpm, dockerClient, dockerServer, dockerBuildx, skopeo].every((version) => exactVersion.test(version)),
   "missing an exact executed tool version in the Visual job");
 
   return {
@@ -99,7 +110,7 @@ function record(env: NodeJS.ProcessEnv): object {
     versions: { node, pnpm, dockerClient, dockerServer, dockerClientCommit, dockerServerCommit, dockerBuildx, podman, skopeo },
     executables: {
       node: executableHash(nodePath), pnpm: executableHash(pnpmPath), docker: executableHash(executable("docker", path)),
-      dockerBuildx: executableHash(realpathSync(buildx.Path)), podman: executableHash(executable("podman", path)), skopeo: executableHash(executable("skopeo", path)),
+      dockerBuildx: executableHash(realpathSync(buildx.Path)), podman: executableHash(podmanPath), skopeo: executableHash(executable("skopeo", path)),
     },
   };
 }
