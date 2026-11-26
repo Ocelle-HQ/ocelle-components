@@ -22,6 +22,8 @@ for the source stories, build-index checks, and each light and dark baseline. In
 inventory and any negative fixture that adds a story in both themes. Assign the matching source stubs in the
 empty-index Plant and any changed expectations in the token-change Plant. Give shared inventory and Plant
 files one owner, and record which expected counts depend on the built index or pinned capture.
+Use the exact story IDs to plan a scoped two-engine baseline capture when full-suite capture would delay feedback.
+Keep the complete Visual regression check for the finished candidate.
 
 When a task changes the public element manifest, assign `packages/elements/custom-elements.json`, its regeneration,
 and every affected manifest Plant descriptor and fixture path to one task owner. Run
@@ -38,6 +40,10 @@ test before capture. Assign missing routes to the host task owner. For the chang
 `pnpm run gate:mutation -- --base <base-sha> --files <host>` result on the same candidate with its head, base, selected
 lines, mutant outcomes and exit verdict. Discovery establishes test ownership. The scoped result establishes whether
 the host mutants are covered. Keep the built-browser, Visual, Axe, strict CSP and Plants evidence in the plan.
+
+When a workflow pilot measures related-file mutation on element source, select one element-only shard from the
+normal plan and pin the same head, base and selectors for both test selections. Assign one measurement owner
+and compare complete mutant identities, outcomes and verdicts. Keep the normal Mutation check for the candidate.
 
 For a browser test that asserts a gesture produces no action, first prove it reached the intended target.
 Assert native pointer capture where the behavior depends on it, then check that the gesture emitted nothing.
