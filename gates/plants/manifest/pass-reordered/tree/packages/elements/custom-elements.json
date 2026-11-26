@@ -5851,6 +5851,50 @@
       ]
     },
     {
+      "path": "src/ocelle-step-indicator.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleStepIndicator",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleStepIndicator",
+            "module": "src/ocelle-step-indicator.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-step-indicator",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleStepIndicator",
+          "members": [
+            {
+              "type": {
+                "text": "readonly StepIndicatorStep[]"
+              },
+              "privacy": "public",
+              "name": "steps",
+              "kind": "field",
+              "description": "Ordered progress records. Replace the array to update the displayed steps.",
+              "default": "[]"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "An ordered, non-interactive list of workflow steps with current and completed states.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": []
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-tab-panel.ts",
       "kind": "javascript-module",
       "exports": [

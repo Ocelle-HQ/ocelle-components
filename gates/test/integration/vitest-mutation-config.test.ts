@@ -101,6 +101,7 @@ describe("vitest.mutation.config.ts", () => {
       "elements-browser",
       "elements-browser-file",
       "storybook",
+      "storybook-browser",
       "storybook-integration",
       "gates",
       "gates-integration",
@@ -111,6 +112,7 @@ describe("vitest.mutation.config.ts", () => {
       "styles",
       "elements-node",
       "storybook",
+      "storybook-browser",
       "gates",
     ]);
     const kept = all.filter((project) => !excluded.includes(String(project.test?.name)));
@@ -124,6 +126,7 @@ describe("vitest.mutation.config.ts", () => {
     expect(mutation.map(withoutSequence)).toEqual(counterparts);
     expect(mutation.map((project) => project.test?.sequence)).toEqual([
       { groupOrder: 1 },
+      { groupOrder: 2 },
       { groupOrder: 2 },
       { groupOrder: 2 },
       { groupOrder: 2 },
@@ -168,14 +171,14 @@ describe("vitest.mutation.config.ts", () => {
       // groupOrder, so the next module belongs to one of them, and with Vitest's default order (project name)
       // tokens is the last of them, so it is not a tokens module. Which of the others starts first is not fixed by
       // this check; since 005 (research.md R-12) the browser-mode elements project is not in this configuration, so
-      // elements-node, gates, storybook or styles. A module that starts while the cancel is pending is checked too.
+      // elements-node, gates, storybook, storybook-browser or styles. Check modules that start during cancellation too.
       const ran = await helperRun(["order", "vitest.mutation.config.ts", "tokens-source-table"]);
       expect(ran.code).toBe(0);
       const started = (ran.json as { readonly started: readonly ModuleOf[] }).started;
       expect(started[0]).toEqual({ project: "tokens-source-table", module: sourceTable });
       expect(started.length).toBeGreaterThan(1);
       for (const entry of started.slice(1)) {
-        expect(["elements-node", "gates", "storybook", "styles"]).toContain(entry.project);
+        expect(["elements-node", "gates", "storybook", "storybook-browser (chromium)", "styles"]).toContain(entry.project);
       }
     },
     timeout,

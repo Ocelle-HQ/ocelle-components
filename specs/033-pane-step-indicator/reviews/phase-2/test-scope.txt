@@ -1,0 +1,7 @@
+implementation-story storybook/stories/pane-action-footer.stories.ts
+storybook/test/integration/pane-action-footer.test.ts
+packages/elements/test/browser/pane-action-footer.test.ts
+ci-only gates/test/integration/axe.test.ts
+ci-only gates/test/integration/visual-capture.test.ts
+ci-only gates/test/integration/visual-findings.test.ts
+ci-only gates/test/integration/visual.test.ts

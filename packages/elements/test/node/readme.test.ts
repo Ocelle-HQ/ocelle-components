@@ -818,6 +818,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-canvas.js` | `dist/ocelle-workflow-canvas.js` | `ocelle-workflow-canvas` and the `ocelle-workflow-node` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-node.js` | `dist/ocelle-workflow-node.js` | `ocelle-workflow-node` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-step-indicator.js` | `dist/ocelle-step-indicator.js` | `ocelle-step-indicator` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |",
@@ -1060,7 +1061,7 @@ describe("packages/elements/README.md", () => {
 
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
-    expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
+    expect(tableRows(read("README.md"), "Entry points")).toStrictEqual(entryRows);
     expect(Object.keys(manifest.exports ?? {})).toEqual([
       ".",
       "./ocelle-icon.js",
@@ -1074,6 +1075,7 @@ describe("packages/elements/README.md", () => {
       "./ocelle-workflow-lane.js",
       "./ocelle-workflow-canvas.js",
       "./ocelle-workflow-node.js",
+      "./ocelle-step-indicator.js",
       "./ocelle-list-detail.js",
       "./ocelle-dialog.js",
       "./ocelle-drawer.js",
@@ -1114,6 +1116,17 @@ describe("packages/elements/README.md", () => {
       "./browser.js",
       "./custom-elements.json",
     ]);
+  });
+
+  it("publishes the ordered input and an event-free step indicator in the committed manifest", () => {
+    const manifest = JSON.parse(read("custom-elements.json")) as { modules: { path: string; declarations: unknown[] }[] };
+    const declaration = manifest.modules.find(({ path }) => path === "src/ocelle-step-indicator.ts")?.declarations[0];
+    expect(declaration).toMatchObject({
+      tagName: "ocelle-step-indicator",
+      members: [{ name: "steps", type: { text: "readonly StepIndicatorStep[]" }, default: "[]", privacy: "public" }],
+      attributes: [],
+      events: [],
+    });
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -1672,6 +1685,10 @@ describe("packages/elements/CHANGELOG.md", () => {
   });
 
   // 019 phase 1 (T081): the overflow-region module's block-axis option, an internal change.
+  it("records the step indicator and its standalone entry as a minor addition", () => {
+    expect(flat(unreleased)).toContain("Step indicator (#87). `ocelle-step-indicator` and its standalone entry are a MINOR addition");
+  });
+
   it("names the overflow-region module's block-axis option as an internal change with no effect on ocelle-scroller or ocelle-workflow-board", () => {
     expect(flat(unreleased)).toContain("The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`");
   });
@@ -1699,10 +1716,10 @@ const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "oc
 describe("packages/elements/README.md overview (014 T110)", () => {
   const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
 
-  it("counts and names all forty-eight released elements", () => {
-    expect(overview).toContain("forty-eight elements");
+  it("counts and names all forty-nine released elements", () => {
+    expect(overview).toContain("forty-nine elements");
     const tags = ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, ...frameElements,
-      "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea", "ocelle-workflow-node", "ocelle-workflow-canvas", "ocelle-data-table",
+      "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea", "ocelle-workflow-node", "ocelle-workflow-canvas", "ocelle-step-indicator", "ocelle-data-table",
       "ocelle-event-timeline", "ocelle-timeline-event", "ocelle-evidence-chain", "ocelle-evidence-step"];
     for (const tag of tags) expect(overview).toContain(`\`${tag}\``);
   });

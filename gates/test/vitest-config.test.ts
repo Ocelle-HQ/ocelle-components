@@ -7,8 +7,8 @@ import mutation from "../../vitest.mutation.config.ts";
 import mutationElements from "../../vitest.mutation.elements.config.ts";
 
 // The Vitest projects and the mutation runs (002 contracts/gates.md § Mutation, research.md R-03 *Mutation path*;
-// PLAN-FRESH-2-002): vitest.mutation.config.ts drops exactly the projects whose tests start tools, a browser or a
-// Storybook build, and, resolving every project's include and exclude against the repository's test files, each test
+// PLAN-FRESH-2-002): vitest.mutation.config.ts drops the fixture projects that launch tools or a separate browser,
+// and the element projects run in their own mutation configuration. Resolving every project's paths, each test
 // file belongs to exactly one project, so none sits both in a project Stryker runs and in one it excludes. The check
 // fails if the tokens project's browser exclude or the gates project's integration exclude is removed.
 interface Project {
@@ -88,6 +88,17 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
 });
 
 describe("the Vitest projects", () => {
+  it("runs in-process Storybook recipe tests in Chromium in both the normal and mutation suites", () => {
+    const recipe = "storybook/test/unit/browser/pane-action-footer.test.ts";
+    const owner = (projects: readonly Project[]) => projects.filter((project) => inProject(project, recipe)).map(({ name }) => name);
+    expect({ normal: owner(all), mutation: owner(kept), elementMutation: owner(keptElements) }).toEqual({
+      normal: ["storybook-browser"], mutation: ["storybook-browser"], elementMutation: [],
+    });
+    const browser = base.test?.projects?.find((project) =>
+      typeof project === "object" && "test" in project && project.test.name === "storybook-browser");
+    expect(browser).toMatchObject({ test: { browser: { enabled: true, headless: true, instances: [{ browser: "chromium" }] } } });
+  });
+
   it("put each test file of the repository in exactly one project", () => {
     const owners = Object.fromEntries(testFiles.map((path) => [path, all.filter((project) => inProject(project, path)).map((project) => project.name)]));
     const notOne = Object.fromEntries(Object.entries(owners).filter(([, names]) => names.length !== 1));

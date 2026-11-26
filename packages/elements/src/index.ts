@@ -75,3 +75,5 @@ export type {
   WorkflowCanvasViewportRequestDetail,
 } from "./ocelle-workflow-canvas.ts";
 export { OcelleWorkflowNode } from "./ocelle-workflow-node.ts";
+export { OcelleStepIndicator } from "./ocelle-step-indicator.ts";
+export type { StepIndicatorStep } from "./ocelle-step-indicator.ts";

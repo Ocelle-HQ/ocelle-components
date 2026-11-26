@@ -16,6 +16,7 @@
     "./ocelle-workflow-lane.js": "./dist/ocelle-workflow-lane.js",
     "./ocelle-workflow-canvas.js": "./dist/ocelle-workflow-canvas.js",
     "./ocelle-workflow-node.js": "./dist/ocelle-workflow-node.js",
+    "./ocelle-step-indicator.js": "./dist/ocelle-step-indicator.js",
     "./ocelle-list-detail.js": "./dist/ocelle-list-detail.js",
     "./ocelle-dialog.js": "./dist/ocelle-dialog.js",
     "./ocelle-drawer.js": "./dist/ocelle-drawer.js",
