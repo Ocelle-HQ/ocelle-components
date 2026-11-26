@@ -7,8 +7,8 @@ import mutation from "../../vitest.mutation.config.ts";
 import mutationElements from "../../vitest.mutation.elements.config.ts";
 
 // The Vitest projects and the mutation runs (002 contracts/gates.md § Mutation, research.md R-03 *Mutation path*;
-// PLAN-FRESH-2-002): vitest.mutation.config.ts drops exactly the projects whose tests start tools, a browser or a
-// Storybook build, and, resolving every project's include and exclude against the repository's test files, each test
+// PLAN-FRESH-2-002): vitest.mutation.config.ts drops the fixture projects that launch tools or a separate browser,
+// and the element projects run in their own mutation configuration. Resolving every project's paths, each test
 // file belongs to exactly one project, so none sits both in a project Stryker runs and in one it excludes. The check
 // fails if the tokens project's browser exclude or the gates project's integration exclude is removed.
 interface Project {
@@ -95,7 +95,7 @@ describe("the Vitest projects", () => {
       normal: ["storybook-browser"], mutation: ["storybook-browser"], elementMutation: [],
     });
     const browser = base.test?.projects?.find((project) =>
-      typeof project === "object" && "test" in project && project.test?.name === "storybook-browser");
+      typeof project === "object" && "test" in project && project.test.name === "storybook-browser");
     expect(browser).toMatchObject({ test: { browser: { enabled: true, headless: true, instances: [{ browser: "chromium" }] } } });
   });
 
