@@ -10,7 +10,9 @@ import type { Served } from "./serve.ts";
 // scenarios/pill-tag.ts on its own `pill-tag.html` page, which links base.css (a fresh context, so no forced colours carry
 // over), with zero CSP violations, no request outside the allowed list, no failed request and no console message or
 // uncaught error, asserted in the same test as the body's outcome. The static click inside a link is in process only
-// (scenarios/pill-tag.ts `pillSinkScenarios`): a link here navigates for real.
+// (scenarios/pill-tag.ts `pillSinkScenarios`): a link here navigates for real. The fixture serves the real font, so the
+// runner passes `fontLoaded: true`: the Baseline bodies pin the icon-only pill's box where the phase-1 spike measured it
+// (operator decisions on phase-4 rounds 2 and 3, O2-01 and O3-01; tasks.md T044a).
 const built = inject("elementsFixture");
 let served: Served | undefined;
 let browser: Browser | undefined;
@@ -31,7 +33,7 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 }
 
 describe("ocelle-pill-tag, static, on the strict-CSP fixture with the browser build (US3)", { timeout: 60_000 }, () => {
-  it.each(pillScenarios)("$name", async ({ run, expected }) => {
+  it.each(pillScenarios({ fontLoaded: true }))("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "pill-tag.html");
     const observed = await run(fixtureDriver(page.page, page.log, true));

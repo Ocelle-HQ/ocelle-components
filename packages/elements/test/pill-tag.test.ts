@@ -13,7 +13,9 @@ import { pillScenarios, pillSinkScenarios } from "./scenarios/pill-tag.ts";
 // static click inside a link runs here only, on the navigation sink (scenarios/pill-tag.ts `pillSinkScenarios`). Every
 // body starts at a 1280 × 800 viewport, without forced colours (reset after each body; in-process tests share one
 // page). The same shared bodies run on the built browser build on the strict-CSP fixture in
-// test/browser/pill-tag.test.ts.
+// test/browser/pill-tag.test.ts. The in-process page loads no font file (test/in-process.ts), so the runner passes
+// `fontLoaded: false`: the Baseline bodies assert the icon-only pill's font-independent facts, not its pixel pin
+// (operator decisions on phase-4 rounds 2 and 3, O2-01 and O3-01; tasks.md T044a).
 const driver = inProcessDriver();
 
 beforeEach(async () => {
@@ -25,7 +27,7 @@ afterEach(async () => {
 });
 
 describe("ocelle-pill-tag, static, in process (US3)", { timeout: 60_000 }, () => {
-  it.each([...pillScenarios, ...pillSinkScenarios])("$name", async ({ run, expected }) => {
+  it.each([...pillScenarios({ fontLoaded: false }), ...pillSinkScenarios])("$name", async ({ run, expected }) => {
     const observed = await run(driver);
     expect({ observed, axe: await severe(driver) }).toEqual({ observed: expected, axe: [] });
   });

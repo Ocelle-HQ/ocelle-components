@@ -11,10 +11,12 @@
 //   the height is the same with an icon);
 // - the icon-only static pill's box (its row `bare`) as the phase-1 spike measured it on the slot convention as merged
 //   (reviews/phase-1/spikes.md § R-06, R-07, written by hand): its top −7.09 px from the surrounding text's top and
-//   29.19 × 50.09 px (compact −7.39 px, 27.78 × 40.39 px), in a paragraph and in a flex row. The spike's bottom offset
-//   (+4.09 px, compact +5.39 px) is the top, the height and the surrounding text's box together, and that box is the
-//   font's: the in-process page loads no font file (test/in-process.ts), where the text box of the fallback family is
-//   1 px shorter at 14 px, so the body pins the top and the size, which both harnesses read as the spike did.
+//   29.19 × 50.09 px (compact −7.39 px, 27.78 × 40.39 px), in a paragraph and in a flex row, pinned only where the real
+//   font loads, the strict-CSP fixture. The in-process page loads no font file (test/in-process.ts), so its text uses
+//   the machine's fallback font, and the top and the height depend on it (operator decisions on phase-4 rounds 2 and 3,
+//   O2-01 and O3-01): there the body asserts only the facts the tokens fix (`PillHarness`, `baselineScenarios`). The
+//   spike's bottom offset (+4.09 px, compact +5.39 px) is the top, the height and the surrounding text's box together,
+//   and is pinned in neither harness.
 //
 // Static only (analysis finding I2): phase 4 builds no interactive mode, so each positive is a static pill or a plain
 // element twin; the interactive twins of the static click, static focus and seven names bodies are user story 4's.
@@ -89,11 +91,20 @@ const px = (number: number): string => `${String(hundredth(number))}px`;
 /** A density's pill height: one line, twice the block padding and twice the border. */
 const height = (density: Density): number => sizes[density].lineHeight + 2 * sizes[density].block + 2 * borderWidth;
 
-/** The icon-only static pill's box against the surrounding text, as the phase-1 spike measured it (written by hand). */
+/**
+ * The icon-only static pill's box against the surrounding text, as the phase-1 spike measured it (written by hand),
+ * pinned only where the real font loads (the strict-CSP fixture).
+ */
 const iconOnly: Record<Density, { readonly top: number; readonly height: number; readonly width: number }> = {
   default: { top: -7.09, height: 29.19, width: 50.09 },
   compact: { top: -7.39, height: 27.78, width: 40.39 },
 };
+
+/** The icon-only pill's width from the tokens: the inline padding, the border, the icon (one line) and its `space-2` margin. */
+const iconOnlyWidth = (density: Density): number => 2 * sizes[density].inline + 2 * borderWidth + sizes[density].lineHeight + space2;
+
+/** The icon-only pill's least height from the tokens: the block padding, the border and the icon (one line). */
+const iconOnlyLeastHeight = (density: Density): number => 2 * sizes[density].block + 2 * borderWidth + sizes[density].lineHeight;
 
 const pillPart = '[part="pill"]';
 const icon = '<ocelle-icon slot="icon" name="folder"></ocelle-icon>';
@@ -191,7 +202,7 @@ const passthroughValues: Record<(typeof passthrough)[number], readonly [string, 
 /** Host rules that mark the pill's custom states, read back through the host's computed style. */
 const stateRules = "ocelle-pill-tag:state(pressed) { text-decoration-line: underline; } ocelle-pill-tag:state(current) { font-style: italic; }";
 
-export const pillScenarios: readonly Scenario[] = [
+const staticScenarios: readonly Scenario[] = [
   ...(["light", "dark"] as const).map(
     (theme: Palette): Scenario => ({
       name: `US3-1: in ${theme}, <ocelle-pill-tag>Draft</ocelle-pill-tag> shows "Draft" on --ocelle-color-neutral-bg in --ocelle-color-neutral with --ocelle-radius-pill corners, in Schibsted Grotesk; it is not focusable, has no role of its own and exposes its text as plain text; the property reads status neutral, variant pill, density default (FR-025, FR-027, FR-028)`,
@@ -472,81 +483,6 @@ export const pillScenarios: readonly Scenario[] = [
           return { grid: await read("g"), column: await read("c") };
         },
         expected: { grid: { pillAsInBlock: true, pillNarrower: true, oneLine: true, hostStretched: true }, column: { pillAsInBlock: true, pillNarrower: true, oneLine: true, hostStretched: true } },
-      }),
-    ),
-  ),
-  ...variants.flatMap((variant) =>
-    densities.map(
-      (density): Scenario => ({
-        name: `Baseline, ${variant}, ${density}: a one-line static pill, with and without an icon and in two statuses, inline in a paragraph and in an align-items: baseline flex row, has its text's bottom on the surrounding text's (within 0.5 px), its icon wrapper's block-start at the label's and its density's height; a wrapping twin's first line is on the row's baseline; an icon-only pill (its row bare) sits where the phase-1 spike measured it (Edge Cases; plan decision 15 as amended, operator decision Q2 (a); plants: the text wrapper without the label class, bare on every row, bare never set, the dropped override)`,
-        run: async (driver) => {
-          const at = attributes(variant, density);
-          const cases = [
-            { id: "plain", status: "warning", content: "Blocked" },
-            { id: "icon", status: "info", content: `${icon}Blocked` },
-          ];
-          const contexts = cases.flatMap(({ id, status, content }) => [
-            `<p class="around" id="p-${id}"><span id="before-${id}">Before</span> <ocelle-pill-tag id="in-p-${id}" status="${status}"${at}>${content}</ocelle-pill-tag> after</p>`,
-            `<div class="around row" id="r-${id}"><span id="name-${id}">Name</span><ocelle-pill-tag id="in-r-${id}" status="${status}"${at}>${content}</ocelle-pill-tag></div>`,
-          ]);
-          await mount(
-            driver,
-            contexts.join("") +
-              `<div class="around row" id="r-wrap"><span id="name-wrap">Name</span><ocelle-pill-tag id="wrap" status="warning"${at}>${longText}</ocelle-pill-tag></div>` +
-              `<p class="around narrow" id="p-wrap">Before <ocelle-pill-tag id="wrap-p" status="warning"${at}>${longText}</ocelle-pill-tag> after</p>` +
-              `<p class="around" id="p-only"><span id="before-only">Before</span> <ocelle-pill-tag id="only-p"${at}>${icon}</ocelle-pill-tag> after</p>` +
-              `<div class="around row" id="r-only"><span id="name-only">Name</span><ocelle-pill-tag id="only-r"${at}>${icon}</ocelle-pill-tag></div>`,
-          );
-          await driver.rules(`.around { margin: 0; ${surrounding(density)} } .row { display: flex; align-items: baseline; column-gap: 8px; } #r-wrap { inline-size: 150px; } .narrow { inline-size: 120px; }`);
-          const bottom = (text: TextBox | undefined): number => (text === undefined ? Number.NaN : text.box.y + text.box.height);
-          const found: Record<string, unknown> = {};
-          for (const { id } of cases) {
-            for (const [pill, aroundId] of [
-              [`in-p-${id}`, `before-${id}`],
-              [`in-r-${id}`, `name-${id}`],
-            ] as const) {
-              const text = await textOf(driver, pill);
-              const aroundText = await textOf(driver, aroundId);
-              found[pill] = {
-                onBaseline: Math.abs(bottom(text) - bottom(aroundText)) <= 0.5,
-                wrappersAligned: Math.abs((await driver.box(pill, ".icon-slot")).y - (await driver.box(pill, ".label")).y) <= 0.5,
-                height: Math.abs((await driver.box(pill)).height - height(density)) <= 0.02,
-              };
-            }
-          }
-          const oneLine = await textOf(driver, "in-p-plain");
-          const lineHeight = oneLine?.box.height ?? Number.NaN;
-          const wrapText = await textOf(driver, "wrap");
-          const wrapPText = await textOf(driver, "wrap-p");
-          const offset = (text: TextBox | undefined, pill: Box): number => (text === undefined ? Number.NaN : text.box.y - pill.y);
-          found.wrap = {
-            wraps: wrapText !== undefined && wrapText.box.height >= 2 * lineHeight - 0.5,
-            firstLineOnBaseline: wrapText !== undefined && Math.abs(wrapText.box.y + lineHeight - bottom(await textOf(driver, "name-wrap"))) <= 0.5,
-          };
-          found.wrapInParagraph = {
-            wraps: wrapPText !== undefined && wrapPText.box.height >= 2 * lineHeight - 0.5,
-            firstLineAsOneLine: Math.abs(offset(wrapPText, await driver.box("wrap-p")) - offset(oneLine, await driver.box("in-p-plain"))) <= 0.5,
-          };
-          for (const [pill, aroundId] of [
-            ["only-p", "before-only"],
-            ["only-r", "name-only"],
-          ] as const) {
-            const box = await driver.box(pill);
-            const aroundText = await textOf(driver, aroundId);
-            found[pill] = {
-              row: (await driver.elements(pill)).find((part) => part.attributes.class?.startsWith("icon-row") === true)?.attributes.class,
-              top: aroundText === undefined ? null : hundredth(box.y - aroundText.box.y),
-              size: [hundredth(box.height), hundredth(box.width)],
-            };
-          }
-          return found;
-        },
-        expected: {
-          ...Object.fromEntries(["in-p-plain", "in-r-plain", "in-p-icon", "in-r-icon"].map((id) => [id, { onBaseline: true, wrappersAligned: true, height: true }])),
-          wrap: { wraps: true, firstLineOnBaseline: true },
-          wrapInParagraph: { wraps: true, firstLineAsOneLine: true },
-          ...Object.fromEntries(["only-p", "only-r"].map((id) => [id, { row: "icon-row bare", top: iconOnly[density].top, size: [iconOnly[density].height, iconOnly[density].width] }])),
-        },
       }),
     ),
   ),
@@ -834,6 +770,115 @@ export const pillScenarios: readonly Scenario[] = [
     expected: { gone: { width: false, height: false, display: "none" }, shown: { width: true, height: true, display: "inline-block" }, tabs: [["button#before"], ["button#after"]] },
   },
 ];
+
+/**
+ * The harness a list of bodies runs in, passed by its runner: whether its page loads the real font (the strict-CSP
+ * fixture serves Schibsted Grotesk; the in-process page has its `@font-face` rules removed, test/in-process.ts, so its
+ * text uses the machine's fallback font).
+ */
+export interface PillHarness {
+  readonly fontLoaded: boolean;
+}
+
+/**
+ * The four Baseline bodies, one per variant and density. The icon-only pill's pixel pin (top, height, width, as T002
+ * measured it) holds only where the real font loads; in process the body asserts only its font-independent facts, all
+ * from token values (contracts/checks.md § US3 baseline; operator decisions on phase-4 rounds 2 and 3, O2-01 and
+ * O3-01; tasks.md T044a): its row `bare`; its top above the surrounding text's top; its width 2 × the inline padding +
+ * 2 × the border + the icon (one line) + `space-2` (the icon's margin); its icon wrapper's top at the pill's top + the
+ * border + the block padding; its height at least 2 × the block padding + 2 × the border + the icon (the line box adds a
+ * descent that depends on the font). Every other fact is the same in both harnesses.
+ */
+function baselineScenarios(harness: PillHarness): readonly Scenario[] {
+  return variants.flatMap((variant) =>
+  densities.map(
+    (density): Scenario => ({
+      name: `Baseline, ${variant}, ${density}: a one-line static pill, with and without an icon and in two statuses, inline in a paragraph and in an align-items: baseline flex row, has its text's bottom on the surrounding text's (within 0.5 px), its icon wrapper's block-start at the label's and its density's height; a wrapping twin's first line is on the row's baseline; an icon-only pill (its row bare) sits ${harness.fontLoaded ? "where the phase-1 spike measured it" : "above the surrounding text, its width, its icon wrapper's top and its least height from token values"} (Edge Cases; plan decision 15 as amended, operator decision Q2 (a), phase-4 rounds 2 and 3, O2-01 and O3-01; plants: the text wrapper without the label class, bare on every row, bare never set, the dropped override)`,
+      run: async (driver) => {
+        const at = attributes(variant, density);
+        const cases = [
+          { id: "plain", status: "warning", content: "Blocked" },
+          { id: "icon", status: "info", content: `${icon}Blocked` },
+        ];
+        const contexts = cases.flatMap(({ id, status, content }) => [
+          `<p class="around" id="p-${id}"><span id="before-${id}">Before</span> <ocelle-pill-tag id="in-p-${id}" status="${status}"${at}>${content}</ocelle-pill-tag> after</p>`,
+          `<div class="around row" id="r-${id}"><span id="name-${id}">Name</span><ocelle-pill-tag id="in-r-${id}" status="${status}"${at}>${content}</ocelle-pill-tag></div>`,
+        ]);
+        await mount(
+          driver,
+          contexts.join("") +
+            `<div class="around row" id="r-wrap"><span id="name-wrap">Name</span><ocelle-pill-tag id="wrap" status="warning"${at}>${longText}</ocelle-pill-tag></div>` +
+            `<p class="around narrow" id="p-wrap">Before <ocelle-pill-tag id="wrap-p" status="warning"${at}>${longText}</ocelle-pill-tag> after</p>` +
+            `<p class="around" id="p-only"><span id="before-only">Before</span> <ocelle-pill-tag id="only-p"${at}>${icon}</ocelle-pill-tag> after</p>` +
+            `<div class="around row" id="r-only"><span id="name-only">Name</span><ocelle-pill-tag id="only-r"${at}>${icon}</ocelle-pill-tag></div>`,
+        );
+        await driver.rules(`.around { margin: 0; ${surrounding(density)} } .row { display: flex; align-items: baseline; column-gap: 8px; } #r-wrap { inline-size: 150px; } .narrow { inline-size: 120px; }`);
+        const bottom = (text: TextBox | undefined): number => (text === undefined ? Number.NaN : text.box.y + text.box.height);
+        const found: Record<string, unknown> = {};
+        for (const { id } of cases) {
+          for (const [pill, aroundId] of [
+            [`in-p-${id}`, `before-${id}`],
+            [`in-r-${id}`, `name-${id}`],
+          ] as const) {
+            const text = await textOf(driver, pill);
+            const aroundText = await textOf(driver, aroundId);
+            found[pill] = {
+              onBaseline: Math.abs(bottom(text) - bottom(aroundText)) <= 0.5,
+              wrappersAligned: Math.abs((await driver.box(pill, ".icon-slot")).y - (await driver.box(pill, ".label")).y) <= 0.5,
+              height: Math.abs((await driver.box(pill)).height - height(density)) <= 0.02,
+            };
+          }
+        }
+        const oneLine = await textOf(driver, "in-p-plain");
+        const lineHeight = oneLine?.box.height ?? Number.NaN;
+        const wrapText = await textOf(driver, "wrap");
+        const wrapPText = await textOf(driver, "wrap-p");
+        const offset = (text: TextBox | undefined, pill: Box): number => (text === undefined ? Number.NaN : text.box.y - pill.y);
+        found.wrap = {
+          wraps: wrapText !== undefined && wrapText.box.height >= 2 * lineHeight - 0.5,
+          firstLineOnBaseline: wrapText !== undefined && Math.abs(wrapText.box.y + lineHeight - bottom(await textOf(driver, "name-wrap"))) <= 0.5,
+        };
+        found.wrapInParagraph = {
+          wraps: wrapPText !== undefined && wrapPText.box.height >= 2 * lineHeight - 0.5,
+          firstLineAsOneLine: Math.abs(offset(wrapPText, await driver.box("wrap-p")) - offset(oneLine, await driver.box("in-p-plain"))) <= 0.5,
+        };
+        for (const [pill, aroundId] of [
+          ["only-p", "before-only"],
+          ["only-r", "name-only"],
+        ] as const) {
+          const box = await driver.box(pill);
+          const aroundText = await textOf(driver, aroundId);
+          const row = (await driver.elements(pill)).find((part) => part.attributes.class?.startsWith("icon-row") === true)?.attributes.class;
+          const top = aroundText === undefined ? Number.NaN : box.y - aroundText.box.y;
+          found[pill] = harness.fontLoaded
+            ? { row, top: hundredth(top), size: [hundredth(box.height), hundredth(box.width)] }
+            : {
+                row,
+                aboveText: top < 0,
+                width: Math.abs(box.width - iconOnlyWidth(density)) <= 0.5,
+                wrapperTop: Math.abs((await driver.box(pill, ".icon-slot")).y - (box.y + borderWidth + sizes[density].block)) <= 0.5,
+                heightAtLeast: box.height >= iconOnlyLeastHeight(density) - 0.02,
+              };
+        }
+        return found;
+      },
+      expected: {
+        ...Object.fromEntries(["in-p-plain", "in-r-plain", "in-p-icon", "in-r-icon"].map((id) => [id, { onBaseline: true, wrappersAligned: true, height: true }])),
+        wrap: { wraps: true, firstLineOnBaseline: true },
+        wrapInParagraph: { wraps: true, firstLineAsOneLine: true },
+        ...Object.fromEntries(
+          ["only-p", "only-r"].map((id) => [id, harness.fontLoaded ? { row: "icon-row bare", top: iconOnly[density].top, size: [iconOnly[density].height, iconOnly[density].width] } : { row: "icon-row bare", aboveText: true, width: true, wrapperTop: true, heightAtLeast: true }]),
+        ),
+      },
+    }),
+  ),
+);
+}
+
+/** The static bodies of User Story 3, for the harness its runner names. */
+export function pillScenarios(harness: PillHarness): readonly Scenario[] {
+  return [...staticScenarios, ...baselineScenarios(harness)];
+}
 
 /**
  * The static click inside a link, in process only: the fixture has no navigation sink, and a link there navigates for
