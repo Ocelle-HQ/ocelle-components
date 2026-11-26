@@ -7,7 +7,9 @@ in_scope: []
 out_of_scope: [7, 76, 86, 87, 88, 89, 90, 91, 92]
 semver: none
 spec_prompt: "Implement the operator-requested workflow improvements in triage/034-workflow-pilots.md for live validation on epic #92. Benchmark separate default and element mutation configurations alongside required mutation. Evaluate trusted hosted CI result reuse for evidence-only changes with exact candidate status, fresh DCO and Sandbox paths checks, and fail-closed input validation. Add actionable planning preflight for manifest overlays and active mutation projects for shared Storybook hosts. Validate against the existing required gates and known regressions, then trial on #89, #86 and other ready issues with a workflow checkpoint after each delivery."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-26T10:36:33Z
 ---
 
 # Triage 034 — Verification improvements and workflow pilots
