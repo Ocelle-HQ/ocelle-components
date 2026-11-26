@@ -113,6 +113,16 @@ interface InvalidTrial {
   readonly change: (trial: Fixture) => void;
 }
 
+function withDefaultMutant(value: unknown): Pick<Fixture, "expected"> & Observation {
+  const { expected, mixed, split } = fixture();
+  const [defaults, elements] = split;
+  return {
+    expected,
+    mixed: { ...mixed, receipts: [{ ...mixed.receipts[0], mutants: [value] }, mixed.receipts[1]] },
+    split: [{ ...defaults, receipts: [{ ...defaults.receipts[0], mutants: [value] }] }, elements],
+  };
+}
+
 describe("mutation configuration shadow", () => {
   it("matches both unchanged configuration inventories and reports the measured timing of each arm", async () => {
     const result = await compare(fixture());
@@ -411,5 +421,183 @@ describe("mutation configuration shadow", () => {
     });
     expect(result?.matched).toBe(false);
     expect(result).toMatchObject({ reason: "timing" });
+  });
+
+  it("requires a receipt object even if an array or a callable carries its fields", async () => {
+    const trial = fixture();
+    const expected = {
+      matched: false,
+      reason: "receipts",
+      detail: "mixed control: missing or duplicate receipts",
+    };
+    expect(await compare({ ...trial, mixed: Object.assign([], trial.mixed) })).toEqual(expected);
+    expect(await compare({ ...trial, mixed: Object.assign(() => undefined, trial.mixed) })).toEqual(expected);
+  });
+
+  it("rejects null provenance with a diagnostic instead of failing to read the receipt", async () => {
+    const trial = fixture();
+    await expect(compare({ ...trial, mixed: { ...trial.mixed, pins: null } })).resolves.toEqual({
+      matched: false,
+      reason: "provenance",
+      detail: "mixed control: source or runtime differs from the pinned comparison",
+    });
+  });
+
+  it.each([
+    { name: "negative setup duration", change: ({ mixed }) => { mixed.timing.setupMs = -1; } },
+    { name: "infinite job duration", change: ({ mixed }) => { mixed.timing.elapsedMs = Infinity; } },
+    { name: "fractional retry count", change: ({ mixed }) => { mixed.timing.retries = 0.5; } },
+    { name: "negative retry count", change: ({ mixed }) => { mixed.timing.retries = -1; } },
+    { name: "prior attempt time without retries", change: ({ mixed }) => { mixed.timing.priorAttemptMs = 1; } },
+  ] satisfies readonly Omit<InvalidTrial, "reason">[])("rejects $name with a job timing diagnostic", async ({ change }) => {
+    const trial = fixture();
+    change(trial);
+    expect(await compare(trial)).toEqual({ matched: false, reason: "timing", detail: "mixed control: job timing is incomplete" });
+  });
+
+  it.each([
+    ["a repeated selector", [elementsSelector, defaultSelector, defaultSelector]],
+    ["a different selector with the same count", [defaultSelector, `${elementsFile}:151-166`]],
+  ])("rejects %s in the mixed control", async (_description, selectors) => {
+    const trial = fixture();
+    trial.mixed.selectors = selectors;
+    expect(await compare(trial)).toEqual({
+      matched: false, reason: "selectors", detail: "mixed control: standard selectors differ from the pinned selection",
+    });
+  });
+
+  it.each([
+    { name: "blank terminal status", changes: { status: "" } },
+    { name: "blank mutator name", changes: { mutatorName: "" } },
+    { name: "numeric mutator name", changes: { mutatorName: 1 } },
+    { name: "non-string replacement", changes: { replacement: true } },
+    { name: "zero-based starting line", changes: { location: { start: { line: 0, column: 2 }, end: { line: 3, column: 1 } } } },
+    { name: "reversed lines", changes: { location: { start: { line: 3, column: 0 }, end: { line: 2, column: 1 } } } },
+    { name: "reversed columns on one line", changes: { location: { start: { line: 3, column: 2 }, end: { line: 3, column: 1 } } } },
+  ])("rejects $name even when both arms report it", async ({ changes }) => {
+    const result = await compare(withDefaultMutant({ ...mutant(defaultFile, 3, "Killed"), ...changes }));
+    expect(result).toEqual({
+      matched: false,
+      reason: "mutants",
+      detail: `mixed control (${defaultConfiguration}): empty, unfinished or out-of-range mutant inventory`,
+    });
+  });
+
+  it("diagnoses a missing mutant or end position without throwing", async () => {
+    const valid = mutant(defaultFile, 3, "Killed");
+    const invalid = [null, { ...valid, location: { ...valid.location, end: null } }];
+    for (const value of invalid) {
+      await expect(compare(withDefaultMutant(value))).resolves.toEqual({
+        matched: false, reason: "mutants",
+        detail: `mixed control (${defaultConfiguration}): empty, unfinished or out-of-range mutant inventory`,
+      });
+    }
+  });
+
+  it("keeps optional replacements, a zero-width location, and a multi-line mutant with an earlier end column", async () => {
+    const points = [
+      { start: { line: 3, column: 2 }, end: { line: 3, column: 2 } },
+      { start: { line: 3, column: 2 }, end: { line: 4, column: 1 } },
+    ];
+    for (const location of points) {
+      const result = await compare(withDefaultMutant({ path: defaultFile, location, mutatorName: "BlockStatement", status: "Killed" }));
+      expect(result?.matched).toBe(true);
+      expect(result?.verdict).toBe(0);
+    }
+  });
+
+  it("assigns mutants to the appropriate bound when one standard selector resolves to multiple changed ranges", async () => {
+    const trial = fixture();
+    const ranges = [`${defaultFile}:1-5`, `${defaultFile}:10-30`];
+    trial.expected.configurations = trial.expected.configurations.map((plan) => plan.configuration === defaultConfiguration ? { ...plan, ranges } : plan);
+    for (const receipt of [trial.mixed.receipts[0], trial.split[0].receipts[0]]) {
+      receipt.ranges = [...ranges];
+      receipt.mutants.push(mutant(defaultFile, 12, "Killed"));
+    }
+    const result = await compare(trial);
+    expect(result?.matched).toBe(true);
+    expect(result).toMatchObject({
+      measurements: { mixed: { configurations: { [defaultConfiguration]: { mutantCount: 3 } } } },
+    });
+  });
+
+  it.each([`unexpected\n${defaultSelector}`, `${defaultSelector}unexpected`])("rejects a malformed bound %j", async (range) => {
+    const trial = fixture();
+    trial.expected.configurations = trial.expected.configurations.map((plan) =>
+      plan.configuration === defaultConfiguration ? { ...plan, ranges: [range] } : plan);
+    trial.mixed.receipts[0].ranges = [range];
+    trial.split[0].receipts[0].ranges = [range];
+    expect(await compare(trial)).toEqual({
+      matched: false, reason: "mutants",
+      detail: `mixed control (${defaultConfiguration}): empty, unfinished or out-of-range mutant inventory`,
+    });
+  });
+
+  it.each(["tests", "elapsedMs"] as const)("rejects a reported baseline with zero %s", async (field) => {
+    const trial = fixture();
+    trial.mixed.receipts[0].baseline[field] = 0;
+    trial.split[0].receipts[0].baseline[field] = 0;
+    expect(await compare(trial)).toEqual({
+      matched: false, reason: "timing", detail: `mixed control (${defaultConfiguration}): baseline or mutation time is incomplete`,
+    });
+  });
+
+  it("accepts matching elapsed times at the baseline and total job boundaries", async () => {
+    const trial = fixture();
+    const [defaults] = trial.split;
+    const [receipt] = defaults.receipts;
+    receipt.totalMs = receipt.baseline.elapsedMs;
+    defaults.timing.elapsedMs = defaults.timing.setupMs + receipt.totalMs;
+    const result = await compare(trial);
+    expect(result?.matched).toBe(true);
+    expect(result).toMatchObject({
+      measurements: { split: { configurations: { [defaultConfiguration]: { totalMs: 10_000 } } } },
+    });
+  });
+
+  it.each([
+    {
+      name: "a missing receipt", reason: "receipts", detail: "mixed control: missing or duplicate receipts",
+      change: ({ mixed }) => { mixed.receipts.pop(); },
+    },
+    {
+      name: "an unfinished invocation", reason: "verdict", detail: "split invocation: standard gate did not complete",
+      change: ({ split }) => { split[1].verdict = 2; },
+    },
+    {
+      name: "a mislabelled receipt", reason: "configuration",
+      detail: `split invocation (${defaultConfiguration}): expected its own configuration receipt`,
+      change: ({ split }) => { split[0].receipts[0].configuration = elementsConfiguration; },
+    },
+    {
+      name: "an extended changed range", reason: "ranges",
+      detail: `split invocation (${defaultConfiguration}): changed ranges differ from the pinned selection`,
+      change: ({ split }) => { split[0].receipts[0].ranges = [`${defaultFile}:1-31`]; },
+    },
+    {
+      name: "a different mutant outcome", reason: "mutants", detail: `${elementsConfiguration}: mutant identities or outcomes differ`,
+      change: ({ split }) => {
+        split[1].receipts[0].mutants = [mutant(elementsFile, 153, "Timeout"), mutant(elementsFile, 160, "CompileError")];
+      },
+    },
+    {
+      name: "a different standard gate verdict", reason: "verdict", detail: "mixed and split standard gate verdicts differ",
+      change: ({ split }) => { split[0].verdict = 1; },
+    },
+  ] satisfies readonly (InvalidTrial & { readonly detail: string })[])("names the cause of $name", async ({ reason, detail, change }) => {
+    const trial = fixture();
+    change(trial);
+    expect(await compare(trial)).toEqual({ matched: false, reason, detail });
+  });
+
+  it("names the duplicate identity without including its outcome in the identity", async () => {
+    const trial = fixture();
+    const duplicate = mutant(defaultFile, 2, "Ignored");
+    trial.mixed.receipts[0].mutants.push(duplicate);
+    trial.split[0].receipts[0].mutants.push(duplicate);
+    const identity = JSON.stringify([duplicate.path, duplicate.location.start, duplicate.location.end, duplicate.mutatorName, duplicate.replacement]);
+    expect(await compare(trial)).toEqual({
+      matched: false, reason: "mutants", detail: `mixed control (${defaultConfiguration}): duplicate mutant identity ${identity}`,
+    });
   });
 });
