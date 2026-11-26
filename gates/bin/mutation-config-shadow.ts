@@ -20,6 +20,7 @@ interface Timing {
   readonly setupMs: number;
   readonly elapsedMs: number;
   readonly retries: number;
+  readonly priorAttemptMs: number;
 }
 
 interface Baseline {
@@ -95,7 +96,7 @@ function withinRanges(path: string, start: number, end: number, ranges: readonly
 
 function readInventory(value: unknown, ranges: readonly string[]) {
   if (!list(value) || value.length === 0) return undefined;
-  const identities: string[] = [];
+  const statuses = new Map<string, string>();
   let hasSurvivor = false;
   for (const entry of value) {
     const mutant = record(entry);
@@ -111,9 +112,11 @@ function readInventory(value: unknown, ranges: readonly string[]) {
     const failed = failingStatuses.has(mutant.status);
     if (!failed && !passingStatuses.has(mutant.status)) return undefined;
     hasSurvivor ||= failed;
-    identities.push(JSON.stringify([mutant.path, start, end, mutant.mutatorName, mutant.replacement, mutant.status]));
+    const identity = JSON.stringify([mutant.path, start, end, mutant.mutatorName, mutant.replacement]);
+    if (statuses.has(identity)) return { duplicate: identity };
+    statuses.set(identity, mutant.status);
   }
-  return { identities: identities.sort(), hasSurvivor };
+  return { identities: [...statuses].map((entry) => JSON.stringify(entry)).sort(), hasSurvivor };
 }
 
 function reviewJob(value: unknown, plans: readonly ConfigurationPlan[], pins: Pins, description: string): Job | Rejection {
@@ -130,7 +133,8 @@ function reviewJob(value: unknown, plans: readonly ConfigurationPlan[], pins: Pi
   }
   if (job.verdict !== 0 && job.verdict !== 1) return reject("verdict", `${description}: standard gate did not complete`);
   const timing = record(job.timing);
-  if (!nonnegative(timing?.setupMs) || !nonnegative(timing.elapsedMs) || !count(timing.retries)) {
+  if (!nonnegative(timing?.setupMs) || !nonnegative(timing.elapsedMs) || !count(timing.retries) ||
+    !nonnegative(timing.priorAttemptMs) || (timing.retries === 0 && timing.priorAttemptMs !== 0)) {
     return reject("timing", `${description}: job timing is incomplete`);
   }
 
@@ -151,6 +155,7 @@ function reviewJob(value: unknown, plans: readonly ConfigurationPlan[], pins: Pi
     }
     const inventory = readInventory(receipt.mutants, plan.ranges);
     if (inventory === undefined) return reject("mutants", `${label}: empty, unfinished or out-of-range mutant inventory`);
+    if (inventory.duplicate !== undefined) return reject("mutants", `${label}: duplicate mutant identity ${inventory.duplicate}`);
     if (inventory.hasSurvivor && job.verdict === 0) return reject("verdict", `${label}: passing gate verdict includes a survivor`);
     configurations.push({
       configuration: plan.configuration,
@@ -162,7 +167,12 @@ function reviewJob(value: unknown, plans: readonly ConfigurationPlan[], pins: Pi
   if (timing.setupMs + configurations.reduce((sum, item) => sum + item.totalMs, 0) > timing.elapsedMs) {
     return reject("timing", `${description}: setup and execution exceed job time`);
   }
-  return { selectors, verdict: job.verdict, timing: { setupMs: timing.setupMs, elapsedMs: timing.elapsedMs, retries: timing.retries }, configurations };
+  return {
+    selectors,
+    verdict: job.verdict,
+    timing: { setupMs: timing.setupMs, elapsedMs: timing.elapsedMs, retries: timing.retries, priorAttemptMs: timing.priorAttemptMs },
+    configurations,
+  };
 }
 
 function summarize(jobs: readonly Job[]) {
@@ -171,12 +181,15 @@ function summarize(jobs: readonly Job[]) {
     totalMs: receipt.totalMs,
     mutantCount: receipt.inventory.length,
   }])));
+  const currentMs = jobs.reduce((sum, job) => sum + job.timing.elapsedMs, 0);
+  const priorMs = jobs.reduce((sum, job) => sum + job.timing.priorAttemptMs, 0);
   return {
     configurations,
     jobs: jobs.map(({ selectors, verdict, timing }) => ({ selectors, verdict, timing })),
     setupMs: jobs.reduce((sum, job) => sum + job.timing.setupMs, 0),
     slowestJobMs: Math.max(...jobs.map((job) => job.timing.elapsedMs)),
-    runnerMinutes: jobs.reduce((sum, job) => sum + job.timing.elapsedMs, 0) / 60_000,
+    runnerMinutes: currentMs / 60_000,
+    totalRunnerMinutes: (currentMs + priorMs) / 60_000,
     retries: jobs.reduce((sum, job) => sum + job.timing.retries, 0),
   };
 }

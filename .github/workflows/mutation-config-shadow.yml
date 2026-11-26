@@ -182,31 +182,72 @@ jobs:
           ];
           const read = (...path) => JSON.parse(readFileSync(join(env.RUNNER_TEMP, ...path), "utf8"));
 
+          function hostedHistory(name, attempts) {
+            return attempts.flatMap((jobs, index) => {
+              const matching = jobs.filter((job) => job.name === name);
+              if (matching.length > 1) throw new Error(`${name}: duplicate hosted job in attempt ${index + 1}`);
+              return matching.filter((job) => job.conclusion !== "skipped").map((job) => {
+                if (!Number.isSafeInteger(job.id) || job.id <= 0) throw new Error(`${name}: invalid hosted job ID`);
+                return {
+                  id: job.id, name, attempt: index + 1, status: job.status, conclusion: job.conclusion,
+                  startedAt: job.started_at, completedAt: job.completed_at,
+                };
+              });
+            });
+          }
+
+          function timedJob(job) {
+            const elapsedMs = Date.parse(job.completedAt) - Date.parse(job.startedAt);
+            if (job.status !== "completed" || !(elapsedMs >= 0)) throw new Error(`${job.name}: unusable hosted job timing`);
+            return { ...job, elapsedMs };
+          }
+
+          function jobMilliseconds(jobs) {
+            return jobs.reduce((sum, job) => sum + job.elapsedMs, 0);
+          }
+
           function readJob(arm, attempts) {
             const path = `mutation-config-shadow-${arm}-${attempt}`;
             const sample = read("mutation-config-shadow", path, "receipt.json");
             if (sample.run?.arm !== arm || Object.entries(candidate).some(([key, value]) => sample.run?.[key] !== value)) {
               throw new Error(`${arm}: receipt is from a different workflow attempt or candidate`);
             }
-            const name = `Mutation configuration (${arm})`;
-            const history = attempts.flatMap((jobs, index) => {
-              const matching = jobs.filter((job) => job.name === name);
-              if (matching.length > 1) throw new Error(`${arm}: duplicate hosted job in attempt ${index + 1}`);
-              return matching.map((job) => {
-                const elapsedMs = Date.parse(job.completed_at) - Date.parse(job.started_at);
-                if (job.status !== "completed" || !(elapsedMs > 0)) throw new Error(`${arm}: unusable hosted job timing`);
-                return { id: job.id, attempt: index + 1, conclusion: job.conclusion, elapsedMs };
-              });
-            });
+            const history = hostedHistory(`Mutation configuration (${arm})`, attempts).map(timedJob);
             const current = history.at(-1);
             if (current?.attempt !== attempt || current.conclusion !== "success" ||
               !Number.isSafeInteger(sample.timing?.elapsedMs) || sample.timing.elapsedMs <= 0 ||
               current.elapsedMs < sample.timing.elapsedMs) {
               throw new Error(`${arm}: no completed and timed sample in the current attempt`);
             }
+            const prior = history.slice(0, -1);
+            const timing = {
+              ...sample.timing, elapsedMs: current.elapsedMs, retries: prior.length, priorAttemptMs: jobMilliseconds(prior),
+            };
+            return { receipt: { ...sample, timing }, history };
+          }
+
+          function sharedJobCosts(attempts) {
+            const runtimePins = hostedHistory("Pin mutation configuration shadow runtime", attempts).map(timedJob);
+            const runtimePin = runtimePins.at(-1);
+            if (runtimePin?.attempt !== attempt || runtimePin.conclusion !== "success") {
+              throw new Error("missing completed runtime pin in the current attempt");
+            }
+            const comparisons = hostedHistory("Compare mutation configurations", attempts);
+            const current = comparisons.at(-1);
+            if (current?.attempt !== attempt || current.status !== "in_progress") {
+              throw new Error("missing in-progress comparison job in the current attempt");
+            }
+            const completed = comparisons.slice(0, -1).map(timedJob);
             return {
-              receipt: { ...sample, timing: { ...sample.timing, elapsedMs: current.elapsedMs, retries: history.length - 1 } },
-              history,
+              runtimePin: { jobs: runtimePins, totalRunnerMinutes: jobMilliseconds(runtimePins) / 60_000 },
+              comparison: {
+                completed, completedRunnerMinutes: jobMilliseconds(completed) / 60_000,
+                // GitHub supplies the current job's completed timing after the artifact is uploaded.
+                current: {
+                  ...current, elapsedMs: null,
+                  url: `${env.GITHUB_SERVER_URL}/${candidate.repository}/actions/runs/${candidate.runId}/job/${current.id}`,
+                },
+              },
             };
           }
 
@@ -221,6 +262,7 @@ jobs:
             console.log(JSON.stringify({
               source, candidate, runtime, configurations,
               hostedJobs: { mixed: mixed.history, default: defaults.history, elements: elements.history },
+              sharedJobCosts: sharedJobCosts(attempts),
               ...comparison,
             }, null, 2));
             process.exitCode = comparison.matched ? comparison.verdict : 2;
