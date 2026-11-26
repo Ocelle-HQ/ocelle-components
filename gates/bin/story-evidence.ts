@@ -61,7 +61,7 @@ export interface PhaseRequest {
 
 export interface PhaseTools {
   readonly root: string;
-  readonly git: (args: readonly string[]) => string;
+  readonly git: (args: readonly string[], input?: string) => string;
   readonly exists: (filename: string) => boolean;
   readonly read: (filename: string) => string;
   readonly write: (filename: string, content: string) => void;
@@ -111,9 +111,9 @@ export const storyFiles = {
   remove: (target: string, recursive = false): void => { rmSync(target, { force: true, recursive }); },
 };
 
-function git(args: readonly string[], cwd = root): string {
+function git(args: readonly string[], cwd = root, input?: string): string {
   // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
-  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  return execFileSync("git", args, { cwd, encoding: "utf8", input, stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"] });
 }
 
 /** The repository's redaction script (op 023, FR-007): the one copy of the sandbox-path rule's redaction. */
@@ -398,6 +398,20 @@ function ancestor(git: PhaseTools["git"], older: string, newer: string): boolean
   }
 }
 
+// Intern an unreferenced, deterministic replay snapshot. The historical red and scaffold records stay intact.
+function replayRevision(git: PhaseTools["git"], original: string, upstream: string | undefined): string {
+  if (upstream === undefined || ancestor(git, upstream, original)) return original;
+  let tree: string;
+  try {
+    tree = git(["merge-tree", "--write-tree", original, upstream]).trim();
+  } catch {
+    throw new Error(`cannot integrate pinned main ${upstream} into replay revision ${original}; resolve the replay conflict before proceeding`);
+  }
+  const identity = "Ocelle Spec Kit <spec-kit@ocelle.invalid> 0 +0000";
+  return git(["hash-object", "-t", "commit", "-w", "--stdin"],
+    `tree ${tree}\nparent ${original}\nparent ${upstream}\nauthor ${identity}\ncommitter ${identity}\n\nSpec Kit replay snapshot\n`).trim();
+}
+
 function records(dir: string, tools: PhaseTools): { name: string; sha: string }[] {
   const file = join(dir, "red-commits");
   if (!tools.exists(file)) return [];
@@ -458,6 +472,12 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   }
   const base = revision(git, tools.read(baseFile).trim());
   const redRecords = records(dir, tools);
+  const upstreamFile = join(dir, "replay-upstream.sha");
+  const upstream = tools.exists(upstreamFile) ? revision(git, tools.read(upstreamFile).trim()) : undefined;
+  if (upstream !== undefined && (!ancestor(git, upstream, "refs/remotes/origin/main") || !ancestor(git, upstream, current)
+    || redRecords.some(({ sha }) => ancestor(git, revision(git, sha), upstream)))) {
+    throw new Error("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+  }
   const exemption = join(dir, "tdd-exempt.md");
   if (tools.exists(exemption) && redRecords.length === 0) {
     if (ciOnly.length > 0) throw new Error("ci-only scope requires recorded local proof");
@@ -498,21 +518,23 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
     reds.push({ label: name, sha: red, exit_code: code, ...result });
   }
 
-  const finalSelection = selection(base, current, patterns, phaseScope, tools);
+  const replayBase = replayRevision(git, base, upstream);
+  const replayScaffold = scaffold === undefined ? undefined : replayRevision(git, scaffold, upstream);
+  const finalSelection = selection(replayBase, current, patterns, phaseScope, tools);
   const headSelection = ciOnly.length === 0 ? finalSelection : { ...finalSelection, ciOnly };
   const expected = [...discovered.values()];
-  const missingModules = scaffold === undefined ? [] : trackedDiff(git, base, scaffold, "A");
+  const missingModules = replayScaffold === undefined ? [] : trackedDiff(git, replayBase, replayScaffold, "A");
   const settled = async (kind: Check["mode"], tested: string, name: string, assertions: readonly Assertion[]): Promise<CheckResult> => runCheck({
     mode: kind, revision: tested, overlay: kind === "head" ? undefined : current,
     selection: kind === "head" ? headSelection : finalSelection, expected: assertions,
     missingModules, log: join(dir, name),
   }, setup);
   const initialAssertions = phaseAssertions.length > 0 ? phaseAssertions : expected;
-  const onBase = await settled("base", base, "check-final-tests-on-base.log", initialAssertions);
-  const onScaffold = scaffold === undefined ? undefined : await settled("scaffold", scaffold, "check-final-tests-on-scaffold.log", initialAssertions);
+  const onBase = await settled("base", replayBase, "check-final-tests-on-base.log", initialAssertions);
+  const onScaffold = replayScaffold === undefined ? undefined : await settled("scaffold", replayScaffold, "check-final-tests-on-scaffold.log", initialAssertions);
   const fixes = [];
   for (const proof of fixProofs) {
-    const result = await settled("fix", proof.base, `check-final-tests-on-${proof.label}-base.log`, proof.expected);
+    const result = await settled("fix", replayRevision(git, proof.base, upstream), `check-final-tests-on-${proof.label}-base.log`, proof.expected);
     if (expectedStatus(result) !== 1) problems.push(`final tests on ${proof.label} base: ${result.evidence.problem ?? "no failing assertion"}`);
     fixes.push({ label: proof.label, base: proof.base, ...result });
   }
@@ -525,6 +547,7 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   if (headExit !== 0) problems.push(`final tests on HEAD: ${atHead.evidence.problem ?? "tests failed"}`);
   emit({
     phase, status: problems.length === 0 ? "pass" : "fail", base, head: current, red_commits: reds,
+    ...(upstream === undefined ? {} : { replay_upstream: upstream, replay_base: replayBase }),
     ...(ciOnly.length === 0 ? {} : { deferred_ci: ciOnly.map(collateralTestIdentity) }),
     final_tests_on_base_exit: baseExit, final_tests_on_scaffold_exit: scaffoldExit, head_exit: headExit, problems,
     focused: { base: onBase, scaffold: onScaffold, head: atHead, fixes },
@@ -580,7 +603,8 @@ if (import.meta.main) {
   await runStoryCommand(args, {
     root, git, emit,
     phase: (request) => checkPhase(request, {
-      ...storyFiles, root, git, emit, runCheck: (check, command) => runCheck(check, command, checkTools),
+      ...storyFiles, root, emit, git: (args, input) => git(args, root, input),
+      runCheck: (check, command) => runCheck(check, command, checkTools),
     }),
     // Stryker disable next-line BlockStatement: subprocess entry, checked by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     worker: async (input, output) => {
