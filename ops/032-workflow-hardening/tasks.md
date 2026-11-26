@@ -11,4 +11,4 @@
 - [x] T007 [P] [US1] Make the scope guard fail closed with exact paths. Depends on T004. Writes `tooling/speckit/bin/scope-check.sh`.
 - [x] T008 [P] [US1] Record Storybook planning preflight and no-action gesture evidence in the planner profile. Depends on T004. Writes `.claude/agents/planner-pim.md`.
 - [x] T009 [US1] Document run and landing use of the updated guards, replay and exact hosted check evidence. Depends on T005, T006, T007. Writes `.claude/skills/ocelle-land/SKILL.md`, `.claude/skills/ocelle-run/SKILL.md` and `tooling/speckit/README.md`.
-- [ ] T010 [US1] Rerun focused verification and applicable gates. Record results and readiness for independent review. Depends on T005, T006, T007, T008, T009. Writes green evidence under `ops/032-workflow-hardening/reviews/phase-1/` and marks progress in `ops/032-workflow-hardening/tasks.md`.
+- [x] T010 [US1] Rerun focused verification and applicable gates. Record results and readiness for independent review. Depends on T005, T006, T007, T008, T009. Writes green evidence under `ops/032-workflow-hardening/reviews/phase-1/` and marks progress in `ops/032-workflow-hardening/tasks.md`.
