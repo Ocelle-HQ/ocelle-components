@@ -30,7 +30,7 @@ A person can understand the current step and operate the actions when the panes 
 3. **Given** a 1200 px wide viewport at normal text size, **when** the standard two actions are shown, **then** they fit on one line, the current step label remains fully visible, and the other steps use a compact presentation while keeping their full accessible names.
 4. **Given** a 320 px wide viewport at normal text size, **when** more room is needed, **then** the footer grows in normal flow. Actions wrap with visible focus indicators, and the example needs no horizontal scrolling.
 5. **Given** the desktop example with text enlarged to 200%, **when** the enlarged labels need more room, **then** the footer grows in normal flow. Focus and labels stay visible, and the example needs no horizontal scrolling.
-6. **Given** the fictional host shows Choose as the current step and names its primary action “Continue to Confirm”, **when** the user activates that action from the keyboard, **then** the host opens the Confirm pane and supplies the updated state. The indicator shows Choose completed and Confirm current, and the primary button reflects the label the host supplies for Confirm.
+6. **Given** the fictional host shows Choose as the current step and names its primary action “Continue to Confirm”, **when** the user activates that action from the keyboard, **then** the host opens the Confirm pane and supplies the updated state. The indicator shows Choose completed and Confirm current. The primary button keeps focus and reflects the label the host supplies for Confirm. The next Tab continues to the next control in reading order.
 
 ### Edge Cases
 
@@ -45,7 +45,7 @@ A person can understand the current step and operate the actions when the panes 
 - **FR-002**: Display each upcoming and current step's ordinal position. Show a check and accessible completion equivalent for completed steps.
 - **FR-003**: Mark the current step programmatically. Fill the current marker with the existing ochre in light and dark themes and give it a non-colour cue that is also visible in forced colours.
 - **FR-004**: Preserve full accessible labels and leave markers out of the tab sequence. State updates reflect host input.
-- **FR-005**: Document the 72 px desktop footer with the adjacent footer aligned, indicator at the start, and one token-spaced action group at the end. Use existing controls and show all three requested action combinations with primary last. Demonstrate a keyboard activation of the named primary action and the resulting host navigation, step state and action label.
+- **FR-005**: Document the 72 px desktop footer with the adjacent footer aligned, indicator at the start, and one token-spaced action group at the end. Use existing controls and show all three requested action combinations with primary last. Demonstrate a keyboard activation of the named primary action and the resulting host navigation, step state and action label. Preserve focus on the primary button through the update and continue the tab sequence after it.
 - **FR-006**: At 1200 px keep the current label visible, compact the other labels and fit the standard two actions on one line. At 320 px and with 200% text, keep the footer in normal flow and avoid horizontal scrolling, clipping or obscured focus.
 - **FR-007**: Verify the indicator and real recipe with focused browser evidence for state, keyboard, responsive widths, enlarged text, colour modes and strict CSP. Provide Storybook examples using fictional workflow data and pinned light and dark baselines.
 - **FR-008**: Document and publish the reusable indicator through the library's normal public entry points. Document the footer as a composition of the indicator and existing action and pane primitives.
@@ -58,7 +58,7 @@ A person can understand the current step and operate the actions when the panes 
 ## Success Criteria
 
 - **SC-001**: The three-step fixture exposes one named current step and a completion equivalent while adding zero tab stops for markers.
-- **SC-002**: All three action combinations place primary last in DOM and keyboard order. Activating the named primary from the keyboard changes the pane, progress state and action label as supplied by the host. The standard two-button group fits on one line at 1200 px with the current label visible.
+- **SC-002**: All three action combinations place primary last in DOM and keyboard order. Activating the named primary from the keyboard changes the pane, progress state and action label as supplied by the host, with focus remaining on the primary until the next Tab. The standard two-button group fits on one line at 1200 px with the current label visible.
 - **SC-003**: At 320 px with normal text and at desktop width with 200% text, the fixture records no horizontal overflow. The action sequence remains focusable and fully visible in both cases.
 - **SC-004**: Storybook and browser verification cover light, dark and forced colours with the repository's accessibility and strict CSP checks.
 
