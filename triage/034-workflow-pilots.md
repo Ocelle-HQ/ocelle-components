@@ -40,7 +40,7 @@ bodies separately describe dependencies, including #90's use of the action row f
 **One tooling op with no package semver change.** The three changes share an observable acceptance outcome. A
 contributor can identify verification work up front, see where the time goes and assess earlier evidence against the
 required results. The comparison tools and preflight can be verified in one phase. Each pilot product follows its own
-triage record. The operator has specified the scope of the trial, including that reuse stays observational.
+triage record. The proposed trial keeps CI result reuse observational.
 
 ## Scope
 
