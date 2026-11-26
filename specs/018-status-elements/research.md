@@ -314,7 +314,11 @@ an icon, inline in a paragraph and in an `align-items: baseline` flex row, and a
 labelled case off the baseline by more than 0.5 px stops the phase (stop-and-ask). The § US3 and § US4 baseline bodies
 stay; their plants are in the pill's source (the text wrapper rendered without the `label` class; `bare` set on every
 row), and an icon-only pill's position is pinned as T002 measured it (plant: `bare` never set). The note to 012 or 005
-is moot.
+is moot. As amended at phase-4 round 2 (O2-01, operator decision; T044a): the pixel pin holds only on the strict-CSP
+fixture, where the real font loads; the in-process harness removes `@font-face`, so its text uses the machine's
+fallback font and the pin held in the sandbox but failed on the CI runner. In process the § US3 baseline body asserts
+only font-independent facts: the `bare` row, the icon-only pill's top above the surrounding text's, and its height
+and width equal to the one-line pill's padding plus the icon's size. `bare` never set stays killed.
 
 Shadow root (static mode, as amended at the phase-1 recheck):
 

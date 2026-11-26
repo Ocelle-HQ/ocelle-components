@@ -177,7 +177,12 @@ header too.
     read as `ocelle-button` reads it (non-whitespace text in the default slot's flattened assignment, on `slotchange`
     and on text changes through a `MutationObserver` held for the element's lifetime). The § US3 and § US4 baseline
     bodies stay and measure the convention's rule on the pill, with plants in the pill's own source; T002 measures the
-    pill box on the convention first (the enabled interactive label has `overflow: hidden`). The triage note on
+    pill box on the convention first (the enabled interactive label has `overflow: hidden`).
+    The icon-only pill's box is pinned to T002's pixel values only on the strict-CSP fixture, where the real font
+    loads; in process, whose token sheet drops `@font-face`, the § US3 body asserts only font-independent facts (the
+    `bare` row, the pill's top above the surrounding text's, its height and width equal to the one-line pill's padding
+    plus the icon's size), since the pin depends on the fallback font (operator decision on phase-4 round 2, O2-01;
+    T044a). The triage note on
     `ocelle-button`'s offset this decision called for is moot: 012 decision 33 fixed it.
 16. **The `Truncated` baseline** (R-12; operator decision on PLAN-FRESH-3-003, (b)): the story focuses its truncated
     pill after `updateComplete`, as 012's `StoryFocus` does, and its baseline shows the ring and no tooltip bubble; the
