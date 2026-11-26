@@ -1,7 +1,7 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-eight elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-nine elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
@@ -9,6 +9,7 @@ a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab 
 `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
 `ocelle-workflow-node`, a selectable workflow step with descriptive outcomes,
+`ocelle-step-indicator`, an ordered progress list,
 `ocelle-workflow-canvas`, a branching workflow map with named navigation,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
@@ -46,6 +47,7 @@ of the host's own.
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-canvas.js` | `dist/ocelle-workflow-canvas.js` | `ocelle-workflow-canvas` and the `ocelle-workflow-node` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-node.js` | `dist/ocelle-workflow-node.js` | `ocelle-workflow-node` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-step-indicator.js` | `dist/ocelle-step-indicator.js` | `ocelle-step-indicator` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |
@@ -2653,6 +2655,34 @@ offer the same named choices and use that tuple for its own policy. To accept an
 relation in `graph.connections` and supply the new graph. Keeping the graph retains the supplied route. Escape,
 invalidated inputs and leaving author mode cancel edits and clear previews. A canceled or unchanged edit emits no
 request.
+
+## `ocelle-step-indicator`
+
+Use the indicator to present progress beside the pane’s actions. The host owns the actions and navigation.
+Supply steps via the `steps` property in display order. Replace the array to update the indicator.
+
+```html
+<ocelle-step-indicator id="approval-progress"></ocelle-step-indicator>
+<script type="module" src="/scripts/approval-progress.js"></script>
+```
+
+```js
+import "@ocelle/elements/ocelle-step-indicator.js";
+
+document.querySelector("#approval-progress").steps = [
+  { label: "Review", state: "completed" },
+  { label: "Choose", state: "current" },
+  { label: "Confirm", state: "upcoming" },
+];
+```
+
+The current step has an ochre fill, an outline and `aria-current="step"`. The first step requested as current wins
+when multiple steps have that state. A completed step has a check and the accessible text “Completed”; the numbers
+on the other markers reflect their original positions. An empty array renders no list.
+
+Leave enough inline space for the indicator in its host layout. At 30rem or less of allocated width, only the
+current step's label is shown. All labels remain in the accessibility tree. The indicator adds no tab stops
+and emits no action events.
 
 ## `ocelle-workflow-node`
 
