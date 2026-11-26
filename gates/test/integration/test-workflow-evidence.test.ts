@@ -16,6 +16,7 @@ const storyFiles = [
   "gates/lib/spawn.ts",
   ".specify/extensions/story/story-config.yml",
   ".specify/extensions/story/scripts/common.sh",
+  ".specify/extensions/story/scripts/base.sh",
   ".specify/extensions/story/scripts/red.sh",
   ".specify/extensions/story/scripts/tdd-check.sh",
 ];
@@ -86,7 +87,7 @@ function prepareStoryWrappers(root: string): string {
   return base;
 }
 
-function storyWrapper(root: string, script: "red" | "tdd-check", ...args: string[]) {
+function storyWrapper(root: string, script: "base" | "red" | "tdd-check", ...args: string[]) {
   return spawnSync("bash", [".specify/extensions/story/scripts/" + script + ".sh", "1", ...args], {
     cwd: root, encoding: "utf8", timeout: 60_000,
     env: {
@@ -146,6 +147,79 @@ it("replays declared implementation stories from the tested revision and overlay
         ] } },
         head: { evidence: { status: "green" }, selected: [{ project: "fixture", file: "test/story.test.ts" }] },
       },
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it("replays only phase changes after merging pinned main, including a test both sides changed", () => {
+  const root = fixture();
+  try {
+    const file = "test/shared.test.ts";
+    const original = [
+      'import { expect, it } from "vitest";',
+      'import { answer } from "../src/answer.ts";',
+      'it("keeps existing behavior", () => expect(answer).toMatch(/old|new/));',
+      '// The phase assertion is added below.',
+      '',
+      '',
+      '',
+      '// The upstream assertion is added below.',
+      '',
+    ].join("\n");
+    write(root, "src/answer.ts", 'export const answer: string = "old";\n');
+    write(root, file, original);
+    const base = prepareStoryWrappers(root);
+    git(root, "checkout", "-b", "feature");
+    write(root, file, original.replace("// The phase assertion is added below.",
+      'it("returns the phase answer", () => expect(answer).toBe("new"));'));
+    const red = commit(root, "test phase behavior");
+    const recorded = storyWrapper(root, "red", "phase");
+    expect(JSON.parse(recorded.stdout) as unknown).toMatchObject({ sha: red, red: true, recorded: true });
+    write(root, "src/answer.ts", 'export const answer: string = "new";\n');
+    commit(root, "implement phase behavior");
+
+    git(root, "checkout", "-b", "upstream", base);
+    write(root, "src/tooling.ts", 'export const tooling = "ready";\n');
+    write(root, "test/upstream.test.ts", [
+      'import { expect, it } from "vitest";',
+      'import { tooling } from "../src/tooling.ts";',
+      'it("uses upstream tooling", () => expect(tooling).toBe("ready"));',
+    ].join("\n"));
+    write(root, file, original.replace("// The upstream assertion is added below.",
+      'it("uses integrated tooling in the shared file", async () => expect((await import("../src/tooling.ts")).tooling).toBe("ready"));'));
+    const upstream = commit(root, "add main tooling and change test inventory");
+    git(root, "update-ref", "refs/remotes/origin/main", upstream);
+    git(root, "checkout", "feature");
+    expect(storyWrapper(root, "base", "--with-main", upstream).status).toBe(2);
+    git(root, "merge", "--signoff", "--no-edit", "upstream");
+
+    const pin = storyWrapper(root, "base", "--with-main", upstream);
+    expect({ status: pin.status, stderr: pin.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(readFileSync(join(root, storyReviews, "base.sha"), "utf8").trim()).toBe(base);
+    const checked = storyWrapper(root, "tdd-check");
+    expect({ status: checked.status, stderr: checked.stderr }).toEqual({ status: 0, stderr: "" });
+    const proof = JSON.parse(checked.stdout) as { replay_base: string };
+    expect(proof).toMatchObject({
+      status: "pass", base, replay_upstream: upstream, problems: [],
+      red_commits: [{ sha: red, evidence: { status: "red", assertions: [{ file, test: "returns the phase answer" }] } }],
+      final_tests_on_base_exit: 1, head_exit: 0,
+      focused: {
+        base: { evidence: { status: "red" }, selected: [{ project: "fixture", file }] },
+        head: { evidence: { status: "green" }, selected: [{ project: "fixture", file }] },
+      },
+    });
+    expect(git(root, "rev-list", "--parents", "-n1", proof.replay_base)).toBe([proof.replay_base, base, upstream].join(" "));
+    const repeated = storyWrapper(root, "tdd-check");
+    expect(JSON.parse(repeated.stdout) as unknown).toMatchObject({ status: "pass", replay_base: proof.replay_base });
+
+    const featureHead = git(root, "rev-parse", "HEAD");
+    write(root, storyReviews + "/replay-upstream.sha", featureHead);
+    git(root, "update-ref", "refs/remotes/origin/main", featureHead);
+    const refused = storyWrapper(root, "tdd-check");
+    expect(JSON.parse(refused.stdout) as unknown).toMatchObject({
+      status: "fail", problems: ["replay-upstream.sha must pin main integrated into HEAD without the phase's red commits"],
     });
   } finally {
     rmSync(root, { force: true, recursive: true });
