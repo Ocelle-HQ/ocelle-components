@@ -212,6 +212,19 @@ projects retaining their Vitest settings. The local `pnpm test` command still ru
 on a same-repository PR, include `<!-- verify-unit-test-parity -->` in its description before opening or pushing to the PR.
 That run requires the normal full gate to pass too and compares project, file, test identity and outcome with the shards.
 
+## Verification pilots
+
+For a component change, run the preflight as soon as the canonical manifest and the focused Storybook tests are ready.
+
+- Run `node tooling/speckit/bin/component-preflight.ts manifest --base <full-phase-base-sha>` to list full custom-elements manifest Plant overlays and check each overlay's exact expected findings. The base inventory also identifies any tracked snapshot lost from the candidate. Assign the listed paths before capture and preserve the intended seeded findings when updating the generated declarations.
+- For a changed shared Storybook host, run `node tooling/speckit/bin/component-preflight.ts host --source <host> --test <file> --project <project>` for each assigned focused file. Check the listed owners in normal and default mutation discovery, then record the actual scoped mutation result for the host on the same source candidate. Keep the built browser, accessibility, visual and CSP proofs in the plan.
+
+On a same-repository PR, `<!-- verify-mutation-config-shadow -->` starts the pinned #87 comparison. The mixed arm and the separate element and default arms run the original selectors. Read the comparison artifact for the exact mutant inventory, verdict, setup and baseline times, slowest job, current attempt and total sample runner minutes, and retries. Record the common setup and comparison jobs separately.
+
+For the Visual evidence reuse trial, first collect successful control CI on a source candidate and its evidence-only successor. Once the successor's exact run has completed, add `<!-- verify-evidence-reuse: RUN_ID/ATTEMPT -->` to the same-repository PR body using the earlier run and attempt. Read `visual-evidence-reuse-shadow` for eligibility on the current head, verified inputs, and the reason for any mismatch. Both candidates have their own required CI and the current candidate needs fresh Sign-off and Sandbox paths results. Count possible savings separately from executed runner time.
+
+After each pilot ticket, attach the control and pilot links to its retrospective. Record elapsed time from issue pickup, time to the first actionable failure and to verified green, runner minutes, failures and retries, verdict and coverage parity, and preflight misses or rework. Apply and verify any workflow adjustment on its own evidence before selecting the next eligible ticket. When no adjustment is warranted, record the observed results that support continuing.
+
 ## Configuration
 
 `.specify/extensions/story/story-config.yml` (source copy in `extensions/story/`): `test_command`,

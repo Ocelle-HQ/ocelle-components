@@ -143,8 +143,8 @@ const setup = [
 // Plan decisions 22, 25 and 27 (operator decisions 2026-11-11, "Add the CI step" and "Apply now", and 2026-11-12, "Add
 // the tag read"; contracts/gates.md § The registry; contracts/container.md § The pin record): the gate removes docker's
 // copy after run 1; after the gate passes, the job records skopeo's version, skopeo's raw manifest of the pin, podman's
-// inspect output of the pin and skopeo's raw index of the tag, the image, digest and tag read from container.json, and
-// uploads them as the artifact pin-record.
+// inspect output of the pin and skopeo's raw index of the tag, the image, digest and tag read from container.json. Op 034
+// verifies the tools against their observations before capture and adds the receipt to pin-record before upload.
 const pinRecord = [
   "      - run: |",
   '          reference="$(node -p \'const pin = require("./storybook/visual/container.json"); `${pin.image}@${pin.digest}`\')"',
@@ -155,6 +155,10 @@ const pinRecord = [
   '          skopeo inspect --raw "docker://$reference" > "$record/skopeo-inspect-raw-manifest.json"',
   '          podman image inspect "$reference" > "$record/podman-inspect.json"',
   '          skopeo inspect --raw "docker://$tag" > "$record/skopeo-inspect-raw-index.json"',
+  "      - name: Verify Visual tools after capture",
+  "        if: steps.visual-runtime-before.outcome == 'success'",
+  "        continue-on-error: true",
+  '        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/pin-record/executed-tools.json" "$RUNNER_TEMP/visual-tools-before.json"',
   `      - uses: ${upload}`,
   "        with:",
   "          name: pin-record",
@@ -167,6 +171,10 @@ describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
       "  visual:",
       "    name: Visual regression",
       ...setup,
+      "      - name: Observe Visual tools before capture",
+      "        id: visual-runtime-before",
+      "        continue-on-error: true",
+      '        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/visual-tools-before.json"',
       "      - run: pnpm run gate:visual -- --engine both --remove-docker-image",
       ...pinRecord,
       "      - if: always()",
