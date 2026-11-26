@@ -20,3 +20,9 @@ note: affected: visual/pass-repository, by storybook/baselines/elements-ocelle-c
 note: affected: axe/pass-repository, by storybook/baselines/elements-ocelle-copy-field--compact-digest.dark.png
 plants: affected since d8793108e6786c58d2d04ca140ee60c1c41b3849: 10 of 326 plants selected, none judged (--list)
 ```
+
+## Hosted verification
+
+The full Plants check judged all 326 Plants across 18 gates and accepted every result. PR #104 run `45847625160`,
+attempt `1`, tested head `4ac4aaa639586a4167724d0a1f36954876f3a621` on base
+`b655b83b1d17694039f7b5c968e483384145a90a` with merge `1ba4139521b20b961047e80b19f0997a23b9494b`. [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/job/140016299086)
