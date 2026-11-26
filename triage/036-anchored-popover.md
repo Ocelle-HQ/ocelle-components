@@ -7,7 +7,9 @@ in_scope: [86]
 out_of_scope: [7, 16, 76, 87, 88, 89, 90, 91, 92]
 semver: minor
 spec_prompt: "Specify issue #86 and triage/036-anchored-popover.md as an independent MINOR mission for a reusable nonmodal anchored popover in @ocelle/elements. Cover named icon and initials triggers, native control semantics and Tab order, exposed open state, Escape focus return, outside-pointer dismissal without taking focus, host-directed close, top and bottom placement that escapes clipping and stays within the viewport, and fictional appearance and profile Storybook examples. Prove the behavior with focused browser and built strict-CSP tests, keyboard and accessibility coverage, 320 px and 200% text checks, forced colours, and pinned light and dark baselines. Use the verified Op 034 procedure for a separate second pilot and retain all required controls."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-26T21:32:28Z
 ---
 
 # Triage 036 — Anchored popover for compact controls
