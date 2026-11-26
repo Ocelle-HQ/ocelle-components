@@ -7,7 +7,9 @@ in_scope: [87]
 out_of_scope: [1, 7, 8, 15, 57, 72, 73, 74, 75, 76, 86, 88, 89, 90, 91, 92]
 semver: minor
 spec_prompt: "Resolve #87 and triage/033-pane-step-indicator.md with a reusable ordered, non-interactive step indicator and a documented Storybook pane action footer. Provide caller-supplied labels and state, numbered upcoming and current markers, a check for completed steps with a text equivalent, one programmatically current step where the host marks one, and an ochre current marker with a non-colour cue. Use fictional Review, Choose and Confirm steps. Show a 72 px desktop footer aligned with the adjacent pane footer, with markers at the start and one token-spaced action group ending with the primary. Cover primary only, secondary plus primary, and Back plus primary. At 1200 px preserve the current label, compact the other labels and fit the standard two-button group on one line. At 320 px and with 200% text keep the footer in flow and keep controls and focus visible without horizontal scrolling. The host owns state, action labels and navigation. Add the public export, manifest, usage and minor changelog note, plus test-first browser coverage, light and dark Storybook baselines, forced colours, keyboard, accessibility and strict-CSP verification."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-26T01:15:57Z
 ---
 
 # Triage 033 for the step indicator and pane action footer
