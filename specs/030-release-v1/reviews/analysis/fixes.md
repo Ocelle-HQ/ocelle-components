@@ -25,3 +25,18 @@ per user story) and the checklist format are kept, and every story phase is now 
 | L2 | fixed: T067 reads the two gate durations from CI and T068 records them in `verification.md` against the goals; the plan and quickstart say so | tasks.md T067, T068; plan.md Performance Goals; quickstart.md § 1, § 2 |
 | L3 | fixed: `identical` entries may name a repository path, `{ "path": "dist/fonts/OFL.txt", "source": "packages/tokens/fonts/OFL.txt" }`; unit test case in T005, manifest entry in T015, new plant `fail-ofl-differs` in T018, `packages/tokens/fonts/OFL.txt` in the plant configuration set (T006) | data-model.md § Pack manifest; research.md R-04; contracts/pack-contents-gate.md; tasks.md T005, T006, T015, T016, T018 |
 | L4 | fixed: T001's command is `git merge --no-edit --signoff -s ort FETCH_HEAD` | tasks.md T001 |
+
+## Second run
+
+Resolves the six findings of the second analysis run (`analysis-report.md` at c7073958) under the operator's
+decisions in `operator-decisions.md` § Second analysis run ("Fix all now", no third analysis run).
+`analysis-report.md` is unchanged. No task was added, removed or renumbered.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| C2 | fixed: the `pack-tree` plant builder copies the root `LICENSE` and `NOTICE` into every package tree and the root `THIRD_PARTY_NOTICES` into tokens and elements before archiving, unless the plant's tree ships the file itself (only `fail-notice-differs`, its `NOTICE`) or the plant's `omit.txt` lists it (`fail-license-missing`); the plant trees carry no copy of the root files, so T055's `THIRD_PARTY_NOTICES` edit changes no plant; T006 tests the copy red-first, T017 implements it, T018 states which plants ship or omit a file, T057 runs the pack-contents plants after T055 | tasks.md T006, T017, T018, T055, T057; research.md R-17 "Pack contents"; contracts/pack-contents-gate.md (plant form, plant list); data-model.md § Pack manifest `identical` |
+| F7 | fixed: T040 writes into `gates/release/first-release-base` the `main` commit T001 merged, as data-model.md and R-10 say; T002 records that SHA in `reviews/recheck.md` | tasks.md T002, T040; data-model.md § First-release base |
+| F8 | fixed: the tokens changelog test reads the `1.0.0` section and "Unreleased" together instead of any section; `replaced-tests.md` records why it is stricter than the old "Unreleased"-only test | tasks.md T025; research.md R-09 "The package changelog tests" |
+| L5 | fixed: [P] removed from T065, which runs after T063 (both edit the package READMEs) | tasks.md T065 |
+| L6 | fixed: T002 records every `git grep` hit for the constitution and spec 001 paths with whether the test reads the file or only mentions the path (expected: the two mentions in `gates/test/governance.test.ts` and `gates/test/plant-runner.test.ts`), and stops for the operator if one reads it; T066 bases phase 5's no-read statement on that record | tasks.md T002, T066 |
+| L7 | fixed: `packages/tokens/fonts/OFL.txt` added to R-17's configuration-set list, so T062's spec 001 amendment carries it | research.md R-17 "Configuration set" |

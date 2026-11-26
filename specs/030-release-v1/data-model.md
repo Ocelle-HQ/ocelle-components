@@ -10,7 +10,7 @@ One entry per package, read by the pack-contents gate (contracts/pack-contents-g
 | `dir` | string | the package directory (`packages/tokens`, ...) |
 | `allow` | glob[] | every tarball entry (path below `package/`) must match one; non-empty |
 | `require` | path[] | must be in the tarball: at least `package.json`, `LICENSE`, `NOTICE`, `README.md`, `CHANGELOG.md`; tokens adds `THIRD_PARTY_NOTICES`, `dist/fonts/OFL.txt` |
-| `identical` | (path \| { path, source })[] | tarball file must be byte-identical to its repository copy: a bare path is compared with the repository root file of the same name (`LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES` where shipped); `{ path, source }` names the repository path to compare with, for tokens `{ "path": "dist/fonts/OFL.txt", "source": "packages/tokens/fonts/OFL.txt" }` (FR-002; analysis L3) |
+| `identical` | (path \| { path, source })[] | tarball file must be byte-identical to its repository copy: a bare path is compared with the repository root file of the same name (`LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES` where shipped); `{ path, source }` names the repository path to compare with, for tokens `{ "path": "dist/fonts/OFL.txt", "source": "packages/tokens/fonts/OFL.txt" }` (FR-002; analysis L3). In `pack-tree` plants the root files come from the configuration set and the plant builder copies them into the trees (research.md R-17; analysis C2) |
 | `peer` | object | the packed `peerDependencies` exactly: `{ "@ocelle/tokens": "^<version>" }` for styles and elements; `{}` for tokens |
 
 The deny list is code, not data (contracts/pack-contents-gate.md), so a plant cannot widen it.
@@ -87,7 +87,7 @@ committed file holds a credential-shaped literal (R-08, FR-045).
 ## First-release base (`gates/release/first-release-base`)
 
 One line: the full SHA of the parent of this mission's squash commit on `main`. Committed in US3 with the `main`
-commit merged into this branch in Setup, so the dry run (which runs `release-step base`) has a base from its first
+commit merged into this branch in Setup (T001; its SHA recorded in `reviews/recheck.md`), so the dry run (which runs `release-step base`) has a base from its first
 run; the pre-tag pull request rewrites it to the exact parent (research.md R-10, R-15). `release-step base` uses it only when no earlier `v*` tag is reachable from the tagged commit's
 parent; otherwise the base is that parent itself, so the release run mutates only the pre-tag pull request's commit
 (operator decision PLAN-FRESH-3-001 (a), research.md R-10). Only `release.yml` passes the base to ci.yml; the dry run

@@ -208,7 +208,8 @@ non-empty only.
 `packages/styles/test/readme.test.ts`, `packages/elements/test/node/changelog.test.ts` and the changelog cases of
 `packages/elements/test/node/readme.test.ts`) read "Unreleased" today. Phase 2 replaces them red-first so they read the
 `## 1.0.0 - <YYYY-MM-DD>` section, which stays in the changelog after later releases. The tokens test keeps its
-stricter rule (every token named in full, now in any section), rather than the gate's prefix rule: the gate is the
+stricter rule (every token named in full, now in the `1.0.0` section and "Unreleased", the sections at or after the
+first release, not in any section; analysis F8), rather than the gate's prefix rule: the gate is the
 floor for every future release, the package test is the 1.0.0 contract the changelog already meets, and VIII
 replaces a test only with a stricter one.
 
@@ -589,13 +590,19 @@ copies the plant directory only, so nothing can be built in it; the configuratio
   the readiness gate the base commit holds the configuration set instead of the empty tree (sign-off plants keep the
   empty base). `parseCommits` and `buildCommitRepo` change test-first with `plant-repo` integration tests.
 - **Pack contents (new form `pack-tree`, US1).** A plant's `tree/` holds small committed package trees
-  (`packages/<name>/` with a `package.json`, `dist/` files and licence files, no build), laid over the configuration
+  (`packages/<name>/` with a `package.json` and `dist/` files, no build; licence files as below), laid over the configuration
   set; the plant builder archives each package directory under `package/` into `<tmp>/tarballs/<name>.tgz` (plain
   `tar`, no `pnpm pack`, so a plant can ship a `workspace:` specifier or a stray file as-is) and runs the gate with
-  `--root <tmp> --tarballs <tmp>/tarballs`. The build-and-pack path (no `--tarballs`) is proven once by a
+  `--root <tmp> --tarballs <tmp>/tarballs`. Before archiving, the plant builder copies the root licence files of the
+  laid-over tree into each package directory: `LICENSE` and `NOTICE` into every package, `THIRD_PARTY_NOTICES` into
+  `tokens` and `elements` (R-04), unless the plant's tree ships that file itself (only `fail-notice-differs` does) or
+  the plant's `omit.txt` lists its tree path (`fail-license-missing`). So the plant trees carry no copy of the root
+  files, and a later edit of a root file (phase 4's `THIRD_PARTY_NOTICES`, T055) keeps every plant as it was (analysis
+  C2). The build-and-pack path (no `--tarballs`) is proven once by a
   gates-integration test on the real workspace.
 - **Configuration set.** Extended with `.github/workflows/`, `.github/actions/`, `gates/release/`, the gap-table
-  source, `packages/*/CHANGELOG.md`, `packages/styles/src/*.css`, `specs/*/verification.md` and the root `LICENSE`,
+  source, `packages/*/CHANGELOG.md`, `packages/styles/src/*.css`, `packages/tokens/fonts/OFL.txt` (the `source` of the tokens
+  `identical` entry, for `fail-ofl-differs`; analysis L3, L7), `specs/*/verification.md` and the root `LICENSE`,
   `NOTICE` and `THIRD_PARTY_NOTICES`, so the `pass-repository` plants of `release-workflow` and `release-readiness`
   see their inputs.
 
