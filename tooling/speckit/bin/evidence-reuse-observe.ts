@@ -462,7 +462,7 @@ function visualRuntime(context: Context, job: Job, rawJob: Json, run: HostedRun,
   const runtimeRecorderBlob = git(["rev-parse", `${tree}:${recorderPath}`]).toString().trim();
   requireEvidence(workflowBlob === "6eb0ec30c806e0c7d578c70cbc8beff48e8af534" &&
     setupBlob === "3c8211a282364e46895d9bdc0d173f85402fddbf" &&
-    runtimeRecorderBlob === "878f1bc79abc52a4d123ef4a60c62f31bd10c207" &&
+    runtimeRecorderBlob === "647183c3be8748956dae31357b7268be5503bf8c" &&
     git(["rev-parse", `${baseTree}:${ciWorkflow}`]).toString().trim() === workflowBlob &&
     git(["rev-parse", `${baseTree}:.github/actions/setup/action.yml`]).toString().trim() === setupBlob &&
     git(["rev-parse", `${baseTree}:${recorderPath}`]).toString().trim() === runtimeRecorderBlob,

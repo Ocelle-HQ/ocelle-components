@@ -50,7 +50,7 @@ function executableHash(path: string): string {
 // Git object 666c35e95c17f1a36414adc28bc25a73a8f1f67f, pnpm/crates/cmd-shim/src/shim.rs,
 // SH_SHIM_HEADER in the pinned pnpm release. Only the native exec target can vary.
 const pnpmShimHeader = "sha256:97b4d68b1d6d04f0dd481c1219136a8a3c55e43614a13bcb7c0a477b1ecd3127";
-const nativePnpmShim = /exec "(\$basedir\/\.\.\/global\/v11\/[\w-]+\/node_modules\/pnpm\/pnpm)"  "\$@"\nexit \$\?\n# cmd-shim-target=(\/[\w./@+-]+)\n$/;
+const nativePnpmShim = /exec "(\$basedir\/\.\.\/global\/v11\/[\w-]+\/node_modules\/pnpm\/pnpm)"[ ]{2}"\$@"\nexit \$\?\n# cmd-shim-target=(\/[\w./@+-]+)\n$/;
 
 function nativeLinuxAmd64(bytes: Buffer): boolean {
   return bytes.length >= 64 && bytes.subarray(0, 7).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1])) &&
