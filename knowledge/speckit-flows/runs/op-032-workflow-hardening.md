@@ -21,6 +21,6 @@ sources:
 
 | Phase | Title | Tasks done | Rounds | Blocking per round | Verdict | TDD check | Red commits | Disputed | Accepted |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Harden focused workflow verification | 10/10 | 2 | 5, 0 | approved | red | 2 | 0 | no |
+| 1 | Harden focused workflow verification | 10/10 | 2 | 5, 0 | approved | pass | 2 | 0 | no |
 
 Review files: `ops/032-workflow-hardening/reviews/`.
