@@ -49,7 +49,7 @@ export interface MutationTools {
   /** Deletes a repository file (path relative to the root), if it exists. */
   readonly remove: (path: string) => Promise<void>;
   /** Runs Stryker with this configuration file on these `mutate` entries and returns its exit code and output. */
-  readonly stryker: (mutate: readonly string[], config: string) => Promise<ToolRun>;
+  readonly stryker: (mutate: readonly string[], config: string, options?: { readonly related: true }) => Promise<ToolRun>;
 }
 
 interface Options {
@@ -57,6 +57,7 @@ interface Options {
   readonly plan: boolean;
   readonly files: string | undefined;
   readonly shadowGrouped: boolean;
+  readonly shadowRelatedElements: boolean;
 }
 
 /**
@@ -114,6 +115,7 @@ function parseOptions(args: readonly string[]): Options | string {
   let files: string | undefined;
   let plan = false;
   let shadowGrouped = false;
+  let shadowRelatedElements = false;
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === "--") continue;
@@ -125,6 +127,10 @@ function parseOptions(args: readonly string[]): Options | string {
       shadowGrouped = true;
       continue;
     }
+    if (arg === "--shadow-related-elements") {
+      shadowRelatedElements = true;
+      continue;
+    }
     if (arg !== "--base" && arg !== "--files") return `unknown argument ${String(arg)}`;
     const value = args[i + 1];
     if (value === undefined || value === "") return `${arg} needs a value`;
@@ -132,7 +138,7 @@ function parseOptions(args: readonly string[]): Options | string {
     else files = value;
     i += 1;
   }
-  return { base, plan, files, shadowGrouped };
+  return { base, plan, files, shadowGrouped, shadowRelatedElements };
 }
 
 /** Stryker logs its completed initial test run time as net and overhead milliseconds. */
@@ -149,6 +155,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   const { base } = options;
   if (base === undefined) {
     return fail(`--base <sha> is required (the pull request's base commit, or the phase's base.sha); ${usage}`);
+  }
+  if (options.shadowRelatedElements && (!options.shadowGrouped || options.files === undefined || options.plan)) {
+    return fail("--shadow-related-elements needs --shadow-grouped and --files without --plan");
   }
   if (options.shadowGrouped && !options.plan && options.files === undefined) {
     return fail("--shadow-grouped needs an explicit --files selection or --plan");
@@ -189,6 +198,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     }
     selected = selection.files;
   }
+  if (options.shadowRelatedElements && selected.some((file) => !elementSource(file.path))) {
+    return fail("--shadow-related-elements needs element source only");
+  }
   if (selected.length === 0) {
     io.out(`mutation: nothing to mutate: no package or gate source line changed since ${base}`);
     return 0;
@@ -217,7 +229,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     await tools.remove(configuration.report);
     const ranges = mutateSpecs(group);
     const start = options.shadowGrouped ? performance.now() : 0;
-    const ran = await tools.stryker(ranges, configuration.file);
+    const ran = options.shadowRelatedElements
+      ? await tools.stryker(ranges, configuration.file, { related: true })
+      : await tools.stryker(ranges, configuration.file);
     const elapsedMs = options.shadowGrouped ? performance.now() - start : 0;
     const report = await tools.read(configuration.report);
     const stryker: StrykerRun = { report, exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
@@ -226,6 +240,7 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
       if (!inventory.ok) return emit({ exit: 2, cause: inventory.cause }, io.out, io.err);
       io.err(`mutation shadow receipt: ${JSON.stringify({
         configuration: configuration.file,
+        testSelection: options.shadowRelatedElements ? "related" : "full",
         ranges,
         baseline: shadowBaseline(stryker.output),
         totalMs: elapsedMs,
@@ -277,7 +292,9 @@ function realTools(root: string, env: Io["env"]): MutationTools {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
     remove: (path) => rm(join(root, path), { force: true }),
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)"
-    stryker: (mutate, config) => runTool(process.execPath, [stryker, "run", config, "--mutate", mutate.join(",")], root, strykerEnv(env)),
+    stryker: (mutate, config, options) => runTool(process.execPath,
+      // Stryker disable next-line all: process boundary, covered by the advisory matched-pair CLI trial in op 037
+      [stryker, "run", options?.related === true ? "stryker.elements.related.config.mjs" : config, "--mutate", mutate.join(",")], root, strykerEnv(env)),
   };
 }
 
