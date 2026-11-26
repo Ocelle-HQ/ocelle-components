@@ -83,10 +83,6 @@ function position(value: unknown): { readonly line: number; readonly column: num
   return { line: point.line, column: point.column };
 }
 
-// Match completed statuses from the standard mutation gate. Its exit code also covers equivalent-record findings.
-const passingStatuses = new Set(["Killed", "Timeout", "RuntimeError", "CompileError", "Ignored"]);
-const failingStatuses = new Set(["Survived", "NoCoverage"]);
-
 function withinRanges(path: string, start: number, end: number, ranges: readonly string[]): boolean {
   return ranges.some((range) => {
     const bounds = /^(.*):(\d+)-(\d+)$/.exec(range);
@@ -96,6 +92,9 @@ function withinRanges(path: string, start: number, end: number, ranges: readonly
 
 function readInventory(value: unknown, ranges: readonly string[]) {
   if (!list(value) || value.length === 0) return undefined;
+  // Match completed statuses from the standard mutation gate. Its exit code also covers equivalent-record findings.
+  const passingStatuses = new Set(["Killed", "Timeout", "RuntimeError", "CompileError", "Ignored"]);
+  const failingStatuses = new Set(["Survived", "NoCoverage"]);
   const statuses = new Map<string, string>();
   let hasSurvivor = false;
   for (const entry of value) {
