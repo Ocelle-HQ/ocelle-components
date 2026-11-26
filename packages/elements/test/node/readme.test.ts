@@ -39,7 +39,9 @@ import { compositions } from "../scenarios/link.ts";
 // entry point and its CHANGELOG names. 018 phase 3 adds `ocelle-metric` (T027): its section, the find-in-page limitation,
 // the `min-inline-size: 0` host rule for shrinking, its entry point and its CHANGELOG names. 018 phase 4 adds the static
 // `ocelle-pill-tag` (T038): its section, the state-pill radius reading, the static rules, clearing ARIA states from a
-// static pill, the `min-inline-size: 0` host rule, its entry point and its CHANGELOG names.
+// static pill, the `min-inline-size: 0` host rule, its entry point and its CHANGELOG names. 018 phase 7 (T063) adds the
+// status elements together: the intro names the three, their sections link to each other and § Control conventions
+// names the interactive pill; and it pins the pill's `slotchange` stop sentence (operator decision Q-F1 (c)).
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -976,6 +978,46 @@ describe("packages/elements/README.md: ocelle-pill-tag, truncation (018 phase 6)
 
   it.each(truncationPillRules)("states the README rule in its section: %s", (rule) => {
     expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The status elements together (018 tasks.md T063, phase 7): the intro names the three, their sections link to each
+ * other (the status vocabulary the indicator's `tone` and the pill's `status` share, FR-002; a metric beside a state)
+ * and § Control conventions names the interactive pill, which its section already links back to; and the README
+ * sentence of the pill's `slotchange` stop (phase-6 R1-05, R-09), which phase 6 wrote without a pin (operator decision
+ * Q-F1 (c), reviews/phase-6/operator-decisions.md; phase-6 round-2 note R2-01). One assertion each, read in the section
+ * named.
+ */
+const statusIntroFragments = [
+  "This release has twenty-three elements:",
+  "`ocelle-progress`, a progress bar, and the three status elements, `ocelle-status-indicator`, a status dot, `ocelle-metric`, a label and its value, and `ocelle-pill-tag`, a state pill or a count badge that can also be a toggle button or a link",
+];
+const statusCrossLinks: [heading: string, fragment: string][] = [
+  ["`ocelle-status-indicator`", "The five tones are the status vocabulary that `ocelle-pill-tag`'s `status` shares; to show a state as text, in a pill or a count badge, use `ocelle-pill-tag` (see `ocelle-pill-tag`)"],
+  ["`ocelle-metric`", "**Beside a state.** A metric shows a value, not a state: show a state beside it with `ocelle-status-indicator` and the text that names it, or with `ocelle-pill-tag` (see those sections)"],
+  ["`ocelle-pill-tag`", "`ocelle-status-indicator`'s `tone` takes the same five values, for a state shown as a dot (see `ocelle-status-indicator`)"],
+  ["`ocelle-pill-tag`", "The control conventions it follows are those of `ocelle-button` (see Control conventions)"],
+  ["Control conventions", "An interactive `ocelle-pill-tag`, in button mode and in link mode, follows them as `ocelle-button` does, with the moved attributes, custom states and limits its own section lists (see `ocelle-pill-tag`)"],
+  // the pill's slotchange stop (phase-6 R1-05; Q-F1 (c))
+  ["`ocelle-pill-tag`", "In button and link mode, where `ocelle-tooltip` wraps the inner control, a `slotchange` of the pill's slots stops at the pill, a forwarded slot's included: a host that forwards its own `<slot>` into an interactive pill hears that `slotchange` on the forwarded `<slot>` itself, not on an element or shadow root above the pill. A static pill lets it bubble on"],
+];
+
+/** A `##` section of the README by its heading as written, flattened; empty while it does not exist. */
+function readmeSection(heading: string): string {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return flat(new RegExp(`^## ${escaped}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(read("README.md"))?.[1] ?? "");
+}
+
+describe("packages/elements/README.md: the status elements together (018 phase 7)", () => {
+  const intro = flat(read("README.md").split(/^## /m)[0] ?? "");
+
+  it.each(statusIntroFragments)("states in its intro, before the first section: %s", (fragment) => {
+    expect(intro).toContain(flat(fragment));
+  });
+
+  it.each(statusCrossLinks)("states in its %s section: %s", (heading, fragment) => {
+    expect(readmeSection(heading)).toContain(flat(fragment));
   });
 });
 
