@@ -1,0 +1,237 @@
+name: Mutation configuration shadow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+# Folded #87, recorded CI run 45754797425. Its mixed shard was job 139690966745.
+env:
+  SOURCE_HEAD: 48909216bf586574376c3ed8cdbf4b7e088a87f8
+  SOURCE_BASE: 25c53a915717fe464a67b53a7dd58ceaf4abc0c7
+  SOURCE_TREE: 61c0168cae9bd8ff17a85ac8c11bff0fd9de1d66
+  ELEMENTS_SELECTOR: packages/elements/src/ocelle-step-indicator.ts:151-167
+  DEFAULT_SELECTOR: storybook/stories/pane-action-footer.ts:1-30
+  SOURCE_NODE: '26.13.0'
+  SOURCE_PNPM: '12.16.1'
+  SOURCE_PLAYWRIGHT: '1.64.1'
+  SOURCE_STRYKER: '10.1.1'
+  CANDIDATE_HEAD: ${{ github.event.pull_request.head.sha }}
+  CANDIDATE_BASE: ${{ github.event.pull_request.base.sha }}
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+
+jobs:
+  runtime:
+    name: Pin mutation configuration shadow runtime
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.repo.full_name == github.repository &&
+      contains(github.event.pull_request.body, '<!-- verify-mutation-config-shadow -->') &&
+      (github.event.action != 'edited' ||
+      (github.event.changes.body.from != null &&
+      !contains(github.event.changes.body.from, '<!-- verify-mutation-config-shadow -->')))
+    runs-on: ubuntu-24.04
+    outputs:
+      image: ${{ steps.pin.outputs.image }}
+    steps:
+      - id: pin
+        run: |
+          test "$ImageOS" = ubuntu24
+          test "$RUNNER_OS/$RUNNER_ARCH" = Linux/X64
+          [[ "$ImageVersion" =~ ^[0-9]+(\.[0-9]+)+$ ]]
+          echo "image=$ImageOS/$ImageVersion/$RUNNER_OS/$RUNNER_ARCH" >> "$GITHUB_OUTPUT"
+
+  sample:
+    name: Mutation configuration (${{ matrix.arm }})
+    needs: runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [mixed, default, elements]
+    steps:
+      - name: Start measuring setup
+        run: |
+          mkdir "$RUNNER_TEMP/mutation-config-shadow"
+          echo "SAMPLE_START_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ env.SOURCE_HEAD }}
+      - name: Verify the historical checkout
+        env:
+          RUNTIME_IMAGE: ${{ needs.runtime.outputs.image }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_HEAD"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$SOURCE_TREE"
+          test "$(git rev-parse "$SOURCE_BASE^{commit}")" = "$SOURCE_BASE"
+          git merge-base --is-ancestor "$SOURCE_BASE" HEAD
+          git diff --quiet HEAD --
+          test "$ImageOS/$ImageVersion/$RUNNER_OS/$RUNNER_ARCH" = "$RUNTIME_IMAGE"
+      - uses: ./.github/actions/setup
+      - name: Run the unchanged standard selection
+        env:
+          ARM: ${{ matrix.arm }}
+          RUNTIME_IMAGE: ${{ needs.runtime.outputs.image }}
+        run: |
+          test "$(node --version)" = "v$SOURCE_NODE"
+          test "$(pnpm --version)" = "$SOURCE_PNPM"
+          test "$(pnpm exec playwright --version)" = "Version $SOURCE_PLAYWRIGHT"
+          test "$(node -p 'require("./node_modules/@stryker-mutator/core/package.json").version')" = "$SOURCE_STRYKER"
+          git diff --quiet HEAD --
+
+          receipt="$RUNNER_TEMP/mutation-config-shadow"
+          mixed="$ELEMENTS_SELECTOR,$DEFAULT_SELECTOR"
+          node gates/bin/mutation.ts --base "$SOURCE_BASE" --plan > "$receipt/standard-plan.json"
+          jq -e --arg selectors "$mixed" '[.[] | select(.files == $selectors and .lines == 47)] | length == 1' "$receipt/standard-plan.json"
+          case "$ARM" in
+            mixed) selectors="$mixed" ;;
+            default) selectors="$DEFAULT_SELECTOR" ;;
+            elements) selectors="$ELEMENTS_SELECTOR" ;;
+            *) exit 2 ;;
+          esac
+
+          setup_ms=$(( $(date +%s%3N) - SAMPLE_START_MS ))
+          verdict=0
+          # With --files, the flag emits receipts. Only the separate --plan mode can group ranges.
+          node gates/bin/mutation.ts --base "$SOURCE_BASE" --shadow-grouped --files "$selectors" \
+            > "$receipt/mutation.log" 2> "$receipt/diagnostics.log" || verdict=$?
+          elapsed_ms=$(( $(date +%s%3N) - SAMPLE_START_MS ))
+          cat "$receipt/mutation.log"
+          git diff --quiet HEAD --
+          sed -n 's/^mutation shadow receipt: //p' "$receipt/diagnostics.log" > "$receipt/configurations.jsonl"
+          runtime="$RUNTIME_IMAGE/Node-$SOURCE_NODE/pnpm-$SOURCE_PNPM/Playwright-$SOURCE_PLAYWRIGHT/Stryker-$SOURCE_STRYKER"
+          jq -n --slurpfile receipts "$receipt/configurations.jsonl" \
+            --arg head "$SOURCE_HEAD" --arg base "$SOURCE_BASE" --arg tree "$SOURCE_TREE" --arg runtime "$runtime" \
+            --arg selectors "$selectors" --argjson verdict "$verdict" --argjson setupMs "$setup_ms" --argjson elapsedMs "$elapsed_ms" \
+            --arg repository "$GITHUB_REPOSITORY" --arg runId "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" --arg arm "$ARM" \
+            --arg number "$PR_NUMBER" --arg prHead "$CANDIDATE_HEAD" --arg prBase "$CANDIDATE_BASE" --arg testedMerge "$GITHUB_SHA" \
+            '{pins: {$head, $base, $tree, $runtime}, selectors: ($selectors | split(",")), $verdict, $receipts,
+              timing: {$setupMs, $elapsedMs}, run: {$repository, $runId, $attempt, $arm, $number, $prHead, $prBase, $testedMerge}}' \
+            > "$receipt/receipt.json"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-config-shadow-${{ matrix.arm }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mutation-config-shadow
+          if-no-files-found: error
+
+  compare:
+    name: Compare mutation configurations
+    needs: [runtime, sample]
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify the trial candidate and collect hosted job timing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git show -s --format=%P HEAD)" = "$CANDIDATE_BASE $CANDIDATE_HEAD"
+          for ((attempt=1; attempt<=GITHUB_RUN_ATTEMPT; attempt++)); do
+            gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$attempt/jobs?per_page=100" \
+              | jq -es '[.[].jobs[]]' > "$RUNNER_TEMP/mutation-config-jobs-$attempt.json"
+          done
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.SOURCE_NODE }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: mutation-config-shadow-*-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mutation-config-shadow
+      - name: Compare the exact receipts
+        env:
+          RUNTIME_IMAGE: ${{ needs.runtime.outputs.image }}
+        run: |
+          node --input-type=module <<'NODE' | tee "$RUNNER_TEMP/mutation-config-shadow-comparison.json"
+          import { readFileSync } from "node:fs";
+          import { join } from "node:path";
+          import { compareMutationConfigShadow } from "./gates/bin/mutation-config-shadow.ts";
+
+          const env = process.env;
+          const attempt = Number(env.GITHUB_RUN_ATTEMPT);
+          const source = {
+            head: env.SOURCE_HEAD,
+            base: env.SOURCE_BASE,
+            tree: env.SOURCE_TREE,
+            historicalCI: { run: 45754797425, mixedJob: 139690966745, runnerImage: "20261122.23.1", provisioner: "20261111.635" },
+          };
+          const candidate = {
+            repository: env.GITHUB_REPOSITORY, runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT,
+            number: env.PR_NUMBER, prHead: env.CANDIDATE_HEAD, prBase: env.CANDIDATE_BASE, testedMerge: env.GITHUB_SHA,
+          };
+          const runtime = `${env.RUNTIME_IMAGE}/Node-${env.SOURCE_NODE}/pnpm-${env.SOURCE_PNPM}/Playwright-${env.SOURCE_PLAYWRIGHT}/Stryker-${env.SOURCE_STRYKER}`;
+          const pins = { head: source.head, base: source.base, tree: source.tree, runtime };
+          const configurations = [
+            { configuration: "stryker.config.json", selectors: [env.DEFAULT_SELECTOR], ranges: [env.DEFAULT_SELECTOR] },
+            { configuration: "stryker.elements.config.json", selectors: [env.ELEMENTS_SELECTOR], ranges: [env.ELEMENTS_SELECTOR] },
+          ];
+          const read = (...path) => JSON.parse(readFileSync(join(env.RUNNER_TEMP, ...path), "utf8"));
+
+          function readJob(arm, attempts) {
+            const path = `mutation-config-shadow-${arm}-${attempt}`;
+            const sample = read("mutation-config-shadow", path, "receipt.json");
+            if (sample.run?.arm !== arm || Object.entries(candidate).some(([key, value]) => sample.run?.[key] !== value)) {
+              throw new Error(`${arm}: receipt is from a different workflow attempt or candidate`);
+            }
+            const name = `Mutation configuration (${arm})`;
+            const history = attempts.flatMap((jobs, index) => {
+              const matching = jobs.filter((job) => job.name === name);
+              if (matching.length > 1) throw new Error(`${arm}: duplicate hosted job in attempt ${index + 1}`);
+              return matching.map((job) => {
+                const elapsedMs = Date.parse(job.completed_at) - Date.parse(job.started_at);
+                if (job.status !== "completed" || !(elapsedMs > 0)) throw new Error(`${arm}: unusable hosted job timing`);
+                return { id: job.id, attempt: index + 1, conclusion: job.conclusion, elapsedMs };
+              });
+            });
+            const current = history.at(-1);
+            if (current?.attempt !== attempt || current.conclusion !== "success" ||
+              !Number.isSafeInteger(sample.timing?.elapsedMs) || sample.timing.elapsedMs <= 0 ||
+              current.elapsedMs < sample.timing.elapsedMs) {
+              throw new Error(`${arm}: no completed and timed sample in the current attempt`);
+            }
+            return {
+              receipt: { ...sample, timing: { ...sample.timing, elapsedMs: current.elapsedMs, retries: history.length - 1 } },
+              history,
+            };
+          }
+
+          try {
+            const attempts = Array.from({ length: attempt }, (_, index) => read(`mutation-config-jobs-${index + 1}.json`));
+            const { mixed, defaults, elements } = {
+              mixed: readJob("mixed", attempts), defaults: readJob("default", attempts), elements: readJob("elements", attempts),
+            };
+            const comparison = compareMutationConfigShadow({ pins, configurations }, {
+              mixed: mixed.receipt, split: [defaults.receipt, elements.receipt],
+            });
+            console.log(JSON.stringify({
+              source, candidate, runtime, configurations,
+              hostedJobs: { mixed: mixed.history, default: defaults.history, elements: elements.history },
+              ...comparison,
+            }, null, 2));
+            process.exitCode = comparison.matched ? comparison.verdict : 2;
+          } catch (error) {
+            console.log(JSON.stringify({ source, candidate, runtime, matched: false, reason: "receipts", detail: error.message }, null, 2));
+            process.exitCode = 2;
+          }
+          NODE
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-config-shadow-comparison-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mutation-config-shadow-comparison.json
+          if-no-files-found: warn
