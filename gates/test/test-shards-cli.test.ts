@@ -182,6 +182,24 @@ describe("shard CLI decisions", () => {
     ]);
   });
 
+  it("bounds runner output while keeping exact inventory details and the complete shard artifact", async () => {
+    const { run, data, errors, messages, report: setResult } = fixture();
+    const errorsFromRunner = Array.from({ length: 1_000 }, (_, index) => ({
+      name: "Error", message: `worker ${String(index)}: ${"long detail\n".repeat(60)}`, line: index + 1,
+    }));
+    const result = { files: firstResult.files, errors: errorsFromRunner };
+    setResult(result);
+
+    expect(await run("run", planPath, "1", second)).toBe(1);
+    expect(data.get(second)).toBe(`${JSON.stringify({ ...result, revision, index: 1 })}\n`);
+    expect(messages).toEqual([]);
+    expect(errors).toHaveLength(1);
+    const [inventory, summary] = errors[0]?.split("; reported errors: ") ?? [];
+    expect(inventory).toBe('Unit tests: shard 1 inventory differs from the plan; missing: ["beta","test/control.test.ts"]; unexpected: ["alpha","test/control.test.ts"]');
+    expect(summary?.length).toBeLessThanOrEqual(4_096);
+    expect(summary).toMatch(/992 runner errors omitted \(see result\.json\)$/);
+  });
+
   it("verifies all artifact reports without requiring a comparison file", async () => {
     const { run, messages, errors } = fixture();
     expect(await run("verify", planPath, reports)).toBe(0);

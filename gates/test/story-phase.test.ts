@@ -210,7 +210,15 @@ function pinnedFixture() {
   test.files.set(upstreamFile, upstream + "\n");
   test.stale.add(`${initial}:${upstream}`);
   test.stale.add(`${fix}:${upstream}`);
-  return test;
+  const git: PhaseTools["git"] = (args, input) => {
+    if (args[0] === "merge-base" && args[1] === "--all" && args[2] === "HEAD" && args[3] === "refs/remotes/origin/main") {
+      test.calls.push(args);
+      if (test.stale.has(`${upstream}:refs/remotes/origin/main`) || test.stale.has(`${upstream}:${head}`)) return `${anchor}\n`;
+      return `${upstream}\n`;
+    }
+    return test.tools.git(args, input);
+  };
+  return { ...test, tools: { ...test.tools, git } };
 }
 
 describe("phase replay pinned to integrated main", () => {
@@ -259,6 +267,24 @@ describe("phase replay pinned to integrated main", () => {
     expect(calls.map(([command]) => command)).not.toContain("merge-tree");
     expect(checks.map(({ check }) => check.revision)).toEqual([initial, anchor, head]);
     expect(outputs).toMatchObject([{ output: { base: anchor, replay_base: anchor, replay_upstream: upstream, status: "pass" } }]);
+  });
+
+  it.each([
+    { label: "an older shared pin", mergeBases: `${scaffold}\n` },
+    { label: "multiple best common ancestors", mergeBases: `${upstream}\n${scaffold}\n` },
+    { label: "no common ancestor", mergeBases: "" },
+    { label: "a Git inspection error", mergeBases: undefined },
+  ])("refuses $label before running any replay", async ({ mergeBases }) => {
+    const { tools, checks } = pinnedFixture();
+    const git: PhaseTools["git"] = (args, input) => {
+      if (args[0] === "merge-base" && args[1] === "--all" && args[2] === "HEAD" && args[3] === "refs/remotes/origin/main") {
+        if (mergeBases === undefined) throw new Error("cannot inspect remote main");
+        return mergeBases;
+      }
+      return tools.git(args, input);
+    };
+    await expect(checkPhase(request, { ...tools, git })).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+    expect(checks).toEqual([]);
   });
 
   it.each([[`${upstream}:refs/remotes/origin/main`, false], [`${upstream}:${head}`, false], [`${initial}:${upstream}`, true]])(

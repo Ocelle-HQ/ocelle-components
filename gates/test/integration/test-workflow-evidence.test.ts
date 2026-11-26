@@ -190,10 +190,12 @@ it("replays only phase changes after merging pinned main, including a test both 
     write(root, file, original.replace("// The upstream assertion is added below.",
       'it("uses integrated tooling in the shared file", async () => expect((await import("../src/tooling.ts")).tooling).toBe("ready"));'));
     const upstream = commit(root, "add main tooling and change test inventory");
-    git(root, "update-ref", "refs/remotes/origin/main", upstream);
+    write(root, "test/remote-only.test.ts", 'import { expect, it } from "vitest";\nit("remains on main", () => expect(true).toBe(true));\n');
+    const remoteTip = commit(root, "advance main past the integrated test inventory");
+    git(root, "update-ref", "refs/remotes/origin/main", remoteTip);
     git(root, "checkout", "feature");
     expect(storyWrapper(root, "base", "--with-main", upstream).status).toBe(2);
-    git(root, "merge", "--signoff", "--no-edit", "upstream");
+    git(root, "merge", "--signoff", "--no-edit", upstream);
 
     const pin = storyWrapper(root, "base", "--with-main", upstream);
     expect({ status: pin.status, stderr: pin.stderr }).toEqual({ status: 0, stderr: "" });
@@ -225,6 +227,54 @@ it("replays only phase changes after merging pinned main, including a test both 
     rmSync(root, { force: true, recursive: true });
   }
 }, 80_000);
+
+it("refuses a stale main pin without creating or replacing the pin file", () => {
+  const root = fixture();
+  try {
+    const base = prepareStoryWrappers(root);
+    write(root, "main-only.txt", "integrated main\n");
+    const upstream = commit(root, "advance the shared main history");
+    git(root, "checkout", "-b", "future-main");
+    write(root, "main-only.txt", "remote main\n");
+    const remoteTip = commit(root, "advance remote main past the shared history");
+    git(root, "update-ref", "refs/remotes/origin/main", remoteTip);
+    git(root, "checkout", "--detach", upstream);
+
+    const pin = join(root, storyReviews, "replay-upstream.sha");
+    expect(storyWrapper(root, "base", "--with-main", base).status).toBe(2);
+    expect(existsSync(pin)).toBe(false);
+    expect(storyWrapper(root, "base", "--with-main", upstream).status).toBe(0);
+    expect(storyWrapper(root, "base", "--with-main", base).status).toBe(2);
+    expect(readFileSync(pin, "utf8")).toBe(upstream + "\n");
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
+it("refuses to replace the pin if Git finds multiple merge bases or cannot inspect main", () => {
+  const root = fixture();
+  try {
+    const base = prepareStoryWrappers(root);
+    const tree = git(root, "rev-parse", `${base}^{tree}`);
+    const left = git(root, "commit-tree", tree, "-p", base, "-m", "first shared commit");
+    const right = git(root, "commit-tree", tree, "-p", base, "-m", "second shared commit");
+    const local = git(root, "commit-tree", tree, "-p", left, "-p", right, "-m", "local criss-cross merge");
+    const remote = git(root, "commit-tree", tree, "-p", right, "-p", left, "-m", "remote criss-cross merge");
+    git(root, "checkout", "--detach", local);
+    git(root, "update-ref", "refs/remotes/origin/main", remote);
+
+    const pinFile = storyReviews + "/replay-upstream.sha";
+    write(root, pinFile, base + "\n");
+    expect(storyWrapper(root, "base", "--with-main", left).status).toBe(2);
+    expect(readFileSync(join(root, pinFile), "utf8")).toBe(base + "\n");
+
+    git(root, "update-ref", "-d", "refs/remotes/origin/main");
+    expect(storyWrapper(root, "base", "--with-main", left).status).toBe(2);
+    expect(readFileSync(join(root, pinFile), "utf8")).toBe(base + "\n");
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
 
 it("rejects a declared implementation story in a mixed red commit and in red history", () => {
   const root = fixture();

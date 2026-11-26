@@ -283,6 +283,14 @@ describe("unit test shard reports", () => {
       .toThrow(new Error(`shard 1 reported errors: ${longText}; Error: worker failed`));
   });
 
+  it("bounds a large runner error summary and names the full receipt", () => {
+    const errors = Array.from({ length: 1_000 }, (_, index) => ({
+      name: "Error", message: `worker ${String(index)}: ${"x".repeat(600)}`,
+    }));
+    const errorMessage = /^shard 1 reported errors: Error: worker 0: x.{0,4096}992 runner errors omitted \(see result\.json\)$/;
+    expect(() => verifyTestShard([beta], { ...secondShard, errors })).toThrow(errorMessage);
+  });
+
   it("refuses a malformed individual receipt before comparing its files", () => {
     expect(() => verifyTestShard([beta], { ...secondShard, errors: null })).toThrow(new Error("malformed shard results"));
   });
