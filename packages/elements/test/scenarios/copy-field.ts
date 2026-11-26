@@ -1261,6 +1261,64 @@ function statusHistory(updates: readonly { role: string; text: string }[]): stri
 
 const identifierScenarios: readonly CopyFieldScenario[] = [
   {
+    name: "#89 FR-002: prefixed and unprefixed runs expose break opportunities only between units and start each wrapped line flush",
+    fixture: false,
+    run: async (driver, inPage) => {
+      const observations: unknown[] = [];
+      const constrain = (width: string): Promise<void> =>
+        driver.rules(`#cf { inline-size: calc(var(--ocelle-target-min) + 2 * var(--ocelle-space-3) + 2 * var(--ocelle-border-width) + ${width}); }`);
+      for (const value of ["123456789012", "123:123456789012"]) {
+        await mount(driver, inPage, page(`grouped value="${value}"`));
+        const wide = await inPage(visibleText, "cf");
+        // Five tabular digits fit an intact four-character unit and its gap, but no adjacent pair.
+        await constrain("5ch");
+        const wrapped = await inPage(visibleText, "cf");
+        const layout = await inPage(() => {
+          const well = document.getElementById("cf")?.shadowRoot?.querySelector('[part~="value"]');
+          if (well === undefined || well === null) return null;
+          const units = [...(well.firstElementChild?.children ?? [])];
+          return {
+            flow: units.map((unit) => unit.localName === "wbr" ? "soft break" : unit.textContent),
+            left: well.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(well).paddingLeft),
+            inside: well.scrollWidth <= well.clientWidth,
+          };
+        }, null);
+        observations.push({
+          flow: layout?.flow,
+          wrapped: wrapped.map(({ text, rects }, index) => ({
+            text,
+            intact: rects.length === 1,
+            flush: layout !== null && rects[0] !== undefined && Math.abs(rects[0].left - layout.left) < 0.5,
+            nextLine: index === 0 ? rects[0]?.top === wide[0]?.rects[0]?.top : (rects[0]?.top ?? 0) > (wrapped[index - 1]?.rects[0]?.top ?? 0),
+          })),
+          inside: layout?.inside,
+        });
+      }
+      await mount(driver, inPage, identifierPage("grouped"));
+      const [widePrefix, wideFirst] = await inPage(visibleText, "cf");
+      // Fit the measured prefix and gap together without fitting the first body group on that line.
+      const prefixAndGap = (wideFirst?.rects[0]?.left ?? 0) - (widePrefix?.rects[0]?.left ?? 0);
+      await constrain(`${String(prefixAndGap + 1)}px`);
+      const [prefix, first] = await inPage(visibleText, "cf");
+      return {
+        observations,
+        nearFit: {
+          prefix: prefix?.text,
+          intact: prefix?.rects.length === 1,
+          nextLine: (first?.rects[0]?.top ?? 0) > (prefix?.rects[0]?.top ?? 0),
+          first: first?.text,
+        },
+      };
+    },
+    expected: {
+      observations: [
+        { flow: ["1234", "soft break", "5678", "soft break", "9012"], wrapped: ["1234", "5678", "9012"].map((text) => ({ text, intact: true, flush: true, nextLine: true })), inside: true },
+        { flow: ["123:", "soft break", "1234", "soft break", "5678", "soft break", "9012"], wrapped: ["123:", "1234", "5678", "9012"].map((text) => ({ text, intact: true, flush: true, nextLine: true })), inside: true },
+      ],
+      nearFit: { prefix: "ni:sha-256:", intact: true, nextLine: true, first: "aB😀c" },
+    },
+  },
+  {
     name: "#89 FR-001/002: grouped Copy shows the last-colon prefix, four Unicode code points per group and the short end; the same plain value preserves its whitespace and Copy behavior",
     fixture: true,
     run: async (driver, inPage) => {
