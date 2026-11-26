@@ -1,0 +1,4 @@
+{"mode":"head","revision":"d4d8e368a0f8dc2a39fe2ae458d199ea90bf5880","input":"09a8e3d75f1b0c766917ac446e89f0e6e1eebf76e43bf752d80ae64bb7093a6b","selected":[{"project":"gates-integration","file":"gates/test/integration/scope-check.test.ts"},{"project":"gates-integration","file":"gates/test/integration/test-workflow-evidence.test.ts"},{"project":"gates","file":"gates/test/story-phase.test.ts"},{"project":"gates","file":"gates/test/test-evidence-shards.test.ts"},{"project":"gates","file":"gates/test/test-shards-cli.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":30.702}
+Switched to a new branch 'feature'
+Switched to a new branch 'upstream'
+Switched to branch 'feature'
