@@ -88,6 +88,17 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
 });
 
 describe("the Vitest projects", () => {
+  it("runs in-process Storybook recipe tests in Chromium in both the normal and mutation suites", () => {
+    const recipe = "storybook/test/unit/browser/pane-action-footer.test.ts";
+    const owner = (projects: readonly Project[]) => projects.filter((project) => inProject(project, recipe)).map(({ name }) => name);
+    expect({ normal: owner(all), mutation: owner(kept), elementMutation: owner(keptElements) }).toEqual({
+      normal: ["storybook-browser"], mutation: ["storybook-browser"], elementMutation: [],
+    });
+    const browser = base.test?.projects?.find((project) =>
+      typeof project === "object" && "test" in project && project.test?.name === "storybook-browser");
+    expect(browser).toMatchObject({ test: { browser: { enabled: true, headless: true, instances: [{ browser: "chromium" }] } } });
+  });
+
   it("put each test file of the repository in exactly one project", () => {
     const owners = Object.fromEntries(testFiles.map((path) => [path, all.filter((project) => inProject(project, path)).map((project) => project.name)]));
     const notOne = Object.fromEntries(Object.entries(owners).filter(([, names]) => names.length !== 1));
