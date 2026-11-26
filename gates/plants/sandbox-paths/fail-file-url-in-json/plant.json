@@ -1,0 +1,14 @@
+{
+  "expect": "fail",
+  "why": "A Stryker report whose projectRoot and a file:// URL name the checkout root (op 023, FR-001): both lines are found, the URL after its third slash.",
+  "findings": [
+    {
+      "location": "specs/999-example/reviews/phase-1/mutation/mutation.json:2",
+      "rule": "sandbox-path"
+    },
+    {
+      "location": "specs/999-example/reviews/phase-1/mutation/mutation.json:4",
+      "rule": "sandbox-path"
+    }
+  ]
+}

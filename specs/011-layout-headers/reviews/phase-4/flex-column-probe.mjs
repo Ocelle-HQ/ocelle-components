@@ -1,4 +1,4 @@
-import { chromium } from "/home/user/ocelle-components/node_modules/.pnpm/playwright@1.64.1/node_modules/playwright/index.mjs";
+import { chromium } from "<repo>/node_modules/.pnpm/playwright@1.64.1/node_modules/playwright/index.mjs";
 const browser = await chromium.launch({ executablePath: process.env.OCELLE_CHROMIUM_PATH });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const html = `<!doctype html><html><head><style>

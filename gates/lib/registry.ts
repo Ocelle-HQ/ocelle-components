@@ -1,11 +1,11 @@
 // The gate registry (gates/gates.json, data-model.md § Gate) and its check against ci.yml and the FR-020 list
 // (research.md R-10): the gate ids of the registry, the gate jobs of the workflow (every job but the plant job and
 // the registry's helper jobs) and the FR-020 list below must be one set. The check compares files one pull request
-// can change together; the ruleset on main that requires the eighteen checks guards a coordinated removal.
+// can change together; the ruleset on main that requires the nineteen checks guards a coordinated removal.
 import type { Finding } from "./findings.ts";
 
 /** How a gate's plants are presented to it (contracts/plants.md). */
-export type PlantForm = "repo-tree" | "commit-repo" | "mutation-repo" | "workspace";
+export type PlantForm = "repo-tree" | "commit-repo" | "mutation-repo" | "tracked-tree" | "workspace";
 
 /** One registry entry. */
 export interface Gate {
@@ -40,6 +40,8 @@ export const fr020: readonly string[] = [
   "storybook-build",
   "visual",
   "axe",
+  // op 023 (#60): the sandbox-paths gate.
+  "sandbox-paths",
 ];
 
 /** The id of the plant job in ci.yml; it is not a gate. */
@@ -48,7 +50,7 @@ export const plantJob = "plants";
 /** The plant job's helper jobs in ci.yml (plan decision 23): its plan and its shards; not gates either. */
 export const plantHelperJobs: readonly string[] = ["plants-plan", "plants-shard"];
 
-const forms: readonly string[] = ["repo-tree", "commit-repo", "mutation-repo", "workspace"];
+const forms: readonly string[] = ["repo-tree", "commit-repo", "mutation-repo", "tracked-tree", "workspace"];
 const textFields = ["id", "check", "command", "plantCommand", "scope"] as const;
 
 /** One registry entry, or throws naming its problem. */
@@ -60,7 +62,7 @@ function entry(value: unknown, at: string): Gate {
     if (typeof text !== "string" || text === "") throw new Error(`${at}: ${field} must be a non-empty string`);
   }
   if (!forms.includes(String(fields.plantForm))) {
-    throw new Error(`${at}: plantForm must be repo-tree, commit-repo, mutation-repo or workspace`);
+    throw new Error(`${at}: plantForm must be repo-tree, commit-repo, mutation-repo, tracked-tree or workspace`);
   }
   const helperJobs = fields.helperJobs;
   if (helperJobs !== undefined && (!Array.isArray(helperJobs) || !helperJobs.every((job) => typeof job === "string" && job !== ""))) {

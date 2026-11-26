@@ -73,4 +73,4 @@ src/ocelle-*.ts and src/overlay.ts, and nothing else" covers it once the merge b
 `"form-control.ts"` entry's mutant is killed.
 
 `red-fix-3.log` is the tool's log as written. It keeps the pnpm setup line naming the content-addressable store under
-`/root/.local/share/pnpm/store/v11`.
+`<pnpm store>`.

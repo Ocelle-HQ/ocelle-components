@@ -5,7 +5,7 @@ Update available! 12.16.1 → 12.18.0.
 Changelog: https://pnpm.io/v/12.18.0
 To update, run: curl -fsSL https://get.pnpm.io/install.sh | sh -
 Packages are hard linked from the content-addressable store to the virtual store.
-  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Content-addressable store is at: <pnpm store>
   Virtual store is at:             node_modules/.pnpm
 Packages: +501
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

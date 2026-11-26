@@ -31,7 +31,7 @@ No blocking finding.
 - **Red evidence.** `red-fix-3.log`: 3 of 4739 failed, namely the T030 generator test (`manifest.test.ts:323`) and the
   `ocelle-form-input` (`:480`) and `ocelle-form-select` (`:564`) entry tests. Each failed on an `AssertionError`, with
   no setup or import error. `red-commits` has `fix-3 d260a95f`, and `tdd-check.json` records it with exit 1. The log
-  keeps pnpm's `/root/.local/share/pnpm/store/v11` line. That line is known and accepted, and it is not evidence of a
+  keeps pnpm's `<pnpm store>` line. That line is known and accepted, and it is not evidence of a
   setup failure.
 - **No change after red.** `git diff d260a95..b4b5989 -- packages/elements/test` is empty.
 - **The pinned assertions that changed are stricter, and the reason is recorded.** The commit message and comments

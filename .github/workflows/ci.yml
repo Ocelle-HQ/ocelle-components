@@ -339,6 +339,15 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: pnpm run gate:axe
+  sandbox-paths:
+    name: Sandbox paths
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:sandbox-paths
   plants-plan:
     name: Plants plan
     runs-on: ubuntu-24.04

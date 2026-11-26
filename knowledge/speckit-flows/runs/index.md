@@ -24,3 +24,4 @@
 * [op-016-plants-affected](op-016-plants-affected.md) - Review rounds, findings and TDD checks per phase of op-016-plants-affected, generated from its review files
 * [op-021-fold-signing](op-021-fold-signing.md) - Review rounds, findings and TDD checks per phase of op-021-fold-signing, generated from its review files
 * [op-022-focus-trap-details-icon-name](op-022-focus-trap-details-icon-name.md) - Review rounds, findings and TDD checks per phase of op-022-focus-trap-details-icon-name, generated from its review files
+* [op-023-public-repo-hygiene](op-023-public-repo-hygiene.md) - Review rounds, findings and TDD checks per phase of op-023-public-repo-hygiene, generated from its review files
