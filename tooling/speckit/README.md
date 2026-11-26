@@ -216,14 +216,14 @@ That run requires the normal full gate to pass too and compares project, file, t
 
 For a component change, run the preflight as soon as the canonical manifest and the focused Storybook tests are ready.
 
-- Run `node gates/bin/component-preflight.ts manifest` to list full custom-elements manifest Plant overlays and check each overlay's exact expected findings. Assign the listed paths before capture and preserve the intended seeded findings when updating the generated declarations.
-- For a changed shared Storybook host, run `node gates/bin/component-preflight.ts host --source <host> --test <file> --project <project>` for each assigned focused file. Check the listed owners in normal and default mutation discovery, then record the actual scoped mutation result for the host on the same source candidate. Keep the built browser, accessibility, visual and CSP proofs in the plan.
+- Run `node tooling/speckit/bin/component-preflight.ts manifest` to list full custom-elements manifest Plant overlays and check each overlay's exact expected findings. Assign the listed paths before capture and preserve the intended seeded findings when updating the generated declarations.
+- For a changed shared Storybook host, run `node tooling/speckit/bin/component-preflight.ts host --source <host> --test <file> --project <project>` for each assigned focused file. Check the listed owners in normal and default mutation discovery, then record the actual scoped mutation result for the host on the same source candidate. Keep the built browser, accessibility, visual and CSP proofs in the plan.
 
 On a same-repository PR, `<!-- verify-mutation-config-shadow -->` starts the pinned #87 comparison. The mixed arm and the separate element and default arms run the original selectors. Read the comparison artifact for the exact mutant inventory, verdict, setup and baseline times, slowest job, runner minutes and retries.
 
 For the Visual evidence reuse trial, first collect successful control CI on a source candidate and its evidence-only successor. Once the successor's exact run has completed, add `<!-- verify-evidence-reuse: RUN_ID/ATTEMPT -->` to the same-repository PR body using the earlier run and attempt. Read `visual-evidence-reuse-shadow` for eligibility on the current head, verified inputs, and the reason for any mismatch. Both candidates have their own required CI and the current candidate needs fresh Sign-off and Sandbox paths results. Count possible savings separately from executed runner time.
 
-After each pilot ticket, attach the control and pilot links to its retrospective. Record time to the first actionable failure, time to verified green, runner minutes, failures and retries, verdict and coverage parity, and preflight misses or rework. Apply and verify any workflow adjustment on its own evidence before selecting the next eligible ticket. When no adjustment is warranted, record the observed results that support continuing.
+After each pilot ticket, attach the control and pilot links to its retrospective. Record elapsed time from issue pickup, time to the first actionable failure and to verified green, runner minutes, failures and retries, verdict and coverage parity, and preflight misses or rework. Apply and verify any workflow adjustment on its own evidence before selecting the next eligible ticket. When no adjustment is warranted, record the observed results that support continuing.
 
 ## Configuration
 
