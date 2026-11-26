@@ -9,7 +9,7 @@
 - [x] T005 [P] [US1] Implement advisory mutation selection and attested receipt without affecting required mutation.
 - [x] T006 [P] [US1] Implement scoped pinned capture and upload exact light/dark results on opt-in.
 - [x] T007 [P] [US1] Implement reliable exact-job evidence retrieval and native pnpm measurement.
-- [ ] T008 [US1] Record passing required CI, Mutation and Plants for the integrated tooling candidate.
+- [x] T008 [US1] Record passing required CI, Mutation and Plants for the integrated tooling candidate.
 - [x] T009 [US1] Resolve the portable archive-fixture and hosted mutation findings, retaining assertion-level replay.
 
 The #86 live measurements belong to the separate anchored popover mission. Record its full checks, scoped capture, matched mutation comparison and Visual observer verdict in that mission's retrospective.
