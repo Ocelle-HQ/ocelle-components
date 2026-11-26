@@ -11,6 +11,7 @@
 * [011-layout-headers](011-layout-headers.md) - Review rounds, findings and TDD checks per phase of 011-layout-headers, generated from its review files
 * [012-button-action-row](012-button-action-row.md) - Review rounds, findings and TDD checks per phase of 012-button-action-row, generated from its review files
 * [013-data-display](013-data-display.md) - Review rounds, findings and TDD checks per phase of 013-data-display, generated from its review files
+* [018-status-elements](018-status-elements.md) - Review rounds, findings and TDD checks per phase of 018-status-elements, generated from its review files
 * [op-004-token-source-mutation](op-004-token-source-mutation.md) - Review rounds, findings and TDD checks per phase of op-004-token-source-mutation, generated from its review files
 * [op-015-mutation-shard-timeout](op-015-mutation-shard-timeout.md) - Review rounds, findings and TDD checks per phase of op-015-mutation-shard-timeout, generated from its review files
 * [op-016-plants-affected](op-016-plants-affected.md) - Review rounds, findings and TDD checks per phase of op-016-plants-affected, generated from its review files
