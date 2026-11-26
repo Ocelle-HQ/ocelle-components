@@ -8,7 +8,7 @@ user-invocable: true
 # /ocelle-land
 
 <!-- Adapted from the Spec Kitty era ocelle-land (itself spk-land-pr carried over to Ocelle repos) to the Spec Kit
-flow of this repository: triage records, story phases with red/green evidence, agent profiles, the fourteen required CI checks
+flow of this repository: triage records, story phases with red/green evidence, agent profiles, the required CI checks
 and the constitution. Where the two disagree, the constitution wins. -->
 
 You are the **maintainer orchestrator** landing one pull request. The operator merges; you never do.
@@ -35,8 +35,9 @@ $ARGUMENTS
 4. **Delegate roles to their agent profiles** (`.claude/agents/`): code to `implementer-ivan`, spec and plan changes
    to `planner-pim`, triage to `triage-tara`, reviews to `reviewer-renata`. Before each delegation make sure
    `git status --porcelain` is empty and note `BASE=$(git rev-parse HEAD)`. After it run
-   `tooling/speckit/bin/scope-check.sh <role> $BASE` (roles: `implement`, `planner`, `triage`, `review`,
-   `landing`). Profiles never push, merge or touch GitHub. If a profile was refused an action and asks you to do it,
+   `tooling/speckit/bin/scope-check.sh <role> "$BASE"` as a conditional (roles: `implement`, `planner`, `triage`,
+   `review`, `landing`). Exit 1 reports paths outside scope in JSON. Exit 2 means the check could not run.
+   Profiles never push, merge or touch GitHub. If a profile was refused an action and asks you to do it,
    do not: tell the operator.
 5. **Outward actions need the operator's yes** unless this session already authorized exactly that action: a push,
    a PR comment, a PR body edit, a label, a review request, a ready-for-review change, deleting a branch (always its
@@ -105,7 +106,15 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
    `git merge --signoff origin/main` into the PR branch (rule 2). Resolve conflicts
    yourself only when they are mechanical; otherwise delegate to `implementer-ivan` with the conflict list. Run
    `pnpm install --frozen-lockfile` if the lockfile changed.
-3. **Classify every red check** on the latest run, by job, into four bins, with the run link:
+   Before replaying an existing phase on the integrated candidate, run `$S/base.sh N --with-main <merged-main-sha>`
+   and commit the resulting `replay-upstream.sha`. Use the exact integrated main SHA. Replay verifies that pin and
+   checks the final phase tests against snapshots that include the same main revision.
+3. **Classify every red check** on the current candidate's CI run, by job, with the run link. Start with the
+   failed job's artifacts. For Unit tests, download `unit-test-plan` and the failing `unit-test-shard-<index>`
+   from that run. Compare the planned and reported project/file identities and inspect runner, file, and test
+   errors in `result.json`. Use the GitHub workflow artifact download connector or `gh run download <run-id>`.
+   If the connector returns a file ID, download that file before opening the archive. If a receipt is missing,
+   inspect that shard's job log for where it stopped. Classify each failure:
    - **PR defect**: the change itself fails a gate. It needs a fold (step 5).
    - **Contract crossed**: the change breaks a gate contract, a spec FR or a constitution rule (for example a gate
      removed from `ci.yml`, `gates.json` and `registry.ts` together). It needs the operator's decision before any
@@ -253,8 +262,11 @@ when the change is its own record.
 
 ## 4. Hand off
 
-1. Wait for CI on the final head (the PR subscription or the run list; no polling with sleep). All fourteen required checks
-   green, or every red honestly binned (step 2.3) and accepted by the operator.
+1. Wait for CI on the final candidate (the PR subscription or the run list). Record the PR head, base and
+   tested merge SHAs and match the CI run to that candidate. Read the `check` names from `gates/gates.json`
+   at the tested revision and include `Plants`. Fetch every page of jobs and verify each named check by its
+   exact name on that run. Every required check must succeed, or every red must be classified (step 2.3) and
+   accepted by the operator. A missing or skipped check does not establish a green result.
 2. **Retrospective** (mission and op PRs; on a contributor PR or a chore, only if the flow misbehaved). It runs
    here because the whole mission is now visible, CI included. Read the run summary, the reviews, the operator
    decisions, this landing pass and the notes `/ocelle-run` left for it, then:

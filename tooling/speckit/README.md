@@ -45,8 +45,14 @@ setup; never code), `lens-lotte`, `refuter-rik`, `verifier-vera`, `implementer-i
 follows the matching command file, so both runners share one procedure. Read-only roles have no Edit tool.
 
 **Enforced outside the model:**
+- After merging `main`, run `.specify/extensions/story/scripts/base.sh N --with-main <merged-main-sha>`
+  for each phase being replayed. Commit `replay-upstream.sha` with the review evidence. The replay compares the
+  final head to the phase base with that exact main revision integrated, and replays the original red commits on
+  their historical revisions. The synthesized base, scaffold and fix-parent snapshots live locally. A conflicting
+  snapshot is a replay failure that needs to be resolved before review.
 - `bin/scope-check.sh <role> <base>`: after each delegated step, the files changed since `<base>` must be ones the
   role may touch (for example a review only under `reviews/phase-N/`); `/ocelle-run` redoes a step that strays.
+  Exit 0 allows the step, exit 1 reports out-of-scope paths in JSON, and exit 2 means the check could not run.
 - `bin/guard-commit.sh`, a PreToolUse hook in `.claude/settings.json`: blocks `git commit --no-verify`, and blocks
   a commit that changes code unless the current feature links to an approved triage record (`triage.ref` for a
   mission, written by `link.sh`; the `triage:` field of `op.md` for an op).
