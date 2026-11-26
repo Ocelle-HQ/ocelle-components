@@ -20,3 +20,7 @@ Triage 031 is approved. The phase has no open tasks, its independent review is a
 The matched candidate used tested merge `784fedde2409a09b089da8ddff12dea1c830eddf` and the control used `d33bd40b1ef369bc6dd7f1f2bda4b04ea743d57d`. The two runs used identical discovery fixtures. [Candidate CI](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45704388510) · [Control CI](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45704188146) · [Scope, results and timing](reviews/phase-1/verification.md) · [Plants](reviews/phase-1/plants.md)
 
 The reviewed stacked history already carries merge commits and both mission evidence pins. Keep the branch after the squash so the red and base objects remain reachable. The landing run on the updated main base is recorded on the pull request. [PR #99](https://github.com/Ocelle-HQ/ocelle-components/pull/99)
+
+## Main's repository hygiene update
+
+Op 023 added the Sandbox paths gate and test-log redaction while the landing checks were running. The first replay after that merge still reproduced the six named red assertions. The older phase base also selected newly inherited Op 023 tests for the head check. The integrated phase base carries the same workflow and hygiene code as the candidate and preserves the pre-implementation stories and tests. See `reviews/phase-1/base.sha` for that pin. The original pilot hashes describe its earlier matched runs. [Integration review](reviews/landing/round-2.md)
