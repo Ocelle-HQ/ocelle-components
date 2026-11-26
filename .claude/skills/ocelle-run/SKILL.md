@@ -40,7 +40,8 @@ Issue numbers start new work at step 1. `resume` continues existing work (see "R
    pass it your own opinion of the outcome: independence is the point.
 2. **Before each delegation**, make sure `git status --porcelain` is empty (stop and ask the operator if not) and
    note `BASE=$(git rev-parse HEAD)`. **After it**, run
-   `tooling/speckit/bin/scope-check.sh <scope role> $BASE`. If `ok` is false, delegate the same step once more,
+   `tooling/speckit/bin/scope-check.sh <scope role> "$BASE"` as a conditional so you can read its JSON on exit 1.
+   Exit 2 means the check could not run. If `ok` is false, delegate the same step once more,
    telling the profile which files were outside its role and that it must undo them; if it is still false, stop
    and ask the operator.
 3. **Loop decisions come from scripts**, never from your judgement: the JSON of `spec-status.sh`, `status.sh`

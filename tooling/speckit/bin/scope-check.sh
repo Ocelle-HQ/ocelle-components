@@ -2,7 +2,7 @@
 # Checks that a delegated role touched only the files it may. Usage: scope-check.sh <role> <base-sha>
 # Looks at commits since <base-sha> plus uncommitted and untracked changes. Prints
 #   {"role":"...","ok":true|false,"outside":["path", ...]}
-# Always exits 0 (except on bad arguments): the orchestrator redoes a step whose "ok" is false.
+# Exit 0 allows the step, 1 rejects paths outside its scope, and 2 means the check could not run.
 set -euo pipefail
 role=${1:-}; base=${2:-}
 declare -A allowed=(
@@ -18,19 +18,25 @@ declare -A allowed=(
   [implement]='*'
 )
 [[ -n "$role" && -n "${allowed[$role]+x}" ]] || { echo "scope-check: role must be one of: ${!allowed[*]}" >&2; exit 2; }
-[[ "$base" =~ ^[0-9a-f]{7,40}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null || { echo "scope-check: base must be a commit sha" >&2; exit 2; }
-cd "$(git rev-parse --show-toplevel)"
-mapfile -t changed < <({ git diff --name-only "$base" HEAD; git status --porcelain --untracked-files=all | sed 's/^...//; s/.* -> //'; } | sort -u)
+[[ "$base" =~ ^[0-9a-f]{7,64}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null || { echo "scope-check: base must be a commit sha" >&2; exit 2; }
+root=$(git rev-parse --show-toplevel) && cd "$root" || exit 2
+git merge-base --is-ancestor "$base" HEAD || { echo "scope-check: base is not an ancestor of HEAD" >&2; exit 2; }
+paths=$(mktemp) || exit 2
+trap 'rm -f -- "$paths"' EXIT
+# Read exact paths, including both sides of a rename. Check the index and the worktree separately.
+git log --format= --diff-merges=first-parent --no-renames --name-only -z "$base..HEAD" -- > "$paths" &&
+  git diff --cached --no-renames --name-only -z -- >> "$paths" &&
+  git diff --no-renames --name-only -z -- >> "$paths" &&
+  git ls-files --others --exclude-standard -z -- >> "$paths" || exit 2
 read -r -a pats <<< "${allowed[$role]}"
 outside=()
-for f in "${changed[@]}"; do
-  [[ -n "$f" ]] || continue
+while IFS= read -r -d '' f; do
   ok=false
   for p in "${pats[@]}"; do [[ "$f" == $p ]] && { ok=true; break; }; done
   $ok || outside+=("$f")
-done
-out='['; first=1
-for f in "${outside[@]}"; do (( first )) || out+=','; first=0; out+="\"${f//\"/\\\"}\""; done
-out+=']'
-if (( ${#outside[@]} == 0 )); then ok=true; else ok=false; fi
-printf '{"role":"%s","ok":%s,"outside":%s}\n' "$role" "$ok" "$out"
+done < "$paths"
+printf '%s\0' "${outside[@]}" | node -e '
+  const outside = [...new Set(require("node:fs").readFileSync(0, "utf8").split("\0").filter(Boolean))].sort();
+  console.log(JSON.stringify({ role: process.argv[1], ok: outside.length === 0, outside }));
+' "$role" || exit 2
+(( ${#outside[@]} == 0 ))

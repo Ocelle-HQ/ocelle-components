@@ -1,0 +1,8 @@
+{"mode":"head","revision":"5ee0928364077c41a48689cc543d9a06b7a2897b","input":"7e6e66a4317e45c3b1eeff6f109f7cd9e14f7355fca93f7ed2828d2039afa44a","selected":[{"project":"gates-integration","file":"gates/test/integration/scope-check.test.ts"},{"project":"gates-integration","file":"gates/test/integration/test-workflow-evidence.test.ts"},{"project":"gates","file":"gates/test/story-phase.test.ts"},{"project":"gates","file":"gates/test/test-evidence-shards.test.ts"},{"project":"gates","file":"gates/test/test-shards-cli.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":35.658}
+HEAD is now at f8375bb add a file outside planner scope
+Switched to a new branch 'feature'
+Switched to a new branch 'upstream'
+Switched to branch 'feature'
+Switched to a new branch 'future-main'
+HEAD is now at 42ba172 advance the shared main history
+HEAD is now at 594aadc local criss-cross merge

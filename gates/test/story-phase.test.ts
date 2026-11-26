@@ -197,6 +197,137 @@ describe("phase record validation", () => {
   });
 });
 
+const upstream = "1".repeat(40);
+const upstreamFile = join(dir, "replay-upstream.sha");
+const virtualBase = "2".repeat(40);
+const virtualScaffold = "3".repeat(40);
+const virtualFix = "4".repeat(40);
+const mergedTree = "5".repeat(40);
+
+function pinnedFixture() {
+  const test = fixture();
+  test.known.add(upstream);
+  test.files.set(upstreamFile, upstream + "\n");
+  test.stale.add(`${initial}:${upstream}`);
+  test.stale.add(`${fix}:${upstream}`);
+  const git: PhaseTools["git"] = (args, input) => {
+    if (args[0] === "merge-base" && args[1] === "--all" && args[2] === "HEAD" && args[3] === "refs/remotes/origin/main") {
+      test.calls.push(args);
+      if (test.stale.has(`${upstream}:refs/remotes/origin/main`) || test.stale.has(`${upstream}:${head}`)) return `${anchor}\n`;
+      return `${upstream}\n`;
+    }
+    return test.tools.git(args, input);
+  };
+  return { ...test, tools: { ...test.tools, git } };
+}
+
+describe("phase replay pinned to integrated main", () => {
+  it("retains historical red revisions and uses integrated snapshots for base, scaffold, fix and selection", async () => {
+    const { tools, files, calls, checks, outputs, stale } = pinnedFixture();
+    files.set(join(dir, "scaffold.sha"), scaffold);
+    files.set(join(dir, "red-commits"), `phase ${initial}\nfix-1 ${fix}\n`);
+    for (const original of [anchor, scaffold, fixParent]) stale.add(`${upstream}:${original}`);
+    const snapshots = new Map([[anchor, virtualBase], [scaffold, virtualScaffold], [fixParent, virtualFix]]);
+    const merged: string[] = [];
+    const objects: string[] = [];
+    const git: PhaseTools["git"] = (args, input) => {
+      if (args[0] === "merge-tree") {
+        merged.push(String(args[2]));
+        calls.push(args);
+        return mergedTree + "\n";
+      }
+      if (args[0] === "hash-object") {
+        objects.push(String(input));
+        calls.push(args);
+        return (snapshots.get(merged.at(-1) ?? "") ?? "") + "\n";
+      }
+      return tools.git(args, input);
+    };
+    await checkPhase(request, { ...tools, git });
+
+    const identities = checks.map(({ check }) => [check.mode, check.revision]);
+    expect(identities).toEqual([["red", initial], ["red", fix], ["base", virtualBase],
+      ["scaffold", virtualScaffold], ["fix", virtualFix], ["head", head]]);
+    expect(calls.filter((args) => args[0] === "merge-tree")).toEqual([anchor, scaffold, fixParent]
+      .map((commit) => ["merge-tree", "--write-tree", commit, upstream]));
+    expect(calls.filter((args) => args[0] === "hash-object")).toEqual(Array.from({length: 3}, () =>
+      ["hash-object", "-t", "commit", "-w", "--stdin"]));
+    const identity = "Ocelle Spec Kit <spec-kit@ocelle.invalid> 0 +0000";
+    expect(objects).toEqual([anchor, scaffold, fixParent].map((commit) =>
+      `tree ${mergedTree}\nparent ${commit}\nparent ${upstream}\nauthor ${identity}\ncommitter ${identity}\n\nSpec Kit replay snapshot\n`));
+    expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=AMT", virtualBase, head, "--", ...patterns]);
+    expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=A", virtualBase, virtualScaffold, "--"]);
+    expect(outputs).toMatchObject([{ output: { base: anchor, replay_base: virtualBase, replay_upstream: upstream, status: "pass" } }]);
+    expect(files.get(join(dir, "base.sha"))?.trim()).toBe(anchor);
+  });
+
+  it("reuses a historical revision when it already includes the upstream", async () => {
+    const { tools, calls, checks, outputs } = pinnedFixture();
+    await checkPhase(request, tools);
+    expect(calls.map(([command]) => command)).not.toContain("merge-tree");
+    expect(checks.map(({ check }) => check.revision)).toEqual([initial, anchor, head]);
+    expect(outputs).toMatchObject([{ output: { base: anchor, replay_base: anchor, replay_upstream: upstream, status: "pass" } }]);
+  });
+
+  it.each([
+    { label: "an older shared pin", mergeBases: `${scaffold}\n` },
+    { label: "multiple best common ancestors", mergeBases: `${upstream}\n${scaffold}\n` },
+    { label: "no common ancestor", mergeBases: "" },
+    { label: "a Git inspection error", mergeBases: undefined },
+  ])("refuses $label before running any replay", async ({ mergeBases }) => {
+    const { tools, checks } = pinnedFixture();
+    const git: PhaseTools["git"] = (args, input) => {
+      if (args[0] === "merge-base" && args[1] === "--all" && args[2] === "HEAD" && args[3] === "refs/remotes/origin/main") {
+        if (mergeBases === undefined) throw new Error("cannot inspect remote main");
+        return mergeBases;
+      }
+      return tools.git(args, input);
+    };
+    await expect(checkPhase(request, { ...tools, git })).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+    expect(checks).toEqual([]);
+  });
+
+  it.each([[`${upstream}:refs/remotes/origin/main`, false], [`${upstream}:${head}`, false], [`${initial}:${upstream}`, true]])(
+    "fails closed on bad replay ancestry %s", async (blocked, isRed) => {
+      const { tools, stale, checks } = pinnedFixture();
+      if (isRed) stale.delete(blocked);
+      else stale.add(blocked);
+      await expect(checkPhase(request, tools)).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+      expect(checks).toEqual([]);
+    },
+  );
+
+  it("rejects a replay pin containing any recorded red even if another red is still separate", async () => {
+    const { tools, stale, checks, files } = pinnedFixture();
+    files.set(join(dir, "red-commits"), `phase ${initial}\nfix-1 ${fix}\n`);
+    stale.delete(`${fix}:${upstream}`);
+    await expect(checkPhase(request, tools)).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+    expect(checks).toEqual([]);
+  });
+
+  it("omits integrated metadata for a phase without a main pin", async () => {
+    const { tools, outputs } = fixture();
+    await checkPhase(request, tools);
+    expect(outputs[0]?.output).not.toHaveProperty("replay_base");
+  });
+
+  it("requires the pinned SHA to identify a real commit", async () => {
+    const { tools, known, checks } = pinnedFixture();
+    known.delete(upstream);
+    await expect(checkPhase(request, tools)).rejects.toThrow("Git could not resolve the revision");
+    expect(checks).toEqual([]);
+  });
+
+  it("reports a replay merge conflict and never runs final tests on an incorrect base", async () => {
+    const { tools, stale, checks } = pinnedFixture();
+    stale.add(`${upstream}:${anchor}`);
+    await expect(checkPhase(request, tools)).rejects.toThrow(
+      `cannot integrate pinned main ${upstream} into replay revision ${anchor}; resolve the replay conflict before proceeding`,
+    );
+    expect(checks.map(({ check }) => check.mode)).toEqual(["red"]);
+  });
+});
+
 describe("red capture", () => {
   it.each([undefined, "", "other", "fix-", "phase-extra"])("rejects invalid red capture labels (%s)", async (label) => {
     const { tools, checks } = fixture();

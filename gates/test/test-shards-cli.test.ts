@@ -167,8 +167,37 @@ describe("shard CLI decisions", () => {
     setResult({ files: firstResult.files, errors: errorsFromRunner });
     expect(await run("run", planPath, "0", "shard.json")).toBe(1);
     expect(JSON.parse(data.get("shard.json") ?? "null")).toEqual({ ...firstResult, errors: errorsFromRunner });
-    expect(errors).toEqual(["Unit tests: shard 0 reported errors"]);
+    expect(errors).toEqual(["Unit tests: shard 0 reported errors: Error: worker failed"]);
     expect(messages).toEqual([]);
+  });
+
+  it("names the matrix index when a nonzero shard fails", async () => {
+    const { run, data, errors, report: setResult } = fixture();
+    const runner = { name: "Error", message: "worker failed" };
+    setResult({ files: [], errors: [runner] });
+    expect(await run("run", planPath, "1", "shard.json")).toBe(1);
+    expect(JSON.parse(data.get("shard.json") ?? "null") as unknown).toMatchObject({ index: 1 });
+    expect(errors).toEqual([
+      'Unit tests: shard 1 inventory differs from the plan; missing: ["beta","test/control.test.ts"]; reported errors: Error: worker failed',
+    ]);
+  });
+
+  it("bounds runner output while keeping exact inventory details and the complete shard artifact", async () => {
+    const { run, data, errors, messages, report: setResult } = fixture();
+    const errorsFromRunner = Array.from({ length: 1_000 }, (_, index) => ({
+      name: "Error", message: `worker ${String(index)}: ${"long detail\n".repeat(60)}`, line: index + 1,
+    }));
+    const result = { files: firstResult.files, errors: errorsFromRunner };
+    setResult(result);
+
+    expect(await run("run", planPath, "1", second)).toBe(1);
+    expect(data.get(second)).toBe(`${JSON.stringify({ ...result, revision, index: 1 })}\n`);
+    expect(messages).toEqual([]);
+    expect(errors).toHaveLength(1);
+    const [inventory, summary] = errors[0]?.split("; reported errors: ") ?? [];
+    expect(inventory).toBe('Unit tests: shard 1 inventory differs from the plan; missing: ["beta","test/control.test.ts"]; unexpected: ["alpha","test/control.test.ts"]');
+    expect(summary?.length).toBeLessThanOrEqual(4_096);
+    expect(summary).toMatch(/992 runner errors omitted \(see result\.json\)$/);
   });
 
   it("verifies all artifact reports without requiring a comparison file", async () => {
@@ -206,7 +235,7 @@ describe("shard CLI decisions", () => {
     const { run, data, errors, messages } = fixture();
     data.set(full, JSON.stringify({ ...fullResult, errors: [{ name: "Error", message: "runner crashed" }] }));
     expect(await run("verify", planPath, reports, full)).toBe(1);
-    expect(errors).toEqual(["Unit tests: shard 0 reported errors"]);
+    expect(errors).toEqual(["Unit tests: shard 0 reported errors: Error: runner crashed"]);
     expect(messages).toEqual([]);
   });
 
