@@ -265,7 +265,22 @@ export default defineConfig({
           name: "storybook",
           environment: "node",
           include: ["storybook/test/unit/**/*.test.ts"],
+          exclude: [...excluded, "storybook/test/unit/browser/**"],
+        },
+      },
+      {
+        // The shared recipe hosts exercise the real DOM in process, so Stryker can capture their coverage.
+        test: {
+          name: "storybook-browser",
+          include: ["storybook/test/unit/browser/**/*.test.ts"],
           exclude: excluded,
+          browser: {
+            enabled: true,
+            provider: playwright({ launchOptions }),
+            headless: true,
+            viewport: elementViewport,
+            instances: [{ browser: "chromium" }],
+          },
         },
       },
       {
