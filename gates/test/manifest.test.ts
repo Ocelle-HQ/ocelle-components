@@ -354,3 +354,34 @@ describe("manifestFindings(committed, generated)", () => {
     expect([manifestFindings(reversed(generated), generated), manifestFindings(manifest(described), { ...generated, readme: "x" }).length]).toEqual([[], 1]);
   });
 });
+
+describe("component preflight findings and input errors", () => {
+  it("compares exact raw findings and counts repeated findings separately", async () => {
+    const entry = new URL("../lib/component-preflight.ts", import.meta.url);
+    const first = `${manifestPath}: manifest: stale: ocelle-icon.attribute.label differs from the generated manifest`;
+    const second = `${first} after property comparison`;
+    let difference: unknown;
+    if (existsSync(entry)) {
+      const { compareOverlayFindings } = (await import(entry.href)) as {
+        readonly compareOverlayFindings: (expected: readonly string[], actual: readonly string[]) => unknown;
+      };
+      difference = compareOverlayFindings([first, first, second], [first, second, second]);
+    }
+    expect(difference).toEqual({ unexpectedFindings: [second], missingFindings: [first] });
+  });
+
+  it("fails closed and names the snapshot when a valid overlay contains malformed manifest JSON", async () => {
+    const into = rootWithManifestPlants();
+    const snapshot = `${manifestPlants}/fail-lost-attribute/tree/${manifestPath}`;
+    writeFileSync(join(into, snapshot), "{\n");
+
+    const entry = new URL("../../tooling/speckit/bin/component-preflight.ts", import.meta.url);
+    const { runTool } = await import("../lib/spawn.ts");
+    const ran = existsSync(entry)
+      ? await runTool(process.execPath, [fileURLToPath(entry), "manifest", "--root", into], repo, process.env)
+      : { exitCode: 0, stdout: "", stderr: "" };
+    expect(ran.exitCode).toBe(2);
+    expect(ran.stdout).toBe("");
+    expect(ran.stderr).toContain(`${snapshot}: manifest: could not run: ${manifestPath} is not JSON`);
+  }, 60_000);
+});

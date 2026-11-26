@@ -266,3 +266,36 @@ describe("component preflight Storybook host discovery", () => {
     expect(ran.err.join("\n")).toContain("storybook/test/unit/browser/");
   }, 60_000);
 });
+
+it("requires a focused test and a single matching owner in each component preflight configuration", async () => {
+  const entry = new URL("../lib/component-preflight.ts", import.meta.url);
+  const nodeTest = "storybook/test/unit/swatches.test.ts";
+  const browserOwner = "storybook-browser (chromium)";
+  const validBrowser = [browserOwner];
+  let routes: unknown;
+  if (existsSync(entry)) {
+    const { hasUniqueHostRoute } = (await import(entry.href)) as {
+      readonly hasUniqueHostRoute: (test: string, project: string, normal: readonly string[], mutation: readonly string[]) => boolean;
+    };
+    routes = {
+      nodeProject: hasUniqueHostRoute(nodeTest, "storybook", ["storybook"], ["storybook"]),
+      builtOnly: hasUniqueHostRoute(paneFooterBuiltTest, retainedProject, validBrowser, validBrowser),
+      noOwner: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, [], []),
+      duplicateNormal: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, [browserOwner, browserOwner], validBrowser),
+      duplicateMutation: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, validBrowser, [browserOwner, browserOwner]),
+      changedOwner: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, ["storybook"], validBrowser),
+      wrongDeclaredOwner: hasUniqueHostRoute(paneFooterBrowserTest, "storybook", validBrowser, validBrowser),
+      malformedBrowserOwner: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, ["storybook-browser (chromium"], ["storybook-browser (chromium"]),
+    };
+  }
+  expect(routes).toEqual({
+    nodeProject: true,
+    builtOnly: false,
+    noOwner: false,
+    duplicateNormal: false,
+    duplicateMutation: false,
+    changedOwner: false,
+    wrongDeclaredOwner: false,
+    malformedBrowserOwner: false,
+  });
+});
