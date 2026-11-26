@@ -60,6 +60,171 @@ function node(root: string, ...args: string[]) {
   return spawnSync(process.execPath, args, { cwd: root, encoding: "utf8", timeout: 60_000 });
 }
 
+const storyFeature = "specs/006-story-implementation";
+const storyReviews = storyFeature + "/reviews/phase-1";
+const implementationStory = "storybook/stories/Workflow_Studio/plan.v2.stories.ts";
+const retiredStory = "storybook/stories/Workflow_Studio/retired.stories.ts";
+const supportStory = "storybook/stories/support.stories.ts";
+
+function prepareStoryWrappers(root: string): string {
+  for (const file of [...storyFiles, ".specify/scripts/bash/check-prerequisites.sh", ".specify/scripts/bash/common.sh"]) {
+    mkdirSync(dirname(join(root, file)), { recursive: true });
+    copyFileSync(join(repository, file), join(root, file));
+  }
+  const config = ".specify/extensions/story/story-config.yml";
+  write(root, config, readFileSync(join(root, config), "utf8").replace(/^setup_command:.*$/m,
+    'setup_command: "ln -s "$OCELLE_EVIDENCE_MODULES" node_modules"'));
+  write(root, storyFeature + "/plan.md", "# Implementation story proof\n");
+  write(root, storyFeature + "/tasks.md", "## Phase 1: Story behavior\n");
+  write(root, implementationStory, 'export const answer = "old";\n');
+  write(root, retiredStory, 'export const retired = "old";\n');
+  write(root, supportStory, 'export const support = "old";\n');
+  const base = commit(root, "story fixtures and default wrappers");
+  write(root, storyReviews + "/base.sha", base + "\n");
+  write(root, storyReviews + "/test-scope.txt",
+    "implementation-story " + implementationStory + "\nimplementation-story " + retiredStory + "\n");
+  return base;
+}
+
+function storyWrapper(root: string, script: "red" | "tdd-check", ...args: string[]) {
+  return spawnSync("bash", [".specify/extensions/story/scripts/" + script + ".sh", "1", ...args], {
+    cwd: root, encoding: "utf8", timeout: 60_000,
+    env: {
+      ...process.env,
+      SPECIFY_FEATURE_DIRECTORY: storyFeature,
+      SPECIFY_FEATURE_NO_PERSIST: "1",
+      OCELLE_EVIDENCE_MODULES: join(repository, "node_modules"),
+    },
+  });
+}
+
+function addStoryAssertion(root: string): void {
+  write(root, "test/story.test.ts", [
+    'import { existsSync } from "node:fs";',
+    'import { expect, it } from "vitest";',
+    'import { answer } from "../' + implementationStory + '";',
+    'import { support } from "../' + supportStory + '";',
+    'it("shows the revised plan with current supporting data", () => {',
+    '  expect(support).toBe("new");',
+    '  expect(answer).toBe("new");',
+    '});',
+    'it("removes the retired plan story", () => {',
+    '  expect(existsSync(new URL("../' + retiredStory + '", import.meta.url))).toBe(false);',
+    '});',
+  ].join("\n"));
+  write(root, supportStory, 'export const support = "new";\n');
+}
+
+it("replays declared implementation stories from the tested revision and overlays ordinary support stories", () => {
+  const root = fixture();
+  try {
+    const base = prepareStoryWrappers(root);
+    addStoryAssertion(root);
+    const red = commit(root, "record the failing assertion and ordinary test support");
+    const recorded = storyWrapper(root, "red", "phase");
+    expect({ status: recorded.status, stderr: recorded.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(recorded.stdout) as unknown).toMatchObject({
+      sha: red, tests_only: true, red: true, recorded: true,
+      evidence: { status: "red", assertions: [
+        { file: "test/story.test.ts", test: "shows the revised plan with current supporting data", source: { line: 7 } },
+        { file: "test/story.test.ts", test: "removes the retired plan story", source: { line: 10 } },
+      ] },
+    });
+
+    write(root, implementationStory, 'export const answer = "new";\n');
+    rmSync(join(root, retiredStory));
+    const head = commit(root, "implement the revised plan story");
+    const checked = storyWrapper(root, "tdd-check");
+    expect({ status: checked.status, stderr: checked.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(checked.stdout) as unknown).toMatchObject({
+      status: "pass", base, head, problems: [],
+      final_tests_on_base_exit: 1, head_exit: 0,
+      focused: {
+        base: { evidence: { status: "red", assertions: [
+          { file: "test/story.test.ts", source: { line: 7 } },
+          { file: "test/story.test.ts", source: { line: 10 } },
+        ] } },
+        head: { evidence: { status: "green" }, selected: [{ project: "fixture", file: "test/story.test.ts" }] },
+      },
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it("rejects a declared implementation story in a mixed red commit and in red history", () => {
+  const root = fixture();
+  try {
+    prepareStoryWrappers(root);
+    addStoryAssertion(root);
+    write(root, implementationStory, 'export const answer = "still old";\n');
+    const red = commit(root, "change the test and its declared implementation story");
+
+    const recorded = storyWrapper(root, "red", "phase");
+    expect({ status: recorded.status, stderr: recorded.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(recorded.stdout) as unknown).toMatchObject({
+      sha: red, tests_only: false, red: false, recorded: false,
+      problem: "red commit changes a declared implementation story: " + implementationStory,
+    });
+    expect(existsSync(join(root, storyReviews, "red-commits"))).toBe(false);
+
+    write(root, storyReviews + "/red-commits", "phase " + red + "\n");
+    const checked = storyWrapper(root, "tdd-check");
+    expect({ status: checked.status, stderr: checked.stderr }).toEqual({ status: 0, stderr: "" });
+    const verdict = JSON.parse(checked.stdout) as { readonly problems: readonly string[] };
+    expect(verdict).toMatchObject({ status: "fail", red_commits: [] });
+    expect(verdict.problems).toContain("red commit phase changes a declared implementation story: " + implementationStory);
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
+
+it.each([
+  { label: "an omitted path", path: "" },
+  { label: "an absolute path", path: "/storybook/stories/plan.stories.ts" },
+  { label: "an unrelated directory", path: "packages/storybook/stories/plan.stories.ts" },
+  { label: "a parent directory", path: "storybook/stories/../plan.stories.ts" },
+  { label: "a dot directory", path: "storybook/stories/./plan.stories.ts" },
+  { label: "an empty component", path: "storybook/stories//plan.stories.ts" },
+  { label: "a glob", path: "storybook/stories/*.stories.ts" },
+  { label: "a Git pathspec", path: ":(glob)storybook/stories/plan.stories.ts" },
+  { label: "a non-story extension", path: "storybook/stories/plan.test.ts" },
+  { label: "a Windows separator", path: "storybook/stories/sub\\plan.stories.ts" },
+])("rejects $label in an implementation-story declaration", ({ path }) => {
+  const root = fixture();
+  try {
+    prepareStoryWrappers(root);
+    write(root, storyReviews + "/test-scope.txt", "implementation-story " + path + "\n");
+    write(root, storyReviews + "/tdd-exempt.md", "Scope validation precedes exemption.\n");
+    const result = storyWrapper(root, "tdd-check");
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({
+      status: "fail", problems: ["implementation-story requires an exact .stories.ts path under storybook/stories/"],
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
+it.each([
+  { label: "a local test", declaration: implementationStory },
+  { label: "a CI-only test", declaration: "ci-only " + implementationStory },
+])("rejects a declared implementation story also listed as $label", ({ declaration }) => {
+  const root = fixture();
+  try {
+    prepareStoryWrappers(root);
+    write(root, storyReviews + "/test-scope.txt", declaration + "\nimplementation-story " + implementationStory + "\n");
+    write(root, storyReviews + "/tdd-exempt.md", "Scope validation precedes exemption.\n");
+    const result = storyWrapper(root, "tdd-check");
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({
+      status: "fail", problems: ["conflicting test scope for implementation story: " + implementationStory],
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
 it("executes a complete configured inventory and compares it with the full Vitest run", () => {
   const root = fixture();
   const output = mkdtempSync(join(tmpdir(), "ocelle-shards-output-"));
@@ -363,4 +528,140 @@ it("prints invalid red labels and sends invalid worker commands to stderr with e
   } finally {
     rmSync(root, { force: true, recursive: true });
   }
+});
+
+const returnCheck = join(repository, "tooling/speckit/bin/worktree-return-check.sh");
+
+function returnedWorktree(verify: (root: string, base: string, worker: string) => void): void {
+  expect(existsSync(returnCheck), "the worktree return checker is available").toBe(true);
+  const root = fixture();
+  const worker = mkdtempSync(join(tmpdir(), "ocelle-return-worker-"));
+  try {
+    write(root, "owned.ts", "base\n");
+    write(root, "outside.ts", "base\n");
+    const base = commit(root, "base");
+    git(root, "worktree", "add", "--quiet", "--detach", worker, base);
+    verify(root, base, worker);
+  } finally {
+    rmSync(worker, { force: true, recursive: true });
+    rmSync(root, { force: true, recursive: true });
+  }
+}
+
+function checkReturn(root: string, base: string, ...groups: string[]) {
+  return spawnSync("bash", [returnCheck, root, base, ...groups], {
+    cwd: root, encoding: "utf8", timeout: 10_000,
+  });
+}
+
+it("reports a clean sign-off and exact owned paths for a worktree return", () => {
+  returnedWorktree((root, base, worker) => {
+    write(worker, "owned.ts", "worker change\n");
+    const head = commit(worker, "finish owned change");
+    const refs = git(root, "show-ref", "--head");
+    const result = checkReturn(root, base, worker, "owned.ts");
+
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({ ok: true, head, paths: ["owned.ts"] });
+    expect(git(root, "show-ref", "--head")).toBe(refs);
+    expect(git(root, "status", "--porcelain")).toBe("");
+    expect(git(worker, "rev-parse", "HEAD")).toBe(head);
+    expect(git(worker, "status", "--porcelain")).toBe("");
+  });
+});
+
+it.each([
+  {
+    label: "a dirty worker",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "work to return\n");
+      commit(worker, "return owned change");
+      write(worker, "owned.ts", "uncommitted edit\n");
+      return base;
+    },
+  },
+  {
+    label: "a different base",
+    change: (root: string, _base: string, worker: string): string => {
+      write(worker, "owned.ts", "work on the old base\n");
+      commit(worker, "return work from the old base");
+      write(root, "outside.ts", "canonical base changed\n");
+      return commit(root, "advance canonical base");
+    },
+  },
+  {
+    label: "an unsigned commit",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "unsigned worker change\n");
+      git(worker, "add", "--", "owned.ts");
+      git(worker, "commit", "--quiet", "--no-signoff", "-m", "return unsigned work");
+      return base;
+    },
+  },
+  {
+    label: "a sign-off for someone other than the author",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "worker change with mismatched sign-off\n");
+      git(worker, "add", "--", "owned.ts");
+      git(worker, "commit", "--quiet", "--signoff", "--author", "Another Worker <other@example.com>", "-m", "return someone else's work");
+      return base;
+    },
+  },
+  {
+    label: "a merge commit",
+    change: (root: string, base: string, worker: string): string => {
+      write(worker, "owned.ts", "worker change\n");
+      commit(worker, "return owned change");
+      write(root, "second.ts", "another owned file\n");
+      git(worker, "merge", "--quiet", "--signoff", "--no-ff", "--no-edit", commit(root, "another owned change"));
+      return base;
+    },
+  },
+  {
+    label: "a rename out of the assigned paths",
+    change: (_root: string, base: string, worker: string): string => {
+      git(worker, "mv", "--", "owned.ts", "renamed.ts");
+      commit(worker, "move the owned file outside the assignment");
+      return base;
+    },
+  },
+  {
+    label: "an out-of-scope edit restored before return",
+    change: (_root: string, base: string, worker: string): string => {
+      write(worker, "outside.ts", "out-of-scope change\n");
+      commit(worker, "touch an unowned path");
+      write(worker, "outside.ts", "base\n");
+      write(worker, "owned.ts", "worker change\n");
+      commit(worker, "restore the unowned file and finish owned work");
+      return base;
+    },
+  },
+])("rejects a worktree return with $label", ({ change }) => {
+  returnedWorktree((root, base, worker) => {
+    const pinned = change(root, base, worker);
+    const result = checkReturn(root, pinned, worker, "owned.ts", "second.ts");
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({ ok: false });
+  });
+});
+
+it("rejects overlapping path ownership in a group of worktree returns", () => {
+  returnedWorktree((root, base, worker) => {
+    const other = mkdtempSync(join(tmpdir(), "ocelle-return-other-"));
+    try {
+      git(root, "worktree", "add", "--quiet", "--detach", other, base);
+      write(worker, "owned.ts", "first worker change\n");
+      commit(worker, "first return");
+      write(other, "second.ts", "second worker change\n");
+      commit(other, "second return");
+
+      const result = checkReturn(root, base, worker, "owned.ts", "--worker", other, "owned.ts", "second.ts");
+
+      expect(result.status).toBe(1);
+      expect(JSON.parse(result.stdout) as unknown).toMatchObject({ ok: false });
+    } finally {
+      rmSync(other, { force: true, recursive: true });
+    }
+  });
 });

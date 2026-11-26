@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mutation } from "../bin/mutation.ts";
 import type { MutationTools } from "../bin/mutation.ts";
 import { base, capture, configuredStryker, context, elementsReportPath, fakeGit, fakeRepo, mutant, newFilesDiff, strykerReport } from "./mutation-fakes.ts";
@@ -54,6 +54,96 @@ const zeroStryker: FakeStryker = (_mutate, files, config) => {
   return { exitCode: 0, stdout: "", stderr: "" };
 };
 const survives = configuredStryker(() => "Survived");
+
+function shadowReceipt(lines: readonly string[]): unknown {
+  const prefix = "mutation shadow receipt: ";
+  const receipt = lines.find((line) => line.startsWith(prefix));
+  const parsed: unknown = JSON.parse(receipt?.slice(prefix.length) ?? "null");
+  return parsed;
+}
+
+describe("mutation gate: shadow receipt and controls", () => {
+  it("records the hosted Stryker dry-run timing and elapsed invocation time", async () => {
+    let now = 700.25;
+    const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+    const actualTiming: FakeStryker = (selected, files, configuration) => {
+      now += 72_500.75;
+      return {
+        ...killed(selected, files, configuration),
+        stdout: "18:06:53 (1399286) INFO DryRunExecutor Initial test run succeeded. Ran 307 tests in 1 minute and 10 seconds (net 66580.60000002384 ms, overhead 3611.399999976158 ms).\n",
+      };
+    };
+    try {
+      const result = await gate(tools({ [elementFile]: 60 }, actualTiming), ["--shadow-grouped", "--files", `${elementFile}:1-60`]);
+      expect(result.code).toBe(0);
+      expect(shadowReceipt(result.err)).toMatchObject({
+        configuration: "stryker.elements.config.json",
+        ranges: [`${elementFile}:1-60`],
+        baseline: { tests: 307, elapsedMs: 70_192 },
+        totalMs: 72_500.75,
+      });
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it.each([
+    ["omits the startup record", "18:11:05 (1399286) INFO MutationTestExecutor Done in 5 minutes and 55 seconds.\n"],
+    ["splits the startup record over two lines", "Initial test run succeeded. Ran 307 tests in 70 seconds\n(net 66580.6 ms, overhead 3611.4 ms).\n"],
+  ])("records unavailable baseline timing when Stryker %s", async (_description, stdout) => {
+    const withoutTiming: FakeStryker = (selected, files, configuration) => ({
+      ...killed(selected, files, configuration),
+      stdout,
+    });
+    const result = await gate(tools({ [elementFile]: 60 }, withoutTiming), ["--shadow-grouped", "--files", `${elementFile}:1-60`]);
+    expect(result.code).toBe(0);
+    expect(shadowReceipt(result.err)).toMatchObject({ baseline: null });
+  });
+
+  it("requires a bounded selection before running the shadow path", async () => {
+    expect(await gate(tools({ [elementFile]: 60 }, killed), ["--shadow-grouped"])).toEqual({
+      code: 2,
+      out: [],
+      err: ["mutation: could not run: --shadow-grouped needs an explicit --files selection or --plan"],
+    });
+  });
+
+  it("identifies the opt-in plan and keeps the standard cut diagnostic", async () => {
+    const fixture = tools({ [elementFile]: 60 }, killed);
+    const shadow = await gate(fixture, ["--plan", "--shadow-grouped"]);
+    const standard = await gate(fixture, ["--plan"]);
+    expect(shadow.err).toEqual(["mutation shadow: plan: 1 shard, 0 cuts within files"]);
+    expect(standard.err).toEqual([
+      "mutation: plan: 2 shards, 1 cut within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)",
+    ]);
+  });
+});
+
+describe("mutation gate: a grouped element invocation", () => {
+  it("reports a survivor in a paired bucket and excludes a mutant beyond the selected lines", async () => {
+    const writesMutants: FakeStryker = (selected, files, configuration) => {
+      const mutants = selected.includes(`${elementFile}:1-60`) && configuration === "stryker.elements.config.json"
+        ? [mutant("first", 3, "Killed"), mutant("second", 44, "Survived"), mutant("outside", 61, "Survived")]
+        : [];
+      files.set(elementsReportPath, strykerReport({ [elementFile]: mutants }));
+      return { exitCode: 1, stdout: "", stderr: "" };
+    };
+    const result = await gate(tools({ [elementFile]: 100 }, writesMutants), ["--shadow-grouped", "--files", `${elementFile}:1-60`]);
+    expect(result.code, "the selected grouped range retains the survivor verdict").toBe(1);
+    expect(result.out).toContain(`${elementFile}:44: mutation: ConditionalExpression: Survived: replaced by true`);
+    expect(result.out).not.toContain(`${elementFile}:61: mutation: ConditionalExpression: Survived: replaced by true`);
+  });
+
+  it("reports a missing grouped report even when a previous report is present", async () => {
+    const previous = strykerReport({ [elementFile]: [mutant("old", 3, "Killed")] });
+    const noReport: FakeStryker = () => ({ exitCode: 1, stdout: "", stderr: "" });
+    const result = await gate(tools({ [elementFile]: 60 }, noReport, { [elementsReportPath]: previous }), [
+      "--shadow-grouped", "--files", `${elementFile}:1-60`,
+    ]);
+    expect(result.code).toBe(2);
+    expect(result.err[0], "the grouped invocation must produce its own usable report").toContain("Stryker wrote no report");
+  });
+});
 
 describe("the split of the mutation gate (005 research.md R-12)", () => {
   it("runs an element-only change under the elements configuration: its mutant is killed and the gate passes, not 'nothing to mutate' (pass-element-source)", async () => {

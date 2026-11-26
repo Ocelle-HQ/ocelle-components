@@ -114,8 +114,13 @@ function sameInventory(expected: readonly TestFile[], actual: readonly TestFile[
 
 // Unit tests rollout run 45046420891 exposed a small group taking over two minutes per file.
 // These whole-second estimates use its six shard reports. Other and newly discovered files use project estimates.
+// The split Visual estimates apportion the unsplit 2709 s measured in run 45672824182. Each of the three
+// capture-heavy files performs at least one whole-repository capture. The CLI cases fail before capture.
 const measuredSeconds = new Map([
-  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual.test.ts" }), 2095],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual.test.ts" }), 900],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual-findings.test.ts" }), 900],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual-cli.test.ts" }), 30],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual-capture.test.ts" }), 880],
   [fileKey({ project: "gates-integration", file: "gates/test/integration/axe.test.ts" }), 530],
   [fileKey({ project: "elements-browser", file: "packages/elements/test/browser/drawer.test.ts" }), 349],
   [fileKey({ project: "elements (chromium)", file: "packages/elements/test/drawer.test.ts" }), 332],

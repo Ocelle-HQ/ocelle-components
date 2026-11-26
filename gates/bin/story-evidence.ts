@@ -205,25 +205,45 @@ export async function replayStoryWorker(root: string, inputPath: string, outputP
   writeJson(outputPath, result);
 }
 
-function scope(dir: string, tools: PhaseTools): { extra: readonly string[]; ciOnly: readonly string[] } {
+interface PhaseScope {
+  readonly extra: readonly string[];
+  readonly ciOnly: readonly string[];
+  readonly implementationStories: ReadonlySet<string>;
+}
+
+const implementationStoryPath = /^storybook\/stories\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*\.stories\.ts$/;
+
+function scope(dir: string, tools: PhaseTools): PhaseScope {
   const filename = join(dir, "test-scope.txt");
-  if (!tools.exists(filename)) return { extra: [], ciOnly: [] };
+  const implementationStories = new Set<string>();
+  if (!tools.exists(filename)) return { extra: [], ciOnly: [], implementationStories };
   const paths = tools.read(filename).split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== "" && !line.startsWith("#"));
   const extra = new Set<string>();
   const ciOnly = new Set<string>();
-  const entries = paths.map((line) => {
-    const directive = /^ci-only(?:\s|$)/.test(line);
-    return { target: directive ? ciOnly : extra, path: directive ? line.slice("ci-only".length).trim() : line };
-  });
-  if (entries.some(({ path }) => path === "" || isAbsolute(path) || path.startsWith("-") || path.split("/").includes(".."))) {
-    throw new Error("test-scope.txt must contain repository-relative test paths");
+  for (const line of paths) {
+    const directive = /^(ci-only|implementation-story)(?:\s|$)/.exec(line)?.[1];
+    const path = directive === undefined ? line : line.slice(directive.length).trim();
+    if (directive === "implementation-story") {
+      if (!implementationStoryPath.test(path)) {
+        throw new Error("implementation-story requires an exact .stories.ts path under storybook/stories/");
+      }
+      implementationStories.add(path);
+      continue;
+    }
+    if (path === "" || isAbsolute(path) || path.startsWith("-") || path.split("/").includes("..")) {
+      throw new Error("test-scope.txt must contain repository-relative test paths");
+    }
+    (directive === "ci-only" ? ciOnly : extra).add(path);
   }
-  for (const { target, path } of entries) target.add(path);
-  return { extra: [...extra], ciOnly: [...ciOnly] };
+  const conflict = [...implementationStories].find((path) => extra.has(path) || ciOnly.has(path));
+  if (conflict !== undefined) throw new Error(`conflicting test scope for implementation story: ${conflict}`);
+  return { extra: [...extra], ciOnly: [...ciOnly], implementationStories };
 }
 
-function selection(from: string, to: string, patterns: readonly string[], extra: readonly string[], tools: PhaseTools): Selection {
-  const changed = trackedDiff(tools.git, from, to, "AMT", patterns);
+function selection(from: string, to: string, patterns: readonly string[], phaseScope: PhaseScope, tools: PhaseTools): Selection {
+  const selected = (filter: string): string[] => trackedDiff(tools.git, from, to, filter, patterns)
+    .filter((file) => !phaseScope.implementationStories.has(file));
+  const changed = selected("AMT");
   const changedLines = Object.fromEntries(changed.map((file) => {
     const diff = tools.git(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--unified=0", from, to, "--", file]);
     const ranges = [...diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)].flatMap((match) => {
@@ -233,7 +253,7 @@ function selection(from: string, to: string, patterns: readonly string[], extra:
     });
     return [file, ranges];
   }));
-  return { changed, changedLines, deleted: trackedDiff(tools.git, from, to, "D", patterns), extra };
+  return { changed, changedLines, deleted: selected("D"), extra: phaseScope.extra };
 }
 
 function safeLog(value: string, tested: string, root: string): string {
@@ -364,6 +384,11 @@ function testsOnly(git: PhaseTools["git"], from: string, to: string, patterns: r
     `:(exclude)${feature}`]).length === 0;
 }
 
+function changedImplementationStory(git: PhaseTools["git"], from: string, to: string, stories: ReadonlySet<string>): string | undefined {
+  if (stories.size === 0) return undefined;
+  return trackedDiff(git, from, to, "ACDMRTUXB").find((file) => stories.has(file));
+}
+
 function ancestor(git: PhaseTools["git"], older: string, newer: string): boolean {
   try {
     git(["merge-base", "--is-ancestor", older, newer]);
@@ -401,13 +426,20 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   if (!/^\d+$/.test(phase) || !resolve(dir).startsWith(`${root}/`)) throw new Error("invalid phase path");
   tools.mkdir(dir);
   const current = head(git);
-  const { extra, ciOnly } = scope(dir, tools);
+  const phaseScope = scope(dir, tools);
+  const { ciOnly, implementationStories } = phaseScope;
   if (mode === "red") {
     if (label === undefined || !/^(?:phase|fix-\d+)$/.test(label)) throw new Error("invalid red label");
     const old = `${current}^`;
+    const changedStory = changedImplementationStory(git, old, current, implementationStories);
+    if (changedStory !== undefined) {
+      emit({ phase, label, sha: current, tests_only: false, red: false, recorded: false, exit_code: 2,
+        problem: `red commit changes a declared implementation story: ${changedStory}` });
+      return;
+    }
     const tests = testsOnly(git, old, current, patterns, feature);
     const log = join(dir, `red-${label}.log`);
-    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, extra, tools), expected: [], missingModules: [], log }, setup);
+    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, phaseScope, tools), expected: [], missingModules: [], log }, setup);
     const code = expectedStatus(result);
     const recorded = tests && code === 1;
     if (recorded) {
@@ -429,6 +461,7 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   const exemption = join(dir, "tdd-exempt.md");
   if (tools.exists(exemption) && redRecords.length === 0) {
     if (ciOnly.length > 0) throw new Error("ci-only scope requires recorded local proof");
+    if (implementationStories.size > 0) throw new Error("implementation-story scope requires recorded local proof");
     emit({ phase, status: "exempt", reason_file: exemption, head: current }, out);
     return;
   }
@@ -444,11 +477,17 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   const discovered = new Map<string, Assertion>();
   for (const { name, sha } of redRecords) {
     const red = revision(git, sha);
-    if (!ancestor(git, red, current) || !testsOnly(git, `${red}^`, red, patterns, feature)) {
+    const old = `${red}^`;
+    if (!ancestor(git, red, current) || !testsOnly(git, old, red, patterns, feature)) {
       problems.push(`red commit ${name} is outside HEAD or changes non-test files`);
       continue;
     }
-    const result = await runCheck({ mode: "red", revision: red, selection: selection(`${red}^`, red, patterns, extra, tools),
+    const changedStory = changedImplementationStory(git, old, red, implementationStories);
+    if (changedStory !== undefined) {
+      problems.push(`red commit ${name} changes a declared implementation story: ${changedStory}`);
+      continue;
+    }
+    const result = await runCheck({ mode: "red", revision: red, selection: selection(old, red, patterns, phaseScope, tools),
       expected: [], missingModules: [], log: join(dir, `check-red-${name}.log`) }, setup);
     const code = expectedStatus(result);
     if (code !== 1) problems.push(`red commit ${name}: ${result.evidence.problem ?? "no failing assertion"}`);
@@ -459,7 +498,7 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
     reds.push({ label: name, sha: red, exit_code: code, ...result });
   }
 
-  const finalSelection = selection(base, current, patterns, extra, tools);
+  const finalSelection = selection(base, current, patterns, phaseScope, tools);
   const headSelection = ciOnly.length === 0 ? finalSelection : { ...finalSelection, ciOnly };
   const expected = [...discovered.values()];
   const missingModules = scaffold === undefined ? [] : trackedDiff(git, base, scaffold, "A");

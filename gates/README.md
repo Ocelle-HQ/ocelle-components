@@ -237,6 +237,17 @@ mission 007's bound of 176 s; `specs/007-mutation-gate-strictness/evidence/READM
 reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit, or 75 minutes when its entries include `packages/elements/src/` source, whose Stryker dry run may take up to 30 minutes (op 015; mission 010 operator rounds 6 and 8). `.github/workflows/cache.yml`
 (cache warming on `main`) is not a gate.
 
+### Mutation comparison trial
+
+A same-repository pull request can include `<!-- verify-mutation-shadow -->` in its description to run the
+comparison. The workflow verifies the preserved #94 tree, then runs the two standard 30-line ranges and their
+grouped 60-line range. It reports baseline and total times, compares mutants by source location, operation and
+replacement, and reports any added mutants that span the original cut. Missing receipts and differing standard
+verdicts fail the comparison.
+
+The opt-in `--shadow-grouped` option pairs adjacent element ranges in the plan. With `--files`, it emits a
+comparison receipt for the selected range. The required mutation workflow continues to use its standard planner.
+
 ## Deferred gates (FR-026)
 
 These gates of the constitution are not delivered by this feature; each is delivered with the issue named:

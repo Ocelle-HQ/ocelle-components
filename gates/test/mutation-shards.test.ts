@@ -255,6 +255,72 @@ describe("planShards: one file's entries in separate shards (phase 3 round 10, O
   });
 });
 
+describe("mutation gate: opt-in shadow grouping", () => {
+  const element = "packages/elements/src/canvas.ts";
+  const other = "gates/lib/canvas.ts";
+
+  it("keeps the default element plan at thirty changed lines without opting in", () => {
+    expect(planShards([file(element, 61)])).toEqual([
+      { files: [`${element}:1-30`], lines: 30 },
+      { files: [`${element}:31-60`], lines: 30 },
+      { files: [`${element}:61-61`], lines: 1 },
+    ]);
+  });
+
+  it("keeps the path of a short element file even in the shadow plan", () => {
+    expect(planShards([file(element, 30)], true)).toEqual([{ files: [element], lines: 30 }]);
+  });
+
+  async function plan(diff: string, args: readonly string[]) {
+    const { io, out, err } = capture();
+    const result = await mutation(context(["--base", base, "--plan", ...args]), {
+      git: fakeGit(diff),
+      ...fakeRepo({}, fakeStryker(() => "Killed")),
+    }, io);
+    return { result, out, err };
+  }
+
+  it("pairs at most two adjacent element entries per bucket only when opted in", async () => {
+    const diff = newFilesDiff({ [element]: 121, [other]: 61 });
+    const baseline = await plan(diff, []);
+    expect(baseline.out).toEqual([formatPlan([
+      { files: [`${other}:1-30`], lines: 30 },
+      { files: [`${other}:31-60`], lines: 30 },
+      { files: [`${other}:61-61`, `${element}:1-30`], lines: 31 },
+      { files: [`${element}:31-60`], lines: 30 },
+      { files: [`${element}:61-90`], lines: 30 },
+      { files: [`${element}:91-120`], lines: 30 },
+      { files: [`${element}:121-121`], lines: 1 },
+    ])]);
+    const shadow = await plan(diff, ["--shadow-grouped"]);
+    expect(shadow.result, "an explicit shadow request plans without changing the standard entry sizes").toBe(0);
+    const entries = JSON.parse(shadow.out[0] ?? "[]") as { files: string; lines: number }[];
+    expect(entries.flatMap(({ files }) => files.split(",")), "shadow grouping covers each changed line exactly once").toEqual([
+      `${other}:1-30`, `${other}:31-60`, `${other}:61-61`,
+      `${element}:1-60`, `${element}:61-120`, `${element}:121-121`,
+    ]);
+    expect(entries.reduce((sum, entry) => sum + entry.lines, 0)).toBe(182);
+  });
+
+  it.each([
+    ["between entries", "@@ -1,30 +1,30 @@", "@@ -32,30 +32,30 @@"],
+    ["inside an entry", "@@ -1,29 +1,29 @@", "@@ -31,31 +31,31 @@"],
+    ["inside the second entry", "@@ -1,31 +1,31 @@", "@@ -40,29 +40,29 @@"],
+  ])("keeps element ranges with a gap %s on the standard path", async (_where, first, second) => {
+    const diff = [
+      `diff --git a/${element} b/${element}`,
+      `--- a/${element}`,
+      `+++ b/${element}`,
+      first,
+      second,
+    ].join("\n");
+    const baseline = await plan(diff, []);
+    const shadow = await plan(diff, ["--shadow-grouped"]);
+    expect(shadow.result, "the shadow planner can handle a gapped file").toBe(0);
+    expect(shadow.out, "the gap and its standard range boundaries stay out of grouped buckets").toEqual(baseline.out);
+  });
+});
+
 describe("countCuts (phase 3 round 10, O10-02)", () => {
   it("counts no cut in no shard, nor in whole files", () => {
     expect(countCuts([])).toBe(0);
