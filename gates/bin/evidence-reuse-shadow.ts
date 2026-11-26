@@ -9,10 +9,12 @@ const requiredJobs = [
 ];
 const mandatoryHelpers = ["Unit test inventory", "Mutation plan", "Plants plan"];
 const unitComparison = "Unit tests full suite comparison";
-export const revision = /^[0-9a-f]{40}$/;
-export const digest = /^sha256:[0-9a-f]{64}$/;
-export const toolVersion = /^\d+\.\d+\.\d+(?:[.+~:-][\w.+~:-]+)?$/;
-export const reviewPath = /^(?:ops|specs)\/\d{3}-[a-z0-9]+(?:-[a-z0-9]+)*\/reviews\/(?:phase-[1-9]\d*|landing)\/round-[1-9]\d*(?:-fixes)?\.md$/;
+export const revision = { test: (value: string): boolean => /^[0-9a-f]{40}$/.test(value) };
+export const digest = { test: (value: string): boolean => /^sha256:[0-9a-f]{64}$/.test(value) };
+export const toolVersion = { test: (value: string): boolean => /^\d+\.\d+\.\d+(?:[.+~:-][\w.+~:-]+)?$/.test(value) };
+export const reviewPath = {
+  test: (value: string): boolean => /^(?:ops|specs)\/\d{3}-[a-z0-9]+(?:-[a-z0-9]+)*\/reviews\/(?:phase-[1-9]\d*|landing)\/round-[1-9]\d*(?:-fixes)?\.md$/.test(value),
+};
 
 export interface Attempt {
   readonly runId: number;
