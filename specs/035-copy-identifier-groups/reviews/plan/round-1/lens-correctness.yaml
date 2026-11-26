@@ -1,0 +1,63 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked feature pin 304a1114 and repository reference 24dc04da. Read the feature spec,
+# plan, triage and Constitution 1.3.1, the selection/input contract and its Kitty Desktop
+# #534 record, the code-block convention, the Workflow Studio discovery spec, Op 034,
+# and the live element sources, Storybook stories, Visual contract and package entries.
+# The feature has no research, data model, contracts or quickstart artifacts at this pin.
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The revealed compact state has no pinned visual baseline"
+    evidence:
+      - artifact: "plan.md Phase 2 lines 23–25 assigns one full grouped record ID, one initially compact digest, and two light and two dark pinned baselines. spec.md FR-003 and User Story 2 scenario 2 require a distinct revealed state with its disclosure retained and expanded."
+      - artifact: ".specify/memory/constitution.md Principle V lines 77–84 requires a story per variant and per state in light and dark, each with a committed pinned baseline."
+      - code: "gates/lib/visual-verdict.ts:65–82 and :142–154 use a single baseline per story ID and theme. The existing field already uses separate story IDs for its short, wrapped, status, disabled and focused presentations at storybook/stories/copy-field.stories.ts:18–40."
+    claim: |
+      The proposed capture inventory exercises the collapsed digest and the ordinary grouped record. The ordinary
+      grouped record lacks the disclosure retained by the revealed digest. A browser interaction that reveals the
+      compact digest leaves the revealed layout and control outside the pinned visual comparison in both themes.
+    remedies:
+      - "Add a separately captured revealed digest story alongside the full grouped record and initially compact digest, and include its light and dark baselines in the Phase 2 Storybook index, proof inventories and single-owner assignment."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 2
+    title: "Inherited RTL can reverse the ends of a compact identifier"
+    evidence:
+      - artifact: "spec.md FR-002 requires preserving group order, and FR-003 requires the first and last groups around the ellipsis. plan.md Approach line 11 describes rendering the units and ellipsis but leaves value direction inherited."
+      - code: "packages/elements/src/ocelle-copy-field.ts:54–81 has no value direction or bidi isolation. The established layout applies direction:ltr and unicode-bidi:isolate to the value at packages/elements/src/ocelle-code-block.ts:86–98, backed by specs/020-disclosure-code-block/spec.md:461–467."
+      - code: "Chromium 156.0.8078.4, inline source-order units `1234`, `…`, `9012` joined by wbr in a dir=rtl container: sorting character range rectangles by x gave `9012…1234`. With direction:ltr and unicode-bidi:isolate on the value the result was `1234…9012`. The compact numeric-prefix case `123:1234…9012` likewise reordered to `9012…123:1234` under inheritance."
+    claim: |
+      An RTL host can render the apparent first and last groups in reverse order even when the DOM and Copy
+      payload are correct. A prefix can move to the far side of the ellipsis. The current copy-field styles yield
+      this failure if the planned visual units inherit direction. The established digest layout isolates the value.
+    remedies:
+      - "Specify isolated left-to-right presentation for the opted-in identifier while preserving the page direction of the surrounding field and the existing plain value. Verify visual order for a numeric compact identifier on an RTL page, including its reveal."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "The digest convention and compact text selection need a shared contract"
+    evidence:
+      - artifact: "spec.md FR-002 imports the library digest convention. plan.md Approach line 11 proposes a shortened visual sequence and a separate full value, without addressing normal text selection."
+      - artifact: "specs/020-disclosure-code-block/spec.md:517–535 requires exact native copy from selected groups or the whole digest and explicitly preserves that behavior with a fallback full accessible string. packages/elements/README.md:1791–1794 documents the existing field as selectable and :2931–2939 describes exact digest copy and reading as the library convention."
+      - code: "Chromium 156.0.8078.4, a selected value with visual `rec:1234…9012` in an aria-hidden span and a visually clipped `rec:123456789012` span: Selection.toString() returned `rec:1234…9012rec:123456789012`."
+    claim: |
+      The grouped field is directed to follow a convention with an exact native text selection contract, while a
+      straightforward implementation of its compact markup can expose both the shortened and full strings to a
+      native selection. Exact Copy event assertions leave that discrepancy undetected. Consumers need a clear
+      distinction between the selection guaranteed in each presentation and the exact activation payload.
+    remedies:
+      - "Define native selection in all opted-in presentations, carry forward exact selection of the full grouped value, and choose explicitly how compact selection behaves with its two representations. Narrow the digest convention cross-reference if compact intentionally has a different native selection contract, and verify the chosen behavior alongside exact Copy."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 2
+    title: "The exact-once Copy wording drops the existing disconnection rule"
+    evidence:
+      - artifact: "spec.md User Story 1 scenario 4 says 'Each activation sends exactly one' and FR-004 requires the existing Copy contract. plan.md Approach line 9 retains the current deferred request."
+      - code: "packages/elements/src/ocelle-copy-field.ts:222–229 dispatches only if isConnected when the deferred callback runs. specs/014-selection-input/spec.md:929–934 and packages/elements/README.md:1808–1814 document the same exception. packages/elements/test/scenarios/copy-field.ts:795–820 tests removal in the activation task."
+    claim: |
+      A shell can remove the field before the deferred callback. The code, contract and existing tests then expect
+      zero requests, while the new scenario's unconditional count promises one. Treating that count as authoritative
+      would change the existing host protocol and could cause a request on a field whose host has removed it.
+    remedies:
+      - "Qualify the acceptance count with the existing connected-at-dispatch rule, and state in Phase 1 that the disconnection behavior stays in force in grouped and compact presentations."

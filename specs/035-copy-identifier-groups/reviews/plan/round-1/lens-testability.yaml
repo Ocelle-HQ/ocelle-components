@@ -1,0 +1,68 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Phase 1 needs an in-process route for element mutants"
+    evidence:
+      - artifact: "plan.md:17–19 names browser assertions and changed-source mutation without identifying which browser project runs the assertions."
+      - code: "vitest.mutation.elements.config.ts:1–10 retains only elements and elements-touch. vitest.config.ts:119,182–194,236–246 routes test/browser/copy-field.test.ts to the excluded elements-browser project. packages/elements/test/copy-field.test.ts:11–32 already runs the shared scenarios on instrumented source."
+    claim: |
+      The strict-CSP fixture and built Storybook can go green while the tests that check grouping and disclosure are absent from the element mutation run. The Phase 2 routing check applies to executable Storybook hosts and leaves this Phase 1 distinction implicit.
+    remedies:
+      - "Name packages/elements/test/copy-field.test.ts in the elements project as the Phase 1 red and element-mutation consumer. Extend its shared scenarios and run the applicable subset independently in the built strict-CSP fixture. Record the in-process test discovery and changed-line mutation result against the phase base."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Phase 2 can count a setup failure as red and replay the implemented stories"
+    evidence:
+      - artifact: "plan.md:23 says the red checks fail on the absent story or required fixture assets."
+      - artifact: ".specify/memory/constitution.md:117–126 requires missing-behavior failures and final-test replay against the old code."
+      - code: "tooling/speckit/README.md:161–180 rejects setup failures and requires an implementation-story entry for a behavior-bearing story. storybook/test/integration/pane-action-footer.test.ts:169–173 shows a labeled assertion on an exact built ID. packages/elements/test/browser/fixtures/copy-field.html:1–10 already serves the existing copy field and its required assets."
+    claim: |
+      A build, module, stylesheet, or fixture loading failure does not establish that the new copy-field behavior is absent. The existing strict-CSP page can load successfully on the phase base and fail a visible-content or disclosure assertion. Story files match the default test overlay, so a phase that omits its implementation-story declaration can also replay the new story exports on the base and lose its meaningful final-test red.
+    remedies:
+      - "Assign the exact Storybook IDs and test paths. Require a labeled missing-ID assertion after a successful Storybook build and a labeled missing-grouping or missing-disclosure assertion with the existing strict-CSP fixture and package loaded. Record implementation-story storybook/stories/copy-field.stories.ts and any runnable shared consumers in Phase 2 test-scope.txt, then keep the named assertion failures in the red and final-tests-on-base replays."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 2
+    title: "Reflow and focus need a measured browser assertion in each relevant state"
+    evidence:
+      - artifact: "plan.md:11,17,23 says to verify visual wrap, color modes and visible focus at 320 px and 200% text. spec.md:40,53 requires group-boundary reflow and unclipped focus across grouped, compact and revealed presentations."
+      - code: "packages/elements/test/scenarios/code-block.ts:257–298 measures actual line breaks, intact body groups and scroll width. storybook/test/integration/pane-action-footer.test.ts:84–109,321–360 checks computed text enlargement at a fixed viewport and measures the focus ring against clipping ancestors."
+    claim: |
+      A story can mount the right groups and report no page overflow while a body group splits or a shadow ancestor clips the focused control. Setting a root font size can also leave the identifier or control at its original computed size. Without a fixture that must actually reflow and a state/control matrix, the named checks can pass on unexercised layout paths.
+    remedies:
+      - "Specify 320 px at normal text and an unchanged viewport with proven 2× computed text size as separately named cases. Use fixtures that demonstrably wrap where applicable, assert one text rect per body group, expected multiple lines, and no field or page horizontal overflow. Assert a painted and unclipped focus indicator after keyboard focus in light, dark and forced colours for grouped Copy and both applicable controls in compact and revealed states."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "Compact Copy and Reveal need an exact event and accessibility timeline"
+    evidence:
+      - artifact: "plan.md:17 mentions exact raw requests, a clear-before-dispatch check, full accessible reading and an unaffected request count. spec.md:21,27–32,39,46 requires both compact Copy presentations, a single host outcome announcement, and trim-independent raw payload."
+      - code: "packages/elements/test/scenarios/copy-field.ts:90–114 captures event detail and dispatch-time status. Its plain-field case at 489–540 samples the activation task, next frame, request, region mutations and Chromium accessibility updates. packages/elements/test/commands.ts:412–419 exposes Chromium's expanded state."
+    claim: |
+      A payload equal to the display passes when the raw input has no outer whitespace. Final status or DOM attributes alone also let a duplicate announcement, a reordered clear, an unexposed expanded state, or duplicate identifier text pass. The existing timing case exercises the old plain rendering. The new reachable presentations need their own observations or shared parameterized assertions.
+    remedies:
+      - "Name trusted pointer, Enter and Space cases for both compact and revealed Copy using raw text with outer whitespace, a prefix and mixed case. Assert one exact deferred request per activation, the original value when replaced in the activation task, an empty region before listeners run, and one outcome transition in the region and Chromium accessibility updates. For Reveal assert a changed Chromium button state, exactly one complete identifier in subtree order, target identity and subsequent Tab order, plus zero requests and outcome updates after the deferred request window."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "Manifest freshness cannot prove the new options are present"
+    evidence:
+      - artifact: "plan.md:19 calls for manifest regeneration and preservation of raw overlay findings. spec.md:41 requires documentation of both options in the custom-elements manifest."
+      - code: "gates/bin/manifest.ts:72–113 compares committed and generated entries and checks descriptions of present members. packages/elements/test/node/manifest.test.ts:720–742 already asserts the generated copy-field declaration exactly and currently has no grouped or compact entries."
+    claim: |
+      The canonical manifest and every Plant fixture can agree with a generator that omits one of the new options. Manifest parity only verifies entries present in one of its inputs. The existing exact generated-declaration test can fail on the specific omitted members before implementation and catch the regression after regeneration.
+    remedies:
+      - "Add the existing generated-declaration test to Phase 1's named red and final-base replay, expecting both documented Boolean members and attribute mappings with their agreed defaults while retaining the current Copy event and parts. Record each preflight-discovered overlay path and its exact expected raw findings under the manifest owner's green verification."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "The live pilot needs readiness and an outcome for ineligible evidence"
+    evidence:
+      - artifact: "plan.md:25,29 directs use of Op 034 and observation after a complete matching control run. It supplies no readiness receipt or recorded outcome for a pair that fails eligibility."
+      - artifact: "ops/034-workflow-pilots/tasks.md:12–15 requires readiness before #89 and ticket-local measurements. ops/034-workflow-pilots/plan.md:13–15,25 requires rejected provenance to be ineligible, an actual required-CI comparison, and the delivery measures."
+      - code: "git ls-tree -r --name-only 304a111437e3c8064990344be2be4dd8d718159d gates .github lists neither the component-preflight tool nor the observational evidence-reuse workflow described by Op 034."
+    claim: |
+      The plan's pinned source does not establish which approved Op 034 tooling revision is runnable for #89. The matching hosted pair can remain ineligible even after complete CI if the trusted runtime or audited inputs cannot be proven. A retrospective can then omit the pilot result or conflate an inconclusive trial with measured savings.
+    remedies:
+      - "Name a pilot owner and a ticket-local receipt path. Pin the verified Op 034 tooling revision and readiness evidence before using the procedures. Record both required CI run and attempt identities, immutable Visual input and runtime evidence, fresh safeguards, and the eligibility result or precise blocker. Record time to first failure and verified green, compute, retries, coverage and verdict parity, fixture drift and rework for the checkpoint. Count savings only for an eligible matched pair."
