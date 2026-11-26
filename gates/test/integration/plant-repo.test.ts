@@ -222,7 +222,7 @@ describe("buildRepoTree: the Storybook workspace (006 research.md R-16)", () => 
     await buildRepoTree(fake, join(fixtures, "empty-plant"), into);
     expect(read(into, "storybook/baselines/fixture--story.light.png")).toBe("not a png, a fixture baseline\n");
     const repository = readdirSync(join(repo, "storybook/baselines"));
-    expect(repository).toHaveLength(796);
+    expect(repository).toHaveLength(802);
     expect(readdirSync(join(into, "storybook/baselines")).sort()).toEqual([...repository, "fixture--story.light.png"].sort());
     expect(repository.filter((name) => !readFileSync(join(into, "storybook/baselines", name)).equals(readFileSync(join(repo, "storybook/baselines", name))))).toEqual([]);
   });
