@@ -247,9 +247,23 @@ describe("unit test shard reports", () => {
       .toThrow(new Error(`unknown shard index ${String(index)}`));
   });
 
+  it("identifies missing and unexpected project/files alongside the worker error", () => {
+    const incomplete = { ...secondShard, errors: [error], files: [alphaResult] };
+    expect(() => verifyTestShards(manifest, [firstShard, incomplete], revision)).toThrow(
+      'shard 1 inventory differs from the plan; missing: ["gates","gates/test/beta.test.ts"]; unexpected: ["gates","gates/test/alpha.test.ts"]; reported errors: Error: runner failed',
+    );
+  });
+
+  it("identifies an extra copy of the same project/file", () => {
+    const duplicate = { ...secondShard, files: [betaResult, betaResult] };
+    expect(() => verifyTestShards(manifest, [firstShard, duplicate], revision)).toThrow(
+      'shard 1 inventory differs from the plan; unexpected: ["gates","gates/test/beta.test.ts"]',
+    );
+  });
+
   it("rejects a runner error even when every file and test reports passed", () => {
     expect(() => verifyTestShards(manifest, [firstShard, { ...secondShard, errors: [error] }], revision))
-      .toThrow(new Error("shard 1 reported errors"));
+      .toThrow(new Error("shard 1 reported errors: Error: runner failed"));
   });
 
   it.each([

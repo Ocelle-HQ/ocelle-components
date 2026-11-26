@@ -167,7 +167,7 @@ describe("shard CLI decisions", () => {
     setResult({ files: firstResult.files, errors: errorsFromRunner });
     expect(await run("run", planPath, "0", "shard.json")).toBe(1);
     expect(JSON.parse(data.get("shard.json") ?? "null")).toEqual({ ...firstResult, errors: errorsFromRunner });
-    expect(errors).toEqual(["Unit tests: shard 0 reported errors"]);
+    expect(errors).toEqual(["Unit tests: shard 0 reported errors: Error: worker failed"]);
     expect(messages).toEqual([]);
   });
 
@@ -206,7 +206,7 @@ describe("shard CLI decisions", () => {
     const { run, data, errors, messages } = fixture();
     data.set(full, JSON.stringify({ ...fullResult, errors: [{ name: "Error", message: "runner crashed" }] }));
     expect(await run("verify", planPath, reports, full)).toBe(1);
-    expect(errors).toEqual(["Unit tests: shard 0 reported errors"]);
+    expect(errors).toEqual(["Unit tests: shard 0 reported errors: Error: runner crashed"]);
     expect(messages).toEqual([]);
   });
 
