@@ -222,7 +222,7 @@ describe("component preflight manifest overlays", () => {
     expect(ran).toMatchObject({
       code: 1,
       receipt: { overlays: expect.arrayContaining([{
-        descriptor: `${plant}/plant.json`,
+        descriptor: `${plant}/plant.json`, fixturePaths: [snapshot],
         findings: [...manifestPlant(join(into, plant)).findings, staleName],
         unexpectedFindings: [staleName],
         missingFindings: [],
@@ -242,7 +242,7 @@ describe("component preflight manifest overlays", () => {
     expect(ran).toMatchObject({
       code: 1,
       receipt: { overlays: expect.arrayContaining([{
-        descriptor: `${plant}/plant.json`,
+        descriptor: `${plant}/plant.json`, fixturePaths: [`${plant}/tree/${manifestPath}`],
         findings: [staleModule],
         unexpectedFindings: [staleModule],
         missingFindings: manifestPlant(join(into, plant)).findings,
