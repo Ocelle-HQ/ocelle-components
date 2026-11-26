@@ -2,6 +2,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
+import { crc32 } from "node:zlib";
 import { expect, it } from "vitest";
 
 const workspace = resolve(import.meta.dirname, "../../..");
@@ -41,6 +42,51 @@ type Scenario = "advanced" | "conflicting-head" | "missing-head" | "duplicate-li
   "wrong-workflow" | "wrong-job" | "ambiguous-checkout" | "wrong-checkout" | "reversed-parents" |
   "moved-base" | "stale-current" | "incomplete-jobs" | "fallback" | "wrong-fallback-checkout" | "wrong-fallback-job" |
   "fallback-archive" | "ambiguous-fallback-archive";
+
+/** Build a stored ZIP with a fixed timestamp so these fixtures need no archive writer on PATH. */
+function logArchive(entries: Readonly<Record<string, string>>): Buffer {
+  const files: Buffer[] = [];
+  const directory: Buffer[] = [];
+  let directoryOffset = 0;
+  for (const [name, text] of Object.entries(entries)) {
+    const filename = Buffer.from(name);
+    const contents = Buffer.from(text);
+    const checksum = crc32(contents);
+
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4); // ZIP version needed to extract
+    local.writeUInt16LE(0x21, 12); // DOS date 1980-01-01
+    local.writeUInt32LE(checksum, 14);
+    local.writeUInt32LE(contents.length, 18);
+    local.writeUInt32LE(contents.length, 22);
+    local.writeUInt16LE(filename.length, 26);
+    files.push(local, filename, contents);
+
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(0x21, 14);
+    central.writeUInt32LE(checksum, 16);
+    central.writeUInt32LE(contents.length, 20);
+    central.writeUInt32LE(contents.length, 24);
+    central.writeUInt16LE(filename.length, 28);
+    central.writeUInt32LE(directoryOffset, 42);
+    directory.push(central, filename);
+    directoryOffset += local.length + filename.length + contents.length;
+  }
+
+  const centralDirectory = Buffer.concat(directory);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  const count = Object.keys(entries).length;
+  end.writeUInt16LE(count, 8);
+  end.writeUInt16LE(count, 10);
+  end.writeUInt32LE(centralDirectory.length, 12);
+  end.writeUInt32LE(directoryOffset, 16);
+  return Buffer.concat([...files, centralDirectory, end]);
+}
 
 function observe(root: string, scenario: Scenario) {
   const git = (...args: string[]): string => execFileSync("git", ["-c", "user.name=Observer Fixture",
@@ -136,16 +182,14 @@ function observe(root: string, scenario: Scenario) {
       "",
     ].join("\n");
     if (historical && (scenario === "fallback-archive" || scenario === "ambiguous-fallback-archive")) {
-      const entries = ["107_Visual regression.txt", "108_Accessibility.txt"];
-      write(join(root, "fixture-logs", "107_Visual regression.txt"), log);
-      write(join(root, "fixture-logs", "108_Accessibility.txt"), "unrelated log");
+      const entries: Record<string, string> = {
+        "107_Visual regression.txt": log,
+        "108_Accessibility.txt": "unrelated log",
+      };
       if (scenario === "ambiguous-fallback-archive") {
-        entries.push("109_Visual regression.txt");
-        write(join(root, "fixture-logs", "109_Visual regression.txt"), log);
+        entries["109_Visual regression.txt"] = log;
       }
-      const archive = join(root, "logs.zip");
-      execFileSync("zip", ["-q", archive, ...entries], { cwd: join(root, "fixture-logs") });
-      responses[`${attempt}/logs`] = { archive: readFileSync(archive).toString("base64") };
+      responses[`${attempt}/logs`] = { archive: logArchive(entries).toString("base64") };
     } else if (historical && (scenario === "fallback" || scenario === "wrong-fallback-checkout" || scenario === "wrong-fallback-job")) {
       const selectedJob = scenario === "wrong-fallback-job" ? "Unrelated job" : visual;
       responses[`run view ${String(source.id)} --repo github.com/${repository.full_name} --attempt ${String(source.run_attempt)} --job ${String(jobId)} --log`] =
