@@ -1,4 +1,5 @@
-{"mode":"head","revision":"d4d8e368a0f8dc2a39fe2ae458d199ea90bf5880","input":"09a8e3d75f1b0c766917ac446e89f0e6e1eebf76e43bf752d80ae64bb7093a6b","selected":[{"project":"gates-integration","file":"gates/test/integration/scope-check.test.ts"},{"project":"gates-integration","file":"gates/test/integration/test-workflow-evidence.test.ts"},{"project":"gates","file":"gates/test/story-phase.test.ts"},{"project":"gates","file":"gates/test/test-evidence-shards.test.ts"},{"project":"gates","file":"gates/test/test-shards-cli.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":30.702}
+{"mode":"head","revision":"96922a15507dca12f5fa82615182f06ae3cdc22d","input":"4b44427eea8a7b2f86c9c6d8f0c562f28ec1d4258e8a5f995f1c1696ebf753de","selected":[{"project":"gates-integration","file":"gates/test/integration/scope-check.test.ts"},{"project":"gates-integration","file":"gates/test/integration/test-workflow-evidence.test.ts"},{"project":"gates","file":"gates/test/story-phase.test.ts"},{"project":"gates","file":"gates/test/test-evidence-shards.test.ts"},{"project":"gates","file":"gates/test/test-shards-cli.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":33.659}
+HEAD is now at be3f652 add a file outside planner scope
 Switched to a new branch 'feature'
 Switched to a new branch 'upstream'
 Switched to branch 'feature'
