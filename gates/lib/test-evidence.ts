@@ -204,6 +204,36 @@ function shardShape(value: unknown): value is ShardResult {
     && failuresShape(value.errors) && Array.isArray(value.files) && value.files.every(fileResultShape);
 }
 
+function passingShardTests(expected: readonly TestFile[], result: ShardResult): number {
+  const errorSummary = result.errors.map(({ name, message }) =>
+    [name, message].filter(Boolean).join(": ").replace(/\s+/g, " ").trim().slice(0, 500)).join("; ");
+  if (!sameInventory(expected, result.files)) {
+    const missing = unmatchedFiles(expected, result.files);
+    const unexpected = unmatchedFiles(result.files, expected);
+    const details = [`shard ${String(result.index)} inventory differs from the plan`];
+    if (missing.length > 0) details.push(`missing: ${missing.join(", ")}`);
+    if (unexpected.length > 0) details.push(`unexpected: ${unexpected.join(", ")}`);
+    if (result.errors.length > 0) details.push(`reported errors: ${errorSummary}`);
+    throw new Error(details.join("; "));
+  }
+  if (result.errors.length > 0) throw new Error(`shard ${String(result.index)} reported errors: ${errorSummary}`);
+  let tests = 0;
+  for (const entry of result.files) {
+    const incomplete = entry.tests.find((test) => test.state !== "passed" || test.errors.length > 0);
+    if (entry.state !== "passed" || entry.errors.length > 0 || entry.tests.length === 0 || incomplete !== undefined) {
+      const state = incomplete?.state ?? entry.state;
+      throw new Error(`${entry.file} (${entry.project}) reported ${state}, errors, or no tests`);
+    }
+    tests += entry.tests.length;
+  }
+  return tests;
+}
+
+export function verifyTestShard(assigned: readonly TestFile[], result: unknown): { files: number; tests: number } {
+  if (!shardShape(result)) throw new Error("malformed shard results");
+  return { files: assigned.length, tests: passingShardTests(assigned, result) };
+}
+
 export function verifyTestShards(plan: unknown, results: unknown, revision: string): { files: number; tests: number } {
   if (!validTestPlan(plan, revision)) throw new Error("invalid plan inventory or revision");
   if (!Array.isArray(results) || !results.every(shardShape)) throw new Error("malformed shard results");
@@ -219,26 +249,7 @@ export function verifyTestShards(plan: unknown, results: unknown, revision: stri
     if (expected === undefined) throw new Error(`unknown shard index ${String(result.index)}`);
     if (seen.has(result.index)) throw new Error(`duplicate shard index ${String(result.index)}`);
     seen.add(result.index);
-    const errorSummary = result.errors.map(({ name, message }) =>
-      [name, message].filter(Boolean).join(": ").replace(/\s+/g, " ").trim().slice(0, 500)).join("; ");
-    if (!sameInventory(expected, result.files)) {
-      const missing = unmatchedFiles(expected, result.files);
-      const unexpected = unmatchedFiles(result.files, expected);
-      const details = [`shard ${String(result.index)} inventory differs from the plan`];
-      if (missing.length > 0) details.push(`missing: ${missing.join(", ")}`);
-      if (unexpected.length > 0) details.push(`unexpected: ${unexpected.join(", ")}`);
-      if (result.errors.length > 0) details.push(`reported errors: ${errorSummary}`);
-      throw new Error(details.join("; "));
-    }
-    if (result.errors.length > 0) throw new Error(`shard ${String(result.index)} reported errors: ${errorSummary}`);
-    for (const entry of result.files) {
-      const incomplete = entry.tests.find((test) => test.state !== "passed" || test.errors.length > 0);
-      if (entry.state !== "passed" || entry.errors.length > 0 || entry.tests.length === 0 || incomplete !== undefined) {
-        const state = incomplete?.state ?? entry.state;
-        throw new Error(`${entry.file} (${entry.project}) reported ${state}, errors, or no tests`);
-      }
-      tests += entry.tests.length;
-    }
+    tests += passingShardTests(expected, result);
   }
   return { files: plan.inventory.length, tests };
 }

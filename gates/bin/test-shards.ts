@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { processIo } from "../lib/cli.ts";
 import type { Io } from "../lib/cli.ts";
-import { planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
+import { planTestShards, validTestPlan, verifyTestShard, verifyTestShards } from "../lib/test-evidence.ts";
 import type { ShardResult, TestFile, TestRun } from "../lib/test-evidence.ts";
 import { testFile, testRun, withVitest } from "../lib/vitest-run.ts";
 
@@ -64,8 +64,9 @@ async function command(argv: readonly string[], tools: ShardTools, out: Io["out"
       if (remaining.size !== 0) throw new Error("shard discovery did not find every assigned test file");
       return execute(indices);
     });
-    write(output, { revision, index, ...result });
-    const counts = verifyTestShards({ ...plan, inventory: assigned, shards: [assigned] }, [{ revision, index: 0, ...result }], revision);
+    const report = { ...result, revision, index };
+    write(output, report);
+    const counts = verifyTestShard(assigned, report);
     out(`Unit tests shard ${arg}: ${String(counts.tests)} tests in ${String(counts.files)} files passed in ${String((tools.now() - started) / 1000)}s`);
     return;
   }
