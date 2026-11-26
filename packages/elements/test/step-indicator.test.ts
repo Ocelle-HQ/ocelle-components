@@ -190,11 +190,11 @@ describe("ocelle-step-indicator", () => {
     const check = indicator.shadowRoot?.querySelector(".check");
     const current = indicator.shadowRoot?.querySelector('[aria-current="step"] .marker');
     expect(presentation(indicator)).toEqual(progress);
-    const glyph = getComputedStyle(check as Element);
-    const marker = getComputedStyle(current as Element);
-    expect(glyph.stroke).toMatch(/^rgb\(/);
-    expect(glyph.stroke).not.toBe(marker.backgroundColor);
-    expect(marker.outlineStyle).toBe("solid");
-    expect(marker.outlineColor).not.toBe(marker.backgroundColor);
+    const stroke = check == null ? undefined : getComputedStyle(check).stroke;
+    const marker = current == null ? undefined : getComputedStyle(current);
+    expect(stroke).toMatch(/^rgb\(/);
+    expect(stroke).not.toBe(marker?.backgroundColor);
+    expect(marker?.outlineStyle).toBe("solid");
+    expect(marker?.outlineColor).not.toBe(marker?.backgroundColor);
   });
 });
