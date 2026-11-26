@@ -1,7 +1,7 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has twenty elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has twenty-three elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-scroller`, a
 horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
@@ -10,7 +10,9 @@ modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip 
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
 and `ocelle-personal-rail`, two controls that follow the control conventions below, `ocelle-button` and
 `ocelle-action-row`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an
-empty or loading panel, and `ocelle-progress`, a progress bar.
+empty or loading panel, `ocelle-progress`, a progress bar, and the three status elements, `ocelle-status-indicator`, a
+status dot, `ocelle-metric`, a label and its value, and `ocelle-pill-tag`, a state pill or a count badge that can also
+be a toggle button or a link.
 
 ## Entry points
 
@@ -964,7 +966,8 @@ colours the text and the border are `ButtonText` (`LinkText` in link mode), the 
 ## Control conventions
 
 Every control of this library (`ocelle-button`, and the action row, navigation items, copy control and form controls
-after it) follows these rules.
+after it) follows these rules. An interactive `ocelle-pill-tag`, in button mode and in link mode, follows them as
+`ocelle-button` does, with the moved attributes, custom states and limits its own section lists (see `ocelle-pill-tag`).
 
 1. **One inner control.** Each control renders exactly one native `<button type="button">` (button mode) or `<a>`
    (link mode) in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex.
@@ -1250,7 +1253,9 @@ system-colour outline and the fill is `Highlight`.
 `danger` or `neutral` (the default). The dot is `--ocelle-size-indicator` (8 px) square, round with the pill radius,
 and never transparent, empty or only outlined. An absent, empty or unknown `tone` shows `neutral`; the attribute keeps
 the value as written and the `tone` property reads `"neutral"`. Setting the property writes the attribute as given.
-`ocelle-status-indicator` emits no event and adds no tab stop.
+The five tones are the status vocabulary that `ocelle-pill-tag`'s `status` shares; to show a state as text, in a pill
+or a count badge, use `ocelle-pill-tag` (see `ocelle-pill-tag`). `ocelle-status-indicator` emits no event and adds no
+tab stop.
 
 **Naming.** Without a `label` the indicator is hidden from the accessibility tree: place text naming the state next to
 it, since a state is never shown by colour alone. `label` is the one way to name the indicator: with a non-empty
@@ -1313,6 +1318,9 @@ one line; a host that wants it to shrink further sets `min-inline-size: 0` on it
 
 **Parts.** The parts `label` (the term) and `value` (the definition) can be styled with `::part()`.
 
+**Beside a state.** A metric shows a value, not a state: show a state beside it with `ocelle-status-indicator` and the
+text that names it, or with `ocelle-pill-tag` (see those sections).
+
 ## `ocelle-pill-tag`
 
 ```html
@@ -1326,7 +1334,8 @@ one line; a host that wants it to shrink further sets `min-inline-size: 0` on it
 `<ocelle-pill-tag variant="badge">3</ocelle-pill-tag>`. `status` is one of `info`, `success`, `warning`, `danger` and
 `neutral` (the default); an absent, empty or unknown `status` shows `neutral`, the attribute keeps the value as written
 and the `status` property reads `"neutral"`. The vocabulary and its colour pairs are those of the notice's tone; the
-default is the pill's own.
+default is the pill's own. `ocelle-status-indicator`'s `tone` takes the same five values, for a state shown as a dot
+(see `ocelle-status-indicator`).
 
 **Looks.** `variant="pill"`, the default, fills the pill with `--ocelle-color-<status>-bg` and sets its text in
 `--ocelle-color-<status>`; `variant="badge"` has no fill, a `--ocelle-border-width` border in `--ocelle-color-<status>`

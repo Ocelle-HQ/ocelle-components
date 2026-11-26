@@ -199,15 +199,19 @@ aria-hidden="true">${label}</span><span class="written">${label}</span></dt><dd 
 DOM order, in both layouts (the row layout is CSS only). Chromium builds the accessibility tree from the transformed
 text, so a `text-transform: uppercase` label is exposed upper-cased (011 research.md 80-81 recorded it; the squad's
 probe of a shadow-root `dt` agrees). The label is therefore drawn twice in the `dt` (operator decision on
-PLAN-A11Y-SECURITY-1-001, (a)): the visible `.eyebrow` span, `aria-hidden`, carries `text-transform: uppercase`,
-`font-size: var(--ocelle-font-size-eyebrow)`, `font-weight: var(--ocelle-font-weight-eyebrow)`, `letter-spacing:
-var(--ocelle-tracking-eyebrow)` and `color: var(--ocelle-color-eyebrow)`; the `.written` span holds the label as
-written, untransformed, and is hidden visually with token-only CSS (`position: absolute; inline-size: 0; block-size: 0;
+PLAN-A11Y-SECURITY-1-001, (a)): the eyebrow's `font-size: var(--ocelle-font-size-eyebrow)`, `font-weight:
+var(--ocelle-font-weight-eyebrow)` and `letter-spacing: var(--ocelle-tracking-eyebrow)` are set on the `dt`, so the
+term's line box is the eyebrow's and not the body's strut, and the visible `.eyebrow` span, `aria-hidden`, inherits them
+and carries `text-transform: uppercase` and `color: var(--ocelle-color-eyebrow)` (amended in phase 7 to match the
+element, phase-3 review R1-03: the five declarations were first all on the `.eyebrow` span); the `.written` span holds
+the label as written, untransformed, and is hidden visually with token-only CSS (`position: absolute; inline-size: 0; block-size: 0;
 overflow: hidden; white-space: nowrap`, every value a keyword or 0; the `dt` is `position: relative`), so the term's
 name is the written text. A T002 probe confirms on Chromium's tree that the term is named by the written text and the
 copy adds no other node (**recheck**); if the zero-size copy is pruned from the tree, the phase-3 tasks use the
 smallest token-only hiding the probe shows to be kept, and the operator is told. Value: `font-variant-numeric:
-var(--ocelle-figures)`, the family inherited from the base styles (Schibsted Grotesk). `stack`: block flow; `row`: the
+var(--ocelle-figures)`, in Schibsted Grotesk set by the element itself (`.metric { font-family:
+var(--ocelle-font-sans) }`), so the family holds with no base styles on the page (FR-023; amended in phase 7 to match
+the element, phase-3 review R1-02: the family was first inherited from the base styles). `stack`: block flow; `row`: the
 rule is on the pair, `.layout-row .pair { display: flex; flex-wrap: wrap; align-items: baseline; column-gap:
 var(--ocelle-space-2); }` (the `dl`'s only child is the pair, so a flex `dl` would leave `dt` and `dd` stacked).
 Empty value: `dd { min-block-size: 1lh; }` (the one `lh` use 005's lint allows). `overflow-wrap: break-word` on both

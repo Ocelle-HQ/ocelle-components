@@ -1,0 +1,3 @@
+$ node gates/bin/mutation.ts -- --base bd40cf3078bbfd8bd5fee54f9ad82be9f41e96fc
+mutation: nothing to mutate: no package or gate source line changed since bd40cf3078bbfd8bd5fee54f9ad82be9f41e96fc
+exit 0
