@@ -7,7 +7,9 @@ in_scope: [96, 97]
 out_of_scope: [7, 76, 87]
 semver: none
 spec_prompt: "Harden the Spec Kit workflow in one op against the failures recorded in #96, the diagnostics portion of #97, and the flow diary. Pin integrated main in phase replay, preserving historical assertion evidence and the branch's edits to shared tests. Report missing and unexpected shard identities and run errors, inspect CI artifacts first, and verify every required check by name on the exact tested candidate. Make the role scope guard reject an out-of-scope change by exit status. Make Planner Pim assign Storybook verification paths up front and require that no-action gesture tests establish their intended target. See triage/032-workflow-hardening.md."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-26T01:23:23Z
 ---
 
 # Triage 032 — Harden phase replay, CI diagnosis, role scope and story planning
