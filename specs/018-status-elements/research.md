@@ -317,8 +317,15 @@ row), and an icon-only pill's position is pinned as T002 measured it (plant: `ba
 is moot. As amended at phase-4 round 2 (O2-01, operator decision; T044a): the pixel pin holds only on the strict-CSP
 fixture, where the real font loads; the in-process harness removes `@font-face`, so its text uses the machine's
 fallback font and the pin held in the sandbox but failed on the CI runner. In process the § US3 baseline body asserts
-only font-independent facts: the `bare` row, the icon-only pill's top above the surrounding text's, and its height
-and width equal to the one-line pill's padding plus the icon's size. `bare` never set stays killed.
+only font-independent facts. As amended at phase-4 round 3 (O3-01, operator option A), which replaces round 2's
+height and width equalities: on the correct element the height is never padding + border + icon, because the line box
+adds a descent that depends on the font (29.19 to 30.19 px in process against 26.1 px from the tokens), and the width
+also counts the icon's `space-2` margin. The facts, in the paragraph and the row and in each density: the row is
+`icon-row bare`; the pill's top is above the surrounding text's top; width = 2 × inline padding + 2 × border + icon
+size + `space-2` (within 0.5 px); the icon wrapper's top = the pill's top + border + block padding (within 0.5 px);
+height ≥ 2 × block padding + 2 × border + icon size (a lower bound). Measured in process across five fonts, the width
+(50.09 px), the wrapper offset (5.00 px) and the top above the text hold in every one. All three plants (`bare` never
+set, `bare` on every row, the dropped override) are killed in process and on the fixture.
 
 Shadow root (static mode, as amended at the phase-1 recheck):
 
