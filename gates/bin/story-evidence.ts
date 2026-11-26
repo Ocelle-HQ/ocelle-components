@@ -398,11 +398,11 @@ function ancestor(git: PhaseTools["git"], older: string, newer: string): boolean
   }
 }
 
-function sharedMain(git: PhaseTools["git"]): string {
+function matchesSharedMain(git: PhaseTools["git"], pin: string): boolean {
   try {
-    return git(["merge-base", "--all", "HEAD", "refs/remotes/origin/main"]).trim();
+    return git(["merge-base", "--all", "HEAD", "refs/remotes/origin/main"]).trim() === pin;
   } catch {
-    return "";
+    return false;
   }
 }
 
@@ -483,8 +483,8 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   const upstreamFile = join(dir, "replay-upstream.sha");
   const pin = tools.exists(upstreamFile) ? tools.read(upstreamFile).trim() : undefined;
   const upstream = pin === undefined ? undefined : revision(git, pin);
-  if (upstream !== undefined && (sharedMain(git) !== pin
-    || redRecords.some(({ sha }) => ancestor(git, revision(git, sha), upstream)))) {
+  if (pin !== undefined && (!matchesSharedMain(git, pin)
+    || redRecords.some(({ sha }) => ancestor(git, revision(git, sha), pin)))) {
     throw new Error("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
   }
   const exemption = join(dir, "tdd-exempt.md");
