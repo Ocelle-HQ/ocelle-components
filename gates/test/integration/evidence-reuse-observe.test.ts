@@ -27,16 +27,20 @@ const fixtures = [
 
 const fakeGh = `#!/usr/bin/env node
 import { readFileSync } from "node:fs";
-const response = JSON.parse(readFileSync(process.env.OCELLE_OBSERVER_FIXTURE, "utf8"))[process.argv.at(-1)];
+const args = process.argv.slice(2);
+const key = args[0] === "run" ? args.join(" ") : args.at(-1);
+const response = JSON.parse(readFileSync(process.env.OCELLE_OBSERVER_FIXTURE, "utf8"))[key];
 if (response === undefined) process.exit(2);
 if (typeof response === "string") process.stdout.write(response);
+else if (response?.archive) process.stdout.write(Buffer.from(response.archive, "base64"));
 else if (Array.isArray(response)) process.stdout.write(response.map(page => JSON.stringify(page)).join("\\n"));
 else process.stdout.write(JSON.stringify(response));
 `;
 
 type Scenario = "advanced" | "conflicting-head" | "missing-head" | "duplicate-link" | "wrong-pr" | "wrong-repo" |
   "wrong-workflow" | "wrong-job" | "ambiguous-checkout" | "wrong-checkout" | "reversed-parents" |
-  "moved-base" | "stale-current" | "incomplete-jobs";
+  "moved-base" | "stale-current" | "incomplete-jobs" | "fallback" | "wrong-fallback-checkout" | "wrong-fallback-job" |
+  "fallback-archive" | "ambiguous-fallback-archive";
 
 function observe(root: string, scenario: Scenario) {
   const git = (...args: string[]): string => execFileSync("git", ["-c", "user.name=Observer Fixture",
@@ -121,16 +125,34 @@ function observe(root: string, scenario: Scenario) {
       { total_count: jobs.length, jobs: historical && scenario === "incomplete-jobs" ? jobs.slice(13) : jobs.slice(12) },
     ];
     const jobId = jobs.find((job) => job.name === visual)?.id;
-    responses[`${api}/actions/jobs/${String(jobId)}/logs`] = [
+    const log = [
       "##[group]Checking out the ref",
       ...(historical && scenario === "ambiguous-checkout" ? ["[command]/usr/bin/git checkout --force refs/heads/other"] : []),
-      `[command]/usr/bin/git checkout --force refs/remotes/pull/${String(historical && scenario === "wrong-checkout" ? pullNumber + 1 : pullNumber)}/merge`,
+      `[command]/usr/bin/git checkout --force refs/remotes/pull/${String(historical && (scenario === "wrong-checkout" || scenario === "wrong-fallback-checkout") ? pullNumber + 1 : pullNumber)}/merge`,
       "##[endgroup]",
       "[command]/usr/bin/git log -1 --format=%H",
       tested,
       "visual: 1 captures match their baselines (docker+podman)",
       "",
     ].join("\n");
+    if (historical && (scenario === "fallback-archive" || scenario === "ambiguous-fallback-archive")) {
+      const entries = ["107_Visual regression.txt", "108_Accessibility.txt"];
+      write(join(root, "fixture-logs", "107_Visual regression.txt"), log);
+      write(join(root, "fixture-logs", "108_Accessibility.txt"), "unrelated log");
+      if (scenario === "ambiguous-fallback-archive") {
+        entries.push("109_Visual regression.txt");
+        write(join(root, "fixture-logs", "109_Visual regression.txt"), log);
+      }
+      const archive = join(root, "logs.zip");
+      execFileSync("zip", ["-q", archive, ...entries], { cwd: join(root, "fixture-logs") });
+      responses[`${attempt}/logs`] = { archive: readFileSync(archive).toString("base64") };
+    } else if (historical && (scenario === "fallback" || scenario === "wrong-fallback-checkout" || scenario === "wrong-fallback-job")) {
+      const selectedJob = scenario === "wrong-fallback-job" ? "Unrelated job" : visual;
+      responses[`run view ${String(source.id)} --repo github.com/${repository.full_name} --attempt ${String(source.run_attempt)} --job ${String(jobId)} --log`] =
+        log.trimEnd().split("\n").map((line) => `${selectedJob}\tUNKNOWN STEP\t2026-11-24T10:00:00.0000000Z ${line}\n`).join("");
+    } else {
+      responses[`${api}/actions/jobs/${String(jobId)}/logs`] = log;
+    }
     // The reversed-parent case gives the collector coherent REST metadata for an inconsistent local commit object.
     responses[`${api}/git/commits/${tested}`] = {
       sha: tested, tree: { sha: tree(tested) }, parents: [firstParent, source.head_sha].map((sha) => ({ sha })),
@@ -183,6 +205,48 @@ it("authenticates the historical checkout after the live PR link advances and re
     treeDiff: { changes: [{ path: review, beforeMode: null, afterMode: "100644" }] },
     verdict: { eligible: false, reason: "runtime" },
   });
+});
+
+it("authenticates the same historical Visual job through its attempt-specific log fallback", () => {
+  const result = replay("fallback");
+  expect(result?.run.status).toBe(0);
+  expect(result?.receipt).toMatchObject({
+    prior: { attempt: { runId: 101, attempt: 2 }, head: result?.priorHead, merge: result?.priorMerge },
+    verdict: { eligible: false, reason: "runtime" },
+  });
+});
+
+it("reads only the unique full Visual log from the exact attempt archive", () => {
+  const result = replay("fallback-archive");
+  expect(result?.run.status).toBe(0);
+  expect(result?.receipt).toMatchObject({
+    prior: { attempt: { runId: 101, attempt: 2 }, head: result?.priorHead, merge: result?.priorMerge },
+    verdict: { eligible: false, reason: "runtime" },
+  });
+});
+
+it("rejects a fallback log that checks out a different pull request", () => {
+  const result = replay("wrong-fallback-checkout");
+  expect(result?.run.status).toBe(0);
+  expect(result?.receipt).toMatchObject({ verdict: { eligible: false, reason: "provenance" } });
+  expect(result?.receipt?.detail).toMatch(/checkout of this PR's merge ref/);
+  expect(result?.receipt).not.toHaveProperty("treeDiff");
+});
+
+it("rejects a fallback log tagged for another job", () => {
+  const result = replay("wrong-fallback-job");
+  expect(result?.run.status).toBe(0);
+  expect(result?.receipt).toMatchObject({ verdict: { eligible: false, reason: "provenance" } });
+  expect(result?.receipt?.detail).toMatch(/does not identify the exact Visual regression job/);
+  expect(result?.receipt).not.toHaveProperty("treeDiff");
+});
+
+it("rejects an attempt archive containing ambiguous full Visual logs", () => {
+  const result = replay("ambiguous-fallback-archive");
+  expect(result?.run.status).toBe(0);
+  expect(result?.receipt).toMatchObject({ verdict: { eligible: false, reason: "provenance" } });
+  expect(result?.receipt?.detail).toMatch(/unique full Visual regression log/);
+  expect(result?.receipt).not.toHaveProperty("treeDiff");
 });
 
 it("rejects a contradictory immutable prior head even with matching PR membership and Visual checkout", () => {
