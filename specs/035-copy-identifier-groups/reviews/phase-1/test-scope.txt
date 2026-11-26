@@ -1,0 +1,3 @@
+packages/elements/test/browser/copy-field.test.ts
+packages/elements/test/copy-field.test.ts
+packages/elements/test/node/manifest.test.ts
