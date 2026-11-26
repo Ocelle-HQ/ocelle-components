@@ -1,0 +1,88 @@
+[data-story="pane-action-footer"] {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--ocelle-space-4);
+  color: var(--ocelle-color-ink);
+}
+
+[data-story="pane-action-footer"] .pane-action-footer__pane {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  border: var(--ocelle-border-width) solid var(--ocelle-color-rule);
+  border-radius: var(--ocelle-radius-row);
+  background: var(--ocelle-color-pane);
+}
+
+[data-story="pane-action-footer"] .pane-action-footer__pane--adjacent {
+  background: var(--ocelle-color-panel);
+}
+
+[data-story="pane-action-footer"] .pane-action-footer__body {
+  flex: 1;
+  padding: var(--ocelle-space-5);
+  overflow-wrap: anywhere;
+}
+
+[data-story="pane-action-footer"] h2 {
+  margin: 0 0 var(--ocelle-space-3);
+  font-size: var(--ocelle-font-size-lg);
+}
+
+[data-story="pane-action-footer"] :is(p, dl, dd) {
+  margin: 0;
+}
+
+[data-story="pane-action-footer"] dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ocelle-space-2) var(--ocelle-space-4);
+}
+
+[data-story="pane-action-footer"] dt {
+  color: var(--ocelle-color-ink-muted);
+}
+
+[data-story="pane-action-footer"] [data-pane-footer] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ocelle-space-3) var(--ocelle-space-4);
+  box-sizing: border-box;
+  min-block-size: calc(var(--ocelle-space-9) + var(--ocelle-space-6));
+  padding: var(--ocelle-space-3) var(--ocelle-space-4);
+  border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule);
+}
+
+[data-story="pane-action-footer"] [data-pane-footer="adjacent"] {
+  font-size: var(--ocelle-font-size-sm);
+}
+
+[data-story="pane-action-footer"] ocelle-step-indicator {
+  flex: 1 1 calc(3 * var(--ocelle-space-10));
+}
+
+[data-story="pane-action-footer"] [data-pane-actions] {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ocelle-space-2);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  margin-inline-start: auto;
+}
+
+[data-story="pane-action-footer"] ocelle-button {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+@media (width < 48rem) {
+  [data-story="pane-action-footer"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-story="pane-action-footer"] dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

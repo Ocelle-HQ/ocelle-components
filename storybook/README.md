@@ -27,6 +27,22 @@ tells an element issue how to add its stories so that each gets baselines in bot
   served under a CSP, and the `csp` gate covers the packages' built output only. The browser test serves the element
   page with constitution IV's header and a `securitypolicyviolation` collector.
 
+## Pane action footer recipe
+
+Open **Recipes → Pane action footer** in Storybook to see a primary action alone, a secondary action
+before the primary, a Back action before the primary, and a pane with no configured steps.
+
+Keep each footer after its pane content in normal flow. The desktop example uses the same 72 px minimum for both
+footers at default text size. Give the step indicator the remaining space at the start and place one token-spaced
+action group at the end. Put the primary button last in the DOM so reading and Tab order agree. When space is tight,
+the indicator compacts other labels while keeping their accessible names and displaying the current label. The
+footer can grow as actions wrap, leaving room around the buttons for their focus outlines.
+
+Listen for `ocelle-button-activate` in the host. Supply the new steps, pane content and action labels together.
+The recipe updates the primary button in place when moving from Choose to Confirm, so focus stays on the
+same native control. The step indicator supplies progress semantics and the host owns navigation.
+A separate browser fixture mounts the same recipe with external assets under strict CSP.
+
 ## Baselines
 
 - Baselines are committed in `storybook/baselines/`, one file per story and theme, named `<story-id>.<theme>.png`.

@@ -5855,6 +5855,50 @@
           "cssParts": [],
           "cssProperties": [],
           "customElement": true,
+          "description": "An ordered, non-interactive list of workflow steps with current and completed states.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "default": "[]",
+              "description": "Ordered progress records. Replace the array to update the displayed steps.",
+              "kind": "field",
+              "name": "steps",
+              "privacy": "public",
+              "type": {
+                "text": "readonly StepIndicatorStep[]"
+              }
+            }
+          ],
+          "name": "OcelleStepIndicator",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-step-indicator"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-step-indicator.ts",
+            "name": "OcelleStepIndicator"
+          },
+          "kind": "js",
+          "name": "OcelleStepIndicator"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-step-indicator.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
           "description": "A panel of an `ocelle-tabs`: its content is shown while the tab at the same place among the tabs is selected.",
           "events": [],
           "kind": "class",

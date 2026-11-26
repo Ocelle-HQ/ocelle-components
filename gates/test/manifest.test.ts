@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { manifestFindings, run } from "../bin/manifest.ts";
 import type { Io } from "../lib/cli.ts";
 import type { Finding } from "../lib/findings.ts";
+import { parsePlant } from "../lib/plant-judge.ts";
 
 // The manifest gate (005 FR-009, US1 scenario 12; research.md R-06; contracts/checks.md § New gate `manifest`; T018):
 // it generates the manifest from packages/elements/src/ocelle-*.ts under --root (packages/elements/scripts/manifest.ts)
@@ -83,12 +84,12 @@ function stale(message: string): Finding {
 
 describe("manifest gate on a root", () => {
   it("exits 0 on the repository: the committed manifest matches the source and every member is described", async () => {
-    expect(await gate(repo)).toEqual({ code: 0, out: ["manifest: 48 elements checked, no finding"], err: [] });
+    expect(await gate(repo)).toEqual({ code: 0, out: ["manifest: 49 elements checked, no finding"], err: [] });
   });
 
   it("exits 0 when the committed manifest only orders its keys differently (pass-reordered)", async () => {
     const dir = root({ [manifestPath]: `${JSON.stringify(reversed(committed()), null, 2)}\n` });
-    expect(await gate(dir)).toEqual({ code: 0, out: ["manifest: 48 elements checked, no finding"], err: [] });
+    expect(await gate(dir)).toEqual({ code: 0, out: ["manifest: 49 elements checked, no finding"], err: [] });
   });
 
   it("reports the label attribute lost from the committed manifest as one stale finding naming ocelle-icon and the attribute (fail-lost-attribute)", async () => {
@@ -136,6 +137,30 @@ describe("manifest gate on a root", () => {
   ])("exits 2 when $label", async ({ changes, cause }) => {
     const ran = await gate(root(changes));
     expect({ code: ran.code, out: ran.out, err: ran.err.map((line) => line.slice(0, cause.length)) }).toEqual({ code: 2, out: [], err: [cause] });
+  });
+});
+
+describe("manifest Plant overlays", () => {
+  it.each([
+    "pass-reordered",
+    "fail-lost-attribute",
+    "fail-undescribed-attribute",
+    "fail-undescribed-css-part",
+    "fail-undescribed-css-property",
+    "fail-undescribed-event",
+    "fail-undescribed-property",
+    "fail-undescribed-slot",
+  ])("reports only the intended raw manifest findings for %s", async (name) => {
+    const plant = join(repo, "gates/plants/manifest", name);
+    const spec = parsePlant(readFileSync(join(plant, "plant.json"), "utf8"));
+    if (typeof spec === "string") throw new Error(spec);
+    const into = root();
+    cpSync(join(plant, "tree"), into, { recursive: true });
+    const ran = await gate(into);
+    const expected = (spec.findings ?? []).map(({ location, rule, message }) => `${location}: manifest: ${rule}: ${message ?? ""}`);
+    expect({ code: ran.code, findings: ran.out.slice(0, -1), err: ran.err }).toEqual({
+      code: spec.expect === "pass" ? 0 : 1, findings: expected, err: [],
+    });
   });
 });
 

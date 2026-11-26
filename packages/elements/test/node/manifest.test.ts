@@ -505,6 +505,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-segment.ts",
       "src/ocelle-segmented-choice.ts",
       "src/ocelle-skip-link.ts",
+      "src/ocelle-step-indicator.ts",
       "src/ocelle-tab-panel.ts",
       "src/ocelle-tab.ts",
       "src/ocelle-tabs.ts",
