@@ -179,7 +179,7 @@ function rootWithManifestPlants(): string {
 
 async function manifestPreflight(root: string) {
   const { io, out, err } = capture();
-  const entry = new URL("../bin/component-preflight.ts", import.meta.url);
+  const entry = new URL("../../tooling/speckit/bin/component-preflight.ts", import.meta.url);
   if (!existsSync(entry)) return { code: 0, receipt: { overlays: [] }, err };
   const preflight = (await import(entry.href)) as { readonly run: typeof run };
   const code = await preflight.run(["manifest", "--root", root], io);

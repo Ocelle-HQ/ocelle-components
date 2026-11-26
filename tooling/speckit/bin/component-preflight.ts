@@ -4,14 +4,15 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseArgs as parseOptions } from "node:util";
-import { main, parseArgs } from "../lib/cli.ts";
-import type { Io } from "../lib/cli.ts";
-import { oneLine } from "../lib/findings.ts";
-import { inScope } from "../lib/mutation/ranges.ts";
-import { gateKeysProblem, parsePlant } from "../lib/plant-judge.ts";
-import type { Plant } from "../lib/plant-judge.ts";
-import { runTool } from "../lib/spawn.ts";
-import { run as runManifest } from "./manifest.ts";
+import { run as runManifest } from "../../../gates/bin/manifest.ts";
+import { main, parseArgs } from "../../../gates/lib/cli.ts";
+import type { Io } from "../../../gates/lib/cli.ts";
+import { compareOverlayFindings, focusedStorybookTests, hasUniqueHostRoute } from "../../../gates/lib/component-preflight.ts";
+import { oneLine } from "../../../gates/lib/findings.ts";
+import { inScope } from "../../../gates/lib/mutation/ranges.ts";
+import { gateKeysProblem, parsePlant } from "../../../gates/lib/plant-judge.ts";
+import type { Plant } from "../../../gates/lib/plant-judge.ts";
+import { runTool } from "../../../gates/lib/spawn.ts";
 
 const manifestPath = "packages/elements/custom-elements.json";
 const elementsSource = "packages/elements/src";
@@ -19,7 +20,6 @@ const manifestPlants = "gates/plants/manifest";
 const findingMarker = ": manifest: ";
 const normalVitestConfig = "vitest.config.ts";
 const strykerConfig = "stryker.config.json";
-const focusedTests = "storybook/test/unit/";
 const usage = "usage: component-preflight.ts manifest [--root DIR]\n"
   + "       component-preflight.ts host --source FILE --test FILE --project NAME [--root DIR]";
 
@@ -53,17 +53,6 @@ function expectation(descriptor: string, text: string): Plant {
   return plant;
 }
 
-/** Preserve duplicate findings and each raw message. The usual Plants verdict can compare a message substring. */
-function withoutMatches(from: readonly string[], take: readonly string[]): string[] {
-  const remaining = [...take];
-  return from.filter((finding) => {
-    const match = remaining.indexOf(finding);
-    if (match === -1) return true;
-    remaining.splice(match, 1);
-    return false;
-  });
-}
-
 async function runOverlay(root: string, tree: string, io: Io): Promise<readonly string[]> {
   const work = await mkdtemp(join(tmpdir(), "ocelle-component-preflight-"));
   try {
@@ -94,8 +83,7 @@ async function checkOverlay(root: string, directory: string, io: Io): Promise<Ov
   const expected = (plant.findings ?? []).map(({ location, rule, message }) =>
     `${location}${findingMarker}${oneLine(rule)}: ${oneLine(message ?? "")}`);
   const findings = await runOverlay(root, tree, io);
-  const unexpectedFindings = withoutMatches(findings, expected);
-  const missingFindings = withoutMatches(expected, findings);
+  const { unexpectedFindings, missingFindings } = compareOverlayFindings(expected, findings);
   const affectedPath = (finding: string): string => `${tree}/${finding.slice(0, finding.indexOf(findingMarker))}`;
   for (const finding of unexpectedFindings) {
     io.err(`${affectedPath(finding)}: unexpected finding ${finding}. Update the overlay against the candidate while preserving its intended defect.`);
@@ -175,13 +163,10 @@ async function checkHost(root: string, args: readonly string[], io: Io): Promise
     source, test, project, normalVitestConfig, strykerConfig, mutationVitestConfig, normalProjects, mutationProjects,
     mutationEvidence: "required",
   }));
-  const [owner] = mutationProjects;
-  // Vitest qualifies browser project names with the configured instance, e.g. storybook-browser (chromium).
-  const declaredOwner = owner === project || (owner?.startsWith(`${project} (`) === true && owner.endsWith(")"));
-  if (test.startsWith(focusedTests) && declaredOwner && mutationProjects.length === 1 && normalProjects.length === 1 && owner === normalProjects[0]) return 0;
+  if (hasUniqueHostRoute(test, project, normalProjects, mutationProjects)) return 0;
   io.err(`${test}: ${source} needs one focused in-process test in ${project}, discovered once by both configurations. `
     + `Normal owners: ${normalProjects.join(", ") || "none"}. Default mutation owners: ${mutationProjects.join(", ") || "none"}. `
-    + `Declare a test under ${focusedTests}browser/ for a browser host and rerun discovery.`);
+    + `Declare a test under ${focusedStorybookTests}browser/ for a browser host and rerun discovery.`);
   return 1;
 }
 

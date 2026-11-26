@@ -25,14 +25,14 @@ files one owner, and record which expected counts depend on the built index or p
 
 When a task changes the public element manifest, assign `packages/elements/custom-elements.json`, its regeneration,
 and every affected manifest Plant descriptor and fixture path to one task owner. Run
-`node gates/bin/component-preflight.ts manifest` to inventory the current full overlays and record each descriptor,
+`node tooling/speckit/bin/component-preflight.ts manifest` to inventory the current full overlays and record each descriptor,
 fixture path and exact intended finding from the receipt. Keep the reordered fixture clean. Record the generation
 step (`pnpm --filter @ocelle/elements run manifest`) and have the owner update the applicable snapshots while
 preserving each Plant's intended defect.
 
 When a task changes a shared Storybook host, record the exact source path, default `stryker.config.json`, its active
 Vitest configuration, the retained in-process project and each focused test path. Run
-`node gates/bin/component-preflight.ts host --source <host> --test <focused-test> --project <project>` for each declared
+`node tooling/speckit/bin/component-preflight.ts host --source <host> --test <focused-test> --project <project>` for each declared
 test before capture. Assign missing routes to the host task owner. For the changed host, require and attach a scoped
 `pnpm run gate:mutation -- --base <base-sha> --files <host>` result on the same candidate with its head, base, selected
 lines, mutant outcomes and exit verdict. Discovery establishes test ownership. The scoped result establishes whether

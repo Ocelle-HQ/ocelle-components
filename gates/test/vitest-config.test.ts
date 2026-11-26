@@ -216,7 +216,7 @@ describe("the Vitest projects", () => {
 });
 
 async function hostPreflight(test: string) {
-  const entry = new URL("../bin/component-preflight.ts", import.meta.url);
+  const entry = new URL("../../tooling/speckit/bin/component-preflight.ts", import.meta.url);
   const out: string[] = [];
   const err: string[] = [];
   if (!existsSync(entry)) return { code: 0, receipt: null, err };
