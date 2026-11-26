@@ -7,7 +7,9 @@ in_scope: [89]
 out_of_scope: [1, 13, 14, 75, 76, 86, 87, 88, 90, 91, 92]
 semver: minor
 spec_prompt: "Resolve #89 and triage/035-copy-identifier-groups.md with opt-in four-character grouping and a compact first/last-group preview on the existing ocelle-copy-field. Preserve a prefix such as sha256:, short final groups, proportional tabular figures and group-boundary wrapping at 320 px. Give the reveal control a meaningful name and native keyboard operation, keep focus predictable, expose the complete value to assistive technology and retain exact raw host copy with the existing default presentation. Provide fictional record ID and digest stories, public manifest and usage documentation, a minor changelog entry, focused browser and accessibility verification, light and dark baselines, forced colours, 200% text and strict CSP. Use the Op 034 workflow pilot and record its delivery checkpoint."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-26T11:36:39Z
 ---
 
 # Triage 035 — Grouped display for copyable identifiers
