@@ -1,0 +1,30 @@
+# Tasks: Step indicator and pane action footer
+
+**Input**: [spec.md](./spec.md), [plan.md](./plan.md), [triage](./triage.ref)
+
+Tests for a behaviour land before its implementation. Worktree returns use the exact owned paths below. Review and fold Phase 1 before Phase 2.
+
+## Phase 1: User Story 1 — Read workflow progress
+
+**Independent check**: A browser can read and update an ordered list with a distinct current step, completed text, and no marker tab stops or action.
+
+- [ ] T001 Record the phase base and an inert signature scaffold. Prerequisites: none. Paths: `packages/elements/src/ocelle-step-indicator.ts`, `specs/033-pane-step-indicator/reviews/phase-1/base.sha`, `specs/033-pane-step-indicator/reviews/phase-1/scaffold.sha`.
+- [ ] T002 Write and record the red element/public entry assertions (FR-001–004, FR-007–008, SC-001). Prerequisites: T001. Paths: `packages/elements/test/step-indicator.test.ts`, `packages/elements/test/browser/step-indicator.test.ts`, `packages/elements/test/node/readme.test.ts`, `specs/033-pane-step-indicator/reviews/phase-1/red-commits`, `specs/033-pane-step-indicator/reviews/phase-1/red-phase.log`.
+- [ ] T003 Implement token, progress and accessibility behaviour. Prerequisites: T002. Path: `packages/elements/src/ocelle-step-indicator.ts`.
+- [ ] T004 Expose, generate and document the addition (FR-008). Prerequisites: T003. Paths: `packages/elements/src/index.ts`, `packages/elements/package.json`, `packages/elements/custom-elements.json`, `packages/elements/README.md`, `packages/elements/CHANGELOG.md`.
+- [ ] T005 Record green replay, changed-source mutation, and review evidence. Prerequisites: T004. Paths: `specs/033-pane-step-indicator/reviews/phase-1/tdd-check.json`, `specs/033-pane-step-indicator/reviews/phase-1/check-red-phase.log`, `specs/033-pane-step-indicator/reviews/phase-1/check-final-tests-on-base.log`, `specs/033-pane-step-indicator/reviews/phase-1/check-final-tests-on-scaffold.log`, `specs/033-pane-step-indicator/reviews/phase-1/check-head.log`, `specs/033-pane-step-indicator/reviews/phase-1/mutation.md`.
+
+## Phase 2: User Story 2 — Act from a pane footer
+
+**Independent check**: The three fictional built stories prove the aligned desktop footer and actual host actions. The 1200 px, 320 px and 200% text checks preserve step context, order, and focus.
+
+- [ ] T006 Record the phase base and implementation-story scope. Prerequisites: T005. Paths: `specs/033-pane-step-indicator/reviews/phase-2/base.sha`, `specs/033-pane-step-indicator/reviews/phase-2/test-scope.txt`. Use `implementation-story storybook/stories/pane-action-footer.stories.ts`. CI-only scope may contain the existing aggregate inventory assertions assigned to T011.
+- [ ] T007 [P] Prove the built Storybook cases red on missing exact index entries, including all variants, actual activation and focus, desktop geometry, compaction, phone, true 200% text, themes and forced colours (FR-005–007, SC-002–004). Prerequisites: T006. Path: `storybook/test/integration/pane-action-footer.test.ts`.
+- [ ] T008 [P] Prove the built recipe host fixture red on an assertion for its missing assets, then exercise the actual host transition under strict CSP (FR-007). Prerequisites: T006. Paths: `packages/elements/test/browser/pane-action-footer.test.ts`, `packages/elements/test/browser/fixtures/pane-action-footer.html`. Keep this fixture test-only and load assets after a positive presence assertion.
+- [ ] T009 Record canonical tests-only red on the joined proofs. Prerequisites: T007, T008. Paths: `specs/033-pane-step-indicator/reviews/phase-2/red-commits`, `specs/033-pane-step-indicator/reviews/phase-2/red-phase.log`.
+- [ ] T010 Compose and document the three recipes, move the host state/labels on actual native actions, keep focus in place and preserve the responsive layout. Prerequisites: T009. Paths: `storybook/stories/pane-action-footer.stories.ts`, `storybook/stories/pane-action-footer.ts`, `storybook/stories/pane-action-footer.css`, `storybook/README.md`.
+- [ ] T011 Update test and Plant inventories for 397 stories and 794 themes, plus two themes for the Axe negative fixture. Measure the exact light story outcomes for the token-change Plant. Prerequisites: T009. Paths: `gates/test/integration/storybook-build.test.ts`, `gates/test/integration/axe.test.ts`, `gates/test/integration/visual.test.ts`, `gates/test/integration/visual-findings.test.ts`, `gates/test/integration/visual-capture.test.ts`, `gates/test/integration/plant-repo.test.ts`, `gates/plants/storybook-build/fail-empty-index/tree/storybook/stories/pane-action-footer.stories.ts`, `gates/plants/visual/fail-token-changed/plant.json`.
+- [ ] T012 Capture the six pinned baselines. Prerequisites: T010. Paths: `storybook/baselines/recipes-pane-action-footer--primary-only.light.png`, `storybook/baselines/recipes-pane-action-footer--primary-only.dark.png`, `storybook/baselines/recipes-pane-action-footer--secondary-and-primary.light.png`, `storybook/baselines/recipes-pane-action-footer--secondary-and-primary.dark.png`, `storybook/baselines/recipes-pane-action-footer--back-and-primary.light.png`, `storybook/baselines/recipes-pane-action-footer--back-and-primary.dark.png`.
+- [ ] T013 Prove both negative controls and green replay, confirm the exact CI candidate, and record Plant coverage. Prerequisites: T010, T011, T012. Paths: `specs/033-pane-step-indicator/reviews/phase-2/negative-controls.md`, `specs/033-pane-step-indicator/reviews/phase-2/plants.md`, `specs/033-pane-step-indicator/reviews/phase-2/tdd-check.json`, `specs/033-pane-step-indicator/reviews/phase-2/check-red-phase.log`, `specs/033-pane-step-indicator/reviews/phase-2/check-final-tests-on-base.log`, `specs/033-pane-step-indicator/reviews/phase-2/check-head.log`.
+
+The Op 032 Planner preflight is reflected in the exact story IDs, paths and owners. The phase integration owner checks both disjoint red worktree returns and records the canonical joint red commit. Any review-directed fixes use separate numbered evidence rounds for their actual files.
