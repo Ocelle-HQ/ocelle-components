@@ -1269,7 +1269,7 @@ const identifierScenarios: readonly CopyFieldScenario[] = [
       const gaps = units.slice(1).map((unit, index) => {
         const previous = units[index]?.rects.at(-1);
         const current = unit.rects[0];
-        return previous !== undefined && current !== undefined && previous.top === current.top && current.left > previous.right;
+        return current !== undefined && previous?.top === current.top && current.left > previous.right;
       });
       const selected = await nativeSelection(driver, inPage);
       await inPage(recordRequests, null);
