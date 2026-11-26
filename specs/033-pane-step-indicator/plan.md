@@ -41,6 +41,10 @@ Test the final story IDs `recipes-pane-action-footer--primary-only`, `recipes-pa
 
 On a temporary build with all story IDs intact, show that the live host navigation assertion fails when the primary action leaves the pane or progress state unchanged. In a separate temporary build, show that the responsive assertion fails when the fixed footer clips enlarged or narrow content. Record the actual failing assertions for both controls and restore the canonical sources before recording a clean run. Keep this evidence separate from changed-source mutation of the component.
 
+The hosted capture run reported 61 uncovered mutants in the shared recipe host. The built Storybook Playwright and strict-CSP probes remain required. Add direct, in-process coverage of the imported host in the `storybook-browser` Vitest project, scoped to `storybook/test/unit/browser/**/*.test.ts`. Exclude that subfolder from the existing Storybook Node project only. The default mutation config retains the new project. Prove exact routing and mutation retention red in the gates project so the recorded assertion keeps its project identity throughout replay. Add the shared host tests after routing. When final replay evaluates them on the original Node configuration, use an assertion about the browser environment before a dynamic host import, so the absence of the new project remains observable without import or setup errors.
+
+Exercise the real host through native actions and check the observable pane, step state and button labels. Keep the shared production host as implemented unless mutation identifies a behaviour defect. Rerun the standard changed-source mutation scope and record the outcome before review. [Hosted capture run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45743218289)
+
 ## Structure
 
 - `packages/elements/src/ocelle-step-indicator.ts` owns the element.
@@ -48,6 +52,7 @@ On a temporary build with all story IDs intact, show that the live host navigati
 - `packages/elements/package.json`, `packages/elements/src/index.ts` and `packages/elements/custom-elements.json` own the package surface. `packages/elements/README.md` documents public input, `packages/elements/CHANGELOG.md` records the addition, and `packages/elements/test/node/readme.test.ts` keeps the public inventory assertions exact. `packages/elements/test/browser/step-indicator.test.ts` proves both built entry points.
 - `storybook/stories/pane-action-footer.stories.ts` registers the four variants. `storybook/stories/pane-action-footer.ts` and `storybook/stories/pane-action-footer.css` hold the shared host and presentation.
 - `storybook/test/integration/pane-action-footer.test.ts` owns the built story behaviour, geometry, keyboard and origin checks.
+- `storybook/test/unit/browser/pane-action-footer.test.ts` owns direct host coverage in the in-process browser project defined in `vitest.config.ts`. `gates/test/vitest-config.test.ts` verifies exclusive routing and default mutation retention.
 - `packages/elements/test/browser/pane-action-footer.test.ts` and `packages/elements/test/browser/fixtures/pane-action-footer.html` own the separate strict-CSP fixture. Load the shared recipe assets in this case after checking their presence so existing browser fixtures can build on the red revision.
 - `specs/033-pane-step-indicator/reviews/phase-2/test-scope.txt` records the exact implementation story path. `storybook/README.md` documents the recipe and compact behaviour.
 - One phase 2 task owns existing build, Visual, Axe and Plant inventory changes. A separate evidence owner captures the eight PNGs after the stories render.
