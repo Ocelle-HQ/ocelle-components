@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { estimateTestSeconds, planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
+import { estimateTestSeconds, planTestShards, validTestPlan, verifyTestShard, verifyTestShards } from "../lib/test-evidence.ts";
 
 const revision = "a".repeat(40);
 const alpha = { project: "gates", file: "gates/test/alpha.test.ts" };
@@ -259,6 +259,32 @@ describe("unit test shard reports", () => {
     expect(() => verifyTestShards(manifest, [firstShard, duplicate], revision)).toThrow(
       'shard 1 inventory differs from the plan; unexpected: ["gates","gates/test/beta.test.ts"]',
     );
+  });
+
+  it("lists missing tests without inventing unexpected files or runner errors", () => {
+    const missing = { ...secondShard, files: [] };
+    expect(() => verifyTestShard([alpha, beta], missing)).toThrow(new Error(
+      'shard 1 inventory differs from the plan; missing: ["gates","gates/test/alpha.test.ts"], ["gates","gates/test/beta.test.ts"]',
+    ));
+  });
+
+  it("lists every extra file without inventing missing files", () => {
+    expect(() => verifyTestShard([alpha], { ...secondShard, files: [alphaResult, betaResult, betaResult] }))
+      .toThrow(new Error('shard 1 inventory differs from the plan; unexpected: ["gates","gates/test/beta.test.ts"], ["gates","gates/test/beta.test.ts"]'));
+  });
+
+  it("reports all runner errors on one line and limits each detail", () => {
+    const runnerErrors = [
+      { name: "", message: "  " + "long  text ".repeat(51) + "end\n" },
+      { name: "Error", message: "\nworker    failed   " },
+    ];
+    const longText = ("long text ".repeat(51) + "end").slice(0, 500);
+    expect(() => verifyTestShard([beta], { ...secondShard, errors: runnerErrors }))
+      .toThrow(new Error(`shard 1 reported errors: ${longText}; Error: worker failed`));
+  });
+
+  it("refuses a malformed individual receipt before comparing its files", () => {
+    expect(() => verifyTestShard([beta], { ...secondShard, errors: null })).toThrow(new Error("malformed shard results"));
   });
 
   it("rejects a runner error even when every file and test reports passed", () => {

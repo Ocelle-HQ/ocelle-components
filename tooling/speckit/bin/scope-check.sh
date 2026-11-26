@@ -20,10 +20,11 @@ declare -A allowed=(
 [[ -n "$role" && -n "${allowed[$role]+x}" ]] || { echo "scope-check: role must be one of: ${!allowed[*]}" >&2; exit 2; }
 [[ "$base" =~ ^[0-9a-f]{7,64}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null || { echo "scope-check: base must be a commit sha" >&2; exit 2; }
 root=$(git rev-parse --show-toplevel) && cd "$root" || exit 2
+git merge-base --is-ancestor "$base" HEAD || { echo "scope-check: base is not an ancestor of HEAD" >&2; exit 2; }
 paths=$(mktemp) || exit 2
 trap 'rm -f -- "$paths"' EXIT
 # Read exact paths, including both sides of a rename. Check the index and the worktree separately.
-git diff --no-renames --name-only -z "$base" HEAD -- > "$paths" &&
+git log --format= --diff-merges=first-parent --no-renames --name-only -z "$base..HEAD" -- > "$paths" &&
   git diff --cached --no-renames --name-only -z -- >> "$paths" &&
   git diff --no-renames --name-only -z -- >> "$paths" &&
   git ls-files --others --exclude-standard -z -- >> "$paths" || exit 2

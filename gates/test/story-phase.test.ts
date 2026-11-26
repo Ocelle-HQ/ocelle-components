@@ -271,6 +271,20 @@ describe("phase replay pinned to integrated main", () => {
     },
   );
 
+  it("rejects a replay pin containing any recorded red even if another red is still separate", async () => {
+    const { tools, stale, checks, files } = pinnedFixture();
+    files.set(join(dir, "red-commits"), `phase ${initial}\nfix-1 ${fix}\n`);
+    stale.delete(`${fix}:${upstream}`);
+    await expect(checkPhase(request, tools)).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+    expect(checks).toEqual([]);
+  });
+
+  it("omits integrated metadata for a phase without a main pin", async () => {
+    const { tools, outputs } = fixture();
+    await checkPhase(request, tools);
+    expect(outputs[0]?.output).not.toHaveProperty("replay_base");
+  });
+
   it("requires the pinned SHA to identify a real commit", async () => {
     const { tools, known, checks } = pinnedFixture();
     known.delete(upstream);
