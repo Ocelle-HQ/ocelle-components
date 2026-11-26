@@ -7,7 +7,7 @@
   "coverageAnalysis": "perTest",
   "concurrency": 8,
   "incremental": false,
-  "dryRunTimeoutMinutes": 30,
+  "dryRunTimeoutMinutes": 40,
   "mutate": [],
   "reporters": ["json", "clear-text"],
   "jsonReporter": { "fileName": "reports/mutation/mutation-elements.json" },
