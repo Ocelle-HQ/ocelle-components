@@ -69,10 +69,9 @@ const panes: Record<Screen, Pane> = {
   },
 };
 
-function button(label: string, variant: "primary" | "secondary" | "quiet"): HTMLElementTagNameMap["ocelle-button"] {
+function button(variant: "primary" | "secondary" | "quiet"): HTMLElementTagNameMap["ocelle-button"] {
   const control = document.createElement("ocelle-button");
   control.setAttribute("variant", variant);
-  control.textContent = label;
   return control;
 }
 
@@ -115,10 +114,11 @@ export function renderPaneActionFooter(variant: Variant): HTMLElement {
   const actions = article.querySelector("[data-pane-actions]");
   const status = article.querySelector('[data-pane-footer="adjacent"] > p');
   if (heading === null || description === null || indicator === null || actions === null || status === null) {
+    // Stryker disable next-line StringLiteral: the fixed template supplies every selector, as verified by storybook/test/unit/browser/pane-action-footer.test.ts.
     throw new Error("The workflow pane is missing required markup.");
   }
 
-  const primary = button("", "primary");
+  const primary = button("primary");
   let screen = starts[variant];
   const show = (next: Screen): void => {
     screen = next;
@@ -134,7 +134,8 @@ export function renderPaneActionFooter(variant: Variant): HTMLElement {
   };
 
   if (variant === "secondary-and-primary" || variant === "back-and-primary") {
-    const auxiliary = variant === "back-and-primary" ? button("Back", "quiet") : button("Review options", "secondary");
+    const auxiliary = button(variant === "back-and-primary" ? "quiet" : "secondary");
+    auxiliary.textContent = variant === "back-and-primary" ? "Back" : "Review options";
     auxiliary.addEventListener("ocelle-button-activate", () => {
       show(variant === "back-and-primary" ? panes[screen].previous ?? screen : "review");
     });
