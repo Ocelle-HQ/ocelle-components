@@ -7,7 +7,8 @@ type Variant = Parameters<RecipeModule["renderPaneActionFooter"]>[0];
 type Button = HTMLElementTagNameMap["ocelle-button"];
 type Indicator = HTMLElementTagNameMap["ocelle-step-indicator"];
 
-const recipes = import.meta.glob<RecipeModule>("../../../stories/pane-action-footer.ts");
+// Load the fixture data at module evaluation so Stryker treats its initializers as static coverage.
+const recipes = import.meta.glob<RecipeModule>("../../../stories/pane-action-footer.ts", { eager: true });
 const labels = ["Review", "Choose", "Confirm"];
 
 interface ExpectedPane {
@@ -83,16 +84,15 @@ function required<T extends Element>(element: T | null, description: string): T 
 
 async function mount(variant: Variant): Promise<MountedPane> {
   expect(typeof document, "the host test runs in the Chromium project").toBe("object");
-  const loadRecipe = recipes["../../../stories/pane-action-footer.ts"];
-  expect(loadRecipe, "the shared pane footer host is implemented").toBeTypeOf("function");
-  if (loadRecipe === undefined) throw new Error("The shared pane footer host is missing.");
-  const [{ renderPaneActionFooter }] = await Promise.all([
-    loadRecipe(),
+  const recipe = recipes["../../../stories/pane-action-footer.ts"];
+  expect(recipe?.renderPaneActionFooter, "the shared pane footer host is implemented").toBeTypeOf("function");
+  if (recipe === undefined) throw new Error("The shared pane footer host is missing.");
+  await Promise.all([
     import("../../../../packages/elements/src/ocelle-button.ts"),
     import("../../../../packages/elements/src/ocelle-step-indicator.ts"),
   ]);
 
-  const article = renderPaneActionFooter(variant);
+  const article = recipe.renderPaneActionFooter(variant);
   mounted = article;
   document.body.append(article);
   const actions = required(article.querySelector<HTMLElement>("[data-pane-actions]"), "action group");
