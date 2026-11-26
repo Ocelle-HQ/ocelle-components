@@ -74,7 +74,7 @@ function count(value: unknown): value is number {
 function sameMembers(a: readonly unknown[], b: readonly string[]): boolean {
   if (a.length !== b.length) return false;
   const members = new Set(a);
-  return members.size === b.length && b.every((member) => members.delete(member));
+  return b.every((member) => members.delete(member));
 }
 
 function position(value: unknown): { readonly line: number; readonly column: number } | undefined {
