@@ -1,5 +1,11 @@
 # Spec Kit Flows Diary
 
+## 2026-11-26
+
+* Mission 031 kept its Storybook implementations out of the test overlay. The declaration let the standard replay reproduce all six missing-story assertions while preserving ordinary support fixtures. [Landing verification](../../specs/031-change-list-discovery/verification.md)
+* Recurred (first: 2026-11-13). The stacked pilot carries merge commits that the history fold cannot rewrite. Retain the branch through the squash so the replay pins stay reachable. [Landing review](../../specs/031-change-list-discovery/reviews/landing/round-1.md)
+* The matched discovery runs verified the same Visual, Axe and browser cases. Comparing exact Unit receipts showed that distributing the Visual cases shortened the waiting time and increased combined Unit runner work. [Matched verification](../../specs/031-change-list-discovery/reviews/phase-1/verification.md)
+
 ## 2026-11-25
 * **Finding**: op 023 (#60, PR #80) ran triage → op setup → 1 phase. Review rounds 1 to 3 (2, 1 and 0 blocking findings) approved at round 3; the phase was folded 26 → 11 commits. At landing, `main` (183b20f, with op 025) was merged in. The fresh landing review found one real gap, L1-01: op 025's focused runner `gates/bin/story-evidence.ts` wrote its logs before op 023's redaction, so the pnpm store path could leak into new evidence again. It was fixed test-first with L1-02 (`.gitattributes` could exempt a file from the gate) as operator round 4 (red a9ffc04 under `fix-4`), approved in round 5; landing round 2 approved. CI green on every check at d016b93 ([run 45675682015](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45675682015)).
 * **Finding**: the pnpm store path in check logs, logged in nine missions since 2026-11-12, is now redacted when it is written (`red.sh`, `tdd-check.sh` and the focused runner), and the `Sandbox paths` gate fails a commit that adds one. The 2026-11-22 follow-up candidate is resolved by op 023.

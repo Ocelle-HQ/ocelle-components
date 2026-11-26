@@ -1,0 +1,13 @@
+# Squad round 1: verify 1
+
+| ID | Status | Reason |
+|----|--------|--------|
+| PLAN-A11Y-SECURITY-1-001 | resolved | The Constitution check records the actual Content-Type-only Storybook server and inline harness. It requires DOM inspection and same-origin request checks for the two compositions, and keeps strict-runtime evidence with the existing package fixtures. |
+| PLAN-A11Y-SECURITY-1-002 | resolved | Fixture behavior distinguishes the copy-field group and native button names through the existing public properties. Browser verification checks the actual named buttons, focus ring and clipping at 320 CSS pixels in the pinned themes and forced colors. |
+| PLAN-A11Y-SECURITY-1-003 | resolved | The delivered host handles the existing delayed composed event in memory and sets the field status property. Tests assert the complete payload sequence, the originating live region and native Tab from the first completed action with keyboard focus intact. |
+| PLAN-CORRECTNESS-1-001 | resolved | The fixture uses the supported code-block digest renderer and scopes the suppression of duplicate text to the Copy field's public value part. The spec and plan require both visible groups and unchanged canonical payload bytes. |
+| PLAN-CORRECTNESS-1-002 | resolved | The inventory table names the actual build, Plant, Visual and Axe contracts. The existing positive assertions pin 392 stories and 784 baselines. The plan requires the 394-story and 788-baseline expectations to match the measured additions and the affected token Plant to verify exact results. |
+| PLAN-CORRECTNESS-1-003 | resolved | The workflow checkpoint uses an exact control and reviewed candidate pin before consuming candidate handoff and inventory evidence. It maps the identical fixture content to both workflows, distinguishes control-only evidence and uses the separate source-bearing #94 replay for mutation. |
+| PLAN-TESTABILITY-1-001 | resolved | Both new files use the Storybook project's injected build and stay in local red and green. The integration owner lists concrete runnable paths, including the existing integration render suite, and requires eligible exact-revision Unit and dedicated gate receipts for deferred collateral. |
+| PLAN-TESTABILITY-1-002 | resolved | The plan requires both real args inputs on the single built story, their corresponding visible judgments and identical diff labels, values and order in both renders. |
+| PLAN-TESTABILITY-1-003 | resolved | Browser proof adds flat-tree rendered text bounds, viewport fit and internal clipping checks for each required label, value and digest group alongside the document-width and reading-order checks. |

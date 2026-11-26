@@ -292,3 +292,22 @@
   inline-size: calc(var(--ocelle-space-10) * 5);
   max-inline-size: 100%;
 }
+
+[data-story="change-list-plan"],
+[data-story="change-list-upgrade"] {
+  display: grid;
+  gap: var(--ocelle-space-4);
+  inline-size: calc(var(--ocelle-space-10) * 9);
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+[data-story="change-list-upgrade"] > section {
+  display: grid;
+  gap: var(--ocelle-space-2);
+  min-inline-size: 0;
+}
+
+[data-story="change-list-upgrade"] ocelle-copy-field::part(value) {
+  display: none;
+}
