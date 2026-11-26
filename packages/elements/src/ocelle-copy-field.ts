@@ -247,7 +247,8 @@ export class OcelleCopyField extends LitElement {
   readonly #text = document.createTextNode("");
   #value = "";
   #status = "";
-  #revealed = false;
+  /** Setting a value that can render the disclosure initializes its collapsed state. */
+  #revealed: boolean | undefined;
   #focusedDisclosure: Element | null = null;
 
   constructor() {
@@ -322,12 +323,14 @@ export class OcelleCopyField extends LitElement {
     const field = this.renderRoot.querySelector<HTMLElement>(".field");
     if (field !== null) {
       field.tabIndex = -1;
-      field.addEventListener("focusout", () => {
-        field.removeAttribute("tabindex");
-      }, { once: true });
       field.focus();
     }
   }
+
+  /** The retained field takes focus by script only while it needs the fallback. Native blur restores its tab order. */
+  readonly #clearFieldTabIndex = (event: FocusEvent): void => {
+    (event.currentTarget as HTMLElement).removeAttribute("tabindex");
+  };
 
   /** An activation of the Copy control: clears `status` now and requests the copy after the next rendering update. */
   #activate = (): void => {
@@ -354,7 +357,7 @@ export class OcelleCopyField extends LitElement {
     const reveal = canReveal
       ? html`<button class="reveal" type="button" aria-expanded=${this.#revealed} aria-controls="identifier" @click=${this.#toggle}>${this.#revealed ? "Show less" : "Show full identifier"}</button>`
       : nothing;
-    return html`<div class="field"><span id="identifier" part="value">${value}</span>${reveal}<button part="copy-control" type="button" aria-label=${label} ?disabled=${this.#value === ""} @click=${this.#activate}><span class="icon-row"><span class="icon-slot"><ocelle-icon name="copy"></ocelle-icon></span></span></button></div><span class="status" role="status" aria-live="polite"></span>`;
+    return html`<div class="field" @blur=${this.#clearFieldTabIndex}><span id="identifier" part="value">${value}</span>${reveal}<button part="copy-control" type="button" aria-label=${label} ?disabled=${this.#value === ""} @click=${this.#activate}><span class="icon-row"><span class="icon-slot"><ocelle-icon name="copy"></ocelle-icon></span></span></button></div><span class="status" role="status" aria-live="polite"></span>`;
   }
 }
 
