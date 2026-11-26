@@ -11,10 +11,12 @@ const requiredJobs = [
   "Contrast", "Brand rules", "Custom-elements manifest", "Storybook build", "Visual regression",
   "Accessibility", "Sandbox paths", "Plants",
 ];
+const mutationJob = "Mutation shard (packages/elements/src/ocelle-pane.ts:12-18, 1)";
 const helperJobs = [
   "Unit test inventory", "Unit test shard (1)", "Unit tests full suite comparison", "Mutation plan",
-  "Mutation shard (packages/elements/src/ocelle-pane.ts:12-18, 1)", "Plants plan", "Plants shard (1)",
+  mutationJob, "Plants plan", "Plants shard (1)",
 ];
+const truncatedMutationJob = "Mutation shard (gates/bin/story-evidence.ts:488-616,gates/bin/test-shards.ts,gates/lib/test-evide...";
 
 interface Candidate {
   runId: number;
@@ -169,6 +171,10 @@ function patchJob(evidence: RunEvidence, name: string, patch: Partial<Job>): voi
   changeJobs(evidence, (rows) => rows.map((job) => job.name === name ? { ...job, ...patch } : job));
 }
 
+function addJob(evidence: RunEvidence, name: string): void {
+  changeJobs(evidence, (rows) => [...rows, ...rows.slice(0, 1).map((job) => ({ ...job, id: job.id + 99, name }))]);
+}
+
 describe("evidence reuse shadow eligibility", () => {
   it("observes a match for the exact successful Visual attempts across review-evidence-only changes", async () => {
     const input = observation();
@@ -200,6 +206,42 @@ describe("evidence reuse shadow eligibility", () => {
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "provenance" });
   });
 
+  it.each([
+    { label: "a zero run ID", candidate: { runId: 0 }, hosted: { id: 0 } },
+    { label: "an unsafe run ID", candidate: { runId: Number.MAX_SAFE_INTEGER + 1 }, hosted: { id: Number.MAX_SAFE_INTEGER + 1 } },
+    { label: "a zero run attempt", candidate: { attempt: 0 }, hosted: { attempt: 0 } },
+    { label: "a fractional run attempt", candidate: { attempt: 1.5 }, hosted: { attempt: 1.5 } },
+  ])("rejects $label even when the request agrees with hosted metadata", async ({ candidate, hosted }) => {
+    const input = observation();
+    Object.assign(input.prior.expected, candidate);
+    Object.assign(input.prior.evidence.run, hosted);
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "provenance" });
+  });
+
+  it("rejects a prior run with a success conclusion but without completed status", async () => {
+    const input = observation();
+    input.prior.evidence.run.status = "in_progress";
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "provenance" });
+  });
+
+  it.each([
+    { label: "PR number", requested: { pullRequest: 0 }, recorded: { pullRequests: [0] } },
+    { label: "workflow ID", requested: { workflowId: 0 }, recorded: { workflowId: 0 } },
+  ])("rejects a zero $label even if both run records repeat it", async ({ requested, recorded }) => {
+    const input = observation();
+    Object.assign(input, requested);
+    Object.assign(input.prior.evidence.run, recorded);
+    Object.assign(input.current.evidence.run, recorded);
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "provenance" });
+  });
+
+  it("rejects treating one run ID as evidence for two different candidates", async () => {
+    const input = observation();
+    input.current.expected.runId = input.prior.expected.runId;
+    input.current.evidence.run.id = input.prior.expected.runId;
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "provenance" });
+  });
+
   it("rejects a run at a different prior PR head", async () => {
     const input = observation();
     input.prior.evidence.run.head = sha("8");
@@ -212,8 +254,15 @@ describe("evidence reuse shadow eligibility", () => {
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "lineage" });
   });
 
+  it("rejects a resolved commit object with a different merge SHA even when the Visual checkout is correct", async () => {
+    const input = observation();
+    input.current.evidence.mergeCommit.sha = sha("8");
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "lineage" });
+  });
+
   it.each([
     { label: "a different head parent", parents: [sha("1"), sha("8")] },
+    { label: "a different base parent", parents: [sha("8"), sha("2")] },
     { label: "swapped parents", parents: [sha("2"), sha("1")] },
     { label: "an extra parent", parents: [sha("1"), sha("2"), sha("8")] },
   ])("rejects a prior merge with $label", async ({ parents }) => {
@@ -232,6 +281,38 @@ describe("evidence reuse shadow eligibility", () => {
   it("rejects a tree comparison supplied for a different merge tree", async () => {
     const input = observation();
     input.current.evidence.mergeCommit.tree = sha("8");
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "lineage" });
+  });
+
+  it.each([
+    { label: "the same PR head in both candidates", change: (input: Observation) => {
+      const { head } = input.prior.expected;
+      input.current.expected.head = head;
+      input.current.evidence.run.head = head;
+      input.current.evidence.mergeCommit.parents = [input.current.expected.base, head];
+    } },
+    { label: "the same tested merge for two different PR heads", change: (input: Observation) => {
+      const { merge } = input.prior.expected;
+      input.current.expected.merge = merge;
+      input.current.evidence.run.testedMerge = merge;
+      input.current.evidence.mergeCommit.sha = merge;
+    } },
+    { label: "tied start times for the prior and current runs", change: (input: Observation) => {
+      input.prior.evidence.run.startedAt = input.current.evidence.run.startedAt;
+    } },
+    { label: "a comparison from a different prior merge tree", change: (input: Observation) => {
+      input.prior.evidence.mergeCommit.tree = sha("8");
+    } },
+  ])("rejects $label", async ({ change }) => {
+    const input = observation();
+    change(input);
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "lineage" });
+  });
+
+  it.each([`sha1:${sha("7")}`, `${sha("7")}junk`])("rejects a malformed merge tree identity %s even with matching diff metadata", async (currentTree) => {
+    const input = observation();
+    input.current.evidence.mergeCommit.tree = currentTree;
+    input.treeDiff = { priorTree: input.prior.evidence.mergeCommit.tree, currentTree, changes: input.treeDiff?.changes ?? [] };
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "lineage" });
   });
 
@@ -258,6 +339,57 @@ describe("evidence reuse shadow eligibility", () => {
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
   });
 
+  it.each([
+    "Additional job",
+    "Other Plants shard (1)",
+    "Plants shard (1) (retry)",
+    "Plants shard (1a)",
+    `Other ${mutationJob}`,
+    `${mutationJob} (retry)`,
+    "Mutation shard (packages/elements/src/ocelle-pane.ts:12-18, 1a)",
+    "Mutation shard (packages/elements/src/ocelle-pane.ts:12-18, 1...",
+    `x${truncatedMutationJob.slice(0, -4)}...`,
+    `${truncatedMutationJob.slice(0, -4)}...x`,
+    `Other job ${"x".repeat(90)}`,
+  ])("rejects an unrecognized additional successful job named %s while the required inventory is complete", async (name) => {
+    const input = observation();
+    addJob(input.prior.evidence, name);
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
+  });
+
+  it.each([
+    { label: "a reported skipped empty Mutation shard", patch: { name: "Mutation shard", conclusion: "skipped" } },
+    { label: "the 100-character Mutation shard name emitted by GitHub", patch: { name: truncatedMutationJob } },
+  ])("observes a match with $label", async ({ patch }) => {
+    const input = observation();
+    patchJob(input.prior.evidence, mutationJob, patch);
+    expect(await assess(input)).toMatchObject({ eligible: true, reason: "matched" });
+  });
+
+  it.each(["Unit test shard (1)", "Plants shard (1)", mutationJob])("rejects an absent %s despite a successful aggregate", async (missing) => {
+    const input = observation();
+    changeJobs(input.prior.evidence, (rows) => rows.filter(({ name }) => name !== missing));
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
+  });
+
+  it("rejects duplicate named required jobs even when the complete set is present", async () => {
+    const input = observation();
+    addJob(input.prior.evidence, "Prefix");
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
+  });
+
+  it("rejects a named successful job with a zero job ID", async () => {
+    const input = observation();
+    patchJob(input.prior.evidence, "Prefix", { id: 0 });
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
+  });
+
+  it("rejects a failed optional full-unit comparison when the required aggregate claims success", async () => {
+    const input = observation();
+    patchJob(input.prior.evidence, "Unit tests full suite comparison", { conclusion: "failure" });
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
+  });
+
   it.each(["Sign-off", "Sandbox paths"])("requires current %s from the matched attempt", async (name) => {
     const input = observation();
     patchJob(input.current.evidence, name, { attempt: input.current.evidence.run.attempt + 1 });
@@ -267,6 +399,30 @@ describe("evidence reuse shadow eligibility", () => {
   it("rejects a current Sign-off row whose timestamps precede the matched attempt", async () => {
     const input = observation();
     patchJob(input.current.evidence, "Sign-off", { startedAt: "2026-11-24T10:00:00Z", completedAt: "2026-11-24T10:10:00Z" });
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "safeguards" });
+  });
+
+  it("rejects a current Sign-off row with a successful result that completed before it started", async () => {
+    const input = observation();
+    patchJob(input.current.evidence, "Sign-off", { startedAt: "2026-11-25T10:00:01Z", completedAt: "2026-11-25T10:00:00Z" });
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "safeguards" });
+  });
+
+  it("observes a match when the verified Sign-off times are equal at GitHub's timestamp precision", async () => {
+    const input = observation();
+    patchJob(input.current.evidence, "Sign-off", { completedAt: input.current.evidence.run.startedAt });
+    expect(await assess(input)).toMatchObject({ eligible: true, reason: "matched" });
+  });
+
+  it("rejects success on an incomplete current safeguard", async () => {
+    const input = observation();
+    patchJob(input.current.evidence, "Sign-off", { status: "in_progress" });
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "safeguards" });
+  });
+
+  it("rejects two current successful Sign-off rows with different job IDs", async () => {
+    const input = observation();
+    addJob(input.current.evidence, "Sign-off");
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "safeguards" });
   });
 
@@ -288,11 +444,24 @@ describe("evidence reuse shadow eligibility", () => {
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
   });
 
+  it("rejects a failed current CI conclusion even when each job reports success", async () => {
+    const input = observation();
+    input.current.evidence.run.conclusion = "failure";
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "jobs" });
+  });
+
   it.each<{ label: string; value: string | null }>([
     { label: "different", value: digest("c") },
     { label: "unreadable", value: null },
   ])("rejects $label audited Visual inputs", async ({ value }) => {
     const input = observation();
+    input.current.evidence.visualInputs = value;
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "inputs" });
+  });
+
+  it.each([`input:${digest("a")}`, `${digest("a")}:input`])("rejects annotated digests %s even when the purported Visual inputs match", async (value) => {
+    const input = observation();
+    input.prior.evidence.visualInputs = value;
     input.current.evidence.visualInputs = value;
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "inputs" });
   });
@@ -329,6 +498,52 @@ describe("evidence reuse shadow eligibility", () => {
     input.prior.evidence.runtime = priorRuntime;
     input.current.evidence.runtime = currentRuntime;
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "runtime" });
+  });
+
+  it.each(["node 26.13.0", "26.13.0 vendor build"])("rejects matching annotated tool versions %s", async (node) => {
+    const input = observation();
+    for (const { evidence } of [input.prior, input.current]) {
+      const annotated = runtime(evidence.run);
+      annotated.tools.node = node;
+      evidence.runtime = annotated;
+    }
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "runtime" });
+  });
+
+  it("observes a match when both attempts use an exact multi-digit patch release", async () => {
+    const input = observation();
+    for (const { evidence } of [input.prior, input.current]) {
+      const release = runtime(evidence.run);
+      release.tools.node = "26.13.10";
+      evidence.runtime = release;
+    }
+    expect(await assess(input)).toMatchObject({ eligible: true, reason: "matched" });
+  });
+
+  it.each([
+    { label: "an unsupported container platform", change: (value: VisualRuntime) => { value.pinRecord.platform = "linux/arm64"; } },
+    { label: "an unsupported runner image", change: (value: VisualRuntime) => { value.runnerSetup.image = "ubuntu-22.04"; } },
+    { label: "an unsupported runner architecture", change: (value: VisualRuntime) => { value.runnerSetup.architecture = "ARM64"; } },
+    { label: "an annotated runner version prefix", change: (value: VisualRuntime) => { value.runnerSetup.version = "image:20261122.23.1"; } },
+    { label: "an annotated runner version suffix", change: (value: VisualRuntime) => { value.runnerSetup.version = "20261122.23.1-custom"; } },
+  ])("rejects $label even when both effective runtime records agree", async ({ change }) => {
+    const input = observation();
+    for (const { evidence } of [input.prior, input.current]) {
+      const invalid = runtime(evidence.run);
+      change(invalid);
+      evidence.runtime = invalid;
+    }
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "runtime" });
+  });
+
+  it("observes a match when the exact runner image build has a multi-digit revision", async () => {
+    const input = observation();
+    for (const { evidence } of [input.prior, input.current]) {
+      const match = runtime(evidence.run);
+      match.runnerSetup.version = "20261122.23.10";
+      evidence.runtime = match;
+    }
+    expect(await assess(input)).toMatchObject({ eligible: true, reason: "matched" });
   });
 
   it("rejects ambiguous or unreadable Visual runtime evidence", async () => {
@@ -376,6 +591,10 @@ describe("evidence reuse shadow eligibility", () => {
     "ops/034-workflow-pilots/reviews/phase-1/notes.md",
     "ops/034-workflow-pilots/reviews/phase-1/base.sha",
     "ops/034-workflow-pilots/reviews/phase-1/fixtures/round-1.md",
+    "archives/ops/034-workflow-pilots/reviews/phase-1/round-1.md",
+    "ops/034-workflow-pilots/reviews/phase-1/round-1.md.backup",
+    "ops/034-workflow-pilots/reviews/phase-1draft/round-1.md",
+    "ops/034-workflow-pilots/reviews/phase-1/round-1draft.md",
     "packages/elements/src/ocelle-pane.ts",
     "storybook/test/unit/render.test.ts",
     "storybook/visual/container.json",
@@ -393,6 +612,30 @@ describe("evidence reuse shadow eligibility", () => {
     const input = observation();
     input.treeDiff?.changes.push({ path: "ops/034-workflow-pilots/reviews/phase-1/round-2.md", beforeMode: "100644", afterMode: "120000" });
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "paths" });
+  });
+
+  it.each([
+    { label: "no changed review paths", changes: [] },
+    { label: "the same changed path twice", changes: [
+      { path: "ops/034-workflow-pilots/reviews/phase-1/round-1.md", beforeMode: "100644", afterMode: "100644" },
+      { path: "ops/034-workflow-pilots/reviews/phase-1/round-1.md", beforeMode: "100644", afterMode: "100644" },
+    ] },
+    { label: "an empty record with no file at either endpoint", changes: [
+      { path: "ops/034-workflow-pilots/reviews/phase-1/round-1.md", beforeMode: null, afterMode: null },
+    ] },
+    { label: "a review that was a symbolic link before the update", changes: [
+      { path: "ops/034-workflow-pilots/reviews/phase-1/round-1.md", beforeMode: "120000", afterMode: "100644" },
+    ] },
+  ])("rejects an exact tree diff with $label", async ({ changes }) => {
+    const input = observation();
+    input.treeDiff = { priorTree: input.prior.evidence.mergeCommit.tree, currentTree: input.current.evidence.mergeCommit.tree, changes };
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "paths" });
+  });
+
+  it("observes a match when a regular allowlisted review is removed", async () => {
+    const input = observation();
+    input.treeDiff?.changes.push({ path: "ops/034-workflow-pilots/reviews/phase-1/round-2.md", beforeMode: "100644", afterMode: null });
+    expect(await assess(input)).toMatchObject({ eligible: true, reason: "matched" });
   });
 
   it("rejects an unreadable tree comparison", async () => {
