@@ -5,6 +5,10 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Grouped copyable identifiers (#89). `grouped` and `compact` on `ocelle-copy-field` are a MINOR addition.**
+Hosts can display identifiers in groups of four and optionally show a compact preview with a reveal control. The
+Copy request carries the exact original value in either presentation.
+
 **Step indicator (#87). `ocelle-step-indicator` and its standalone entry are a MINOR addition.**
 It presents host-supplied ordered progress with a current marker and accessible completion.
 
