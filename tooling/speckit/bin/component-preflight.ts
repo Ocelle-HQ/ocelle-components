@@ -219,7 +219,7 @@ async function checkHost(root: string, args: readonly string[], io: Io): Promise
   if (hasUniqueHostRoute(test, project, normalProjects, mutationProjects)) return 0;
   io.err(`${test}: ${source} needs one focused in-process test in ${project}, discovered once by both configurations. `
     + `Normal owners: ${normalProjects.join(", ") || "none"}. Default mutation owners: ${mutationProjects.join(", ") || "none"}. `
-    + `Declare a test under ${focusedStorybookTests}browser/ for a browser host and rerun discovery.`);
+    + `Declare a test under ${focusedStorybookTests()}browser/ for a browser host and rerun discovery.`);
   return 1;
 }
 

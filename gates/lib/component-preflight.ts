@@ -1,4 +1,6 @@
-export const focusedStorybookTests = "storybook/test/unit/";
+export function focusedStorybookTests(): string {
+  return "storybook/test/unit/";
+}
 
 function withoutMatches(from: readonly string[], take: readonly string[]): string[] {
   const remaining = [...take];
@@ -18,6 +20,10 @@ export function compareOverlayFindings(expected: readonly string[], findings: re
   };
 }
 
+function onlyProject(projects: readonly string[]): string | undefined {
+  return projects.length === 1 ? projects[0] : undefined;
+}
+
 /** A focused file must have the same single declared owner in the normal and default mutation configurations. */
 export function hasUniqueHostRoute(
   test: string,
@@ -25,10 +31,8 @@ export function hasUniqueHostRoute(
   normalProjects: readonly string[],
   mutationProjects: readonly string[],
 ): boolean {
-  if (!test.startsWith(focusedStorybookTests) || normalProjects.length !== 1 || mutationProjects.length !== 1) {
-    return false;
-  }
+  const owner = onlyProject(mutationProjects);
   // Vitest qualifies browser project names with the configured instance, e.g. storybook-browser (chromium).
-  return mutationProjects.some((owner) => owner === normalProjects[0]
-    && (owner === project || (owner.startsWith(`${project} (`) && owner.endsWith(")"))));
+  return test.startsWith(focusedStorybookTests()) && owner !== undefined && owner === onlyProject(normalProjects)
+    && (owner === project || (owner.startsWith(`${project} (`) && owner.endsWith(")")));
 }
