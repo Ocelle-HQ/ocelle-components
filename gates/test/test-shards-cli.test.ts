@@ -171,6 +171,17 @@ describe("shard CLI decisions", () => {
     expect(messages).toEqual([]);
   });
 
+  it("names the matrix index when a nonzero shard fails", async () => {
+    const { run, data, errors, report: setResult } = fixture();
+    const runner = { name: "Error", message: "worker failed" };
+    setResult({ files: [], errors: [runner] });
+    expect(await run("run", planPath, "1", "shard.json")).toBe(1);
+    expect(JSON.parse(data.get("shard.json") ?? "null") as unknown).toMatchObject({ index: 1 });
+    expect(errors).toEqual([
+      'Unit tests: shard 1 inventory differs from the plan; missing: ["beta","test/control.test.ts"]; reported errors: Error: worker failed',
+    ]);
+  });
+
   it("verifies all artifact reports without requiring a comparison file", async () => {
     const { run, messages, errors } = fixture();
     expect(await run("verify", planPath, reports)).toBe(0);
