@@ -1,0 +1,4 @@
+$ node gates/bin/mutation.ts -- --base 8d46b78 --files packages/elements/src/ocelle-notice.ts
+packages/elements/src/ocelle-notice.ts:343: mutation: record: CallExpression: equivalent, LitElement's disconnectedCallback() tells reactive controllers, which the notice has none of, and disconnects its template's async directives, which it uses none of (its template uses no directive)
+packages/elements/src/ocelle-notice.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 1 equivalent record

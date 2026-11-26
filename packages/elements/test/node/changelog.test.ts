@@ -7,7 +7,10 @@ import { describe, expect, it } from "vitest";
 // the tokens changelog's names of every token, the six included, in `packages/tokens/test/readme.test.ts`. This file
 // adds what those do not: each changelog says, in one statement under Unreleased, that this surface is an addition, a
 // minor change (FR-035), naming the four elements and the two conventions, or the six tokens. Whitespace is
-// normalised, so a statement may wrap across lines.
+// normalised, so a statement may wrap across lines. 019 phase 4's review round 1 (R1-02; T075) adds the data records'
+// statement: the five elements, their properties, slot, parts, entry points and base-style hook are a minor change, with
+// no event and no token; and the data table's entry gives `wrap` as reflected and the property `stickyHeader` as
+// `sticky-header`, as the manifest has them.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -34,6 +37,24 @@ describe("packages/tokens/CHANGELOG.md: the five layout tokens are a minor chang
     "`--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse` and `--ocelle-scroller-fade-size`, the five tokens of the workflow layouts of `@ocelle/elements`, are additions to the token names: a minor change",
   ])("states under Unreleased: %s", (statement) => {
     expect(section).toContain(flat(statement));
+  });
+});
+
+describe("packages/elements/CHANGELOG.md: the data records are a minor change (019 FR-057, T075)", () => {
+  const text = read("CHANGELOG.md");
+  const section = unreleased(text);
+  /** The data table's entry under Unreleased / Added, flattened: from its bullet to the next bullet or heading. */
+  const entry = flat(/^- `ocelle-data-table`:[\s\S]*?(?=^- |^#|(?![\s\S]))/m.exec(text)?.[0] ?? "");
+
+  it.each([
+    "`ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain` and `ocelle-evidence-step`, their properties (`label`, `wrap`, `stickyHeader` as `sticky-header`, `striped`, `time` and `variant`), the event's `time` slot, the parts `list`, `time` and `content`, their entry points and the base-style hook `--data-table-box-size` and `--data-table-end-fade` are additions to the public surface: a minor change",
+    "None of them dispatches an event, and no token is added",
+  ])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+
+  it.each(["`wrap` (reflected)", "the property `stickyHeader` as `sticky-header` (reflected)"])("gives, in the data table's entry, %s", (statement) => {
+    expect(entry).toContain(flat(statement));
   });
 });
 
@@ -89,6 +110,18 @@ describe("packages/elements/CHANGELOG.md: the interactive ocelle-pill-tag is a m
   });
 });
 
+// 020 phase 1 (T007, T011; FR-056, constitution VII): the disclosure is an addition, a minor change, stated once under
+// Unreleased; its names are asserted one by one in `readme.test.ts`.
+describe("packages/elements/CHANGELOG.md: ocelle-disclosure is a minor change (020 FR-056)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each([
+    "`ocelle-disclosure`, its property `open`, its moved attributes and their mirrors, the mapped `aria-expanded`, its slots `summary` and `icon` and its default slot, its parts `details`, `summary` and `panel`, the event `ocelle-disclosure-toggle`, the state `open` and its entry point are additions to the public surface: a minor change",
+  ])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
 // 018 phase 6 (FR-007, constitution VII; tasks.md T057): truncation and the full-text tooltip, and the entry point that
 // now also defines `ocelle-tooltip`, are a minor change, stated once under Unreleased; no token is added.
 describe("packages/elements/CHANGELOG.md: the truncating ocelle-pill-tag is a minor change (018 phase 6)", () => {
@@ -96,6 +129,19 @@ describe("packages/elements/CHANGELOG.md: the truncating ocelle-pill-tag is a mi
 
   it.each([
     "An enabled interactive `ocelle-pill-tag` truncates a text that does not fit with an ellipsis and shows its full text in `ocelle-tooltip` on hover and keyboard focus, a disabled one wraps it, and the entry point `@ocelle/elements/ocelle-pill-tag.js` also defines `ocelle-tooltip`: a minor change",
+  ])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
+// 020 phase 2 (T027, T031; FR-056, constitution VII): the code block is an addition, a minor change, stated once under
+// Unreleased; its names are asserted one by one in `readme.test.ts`.
+describe("packages/elements/CHANGELOG.md: ocelle-code-block is a minor change (020 FR-056)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each([
+    "`ocelle-code-block`, its properties `overflow`, `label` and `digest`, its parts `block` and `code` and its entry point are additions to the public surface: a minor change",
+    "The README's element conventions gain the digest rule: a prefix to the last colon, groups of four code points with a `--ocelle-space-1` gap, copied and read text unbroken",
   ])("states under Unreleased: %s", (statement) => {
     expect(section).toContain(flat(statement));
   });

@@ -28,6 +28,7 @@ Security (research.md R-16):
 | Storybook build | `pnpm run gate:storybook-build` (job id `storybook-build`; since 006) | |
 | Visual regression | `pnpm run gate:visual -- --engine both --remove-docker-image` (job id `visual`; since 006); then the pin record step, uploaded as the artifact `pin-record`, and on failure the artifact `visual` (`storybook/.visual/`) (006 contracts/gates.md § The registry) | |
 | Accessibility | `pnpm run gate:axe` (job id `axe`; since 006) | |
+| Sandbox paths | `pnpm run gate:sandbox-paths` (job id `sandbox-paths`; since op 023); binary files are skipped by content alone, so no `.gitattributes` exempts a file (op 023 operator round 4) | |
 | Plants | verdict job `plants`: `needs: [plants-plan, plants-shard]`, `if: always()`; downloads every `plant-shard-*` artifact into `storybook/.visual/plant-shards/` (`actions/download-artifact` pinned by SHA, `merge-multiple`) and runs `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards` (since 006; 006 contracts/gates.md § The registry) | |
 
 Helper jobs of the mutation gate (research.md R-08; listed as `helperJobs` in `gates/gates.json`) and of the plant job
@@ -37,7 +38,7 @@ that the ruleset requires:
 | Job id | Runs | Checkout and limits |
 |---|---|---|
 | `mutation-plan` | `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --plan`; outputs the shards (the JSON array on stdout, unchanged; the cut count `--plan` writes to stderr only reaches the job log, research.md R-08) | `fetch-depth: 0` |
-| `mutation-shard` | matrix over the plan's shards, skipped when there are none: `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files <the shard's files>`, the shard's `files` value passed unchanged (its comma-separated entries, `path` or `path:start-end`, research.md R-08) | `fetch-depth: 0`; `timeout-minutes: 10` per shard, or 45 for a shard with a `packages/elements/src/` entry (op 015, 2026-11-15; FR-013 amendment) |
+| `mutation-shard` | matrix over the plan's shards, skipped when there are none: `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files <the shard's files>`, the shard's `files` value passed unchanged (its comma-separated entries, `path` or `path:start-end`, research.md R-08) | `fetch-depth: 0`; `timeout-minutes: 10` per shard, or 75 for a shard with a `packages/elements/src/` entry (op 015, 2026-11-15; FR-013 amendment; mission 010 operator rounds 6 and 8, 2026-11-18) |
 | `plants-plan` | `pnpm --silent run gate:plants -- --plan`, the shard numbers as the job output `shards` (since 006) | |
 | `plants-shard` | matrix `shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}`, `fail-fast: false`; `df -h /`; the toolset removal step with `df -h /`; `pnpm run gate:plants -- --shard "$SHARD"` with `SHARD` from the matrix and `OCELLE_VISUAL_ENGINE=both`; `df -h /` always; uploads `plant-shard-<k>` (`storybook/.visual/plant-shards/<k>.json`) always and `plants-<k>` (`storybook/.visual/plants/`) on failure (since 006) | |
 
@@ -55,11 +56,12 @@ It is not a gate, reports no check that the ruleset requires, and the registry c
 The set of gate job ids (one per row of the first table but Plants; for Mutation testing the verdict job `mutation`,
 not its helper jobs) equals the gate ids of `gates/gates.json` and the FR-020 list `fr020` of `gates/lib/registry.ts`:
 the eleven gates of this feature's FR-020 plus `contrast` and `brand-rules` of 002 FR-020, `manifest` of 005
-FR-009, and `storybook-build`, `visual` and `axe` of 006 FR-020, seventeen in all. The plant job checks this (research.md R-10).
+FR-009, `storybook-build`, `visual` and `axe` of 006 FR-020, and `sandbox-paths` of op 023, eighteen in all. The plant job
+checks this (research.md R-10).
 
-Required checks: a ruleset (or branch protection) on `main` requires the eighteen check names of the first table. The
+Required checks: a ruleset (or branch protection) on `main` requires the nineteen check names of the first table. The
 operator configures it in the feature verification (plan.md § Verification); `gates/README.md` lists the same
-eighteen names. The registry check cannot stop one pull request from removing a gate from `ci.yml`, `gates.json` and
+nineteen names. The registry check cannot stop one pull request from removing a gate from `ci.yml`, `gates.json` and
 `registry.ts` together; the ruleset does, since the removed check then never reports.
 
 Mission 002 (specs/002-design-tokens, note of 2026-11-04, landing review L1-02 of PR #19): 002 FR-020 added the
@@ -77,3 +79,7 @@ Mission 006 (specs/006-storybook-workbench, note of 2026-11-13, landing review L
 checks, so the first table has eighteen rows. The ruleset on `main` must add the three check names `Storybook build`,
 `Visual regression` and `Accessibility`; until the operator does so, none of the three gates blocks a merge
 (`gates/README.md` § Required checks on `main`).
+
+Op 023 (ops/023-public-repo-hygiene, note of 2026-11-20, #60): op 023 added the `Sandbox paths` check, so the first
+table has nineteen rows. The ruleset on `main` must add the check name `Sandbox paths`; until the operator does so,
+the gate does not block a merge (`gates/README.md` § Required checks on `main`).

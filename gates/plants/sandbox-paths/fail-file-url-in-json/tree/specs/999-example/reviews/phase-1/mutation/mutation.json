@@ -1,0 +1,6 @@
+{
+  "projectRoot": "@SANDBOX_HOME_USER@/ocelle-components",
+  "files": {
+    "file://@SANDBOX_HOME_USER@/ocelle-components/gates/lib/a.ts": { "mutants": [] }
+  }
+}

@@ -15,7 +15,7 @@ index 51726de..3a453b6 100644
    { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
 # pnpm exec vitest run --config vitest.mutation.config.ts --project tokens-source-table --project tokens
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ❯ |tokens-source-table| packages/tokens/test/source-table.test.ts (8 tests | 2 failed) 35ms
    ❯ the stylesheet from the real source (6)

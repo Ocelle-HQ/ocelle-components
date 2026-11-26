@@ -199,6 +199,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("shell-main-max", "shell", "48rem", width(768)),
   plain("shell-collapse-inspector", "shell", "75rem", width(1200)),
   plain("shell-collapse-sidebar", "shell", "45rem", width(720)),
+  plain("app-shell-narrow-below", "shell", "45rem", width(720)),
+  plain("app-shell-collapse-below", "shell", "68.75rem", width(1100)),
   plain("shell-height", "shell", "100dvh", width(800)),
   plain("footer-h", "shell", "4.5rem", width(72)),
   derived("measure-sheet", "shell", "var(--ocelle-shell-main-max)", "48rem", ["shell-main-max"], width(768)),

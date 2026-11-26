@@ -1,0 +1,46 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: <pnpm store>
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 364ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/elements/test/browser/form-select.test.ts:45: unit-tests: ocelle-form-select on the strict-CSP fixture with the browser build (US3) FR-024, reset before the first render: …: Error: promise rejected "AssertionError: FR-024, reset before the … { …(4) }" instead of resolving
+packages/elements/test/form-select-rules.test.ts:179: unit-tests: ocelle-form-select's rules a form reset in the task of the select's insertion, before its first render, reports no error and gives at once the value of the default selection, as on a native select: the last option marked selected, a group's options included, else the first enabled option, a disabled group's options skipped, else "": AssertionError: expected { errors: [ …(3) ], values: { …(3) } } to deeply equal { errors: [], values: { …(3) } }
+packages/elements/test/form-select.test.ts:23: unit-tests: ocelle-form-select, in process (US3) FR-024, reset before the first render: …: Error: promise rejected "AssertionError: FR-024, reset before the … { …(4) }" instead of resolving
+unit-tests: 3 of 4739 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

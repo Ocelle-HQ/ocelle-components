@@ -171,6 +171,38 @@ describe("normalise(raw, names): what is not an element, and members that are no
   });
 });
 
+describe("normalise(raw, names): the observed standard attributes (specs/010-feedback-forms FR-034; T022a, T030)", () => {
+  it("drops aria-label, role, hidden, form, aria-invalid, aria-required, aria-disabled and aria-description, and keeps an attribute of the element's own without a field", () => {
+    const changed = structuredClone(raw);
+    const standard = ["role", "hidden", "form", "aria-invalid", "aria-required", "aria-disabled", "aria-description"];
+    (declaration(changed).attributes as Json[]).push(...standard.map((name) => ({ name })), { name: "value", type: { text: "string" }, default: '""', description: "The default value." });
+    expect((declaration(normalise(changed, [])).attributes as Json[]).map((attribute) => attribute.name)).toEqual(["name", "label", "value"]);
+  });
+});
+
+// specs/010-feedback-forms operator round 3 (reviews/phase-3/round-3.md, O3-01; T041c): the fold(raw) tests of T036 are
+// removed with fold itself. They pinned the rule the operator replaced at the landing of PR #49 ("Main's rule +
+// FormControl"): an internal base's members are listed on the element with inheritedFrom, and its superclass is kept as
+// the analyzer writes it, as mission 008 does for src/overlay.ts (constitution VIII: the reason for replacing pinned
+// tests, recorded here).
+describe("normalise(raw, names): what an element inherits from an internal base (specs/010-feedback-forms O3-01; T041c)", () => {
+  it("keeps a member's and an attribute's inheritedFrom and the declaration's superclass as given", () => {
+    const from = { name: "FormControl", module: "src/form-control.ts" };
+    const changed = structuredClone(raw);
+    const element = declaration(changed);
+    element.superclass = { name: "FormControl", module: "/src/form-control.ts" };
+    (element.members as Json[]).push({ kind: "field", name: "required", privacy: "public", type: { text: "boolean" }, description: "Required.", attribute: "required", inheritedFrom: from });
+    (element.attributes as Json[]).push({ name: "required", fieldName: "required", type: { text: "boolean" }, description: "Required.", inheritedFrom: from });
+    const out = declaration(normalise(changed, []));
+    const inherited = (list: unknown): unknown[] => ((list ?? []) as Json[]).map((each) => [each.name, each.inheritedFrom ?? null]);
+    expect({ superclass: out.superclass, members: inherited(out.members), attributes: inherited(out.attributes) }).toEqual({
+      superclass: { module: "/src/form-control.ts", name: "FormControl" },
+      members: [["name", null], ["label", null], ["required", { module: "src/form-control.ts", name: "FormControl" }]],
+      attributes: [["name", null], ["label", null], ["required", { module: "src/form-control.ts", name: "FormControl" }]],
+    });
+  });
+});
+
 describe("normalise(raw, names): standard attributes (012 research.md R-15; tasks.md T033)", () => {
   it("keeps a standard attribute the element declares with a description, and drops one it observes without declaring", () => {
     const declared = structuredClone(raw);
@@ -261,6 +293,110 @@ describe("generate(root) on other element sources", () => {
   });
 });
 
+/**
+ * An internal base class `name`: a reflected property, a getter, a method, a focus() override and observed standard
+ * attributes.
+ */
+const controlBase = (name: string): string => `import { LitElement } from "lit";
+
+/** A base. */
+export class ${name} extends LitElement {
+  static override properties = { name: { type: String, reflect: true } };
+
+  /** The observed standard attributes. */
+  static override get observedAttributes(): string[] {
+    return [...super.observedAttributes, "aria-label", "form", "aria-invalid"];
+  }
+
+  /**
+   * The name.
+   *
+   * @default ""
+   */
+  declare name: string;
+
+  /** The owning form. */
+  get form(): HTMLFormElement | null {
+    return null;
+  }
+
+  /** Whether it is valid. */
+  checkValidity(): boolean {
+    return true;
+  }
+
+  /** Focuses the inner control. */
+  override focus(options?: FocusOptions): void {
+    super.focus(options);
+  }
+
+  /** A seam. */
+  protected seam(): void {}
+}
+`;
+
+/** An element class `name` with the tag `tag`, derived from `base` imported from `module`, with a property of its own. */
+const derived = (tag: string, name: string, base: string, module: string): string => `import { ${base} } from "./${module}";
+
+/**
+ * An element.
+ *
+ * @tagname ${tag}
+ */
+export class ${name} extends ${base} {
+  static override properties = { label: {} };
+
+  /**
+   * The label.
+   *
+   * @default undefined
+   */
+  declare label: string | undefined;
+}
+`;
+
+// specs/010-feedback-forms operator round 3 (reviews/phase-3/round-3.md, O3-01; T041c): this replaces T030's pinned
+// rule "folds the base's public members and attributes into the element's entry ... and adds no module, superclass or
+// inheritedFrom naming the base's source". The operator chose mission 008's rule with src/form-control.ts as a second
+// named base beside src/overlay.ts: the base's members are listed on the element with inheritedFrom, the superclass is
+// kept as the analyzer writes it, the base's module is not published, and a base in any other file of src/ is not read
+// (constitution VIII: the reason for replacing a pinned test, recorded here).
+describe("generate(root) on an element derived from an internal base class (specs/010-feedback-forms FR-034, #27, O3-01; T030, T041c)", () => {
+  it("reads src/form-control.ts by name: its public members and attributes, focus() included, are listed on the element with inheritedFrom and the superclass names it; a base in base-control.ts gives nothing; the published modules are the ocelle-* ones only", async () => {
+    const dir = root({
+      "packages/elements/src/form-control.ts": controlBase("FormControl"),
+      "packages/elements/src/base-control.ts": controlBase("BaseControl"),
+      "packages/elements/src/ocelle-alpha.ts": derived("ocelle-alpha", "Alpha", "FormControl", "form-control.ts"),
+      "packages/elements/src/ocelle-beta.ts": derived("ocelle-beta", "Beta", "BaseControl", "base-control.ts"),
+    });
+    const manifest = await generate(dir);
+    const modules = manifest.modules as Json[];
+    const of = (path: string): Json => declaration({ modules: modules.filter((module) => module.path === path) });
+    const inherited = (entry: Json, list: "members" | "attributes"): unknown[] => ((entry[list] ?? []) as Json[]).map((each) => [each.name, each.inheritedFrom ?? null]);
+    const alpha = of("src/ocelle-alpha.ts");
+    const beta = of("src/ocelle-beta.ts");
+    const focus = (alpha.members as Json[] | undefined)?.find((member) => member.name === "focus");
+    const from = { name: "FormControl", module: "src/form-control.ts" };
+    expect({
+      paths: modules.map((module) => module.path),
+      declarations: modules.flatMap((module) => ((module.declarations ?? []) as Json[]).map((each) => each.name)),
+      alpha: { members: inherited(alpha, "members"), attributes: inherited(alpha, "attributes"), superclass: alpha.superclass },
+      focus: { kind: focus?.kind, parameters: focus?.parameters, described: typeof focus?.description === "string" && focus.description !== "" },
+      beta: { members: inherited(beta, "members"), attributes: inherited(beta, "attributes") },
+    }).toEqual({
+      paths: ["src/ocelle-alpha.ts", "src/ocelle-beta.ts"],
+      declarations: ["Alpha", "Beta"],
+      alpha: {
+        members: [["label", null], ["name", from], ["form", from], ["checkValidity", from], ["focus", from]],
+        attributes: [["label", null], ["name", from]],
+        superclass: { name: "FormControl", module: "/src/form-control.ts" },
+      },
+      focus: { kind: "method", parameters: [{ name: "options", optional: true, type: { text: "FocusOptions" } }], described: true },
+      beta: { members: [["label", null]], attributes: [["label", null]] },
+    });
+  });
+});
+
 describe("writeManifest(root)", () => {
   it("writes packages/elements/custom-elements.json from the root's element source, as serialise(generate(root))", async () => {
     const dir = root({});
@@ -284,6 +420,44 @@ describe("serialise(manifest)", () => {
 const unionOfTheSet =
   '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | undefined';
 
+type Described = Record<string, unknown>;
+
+/** Whether an entry has a non-empty description. */
+const hasDescription = (entry: Described): boolean => typeof entry.description === "string" && entry.description !== "";
+
+/** Entries sorted by name. */
+const byName = <T extends Described>(entries: readonly T[]): T[] => [...entries].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+/**
+ * The element declaration of one module of the repository's manifest, projected to what contracts/elements.md states:
+ * each public member's type, attribute, whether it reflects and its default, each attribute's field, each event's
+ * detail type, the slot, part and CSS property names, and whether each has a description; lists sorted by name.
+ */
+async function declared(path: string): Promise<unknown> {
+  const manifest = await generate(repo);
+  const modules = manifest.modules as { path: string; declarations: Described[] }[];
+  const [element] = modules.find((module) => module.path === path)?.declarations ?? [];
+  if (element === undefined) return undefined;
+  const list = (key: string): Described[] => byName((element[key] ?? []) as Described[]);
+  return {
+    name: element.name,
+    tagName: element.tagName,
+    members: list("members").map((member) => ({
+      name: member.name,
+      type: (member.type as { text?: unknown } | undefined)?.text,
+      attribute: member.attribute,
+      reflects: member.reflects === true,
+      default: member.default,
+      described: hasDescription(member),
+    })),
+    attributes: list("attributes").map((attribute) => ({ name: attribute.name, fieldName: attribute.fieldName, described: hasDescription(attribute) })),
+    events: list("events").map((event) => ({ name: event.name, type: (event.type as { text?: unknown } | undefined)?.text, described: hasDescription(event) })),
+    slots: list("slots").map((slot) => ({ name: slot.name, described: hasDescription(slot) })),
+    cssParts: list("cssParts").map((part) => ({ name: part.name, described: hasDescription(part) })),
+    cssProperties: list("cssProperties").map((property) => property.name),
+  };
+}
+
 /** The attributes `ocelle-button` moves onto its inner control, in the order it declares them (012 FR-009). */
 const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"];
 
@@ -292,7 +466,67 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-metric.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-pill-tag.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-status-indicator.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual([
+      "src/ocelle-action-row.ts",
+      "src/ocelle-app-shell.ts",
+      "src/ocelle-brand-mark.ts",
+      "src/ocelle-breadcrumbs.ts",
+      "src/ocelle-button.ts",
+      "src/ocelle-card.ts",
+      "src/ocelle-code-block.ts",
+      "src/ocelle-context-sidebar.ts",
+      "src/ocelle-copy-field.ts",
+      "src/ocelle-data-table.ts",
+      "src/ocelle-dialog.ts",
+      "src/ocelle-disclosure.ts",
+      "src/ocelle-drawer.ts",
+      "src/ocelle-empty-state.ts",
+      "src/ocelle-event-timeline.ts",
+      "src/ocelle-evidence-chain.ts",
+      "src/ocelle-evidence-step.ts",
+      "src/ocelle-fact.ts",
+      "src/ocelle-facts.ts",
+      "src/ocelle-form-input.ts",
+      "src/ocelle-form-select.ts",
+      "src/ocelle-form-textarea.ts",
+      "src/ocelle-icon.ts",
+      "src/ocelle-link.ts",
+      "src/ocelle-list-detail.ts",
+      "src/ocelle-listbox.ts",
+      "src/ocelle-metric.ts",
+      "src/ocelle-nav-item.ts",
+      "src/ocelle-nav-pill.ts",
+      "src/ocelle-notice.ts",
+      "src/ocelle-option.ts",
+      "src/ocelle-page-header.ts",
+      "src/ocelle-personal-rail.ts",
+      "src/ocelle-pill-tag.ts",
+      "src/ocelle-progress.ts",
+      "src/ocelle-scroller.ts",
+      "src/ocelle-section-header.ts",
+      "src/ocelle-segment.ts",
+      "src/ocelle-segmented-choice.ts",
+      "src/ocelle-skip-link.ts",
+      "src/ocelle-status-indicator.ts",
+      "src/ocelle-step-indicator.ts",
+      "src/ocelle-tab-panel.ts",
+      "src/ocelle-tab.ts",
+      "src/ocelle-tabs.ts",
+      "src/ocelle-timeline-event.ts",
+      "src/ocelle-tooltip.ts",
+      "src/ocelle-top-bar.ts",
+      "src/ocelle-workflow-board.ts",
+      "src/ocelle-workflow-canvas.ts",
+      "src/ocelle-workflow-lane.ts",
+      "src/ocelle-workflow-node.ts",
+    ]);
+    const [canvas] = modules.find((module) => module.path === "src/ocelle-workflow-canvas.ts")?.declarations ?? [];
+    expect(canvas?.events).toEqual([
+      { name: "ocelle-workflow-canvas-connection-request", description: "A proposed connection edit using stable step and outcome identifiers.", type: { text: "CustomEvent<WorkflowCanvasConnectionRequestDetail>" } },
+      { name: "ocelle-workflow-canvas-viewport-request", description: "A proposed pan, zoom, fit or named reveal viewport.", type: { text: "CustomEvent<WorkflowCanvasViewportRequestDetail>" } },
+      { name: "ocelle-workflow-canvas-position-request", description: "The requested absolute graph position of a step in author mode.", type: { text: "CustomEvent<WorkflowCanvasPositionRequestDetail>" } },
+      { name: "ocelle-workflow-node-select", description: "The original bubbling request from the native node action.", type: { text: "CustomEvent<{nodeId: string}>" } },
+    ]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -342,6 +576,398 @@ describe("generate(root) on the repository's element source", () => {
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
+  });
+
+  it("declares ocelle-listbox per contracts/elements.md: value (string, not reflected, default empty) and label, the change and activate events with their { value } detail, the default slot and the list part (014 FR-055)", async () => {
+    const listbox = await declared("src/ocelle-listbox.ts");
+    expect(listbox).toEqual({
+      name: "OcelleListbox",
+      tagName: "ocelle-listbox",
+      members: [
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: '""', described: true },
+      ],
+      attributes: [
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [
+        { name: "ocelle-listbox-activate", type: "CustomEvent<{ value: string }>", described: true },
+        { name: "ocelle-listbox-change", type: "CustomEvent<{ value: string }>", described: true },
+      ],
+      slots: [{ name: "", described: true }],
+      cssParts: [{ name: "list", described: true }],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-option per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property (014 FR-055)", async () => {
+    const option = await declared("src/ocelle-option.ts");
+    expect(option).toEqual({
+      name: "OcelleOption",
+      tagName: "ocelle-option",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-tabs per contracts/elements.md: value (string, not reflected) and label, the change event with its { value } detail, the default slot and the tablist and panels parts (014 FR-055, phase 3)", async () => {
+    const tabs = await declared("src/ocelle-tabs.ts");
+    expect(tabs).toEqual({
+      name: "OcelleTabs",
+      tagName: "ocelle-tabs",
+      members: [
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-tabs-change", type: "CustomEvent<{ value: string }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [
+        { name: "panels", described: true },
+        { name: "tablist", described: true },
+      ],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-tab per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property (014 FR-055, phase 3)", async () => {
+    const tab = await declared("src/ocelle-tab.ts");
+    expect(tab).toEqual({
+      name: "OcelleTab",
+      tagName: "ocelle-tab",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-tab-panel per contracts/elements.md: no property, attribute, event, part or CSS property, and the default slot (014 FR-055, phase 3)", async () => {
+    const panel = await declared("src/ocelle-tab-panel.ts");
+    expect(panel).toEqual({ name: "OcelleTabPanel", tagName: "ocelle-tab-panel", members: [], attributes: [], events: [], slots: [{ name: "", described: true }], cssParts: [], cssProperties: [] });
+  });
+
+  it("declares ocelle-segmented-choice per contracts/elements.md: value (string, not reflected), label and joined (boolean, reflected, default false), the change event with its { value } detail, the default slot and no part (014 FR-055, phase 4)", async () => {
+    const group = await declared("src/ocelle-segmented-choice.ts");
+    expect(group).toEqual({
+      name: "OcelleSegmentedChoice",
+      tagName: "ocelle-segmented-choice",
+      members: [
+        { name: "joined", type: "boolean", attribute: "joined", reflects: true, default: "false", described: true },
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "joined", fieldName: "joined", described: true },
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-segmented-choice-change", type: "CustomEvent<{ value: string }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-segment per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property, and no row state as surface (014 FR-055, phase 4)", async () => {
+    const segment = await declared("src/ocelle-segment.ts");
+    expect(segment).toEqual({
+      name: "OcelleSegment",
+      tagName: "ocelle-segment",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-copy-field per contracts/elements.md: value and status (strings, not reflected, default empty) and copyLabel (attribute copy-label, not reflected, default Copy), the request event with its { text } detail, no slot, the value and copy-control parts and no CSS property (014 FR-055, phase 5)", async () => {
+    const field = await declared("src/ocelle-copy-field.ts");
+    expect(field).toEqual({
+      name: "OcelleCopyField",
+      tagName: "ocelle-copy-field",
+      members: [
+        { name: "copyLabel", type: "string", attribute: "copy-label", reflects: false, default: '"Copy"', described: true },
+        { name: "status", type: "string", attribute: "status", reflects: false, default: '""', described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: '""', described: true },
+      ],
+      attributes: [
+        { name: "copy-label", fieldName: "copyLabel", described: true },
+        { name: "status", fieldName: "status", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-copy-field-request", type: "CustomEvent<{ text: string }>", described: true }],
+      slots: [],
+      cssParts: [
+        { name: "copy-control", described: true },
+        { name: "value", described: true },
+      ],
+      cssProperties: [],
+    });
+  });
+
+  it('declares ocelle-notice with its tag name, class, tone, size and announce with the types and defaults of contracts/elements.md, all reflected, the slots heading and default, the parts heading and body, no event and no CSS property, and neither role nor hidden as an attribute (specs/010-feedback-forms FR-034; analysis I2)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [notice] = modules.find((module) => module.path === "src/ocelle-notice.ts")?.declarations ?? [];
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(notice).toMatchObject({ kind: "class", name: "OcelleNotice", tagName: "ocelle-notice", customElement: true, events: [], cssProperties: [] });
+    expect({ slots: described(notice?.slots), parts: described(notice?.cssParts) }).toEqual({
+      slots: [
+        { name: "heading", described: true },
+        { name: "", described: true },
+      ],
+      parts: [
+        { name: "heading", described: true },
+        { name: "body", described: true },
+      ],
+    });
+    const tones = '"info" | "success" | "warning" | "danger" | "neutral"';
+    const sizes = '"regular" | "compact"';
+    expect(described(notice?.members)).toEqual([
+      { kind: "field", name: "tone", privacy: "public", type: { text: tones }, default: '"info"', attribute: "tone", reflects: true, described: true },
+      { kind: "field", name: "size", privacy: "public", type: { text: sizes }, default: '"regular"', attribute: "size", reflects: true, described: true },
+      { kind: "field", name: "announce", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "announce", reflects: true, described: true },
+    ]);
+    // The exact list: the observed standard attributes `role` and `hidden` are not declared (FR-034).
+    expect(described(notice?.attributes)).toEqual([
+      { name: "tone", fieldName: "tone", type: { text: tones }, default: '"info"', described: true },
+      { name: "size", fieldName: "size", type: { text: sizes }, default: '"regular"', described: true },
+      { name: "announce", fieldName: "announce", type: { text: "boolean" }, default: "false", described: true },
+    ]);
+  });
+
+  it('declares ocelle-form-input with its tag name and class, the shared members of contracts/elements.md and its own, the value attribute without a field, the event ocelle-form-input-change with its detail type, the parts label, control, description and error, no slot and no CSS property, and no form, aria-*, role or hidden attribute (specs/010-feedback-forms FR-021, FR-029, FR-034; analysis G9, I15, I16, U6)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [entry] = modules.find((module) => module.path === "src/ocelle-form-input.ts")?.declarations ?? [];
+    const described = (value: unknown): boolean => typeof value === "string" && value !== "";
+    const byName = (a: Json, b: Json): number => (String(a.name) < String(b.name) ? -1 : 1);
+    const defined = (value: Json): Json => Object.fromEntries(Object.entries(value).filter(([, each]) => each !== undefined));
+    const member = (each: Json): Json => {
+      const type = each.type as { text?: string } | undefined;
+      const returned = each.return as { type?: { text?: string } } | undefined;
+      const parameters = each.parameters as { name: string; optional?: boolean; type?: { text?: string } }[] | undefined;
+      return defined({
+        kind: each.kind,
+        name: each.name,
+        type: type?.text,
+        default: each.default,
+        attribute: each.attribute,
+        reflects: each.reflects,
+        readonly: each.readonly,
+        returns: returned?.type?.text,
+        parameters: parameters?.map((parameter) => `${parameter.name}${parameter.optional === true ? "?" : ""}: ${String(parameter.type?.text)}`),
+        inheritedFrom: each.inheritedFrom,
+        described: described(each.description),
+      });
+    };
+    const field = (name: string, type: string, value: string, attribute?: string, reflects?: boolean): Json => defined({ kind: "field", name, type, default: value, attribute, reflects, described: true });
+    const getter = (name: string, type: string): Json => ({ kind: "field", name, type, readonly: true, described: true });
+    // The members and attributes declared in src/form-control.ts are listed with inheritedFrom (operator round 3, O3-01; T041c).
+    const from = { name: "FormControl", module: "src/form-control.ts" };
+    const method = (name: string, returns: string, parameters?: string[]): Json => defined({ kind: "method", name, returns, parameters, described: true });
+    const types = '"text" | "email" | "url" | "tel" | "search" | "password" | "number"';
+    const optional = (name: string, attribute: string, type = "string | undefined"): Json => field(name, type, "undefined", attribute, true);
+    const members = [
+      ...[
+        field("name", "string", '""', "name", true),
+        field("label", "string", '""', "label", true),
+        field("description", "string", '""', "description", true),
+        field("error", "string", '""', "error", true),
+        field("required", "boolean", "false", "required", true),
+        field("disabled", "boolean", "false", "disabled", true),
+        field("value", "string", '""'),
+        getter("form", "HTMLFormElement | null"),
+        getter("labels", "NodeList"),
+        getter("validity", "ValidityState"),
+        getter("validationMessage", "string"),
+        getter("willValidate", "boolean"),
+        method("checkValidity", "boolean"),
+        method("reportValidity", "boolean"),
+        method("focus", "void", ["options?: FocusOptions"]),
+      ].map((each): Json => ({ ...each, inheritedFrom: from })),
+      field("type", types, '"text"', "type", true),
+      optional("placeholder", "placeholder"),
+      optional("autocomplete", "autocomplete"),
+      optional("inputMode", "inputmode"),
+      optional("pattern", "pattern"),
+      optional("min", "min"),
+      optional("max", "max"),
+      optional("step", "step"),
+      optional("minLength", "minlength", "number | undefined"),
+      optional("maxLength", "maxlength", "number | undefined"),
+      field("readOnly", "boolean", "false", "readonly", true),
+    ];
+    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, inheritedFrom: each.inheritedFrom, described: described(each.description) });
+    const attributes = [
+      ...members.filter((each) => each.attribute !== undefined).map((each) => defined({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, inheritedFrom: each.inheritedFrom, described: true })),
+      { name: "value", type: "string", default: '""', described: true },
+    ];
+    const valueAttribute = ((entry?.attributes ?? []) as Json[]).find((each) => each.name === "value");
+    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormInput", tagName: "ocelle-form-input", customElement: true, slots: [], cssProperties: [], superclass: { name: "FormControl", module: "/src/form-control.ts" } });
+    expect({
+      members: ((entry?.members ?? []) as Json[]).map(member).sort(byName),
+      attributes: ((entry?.attributes ?? []) as Json[]).map(attribute).sort(byName),
+      valueDescription: String(valueAttribute?.description).includes("default value") && String(valueAttribute?.description).includes("reset"),
+      events: ((entry?.events ?? []) as Json[]).map((event) => ({ name: event.name, type: (event.type as { text?: string } | undefined)?.text, described: described(event.description) })),
+      parts: ((entry?.cssParts ?? []) as Json[]).map((part) => ({ name: part.name, described: described(part.description) })),
+    }).toEqual({
+      members: [...members].sort(byName),
+      attributes: [...attributes].sort(byName),
+      valueDescription: true,
+      events: [{ name: "ocelle-form-input-change", type: "CustomEvent<{ value: string }>", described: true }],
+      parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
+    });
+  });
+
+  it("declares the textarea's change event and read-only property in the manifest", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [entry] = modules.find((module) => module.path === "src/ocelle-form-textarea.ts")?.declarations ?? [];
+    expect(entry?.events, "the textarea declares the committed-change event").toEqual([
+      expect.objectContaining({ name: "ocelle-form-textarea-change", type: { text: "CustomEvent<{ value: string }>" } }),
+    ]);
+    expect(entry?.attributes).toContainEqual(expect.objectContaining({ name: "readonly", fieldName: "readOnly" }));
+    expect(entry?.cssParts).toEqual([
+      expect.objectContaining({ name: "label" }),
+      expect.objectContaining({ name: "control" }),
+      expect.objectContaining({ name: "description" }),
+      expect.objectContaining({ name: "error" }),
+    ]);
+  });
+
+  it('declares ocelle-form-select with its tag name and class, the shared members of contracts/elements.md (value a property with no attribute), none of the input\'s own members, the event ocelle-form-select-change with its detail type, the parts label, control, description and error, no slot and no CSS property, and no value, form, aria-*, role or hidden attribute (specs/010-feedback-forms FR-021, FR-034; analysis G9, I15, I16)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [entry] = modules.find((module) => module.path === "src/ocelle-form-select.ts")?.declarations ?? [];
+    const described = (value: unknown): boolean => typeof value === "string" && value !== "";
+    const byName = (a: Json, b: Json): number => (String(a.name) < String(b.name) ? -1 : 1);
+    const defined = (value: Json): Json => Object.fromEntries(Object.entries(value).filter(([, each]) => each !== undefined));
+    const member = (each: Json): Json => {
+      const type = each.type as { text?: string } | undefined;
+      const returned = each.return as { type?: { text?: string } } | undefined;
+      const parameters = each.parameters as { name: string; optional?: boolean; type?: { text?: string } }[] | undefined;
+      return defined({
+        kind: each.kind,
+        name: each.name,
+        type: type?.text,
+        default: each.default,
+        attribute: each.attribute,
+        reflects: each.reflects,
+        readonly: each.readonly,
+        returns: returned?.type?.text,
+        parameters: parameters?.map((parameter) => `${parameter.name}${parameter.optional === true ? "?" : ""}: ${String(parameter.type?.text)}`),
+        inheritedFrom: each.inheritedFrom,
+        described: described(each.description),
+      });
+    };
+    const field = (name: string, type: string, value: string, attribute?: string, reflects?: boolean): Json => defined({ kind: "field", name, type, default: value, attribute, reflects, described: true });
+    const getter = (name: string, type: string): Json => ({ kind: "field", name, type, readonly: true, described: true });
+    // The members and attributes declared in src/form-control.ts are listed with inheritedFrom (operator round 3, O3-01; T041c).
+    const from = { name: "FormControl", module: "src/form-control.ts" };
+    const method = (name: string, returns: string, parameters?: string[]): Json => defined({ kind: "method", name, returns, parameters, described: true });
+    // The shared members only: none of the input's own (type and the pass-through properties).
+    const members = [
+      ...[
+        field("name", "string", '""', "name", true),
+        field("label", "string", '""', "label", true),
+        field("description", "string", '""', "description", true),
+        field("error", "string", '""', "error", true),
+        field("required", "boolean", "false", "required", true),
+        field("disabled", "boolean", "false", "disabled", true),
+        field("value", "string", '""'),
+        getter("form", "HTMLFormElement | null"),
+        getter("labels", "NodeList"),
+        getter("validity", "ValidityState"),
+        getter("validationMessage", "string"),
+        getter("willValidate", "boolean"),
+        method("checkValidity", "boolean"),
+        method("reportValidity", "boolean"),
+        method("focus", "void", ["options?: FocusOptions"]),
+      ].map((each): Json => ({ ...each, inheritedFrom: from })),
+    ];
+    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, inheritedFrom: each.inheritedFrom, described: described(each.description) });
+    // Exactly the reflected shared attributes: no value (a host value attribute is ignored), form, aria-*, role or hidden.
+    const attributes = members.filter((each) => each.attribute !== undefined).map((each) => defined({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, inheritedFrom: each.inheritedFrom, described: true }));
+    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormSelect", tagName: "ocelle-form-select", customElement: true, superclass: { name: "FormControl", module: "/src/form-control.ts" } });
+    expect({
+      described: described(entry?.description),
+      members: ((entry?.members ?? []) as Json[]).map(member).sort(byName),
+      attributes: ((entry?.attributes ?? []) as Json[]).map(attribute).sort(byName),
+      events: ((entry?.events ?? []) as Json[]).map((event) => ({ name: event.name, type: (event.type as { text?: string } | undefined)?.text, described: described(event.description) })),
+      parts: ((entry?.cssParts ?? []) as Json[]).map((part) => ({ name: part.name, described: described(part.description) })),
+      slots: entry?.slots,
+      cssProperties: entry?.cssProperties,
+    }).toEqual({
+      described: true,
+      members: [...members].sort(byName),
+      attributes: [...attributes].sort(byName),
+      events: [{ name: "ocelle-form-select-change", type: "CustomEvent<{ value: string }>", described: true }],
+      parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
+      slots: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-link per contracts/elements.md: href (string, reflected, default undefined) and label (string, not reflected, default undefined), the cancelable activate event with its { href } detail, the default slot, the anchor part and no CSS property (014 FR-055, phase 6)", async () => {
+    const link = await declared("src/ocelle-link.ts");
+    expect(link).toEqual({
+      name: "OcelleLink",
+      tagName: "ocelle-link",
+      members: [
+        { name: "href", type: "string | undefined", attribute: "href", reflects: true, default: "undefined", described: true },
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+      ],
+      attributes: [
+        { name: "href", fieldName: "href", described: true },
+        { name: "label", fieldName: "label", described: true },
+      ],
+      events: [{ name: "ocelle-link-activate", type: "CustomEvent<{ href: string | null }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [{ name: "anchor", described: true }],
+      cssProperties: [],
+    });
   });
 
   it('declares ocelle-button with its tag name, class, variant, size, flush, ground (with "chrome"), label, disabled and busy, the click() method, the default and icon slots, the part control and the event ocelle-button-activate with its detail type, each described (012 FR-009, FR-053; contracts/elements-package.md § ocelle-button)', async () => {
@@ -1039,6 +1665,167 @@ describe("generate(root) on the repository's element source", () => {
       slots: [{ name: "", described: true }],
       parts: [{ name: "label", described: true }],
       properties: [{ name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
+  });
+
+  // 019 phase 2 (T034; contracts/ocelle-event-timeline.md, contracts/ocelle-timeline-event.md, research R-10): the two
+  // timeline modules declare only their class; the event declares the default and the time slot and the time and
+  // content parts; the internal timeline-time module is not in the manifest.
+  it("declares ocelle-timeline-event with time (string | undefined) and wrap (\"anywhere\" | undefined), reflected, the default and time slots and the time and content parts, its module declaring only its class; ocelle-event-timeline with label (string | undefined), not reflected, the default slot and the list part; timeline-time not a module", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[]; exports?: Record<string, unknown>[] }[];
+    const eventModule = modules.find((module) => module.path === "src/ocelle-timeline-event.ts");
+    const timelineModule = modules.find((module) => module.path === "src/ocelle-event-timeline.ts");
+    const [event] = eventModule?.declarations ?? [];
+    const [timeline] = timelineModule?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({
+      declarations: [eventModule?.declarations.map((each) => each.name), timelineModule?.declarations.map((each) => each.name)],
+      exported: eventModule?.exports?.map((each) => each.name),
+      internal: modules.some((module) => module.path.includes("timeline-time")),
+      event: { name: event?.name, tagName: event?.tagName, events: event?.events },
+      timeline: { name: timeline?.name, tagName: timeline?.tagName, events: timeline?.events },
+    }).toEqual({
+      declarations: [["OcelleTimelineEvent"], ["OcelleEventTimeline"]],
+      exported: ["OcelleTimelineEvent"],
+      internal: false,
+      event: { name: "OcelleTimelineEvent", tagName: "ocelle-timeline-event", events: [] },
+      timeline: { name: "OcelleEventTimeline", tagName: "ocelle-event-timeline", events: [] },
+    });
+    expect(described(event?.members)).toEqual([
+      { kind: "field", name: "time", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "time", reflects: true, described: true },
+      { kind: "field", name: "wrap", privacy: "public", type: { text: '"anywhere" | undefined' }, default: "undefined", attribute: "wrap", reflects: true, described: true },
+    ]);
+    expect(described(timeline?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect({
+      event: { slots: named(event?.slots), parts: named(event?.cssParts), properties: named(event?.cssProperties) },
+      timeline: { slots: named(timeline?.slots), parts: named(timeline?.cssParts), properties: named(timeline?.cssProperties) },
+    }).toEqual({
+      event: { slots: [{ name: "", described: true }, { name: "time", described: true }], parts: [{ name: "time", described: true }, { name: "content", described: true }], properties: [] },
+      timeline: { slots: [{ name: "", described: true }], parts: [{ name: "list", described: true }], properties: [] },
+    });
+  });
+
+  // 019 phase 3 (T057, T067; contracts/ocelle-evidence-chain.md, contracts/ocelle-evidence-step.md): the two chain
+  // modules declare only their class; the step declares variant and wrap, reflected, the default slot and the content
+  // part; the chain declares label, not reflected, the default slot and the list part; neither has an event.
+  it("declares ocelle-evidence-step with variant (\"chip\" | undefined) and wrap (\"anywhere\" | undefined), reflected, the default slot and the content part; ocelle-evidence-chain with label (string | undefined), not reflected, the default slot and the list part; each module declaring only its class, with no event", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const stepModule = modules.find((module) => module.path === "src/ocelle-evidence-step.ts");
+    const chainModule = modules.find((module) => module.path === "src/ocelle-evidence-chain.ts");
+    const [step] = stepModule?.declarations ?? [];
+    const [chain] = chainModule?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({
+      declarations: [stepModule?.declarations.map((each) => each.name), chainModule?.declarations.map((each) => each.name)],
+      step: { name: step?.name, tagName: step?.tagName, events: step?.events },
+      chain: { name: chain?.name, tagName: chain?.tagName, events: chain?.events },
+    }).toEqual({
+      declarations: [["OcelleEvidenceStep"], ["OcelleEvidenceChain"]],
+      step: { name: "OcelleEvidenceStep", tagName: "ocelle-evidence-step", events: [] },
+      chain: { name: "OcelleEvidenceChain", tagName: "ocelle-evidence-chain", events: [] },
+    });
+    expect(described(step?.members)).toEqual([
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"chip" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+      { kind: "field", name: "wrap", privacy: "public", type: { text: '"anywhere" | undefined' }, default: "undefined", attribute: "wrap", reflects: true, described: true },
+    ]);
+    expect(described(chain?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect({
+      step: { slots: named(step?.slots), parts: named(step?.cssParts), properties: named(step?.cssProperties) },
+      chain: { slots: named(chain?.slots), parts: named(chain?.cssParts), properties: named(chain?.cssProperties) },
+    }).toEqual({
+      step: { slots: [{ name: "", described: true }], parts: [{ name: "content", described: true }], properties: [] },
+      chain: { slots: [{ name: "", described: true }], parts: [{ name: "list", described: true }], properties: [] },
+    });
+  });
+
+  // 020 phase 1 (T007; contracts/elements.md § `ocelle-disclosure`; FR-017): every list stated, every member described;
+  // the moved attributes and their mirrors, and the mapped `aria-expanded`, declared with `@attr` before the property's
+  // attribute; `aria-expanded` is an attribute only, not a property; no CSS custom property.
+  it("declares ocelle-disclosure with open (boolean | undefined, reflected), click() and focus(), the moved aria-label, aria-labelledby, aria-describedby and title with their four mirrors and the mapped aria-expanded, the slots summary, icon and default, the event ocelle-disclosure-toggle with its detail, the parts details, summary and panel, the state open and no CSS property, each described", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [disclosure] = modules.find((module) => module.path === "src/ocelle-disclosure.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const disclosureMoved = ["aria-label", "aria-labelledby", "aria-describedby", "title"];
+    expect({ kind: disclosure?.kind, name: disclosure?.name, tagName: disclosure?.tagName, customElement: disclosure?.customElement }).toEqual({ kind: "class", name: "OcelleDisclosure", tagName: "ocelle-disclosure", customElement: true });
+    const members = described(disclosure?.members);
+    expect(members.map(({ kind, name }) => ({ kind, name }))).toEqual([
+      { kind: "field", name: "open" },
+      { kind: "method", name: "click" },
+      { kind: "method", name: "focus" },
+    ]);
+    expect(members[0]).toEqual({ kind: "field", name: "open", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "open", reflects: true, described: true });
+    expect(members.map((member) => member.described)).toEqual([true, true, true]);
+    expect(described(disclosure?.attributes)).toEqual([
+      ...disclosureMoved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...disclosureMoved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
+      { name: "aria-expanded", type: { text: '"true" | "false"' }, described: true },
+      { name: "open", fieldName: "open", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: named(disclosure?.slots),
+      parts: named(disclosure?.cssParts),
+      states: named(disclosure?.cssStates),
+      events: described(disclosure?.events),
+      properties: disclosure?.cssProperties,
+      expandedProperty: members.some((member) => member.name === "ariaExpanded" || member.attribute === "aria-expanded"),
+    }).toEqual({
+      slots: [
+        { name: "summary", described: true },
+        { name: "icon", described: true },
+        { name: "", described: true },
+      ],
+      parts: [
+        { name: "details", described: true },
+        { name: "summary", described: true },
+        { name: "panel", described: true },
+      ],
+      states: [{ name: "open", described: true }],
+      events: [{ name: "ocelle-disclosure-toggle", type: { text: "CustomEvent<{ open: boolean }>" }, described: true }],
+      properties: [],
+      expandedProperty: false,
+    });
+  });
+
+  // 020 phase 2 (T027; contracts/elements.md § `ocelle-code-block`; FR-035): every list stated, every member described;
+  // `overflow` and `digest` reflected, `label` not; no slot (the description says the text is the light DOM's text
+  // content), no event, the parts `block` and `code`, no CSS custom property; `aria-label` is observed, not a property.
+  it("declares ocelle-code-block with overflow (string | undefined, reflected), label (string | undefined, not reflected) and digest (boolean | undefined, reflected), each described with the default undefined, no slot, no event, the parts block and code, and no CSS property", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [codeBlock] = modules.find((module) => module.path === "src/ocelle-code-block.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({ kind: codeBlock?.kind, name: codeBlock?.name, tagName: codeBlock?.tagName, customElement: codeBlock?.customElement }).toEqual({ kind: "class", name: "OcelleCodeBlock", tagName: "ocelle-code-block", customElement: true });
+    expect(typeof codeBlock?.description === "string" && codeBlock.description.includes("light-DOM text content")).toBe(true);
+    expect(described(codeBlock?.members)).toEqual([
+      { kind: "field", name: "overflow", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "overflow", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "digest", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "digest", reflects: true, described: true },
+    ]);
+    expect(described(codeBlock?.attributes)).toEqual([
+      { name: "overflow", fieldName: "overflow", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "digest", fieldName: "digest", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({ slots: codeBlock?.slots, events: codeBlock?.events, parts: named(codeBlock?.cssParts), properties: codeBlock?.cssProperties, states: codeBlock?.cssStates ?? [] }).toEqual({
+      slots: [],
+      events: [],
+      parts: [
+        { name: "block", described: true },
+        { name: "code", described: true },
+      ],
+      properties: [],
+      states: [],
     });
   });
 

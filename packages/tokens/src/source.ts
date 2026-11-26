@@ -40,7 +40,7 @@ export const records = tokenRecords([
   { name: "color-inspector", group: "colour", value: { light: "#F1EEE8", dark: "#15130F" } }, // right inspector, ruled off
   { name: "color-rail", group: "colour", value: { light: "#E9E5DD", dark: "#1C1A15" } }, // context sidebar
   { name: "color-inset", group: "colour", value: { light: "#E2DDD3", dark: "#302B23" } }, // wells, digest backgrounds
-  // body text; on the state grounds and the pressed surface of a control too (012 research.md R-08 item 1)
+  // body text; on the state grounds (010 R-04) and the pressed surface of a control too (012 research.md R-08 item 1)
   {
     name: "color-ink",
     group: "colour",
@@ -97,6 +97,7 @@ export const records = tokenRecords([
     name: "color-accent-strong",
     group: "colour",
     value: { light: "#8F5E0F", dark: "#E0A23A" },
+    // on the main grounds also the selected bars of the listbox, tabs and segmented choice (014 research.md R-17)
     contrast: { kind: "non-text", grounds: [...main, ...stateGrounds, ...chrome] },
   },
   // focus ring
@@ -229,6 +230,8 @@ export const records = tokenRecords([
   { name: "shell-main-max", group: "shell", value: "48rem" },
   { name: "shell-collapse-inspector", group: "shell", value: "75rem" },
   { name: "shell-collapse-sidebar", group: "shell", value: "45rem" },
+  { name: "app-shell-narrow-below", group: "shell", value: "45rem" },
+  { name: "app-shell-collapse-below", group: "shell", value: "68.75rem" },
   { name: "shell-height", group: "shell", value: "100dvh" },
   { name: "footer-h", group: "shell", value: "4.5rem" },
   { name: "measure-sheet", group: "shell", value: "var(--ocelle-shell-main-max)", ref: ["shell-main-max"] },

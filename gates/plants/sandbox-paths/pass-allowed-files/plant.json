@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Sandbox paths only in the four allowed files (op 023, FR-003)."
+}

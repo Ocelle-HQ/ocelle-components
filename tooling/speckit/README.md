@@ -31,9 +31,13 @@ Both use the same commands, scripts and record files, so run summaries and the d
 is ready, or on a contributor PR: viability triage, bring the branch up to date by merging `main` (never a rebase,
 which would break the red/green evidence SHAs), classify every red check, a fresh `reviewer-renata` landing review
 (scope role `landing`), test-first folds through operator rounds, an evidence-preserving history fold of what came after the last phase fold (`bin/fold-history.sh`: keeps
-every base, scaffold and red commit and its parent, folds the rest, remaps the evidence SHAs and verifies the trees;
+every base, scaffold and red commit and its parent, folds the rest, remaps the evidence SHAs and verifies the trees; signs every commit it rebuilds when `commit.gpgsign` is on and refuses an unsigned result or a range that holds main's commits;
 `/ocelle-run` runs it after each approved phase, with the label `phase-N`, and pushes the pre-fold head as
 `archive/<branch>-prefold-phase-N`),
+after the history fold and the last merge of `main` the sanctioned redaction of the merged tree (step 2.9, op 023,
+operator decision 2026-11-20: `bin/redact-sandbox-paths.sh --in-place` on the files `pnpm run gate:sandbox-paths`
+finds, one `chore(landing)` commit of those files alone, proved by `bin/redact-sandbox-paths.sh --verify HEAD` and the
+gate's exit 0; it is skipped when the merged tree has no redaction script or the gate already passes),
 deliverable hygiene, then hand-off. The operator merges.
 
 **Agent profiles:** `triage-tara`, `analyst-anouk` (spec check, analysis), `planner-pim` (spec and squad fixes, op
@@ -41,8 +45,14 @@ setup; never code), `lens-lotte`, `refuter-rik`, `verifier-vera`, `implementer-i
 follows the matching command file, so both runners share one procedure. Read-only roles have no Edit tool.
 
 **Enforced outside the model:**
+- After merging `main`, run `.specify/extensions/story/scripts/base.sh N --with-main <merged-main-sha>`
+  for each phase being replayed. Commit `replay-upstream.sha` with the review evidence. The replay compares the
+  final head to the phase base with that exact main revision integrated, and replays the original red commits on
+  their historical revisions. The synthesized base, scaffold and fix-parent snapshots live locally. A conflicting
+  snapshot is a replay failure that needs to be resolved before review.
 - `bin/scope-check.sh <role> <base>`: after each delegated step, the files changed since `<base>` must be ones the
   role may touch (for example a review only under `reviews/phase-N/`); `/ocelle-run` redoes a step that strays.
+  Exit 0 allows the step, exit 1 reports out-of-scope paths in JSON, and exit 2 means the check could not run.
 - `bin/guard-commit.sh`, a PreToolUse hook in `.claude/settings.json`: blocks `git commit --no-verify`, and blocks
   a commit that changes code unless the current feature links to an approved triage record (`triage.ref` for a
   mission, written by `link.sh`; the `triage:` field of `op.md` for an op).
@@ -146,10 +156,66 @@ Per round, under `reviews/plan/round-R/`:
 | Mutation testing (`mutation_command`) | tests that run the code but would not notice it changing |
 | Gate plants in CI | a gate that passes everything |
 
+## Focused phase verification and complete CI
+
+The repository's story runner uses Vitest's configured project/file inventory. It runs the phase's changed test files
+at each red commit and the phase head. For the final proof, it runs the related cases with the final test files overlaid
+on the phase base, any scaffold, or the parent of a red review-fix commit. Red evidence records the changed assertion site
+and its diagnostic. A shared assertion can provide red evidence when the stack maps it to a changed caller in the selected
+test. The caller and helper assertion must both match on replay. A missing implementation module is accepted on a pre-scaffold base only when the scaffold supplies that
+module and the assertions fail on the scaffold. Setup, collection, non-assertion, unrelated and incomplete failures
+block review.
+
+When a phase changes shared test helpers or fixtures, list every additional runnable consumer, one repository-relative
+path per line, in `reviews/phase-N/test-scope.txt`. The reviewer checks the list against the shared changes. A shared
+change without a list triggers the full suite for that sub-check. Completed, matching sub-checks can resume from the
+local `reports/story-evidence/` directory. The check logs say which project and files ran, which inputs were tested, and
+whether evidence was reused. Remove that local directory for a fresh execution.
+
+When a Storybook story implements the requested behavior, add a reviewed `implementation-story <path>`
+line to the same file. For example, `implementation-story storybook/stories/change-list-plan.stories.ts`
+keeps that file at its base, scaffold, review-fix parent, or head revision during replay. The phase's
+separate test must supply the named red assertion, including when `tdd-exempt.md` exists. Use an exact
+repository-relative `.stories.ts` path under `storybook/stories/`. The runner rejects conflicting local or
+CI-only declarations and red commits that change a declared implementation story. Ordinary story fixtures
+retain the usual test-overlay behavior.
+
+Use `ci-only <repository-relative path>` in the same file to run a changed collateral integration test in required
+CI. The eligible suites in the `gates-integration` project are:
+
+- `gates/test/integration/visual.test.ts`
+- `gates/test/integration/visual-findings.test.ts`
+- `gates/test/integration/visual-cli.test.ts`
+- `gates/test/integration/visual-capture.test.ts`
+- `gates/test/integration/axe.test.ts`
+
+Use this for maintenance of existing assertions such as exact story or baseline
+counts. A suite with a recorded red assertion or helper, a build or browser behavior proof, or a suite also listed
+as a local consumer must stay local. At least one changed runnable test must remain in the focused head run.
+The phase report lists the deferred project/file identities in `tdd-check.json` under `deferred_ci`. The reviewer verifies each against
+the successful required `Unit tests` inventory and shard results for the same candidate and checks the corresponding
+required visual or accessibility job before approval.
+
+Start the review handoff when the tested merge revision and Unit inventory artifact are available. Include the
+revision, project, file and shard for each deferred suite. Reviewers can inspect the implementation and completed
+receipt artifacts as the matching shards finish. Record approval after the exact required Unit and dedicated gate
+results pass. Collect evidence changes before the final fold, then run all required checks on the final revision.
+
+For an approved parallel task group, run
+`tooling/speckit/bin/worktree-return-check.sh REPO BASE WORKTREE PATH... [--worker WORKTREE PATH...]`
+as each worker returns and again for the group before staging. Use the exact returned head from a successful JSON
+receipt. The check verifies the common repository, pin, clean return, signed commits, historical paths and disjoint
+ownership. Record worker return and staging times with the combined red or green receipt.
+
+The required GitHub `Unit tests` check verifies the complete discovered inventory across isolated runners, with timing-sensitive
+projects retaining their Vitest settings. The local `pnpm test` command still runs the complete suite. To compare both paths
+on a same-repository PR, include `<!-- verify-unit-test-parity -->` in its description before opening or pushing to the PR.
+That run requires the normal full gate to pass too and compares project, file, test identity and outcome with the shards.
+
 ## Configuration
 
 `.specify/extensions/story/story-config.yml` (source copy in `extensions/story/`): `test_command`,
-`setup_command`, `test_pathspec`, `mutation_command`. Until `test_command` is set the check reports
+`focused_runner`, `setup_command`, `test_pathspec`, `mutation_command`. Until `test_command` is set the check reports
 `unavailable`, which the review treats as blocking for any phase with behaviour, so the first feature
 must set up the test runner and fill these in.
 

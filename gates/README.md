@@ -38,6 +38,7 @@ and changes nothing else. The registry of gates is `gates/gates.json`; the FR-02
 | `storybook-build` | Storybook build | `pnpm run gate:storybook-build` | since 006 (FR-001, FR-002): the Storybook workspace's build through its own build script, run as `pnpm --config.verify-deps-before-run=false --dir storybook run build` with `CACHE_DIR=<root>/storybook/.cache`; findings at the file the build names, the story file the indexer cannot read, or `storybook/dist/index.json` when the built index holds no story; an unreadable configuration (`storybook/.storybook/main.ts` that Storybook cannot evaluate) and a build ended by a signal exit 2 (could not run) | `fail-syntax-error`, `fail-unresolved-import`, `fail-not-csf`, `fail-empty-index`; pass: `pass-repository`, `pass-type-error-only`; breaking: `error-missing-dependencies`, `error-no-build-script`, `error-config-unreadable` |
 | `visual` | Visual regression | `pnpm run gate:visual -- --engine both --remove-docker-image` | since 006 (FR-003 to FR-012, FR-026 to FR-028, FR-030, FR-031): every story of the built Storybook index in light and dark, captured twice in the pinned linux/amd64 container (`storybook/visual/container.json`; docker and podman in CI) and compared byte for byte with `storybook/baselines/`: `nondeterministic`, `missing-baseline`, `differs`, `stray-baseline`, and the render, `font`, `network`, `io`, `closed-shadow-root` and `pointer-target` checks; the baselines are written by `pnpm run visual:update` (`storybook/README.md`) | `fail-one-pixel`, `fail-token-changed`, `fail-same-pixels-other-bytes`, `fail-missing-baseline`, `fail-stray-baseline`, `fail-random`, `fail-below-fold`, `fail-overflow-changed`, `fail-popover-changed`, `fail-hover-style-changed`, `fail-press-style-changed`, `fail-pointer-target-below-fold`, `fail-pointer-target-missing`, `fail-closed-shadow-root`, `fail-render-throws`, `fail-throws-on-load`, `fail-other-font`, `fail-input-system-font`, `fail-font-file-missing`, `fail-font-not-loaded`, `fail-network`, `fail-same-origin-fetch`, `fail-xhr`, `fail-websocket`, `fail-beacon`, `fail-cache-api`, `fail-clipboard-write`, `fail-exec-copy`, `fail-cookie`, `fail-indexeddb`, `fail-local-storage`, `fail-session-storage`, `fail-storage-property`, `fail-storage-left-by-worker`; pass: `pass-repository`, `pass-animation-and-caret`, `pass-below-fold`, `pass-focus-below-fold`, `pass-hover-and-press`, `pass-input-font`, `pass-overflow-and-popover`, `pass-second-render`, `pass-unused-face`; breaking: `error-no-engine`, `error-host`, `error-index-pin`, `error-tag-pin`, `error-build-fails` |
 | `axe` | Accessibility | `pnpm run gate:axe` | since 006 (FR-013 to FR-016, FR-029): every story of the built Storybook index in light and dark, in the host browser with the capture's context options: axe-core 4.14.0 with the FR-016 rule set on the whole document less Storybook's harness nodes, one finding per serious or critical node of a violation or an incomplete result (`<rule>-incomplete`), the `empty`, `outside-root`, `closed-shadow-root`, `pointer-target` and render checks, and the exceptions of `storybook/a11y-exceptions.json` honoured only with their plan's Complexity Tracking row (`stale-exception`, `unrecorded-exception`); an entry's `plan` must be a feature plan, `specs/<feature>/plan.md`, or the gate exits 2 | `fail-unlabelled-button`, `fail-two-low-contrast`, `fail-incomplete`, `fail-open-shadow-unlabelled`, `fail-closed-shadow-root`, `fail-empty`, `fail-no-box`, `fail-outside-root`, `fail-hover-near-fold`, `fail-hover-reveals-unlabelled`, `fail-pointer-target-below-fold`, `fail-render-throws`, `fail-throws-on-load`, `fail-stale-exception`, `fail-unrecorded-exception`, `fail-excepted-second-node`; pass: `pass-repository`, `pass-minor-only`, `pass-excepted`, `pass-excepted-incomplete`, `pass-excepted-shadow`, `pass-second-render`; breaking: `error-build-fails`, `error-bad-exceptions`, `error-exception-plan-not-a-plan` |
+| `sandbox-paths` | Sandbox paths | `pnpm run gate:sandbox-paths` | since op 023 (#60): every tracked file of the checkout (`git grep -E -I -z`, binary by content alone: git reads no attribute from any `.gitattributes`, the user or the system, so none exempts a file), `gates/plants/` and `gates/test/fixtures/` included, but the four allowed files of `gates/lib/sandbox-paths.ts`: no line may match the sandbox-path rule (`sandboxPathRule`, the rule of `ops/023-public-repo-hygiene/op.md`); one finding per line at `path:line`, which never echoes the line and names the fix, `tooling/speckit/bin/redact-sandbox-paths.sh --in-place`; a branch in flight from before op 023 is redacted when it lands, by the sanctioned landing step of `/ocelle-land` (step 2.9), with `redact-sandbox-paths.sh --verify HEAD` as its proof that the commit is only the redaction; a root that is not the top of a git work tree, or tracks no file, exits 2; plants of the `tracked-tree` form | `fail-store-and-repo-root`, `fail-file-url-in-json`, `fail-allowed-name-elsewhere`, `fail-gitattributes-diff`; pass: `pass-near-misses`, `pass-allowed-files`, `pass-binary-file`; breaking: `error-no-tracked-file` |
 | `plants` | Plants | `pnpm run gate:plants` (CI: `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards` after the helper jobs `plants-plan` and `plants-shard`) | `gates/plants/` only, and the registry check | registry plants in `gates/plants/plants/`: a gate without an entry, a gate without a CI job, `--skip-container` in the plants job (`fail-skip-container-in-ci`) or in plants-shard (`fail-skip-container-in-shard`), `--shard` in the plants job (`fail-shard-in-plant-check`), `--affected` in a CI plant job (`fail-affected-in-plant-check`); pass: a matching pair, the three plant jobs (`pass-split-plant-jobs`) |
 
 The plant job (`gates/bin/plants.ts`) first checks that `gates/gates.json`, the gate jobs of
@@ -48,6 +49,12 @@ since 002 the configuration set also holds the token source `packages/tokens/src
 the real token source and carries only the files it changes), and fails when a fail plant is not caught with exactly its expected findings, a pass plant is not accepted, a
 breaking plant is not reported as "could not run" for the cause it names, a gate lacks a fail, pass or breaking plant, a `plant.json` is
 missing or invalid, or a plant carries gate configuration.
+
+**The `tracked-tree` form (op 023, #60).** The plants of `sandbox-paths` are git checkouts: the builder copies the
+plant's `tree/` into an empty directory, replaces the markers `@SANDBOX_ROOT@` and `@SANDBOX_HOME_USER@` with the
+sandbox paths they stand for (built at run time, so no plant file holds one), and commits the result by Plant Base. It
+copies no configuration set and links no `node_modules`; an empty or missing `tree/` gives a checkout that tracks no
+file.
 
 **The split plant job (006 plan decisions 23 and 24).** `gate:plants` has three modes besides the single run (every
 plant in one process, the registry check first), which stays what runs locally:
@@ -146,8 +153,15 @@ The mutation gate exits 2 rather than pass changed code it did not check. That c
 take verbatim as a `mutate` input, checked before Stryker runs, and a `mutate` entry Stryker reports it did not read
 (`Glob pattern "<entry>" did not result in any files.`). Stryker 10.1.1 never reads a file under a folder named
 `node_modules`, `.git`, `.next`, `.nuxt`, `.svelte-kit` or `.stryker-tmp`, in any case. The cause names each such
-path or entry (contracts/gate-cli.md, mutation row; phase 3 round 12, O12-01). A changed file that Stryker read but
-its report does not list has no mutant on its changed lines and passes.
+path or entry (contracts/gate-cli.md, mutation row; phase 3 round 12, O12-01). It also covers a file Stryker's type
+checker rejects itself (mission 019, gate gap rule (c); contracts/gate-cli.md, mutation row, amendment 2026-11-19):
+every mutant on the file's changed lines (a `--files` entry's ranges in a shard run) is a CompileError, and all of
+them carry one diagnostic of the file's own path (same line and TS code, read from Stryker 10.1.1's
+`<path>(<line>,<col>): error TS<code>: <message>` lines) on a line none of them spans. The cause is
+`Stryker's type checker rejects <path> itself, not its mutants: <path>(<line>,<col>): error TS<code>`, with the hint
+to fix that type error (an explicit type often does). Such an exit 2 wins over other files' findings. A CompileError
+outside such a failure (a mutant the checker rejects for its own change) stays invalid and passes, as before. A
+changed file that Stryker read but its report does not list has no mutant on its changed lines and passes.
 
 Since mission 007 (2026-11-10, `specs/007-mutation-gate-strictness/contracts/mutation-output.md`), the gate also prints
 what no test was seen killing on changed lines, after the equivalent records and before the findings: one
@@ -177,8 +191,9 @@ The `prefix` gate keeps the Storybook scope 002 gave it; it is coverage, not an 
 ## Required checks on `main`
 
 The workflow that runs on a pull request is the pull request's own `ci.yml`, so only a list kept outside the branch
-makes a gate block the merge. The ruleset (or branch protection) on `main` requires exactly these eighteen checks
-(main's fifteen since 005, and since 006 Storybook build, Visual regression and Accessibility; 006 plan decision 31):
+makes a gate block the merge. The ruleset (or branch protection) on `main` requires exactly these nineteen checks
+(main's fifteen since 005, since 006 Storybook build, Visual regression and Accessibility; 006 plan decision 31; and
+since op 023 Sandbox paths, which the operator adds to the ruleset after the merge):
 
 1. Typecheck
 2. Code lint
@@ -197,7 +212,8 @@ makes a gate block the merge. The ruleset (or branch protection) on `main` requi
 15. Storybook build
 16. Visual regression
 17. Accessibility
-18. Plants
+18. Sandbox paths
+19. Plants
 
 A change to this set is a change to the ruleset, which the operator makes. The jobs `mutation-plan` and
 `mutation-shard` serve the Mutation testing check and are not required themselves. `mutation-plan` splits the changed
@@ -218,8 +234,19 @@ the four 60-line entries of `packages/tokens/src/source.ts` took 188 s, 251 s an
 mission 007's bound of 176 s; `specs/007-mutation-gate-strictness/evidence/README.md`).
 `--plan` reports the number of shards and of cuts it made on stderr, in one line,
 `mutation: plan: <s> shards, <c> cuts within files (...)`, and the JSON on stdout stays the one array the job
-reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit, or 45 minutes when its entries include `packages/elements/src/` source, whose Stryker dry run may take up to 30 minutes (op 015). `.github/workflows/cache.yml`
+reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit, or 75 minutes when its entries include `packages/elements/src/` source, whose Stryker dry run may take up to 30 minutes (op 015; mission 010 operator rounds 6 and 8). `.github/workflows/cache.yml`
 (cache warming on `main`) is not a gate.
+
+### Mutation comparison trial
+
+A same-repository pull request can include `<!-- verify-mutation-shadow -->` in its description to run the
+comparison. The workflow verifies the preserved #94 tree, then runs the two standard 30-line ranges and their
+grouped 60-line range. It reports baseline and total times, compares mutants by source location, operation and
+replacement, and reports any added mutants that span the original cut. Missing receipts and differing standard
+verdicts fail the comparison.
+
+The opt-in `--shadow-grouped` option pairs adjacent element ranges in the plan. With `--files`, it emits a
+comparison receipt for the selected range. The required mutation workflow continues to use its standard planner.
 
 ## Deferred gates (FR-026)
 

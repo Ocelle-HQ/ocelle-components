@@ -5,7 +5,9 @@
 // disabled link has no `href`, `target`, `rel` or `download`, is `role="link" aria-disabled="true"` and is not
 // focusable; `target="_blank"` without `rel` gives `rel="noopener"`. The host attributes of FR-009 are moved onto the
 // inner control (src/control.ts `MovedAttributes`): ID references by element reflection resolved in the host's tree,
-// the name from `aria-labelledby`, then `aria-label`, then `label`, then the content; `aria-pressed` in button mode only;
+// the name from `aria-labelledby`, then `aria-label`, then `label`, then the content, which is the label wrapper (the
+// default slot's text) when an icon is slotted: the `icon` slot's wrapper is `aria-hidden` and a slotted icon adds
+// nothing to the name (op 022); `aria-pressed` in button mode only;
 // `aria-current="false"` applied as no current state; the moved states as custom states (`expanded`, `pressed`,
 // `current`; `pressed` in button mode only, plan decision 32). In link mode a click with Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`, and a
 // cancelled activate event cancels the navigation. The host is
@@ -411,6 +413,9 @@ export class OcelleButton extends LitElement {
   /** Whether the default slot holds a label: non-whitespace text in its flattened assignment. */
   #labelled = false;
 
+  /** Whether the `icon` slot has assigned content: an element in its flattened assignment (op 022, #57). */
+  #iconed = false;
+
   /**
    * Rereads the label when text inside the element changes, which fires no `slotchange`: a text node's data, or text
    * inserted into or removed from a slotted element (a child-list change inside it, review R2-01). It observes the
@@ -436,6 +441,16 @@ export class OcelleButton extends LitElement {
   #readLabel(): void {
     const slot = this.renderRoot.querySelector<HTMLSlotElement>(".label slot");
     this.#labelled = (slot?.assignedNodes({ flatten: true }) ?? []).map((node) => node.textContent).join("").trim() !== "";
+    this.requestUpdate();
+  }
+
+  /**
+   * Reads whether the `icon` slot has assigned content, on its `slotchange`: when the slot first gets its elements and
+   * whenever an icon is slotted or removed later. `updated()` then sets or clears the label-wrapper relation
+   * (`#labelledBy`, op 022, #57).
+   */
+  #readIcon(event: Event): void {
+    this.#iconed = (event.target as HTMLSlotElement).assignedElements({ flatten: true }).length > 0;
     this.requestUpdate();
   }
 
@@ -484,7 +499,10 @@ export class OcelleButton extends LitElement {
     if (!proceed) event.preventDefault();
   }
 
-  /** The inner control's name, when it is not its content: the host's `aria-label`, then `label` (research.md R-05). */
+  /**
+   * The inner control's name, when it is not its content: the host's `aria-label`, then `label` (research.md R-05). With
+   * none, the content names it, which is the label wrapper when an icon is slotted (`#labelledBy`, op 022).
+   */
   #name(): string | undefined {
     if (this.#resolved["aria-labelledby"].length > 0) return undefined;
     const label = this.label?.trim() ?? "";
@@ -501,7 +519,7 @@ export class OcelleButton extends LitElement {
     const value = (name: string): string | typeof nothing => this.#moved.get(name) ?? nothing;
     const state = this.#state();
     const busy = state === "unavailable";
-    const content = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot" ?hidden=${busy}><slot name="icon"></slot></span>${spinner(busy)}<span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
+    const content = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot" aria-hidden="true" ?hidden=${busy}><slot name="icon" @slotchange=${this.#readIcon}></slot></span>${spinner(busy)}<span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
     const href = linkHref(this.href, document.baseURI);
     if (href !== undefined) {
       const available = state === "available";
@@ -511,13 +529,28 @@ export class OcelleButton extends LitElement {
     return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-disabled=${busy ? "true" : nothing} aria-busy=${busy ? "true" : nothing} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${content}</button>`;
   }
 
-  /** Relates the inner control to the resolved references and sets the custom states from the moved values. */
+  /**
+   * The elements the inner control is labelled by: the resolved host `aria-labelledby` references; else, when the
+   * `icon` slot has assigned content and `#name()` gives no name, the label wrapper of this render, so the name comes
+   * from the default slot's text and a slotted icon adds nothing to it (op 022, #57: Chromium adds a slotted svg's
+   * `<title>` to a name from the whole control's content even under the `aria-hidden` icon wrapper); else none, so the
+   * `aria-label` of `#name()` names it, or, with no icon, the control's content as before.
+   */
+  #labelledBy(found: Element[]): Element[] | null {
+    if (found.length > 0) return found;
+    return this.#iconed && this.#name() === undefined ? [...this.renderRoot.querySelectorAll(".label")] : null;
+  }
+
+  /**
+   * Relates the inner control to the resolved references (`aria-labelledby` by `#labelledBy`) and sets the custom
+   * states from the moved values.
+   */
   protected override updated(): void {
     const inner = this.#control();
     if (inner !== null) {
       for (const [name, property] of references) {
         const found = this.#resolved[name];
-        inner[property] = found.length === 0 ? null : found;
+        inner[property] = name === "aria-labelledby" ? this.#labelledBy(found) : found.length === 0 ? null : found;
       }
     }
     const states: readonly (readonly [string, boolean])[] = [

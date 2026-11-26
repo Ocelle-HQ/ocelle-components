@@ -1,0 +1,56 @@
+
+typecheck
+$ node gates/bin/typecheck.ts
+typecheck: no type error in the files of tsconfig.json
+
+lint
+$ node gates/bin/lint.ts
+lint: 652 files checked, no finding
+
+test-lint
+$ node gates/bin/test-lint.ts
+test-lint: 491 files checked, no finding
+
+style-lint
+$ node gates/bin/style-lint.ts
+style-lint: 76 files checked, no finding
+
+manifest
+$ node gates/bin/manifest.ts
+manifest: 43 elements checked, no finding
+
+csp
+$ node gates/bin/csp.ts
+csp: 81 files checked, no finding
+
+prefix
+$ node gates/bin/prefix.ts
+prefix: 751 files checked, no finding
+
+$ node gates/bin/signoff.ts -- --range a56fc8309667984bcc63c6f0e341c140728bbd65..HEAD
+signoff: 16 commits checked, no finding
+$ node gates/bin/test.ts packages/elements/test/browser/workflow-canvas.test.ts packages/elements/test/workflow-canvas-graph.test.ts packages/elements/test/workflow-canvas-navigation.test.ts packages/elements/test/workflow-canvas-viewport.test.ts packages/elements/test/workflow-canvas.test.ts packages/elements/test/workflow-canvas.touch.test.ts
+unit-tests: 259 tests passed in 6 files
+mutation: plan: 14 shards, 13 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+mutation: plan: 55 shards, 54 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+note: affected: contrast/repository-values, by packages/elements/custom-elements.json
+note: affected: brand-rules/repository-values, by packages/elements/custom-elements.json
+note: affected: manifest/break-missing, by packages/elements/custom-elements.json
+note: affected: manifest/break-not-json, by packages/elements/custom-elements.json
+note: affected: manifest/fail-lost-attribute, by gates/plants/manifest/fail-lost-attribute/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-stale-property, by packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-attribute, by gates/plants/manifest/fail-undescribed-attribute/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-css-part, by gates/plants/manifest/fail-undescribed-css-part/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-css-property, by gates/plants/manifest/fail-undescribed-css-property/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-event, by gates/plants/manifest/fail-undescribed-event/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-property, by gates/plants/manifest/fail-undescribed-property/tree/packages/elements/custom-elements.json
+note: affected: manifest/fail-undescribed-slot, by gates/plants/manifest/fail-undescribed-slot/tree/packages/elements/custom-elements.json
+note: affected: manifest/pass-reordered, by gates/plants/manifest/pass-reordered/tree/packages/elements/custom-elements.json
+note: affected: manifest/pass-repository, by packages/elements/custom-elements.json
+note: affected: storybook-build/pass-repository, by packages/elements/custom-elements.json
+note: affected: visual/fail-missing-baseline, by packages/elements/custom-elements.json
+note: affected: visual/fail-one-pixel, by packages/elements/custom-elements.json
+note: affected: visual/fail-same-pixels-other-bytes, by packages/elements/custom-elements.json
+note: affected: visual/fail-token-changed, by gates/plants/visual/fail-token-changed/plant.json
+note: affected: visual/pass-repository, by packages/elements/custom-elements.json
+note: affected: axe/pass-repository, by packages/elements/custom-elements.json

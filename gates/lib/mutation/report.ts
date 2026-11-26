@@ -13,6 +13,11 @@
 // mutants, each in changed-file order, then start line, start column and mutant id compared as a number (an id that is
 // not a decimal integer after every numeric one, by string), and the zero-mutant entries, the entries with no mutant
 // on their changed lines (named by their `--files` entry, else by path), in changed-file order.
+// Mission 019 (gate gap rule (c); 001 contracts/gate-cli.md, mutation row, amendment 2026-11-19): when every mutant on
+// a changed file's changed lines is a CompileError and all of them carry one diagnostic of that file itself (same
+// path, line and TS code, read from the `statusReason` lines Stryker 10.1.1's TypeScript checker writes as
+// `<path>(<line>,<col>): error TS<code>: <message>`) on a line none of them spans, the checker rejected the file, not
+// its mutants: the gate could not run. A CompileError outside such a failure stays invalid and passes.
 import { oneLine } from "../findings.ts";
 import type { Finding } from "../findings.ts";
 import type { ChangedFile } from "./ranges.ts";
@@ -60,9 +65,10 @@ interface Mutant {
   readonly mutatorName: string;
   readonly replacement?: string;
   readonly status: string;
+  readonly statusReason?: string;
   readonly location: {
     readonly start: { readonly line: number; readonly column: number };
-    readonly end: { readonly line: number };
+    readonly end: { readonly line: number; readonly column: number };
   };
 }
 
@@ -72,7 +78,9 @@ const surviving = new Set(["Survived", "NoCoverage"]);
 const passing = new Set(["Killed", "Timeout", "RuntimeError", "CompileError", "Ignored"]);
 const fix = "run pnpm test and check stryker.config.json";
 
-function cannotRun(cause: string): MutantVerdict {
+type ReportFailure = Extract<MutantVerdict, { ok: false }>;
+
+function cannotRun(cause: string): ReportFailure {
   return { ok: false, cause: `mutation: could not run: ${cause}` };
 }
 
@@ -82,10 +90,10 @@ function lastError(output: string): string | undefined {
   return messages.filter((message) => message !== undefined).at(-1);
 }
 
-function filesOf(report: string): Files | undefined {
+function filesOf(report: string | undefined): Files | undefined {
   let value: unknown;
   try {
-    value = JSON.parse(report);
+    value = JSON.parse(String(report));
   }
   // Stryker disable next-line BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
   catch {
@@ -123,7 +131,102 @@ function byPosition(a: Mutant, b: Mutant): number {
   return x.line - y.line || x.column - y.column || compareIds(a.id, b.id);
 }
 
-export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): MutantVerdict {
+/** A diagnostic of Stryker's TypeScript checker in a mutant's `statusReason`. */
+interface Diagnostic {
+  readonly path: string;
+  readonly line: number;
+  readonly column: number;
+  readonly code: string;
+}
+
+/** A diagnostic line of Stryker 10.1.1's TypeScript checker (gates/test/mutation-report.test.ts pins the form). */
+const diagnosticLine = /^(\S.*)\((\d+),(\d+)\): error TS(\d+): /;
+
+/** The diagnostics of a `statusReason`, in its order; a line not of the diagnostic form (a continuation) is skipped. */
+function diagnosticsOf(reason: string | undefined): Diagnostic[] {
+  // Stryker disable next-line StringLiteral: equivalent, a missing statusReason read as any other text with no line of the diagnostic form gives no diagnostic either (T025)
+  return (reason ?? "").split("\n").flatMap((line) => {
+    const match = diagnosticLine.exec(line);
+    return match === null ? [] : [{ path: String(match[1]), line: Number(match[2]), column: Number(match[3]), code: String(match[4]) }];
+  });
+}
+
+/**
+ * The checker failure of a changed file (gate gap rule (c)): when its mutants on changed lines are all CompileError,
+ * the first diagnostic of the first of them that is in `path`, on a line none of the mutants spans, and in every
+ * other mutant's diagnostics (same path, line and code); else undefined. No mutant, or no parsable diagnostic, is none.
+ */
+function checkerFailure(path: string, mutants: readonly Mutant[]): Diagnostic | undefined {
+  if (!mutants.every((mutant) => mutant.status === "CompileError")) return undefined;
+  const [first, ...rest] = mutants;
+  const same = (a: Diagnostic) => (b: Diagnostic): boolean => a.path === b.path && a.line === b.line && a.code === b.code;
+  return diagnosticsOf(first?.statusReason).find(
+    (diagnostic) =>
+      diagnostic.path === path &&
+      mutants.every(({ location: { start, end } }) => diagnostic.line < start.line || diagnostic.line > end.line) &&
+      rest.every((mutant) => diagnosticsOf(mutant.statusReason).some(same(diagnostic))),
+  );
+}
+
+interface ShadowMutant {
+  readonly path: string;
+  readonly location: Mutant["location"];
+  readonly mutatorName: string;
+  readonly replacement: string | undefined;
+  readonly status: string;
+}
+
+function validPosition(position: Mutant["location"]["start"] | null | undefined): boolean {
+  return position !== undefined && position !== null &&
+    Number.isSafeInteger(position.line) && position.line > 0 &&
+    Number.isSafeInteger(position.column) && position.column >= 0;
+}
+
+function validShadowMutant(input: unknown): boolean {
+  const { id, mutatorName, status, replacement, statusReason, location } = (input ?? {}) as
+    Partial<Omit<Mutant, "location">> & { readonly location?: Mutant["location"] | null };
+  return typeof id === "string" && typeof mutatorName === "string" && typeof status === "string" &&
+    (replacement === undefined || typeof replacement === "string") &&
+    (statusReason === undefined || typeof statusReason === "string") &&
+    location !== undefined && location !== null &&
+    validPosition(location.start) && validPosition(location.end) &&
+    location.start.line <= location.end.line;
+}
+
+function validShadowReport(files: Files): boolean {
+  return !Array.isArray(files) &&
+    Object.values(files).every((file) => Array.isArray(file?.mutants) && file.mutants.every(validShadowMutant));
+}
+
+/** Record the exact stable identities of completed mutants in the selected ranges. */
+export function shadowMutantInventory(run: StrykerRun, changed: readonly RunEntry[]):
+  { readonly ok: true; readonly mutants: readonly ShadowMutant[] } | ReportFailure {
+  const loaded = readReport(run, true);
+  if (!loaded.ok) return loaded;
+  const { files } = loaded;
+  const verdict = classifyFiles(files, changed);
+  if (!verdict.ok) return verdict;
+  if (run.exitCode !== 0 && run.exitCode !== 1) {
+    return { ok: false, cause: "mutation shadow: Stryker did not complete with a report" };
+  }
+  const mutants = changed.flatMap(({ path, ranges }) =>
+    mutantsOnChanged(files, path, ranges).map(({ location, mutatorName, replacement, status }) =>
+      ({ path, location, mutatorName, replacement, status })),
+  );
+  return { ok: true, mutants };
+}
+
+function mutantsOnChanged(files: Files, path: string, ranges: ChangedFile["ranges"]): Mutant[] {
+  return (files[path]?.mutants ?? []).filter(({ location: { start, end } }) =>
+    ranges.some((range) => start.line <= range.end && end.line >= range.start),
+  );
+}
+
+function readReport(run: StrykerRun, shadow: boolean): { readonly ok: true; readonly files: Files } | ReportFailure {
+  const files = filesOf(run.report);
+  if (shadow && files !== undefined && !validShadowReport(files)) {
+    return { ok: false, cause: "mutation shadow: malformed Stryker mutants" };
+  }
   const unread = unreadEntries(run.output);
   if (unread.length > 0) {
     const skipped = "node_modules, .git, .next, .nuxt, .svelte-kit or .stryker-tmp, in any case";
@@ -135,19 +238,25 @@ export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): 
   if (run.report === undefined) {
     return cannotRun(`Stryker wrote no report (${lastError(run.output) ?? `Stryker exited ${String(run.exitCode)}`}); ${fix}`);
   }
-  const files = filesOf(run.report);
   if (files === undefined) return cannotRun(`the Stryker report is not a JSON object with files; ${fix}`);
+  return { ok: true, files };
+}
 
+function classifyFiles(files: Files, changed: readonly RunEntry[]): MutantVerdict {
   const findings: Finding[] = [];
   const timeouts: UndecidedMutant[] = [];
   const compileErrors: UndecidedMutant[] = [];
   const zeroEntries: string[] = [];
   let mutants = 0;
   for (const file of changed) {
-    const onChanged = (files[file.path]?.mutants ?? []).filter(({ location: { start, end } }) =>
-      file.ranges.some((range) => start.line <= range.end && end.line >= range.start),
-    );
+    const onChanged = mutantsOnChanged(files, file.path, file.ranges);
     if (onChanged.length === 0) zeroEntries.push(file.entry ?? file.path);
+    const rejected = checkerFailure(file.path, onChanged);
+    if (rejected !== undefined) {
+      const { path, line, column, code } = rejected;
+      const diagnostic = `${path}(${String(line)},${String(column)}): error TS${code}`;
+      return cannotRun(`Stryker's type checker rejects ${file.path} itself, not its mutants: ${diagnostic}; fix that type error (an explicit type often does) and rerun`);
+    }
     const undecided = (status: string): UndecidedMutant[] =>
       onChanged
         .filter((mutant) => mutant.status === status)
@@ -177,4 +286,9 @@ export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): 
     }
   }
   return { ok: true, findings, mutants, timeouts, compileErrors, zeroEntries };
+}
+
+export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): MutantVerdict {
+  const loaded = readReport(run, false);
+  return loaded.ok ? classifyFiles(loaded.files, changed) : loaded;
 }

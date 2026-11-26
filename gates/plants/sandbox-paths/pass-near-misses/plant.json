@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Lines that come near the rule but do not match it, the redaction's placeholders among them (op 023, FR-001; spec.md scenario 3)."
+}

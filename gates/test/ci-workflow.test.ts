@@ -6,10 +6,10 @@ import { describe, expect, it } from "vitest";
 // to `--files` unchanged, so line-range entries `path:start-end` reach the gate as the plan printed them (phase 3
 // round 9, O9-01). The value reaches the script through the environment, never pasted into it.
 // Op 015 (#35, operator decisions Q1 A to Q3 A, ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md):
-// a shard whose files value names packages/elements/src/ runs under N minutes, every other shard under 10. N = 45 is
-// the Q3 A rule applied to the CI measurement in ops/015-mutation-shard-timeout/measurement/README.md (run
-// 43674498025, worst elements shard 18 m 02 s), and it exceeds the elements dry-run limit of
-// stryker.elements.config.json.
+// a shard whose files value names packages/elements/src/ runs under N minutes, every other shard under 10. N = 75, from
+// specs/010-feedback-forms operator rounds 6 and 8 (reviews/phase-2/round-6.md O6-01, round-8.md O8-02): element
+// shards took 2493–2717 s on run 44354367030, one cancelled at 45 minutes, and 2748 s on this machine
+// (reviews/phase-2/mutation.md § O7-01); N exceeds the elements dry-run limit of stryker.elements.config.json.
 const workflow = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
 
 /** The lines of one job of the workflow, from its key to the line before the next job's key. */
@@ -40,7 +40,7 @@ describe("ci.yml mutation jobs (phase 3 round 9, O9-01)", () => {
       "    needs: mutation-plan",
       "    if: needs.mutation-plan.outputs.shards != '[]'",
       "    runs-on: ubuntu-24.04",
-      "    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 45 || 10 }}",
+      "    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 75 || 10 }}",
       "    strategy:",
       "      fail-fast: false",
       "      matrix:",
@@ -54,8 +54,8 @@ describe("ci.yml mutation jobs (phase 3 round 9, O9-01)", () => {
     ]);
   });
 
-  it("mutation-shard gives a shard with element source a limit of at least 45 minutes, above the elements dry-run limit (op 015)", () => {
-    const limitLine = /^ {4}timeout-minutes: \$\{\{ contains\(matrix\.shard\.files, 'packages\/elements\/src\/'\) && ([1-9]\d*) \|\| 10 \}\}$/;
+  it("mutation-shard gives a shard with element source a limit of exactly 75 minutes (010 operator rounds 6 and 8), 10 to the others, above the elements dry-run limit (op 015)", () => {
+    const limitLine = /^ {4}timeout-minutes: \$\{\{ contains\(matrix\.shard\.files, 'packages\/elements\/src\/'\) && ([1-9]\d*) \|\| ([1-9]\d*) \}\}$/;
     const matches = job("mutation-shard")
       .map((line) => limitLine.exec(line))
       .filter((match) => match !== null);
@@ -63,7 +63,8 @@ describe("ci.yml mutation jobs (phase 3 round 9, O9-01)", () => {
     const minutes = Number(matches[0]?.[1]);
     const elements = JSON.parse(readFileSync(new URL("../../stryker.elements.config.json", import.meta.url), "utf8")) as { dryRunTimeoutMinutes: unknown };
     expect(typeof elements.dryRunTimeoutMinutes).toBe("number");
-    expect(minutes).toBeGreaterThanOrEqual(45);
+    expect(minutes).toBe(75);
+    expect(Number(matches[0]?.[2])).toBe(10);
     expect(minutes).toBeGreaterThan(elements.dryRunTimeoutMinutes as number);
   });
 });
@@ -102,6 +103,24 @@ describe("ci.yml axe job (006 FR-017)", () => {
       "          persist-credentials: false",
       "      - uses: ./.github/actions/setup",
       "      - run: pnpm run gate:axe",
+    ]);
+  });
+});
+
+// Op 023 (#60, FR-004; plan.md *Files to change*): the job `sandbox-paths`, named "Sandbox paths", has the shape of
+// config-copies: it checks out without persisted credentials, sets up and runs the gate, nothing else.
+describe("ci.yml sandbox-paths job (op 023)", () => {
+  it("is named Sandbox paths and runs pnpm run gate:sandbox-paths after checkout and setup", () => {
+    expect(job("sandbox-paths")).toEqual([
+      "  sandbox-paths:",
+      "    name: Sandbox paths",
+      "    runs-on: ubuntu-24.04",
+      "    steps:",
+      "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+      "        with:",
+      "          persist-credentials: false",
+      "      - uses: ./.github/actions/setup",
+      "      - run: pnpm run gate:sandbox-paths",
     ]);
   });
 });
@@ -244,5 +263,19 @@ describe("ci.yml csp and prefix jobs (006 FR-020, FR-022)", () => {
   it("builds the packages only before the csp gate, and the whole workspace before the prefix gate", () => {
     expect(steps("csp")).toEqual(['      - run: pnpm --filter "./packages/*" -r build && pnpm run gate:csp']);
     expect(steps("prefix")).toEqual(["      - run: pnpm -r build && pnpm run gate:prefix"]);
+  });
+});
+
+describe("ci.yml full Unit tests gate", () => {
+  it("requires both discovered inventory and successful shards for the existing check", () => {
+    const fullVerdict = job("unit-tests").join("\n");
+    const verdict = fullVerdict.replace(", unit-tests-full]", "]");
+    expect(verdict).toContain("name: Unit tests");
+    expect(verdict).toContain("needs: [unit-tests-plan, unit-tests-shard]");
+    expect(fullVerdict).toContain("needs: [unit-tests-plan, unit-tests-shard, unit-tests-full]");
+    expect(verdict).toContain("if: always()");
+    expect(verdict).toContain('test "$PLAN" = success');
+    expect(verdict).toContain('test "$SHARDS" = success');
+    expect(verdict).toContain("gates/bin/test-shards.ts verify");
   });
 });

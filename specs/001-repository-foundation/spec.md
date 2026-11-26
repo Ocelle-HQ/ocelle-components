@@ -157,6 +157,9 @@ in this feature depends on it.
    (switched on when the repository goes public) and `@MOES-Media` as the private contact until then, says what to
    include in a report, promises an acknowledgement within 3 working days and a status update within 10 working
    days, and does not ask for public issues (FR-032).
+   - **Amendment, 2026-11-20 (op 023, #60, FR-032 as amended below):** the repository is public and private
+     vulnerability reporting is switched on, so `SECURITY.md` names GitHub private vulnerability reporting as the only
+     channel and names no owner handle and no contact "until then". The rest of this scenario stands.
 4. **Given** `THIRD_PARTY_NOTICES`, **When** it is read, **Then** it lists every third-party asset that ships in a
    package and no asset that does not.
 
@@ -330,6 +333,16 @@ in this feature depends on it.
     `packages/elements/src/` entries), Q2 A (measure on a draft PR of 008's branch) and Q3 A (that rule) were made by
     human:jeroennouwsdev on 2026-11-15 (`ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md`).
     Shards without element source are unchanged, and so is mission 007's 480 s step bound for `source.ts` shards.
+  - **Amendment, 2026-11-18 (mission 010, `specs/010-feedback-forms/`, operator rounds 6 and 8):** op 015's
+    amendment above stands as the record of its time, except for the limit of a shard with at least one entry under
+    `packages/elements/src/`: such a shard runs under 75 minutes, not 45. A shard none of whose entries is under
+    `packages/elements/src/` keeps the 10-minute limit. A shard of either kind that exceeds its limit MUST still end
+    as a failure, never as a pass. The reason is the measurement after mission 010's second merge of `main`: on CI
+    run 44354367030 the element shard jobs took 2493–2717 s, and one of them was cancelled at its 45-minute limit;
+    the cancelled shard took 2748 s on the mission's machine. Operator decisions by human:jeroennouwsdev on
+    2026-11-18: "Raise the shard time limit", "75 min" (`specs/010-feedback-forms/reviews/phase-2/round-6.md`,
+    O6-01) and "Revert split, 75-minute limit (Recommended)" (`specs/010-feedback-forms/reviews/phase-2/round-8.md`,
+    O8-01, O8-02). The rest stands.
 
 **Merge gates (Story 3)**
 
@@ -339,6 +352,11 @@ in this feature depends on it.
   check on built output (FR-021), the prefix check (FR-022), the configuration-copies check (FR-006), the
   install-and-pins check (FR-027) and the sign-off check (FR-023). Each gate checks exactly the files FR-028 gives it.
   The plant job (FR-025) MUST run on every pull request as its own named check, alongside these gates.
+  - **Amendment, 2026-11-20 (op 023, #60, `ops/023-public-repo-hygiene/` FR-002 to FR-004):** the gates of this
+    requirement and of later features gain an eighteenth gate, `sandbox-paths` (check `Sandbox paths`): no tracked file
+    of the checkout but the four allowed files of `gates/lib/sandbox-paths.ts` may hold a line that matches the
+    sandbox-path rule of op 023, `gates/plants/` and `gates/test/fixtures/` included. So there are eighteen gate ids and,
+    with the plant job, nineteen required check names. The rest stands.
 - **FR-021**: The content-security check MUST fail on any of these in the packages' built output (every JavaScript,
   CSS and HTML file the package build produces): an inline `<script>` element, a `<style>` element or `style`
   attribute, an event handler attribute (`on*=`), each in markup (HTML files and HTML templates inside JavaScript),
@@ -489,6 +507,12 @@ in this feature depends on it.
   an issue (operator decision, 2026-11-02). It MUST say what to include in a report and MUST promise an
   acknowledgement within 3 working days and a status update within 10 working days of a report (operator decision,
   2026-11-02). It MUST NOT ask for public issues.
+  - **Amendment, 2026-11-20 (op 023, #60, `ops/023-public-repo-hygiene/` FR-009; operator answers Q1 (a) and Q3 (a),
+    `triage/decisions/023-q1-q3-security-scope.md`):** the repository is public and GitHub private vulnerability
+    reporting is switched on (Q3 (a)). `SECURITY.md` MUST name it ("Report a vulnerability" on the repository's
+    Security tab) as the only reporting channel, and MUST NOT name `@MOES-Media` or any other contact, an "until then"
+    route, or a switch-on at 1.0.0 (Q1 (a)). What to include, the 3 and 10 working days and "do not ask for public
+    issues" stand.
 - **FR-033**: `THIRD_PARTY_NOTICES` MUST list every third-party asset that ships in a package with its licence, and
   only those.
 - **FR-034**: No file of this feature MAY contain a secret, credential or access token, or personal data. This is
@@ -548,11 +572,23 @@ in this feature depends on it.
     was 5 m 31 s for the elements dry run alone (008). Operator decisions Q1 A, Q2 A and Q3 A were made by
     human:jeroennouwsdev on 2026-11-15 (`ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md`).
     Shards without element source are unchanged, and so is mission 007's 480 s bound. The rest stands.
+  - **Amendment, 2026-11-18 (mission 010, `specs/010-feedback-forms/`, operator rounds 6 and 8):** op 015's
+    amendment above stands as the record of its time, except that a shard with a `packages/elements/src/` entry
+    finishes in under 75 minutes on the same runner, not 45, and its 75-minute job limit enforces that (FR-013's
+    amendment of the same date). A shard without such an entry still finishes in under 10 minutes under its
+    10-minute limit, and a shard over its limit still ends as a failure. The figures come from CI run 44354367030:
+    the element shard jobs took 2493–2717 s, one cancelled at 45 minutes, and that shard took 2748 s on the
+    mission's machine. Operator decisions by human:jeroennouwsdev on 2026-11-18
+    (`specs/010-feedback-forms/reviews/phase-2/round-6.md` O6-01, `specs/010-feedback-forms/reviews/phase-2/round-8.md`
+    O8-01, O8-02). The rest stands.
 - **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
   `THIRD_PARTY_NOTICES` exist at the repository root under exactly these names, that `CONTRIBUTING.md` contains the
   sign-off rule (`Signed-off-by`, `git commit -s`), that `CODEOWNERS` exists and names `@MOES-Media` as the only
   owner of every path (FR-035), and that `SECURITY.md` contains the reporting route and response times of FR-032
   (GitHub private vulnerability reporting, the owner handle from `CODEOWNERS`, 3 working days and 10 working days).
+  - **Amendment, 2026-11-20 (op 023, #60, FR-032 as amended above):** `SECURITY.md` contains GitHub private
+    vulnerability reporting, 3 working days and 10 working days, and no owner handle; the owner handle stays in
+    `CODEOWNERS` (FR-035). The rest stands.
 
 ## Assumptions
 

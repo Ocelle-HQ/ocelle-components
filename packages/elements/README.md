@@ -1,10 +1,16 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has twenty-three elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-scroller`, a
-horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-board` with its
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has fifty-two elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
+that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
+`ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
+a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab stop only while it overflows,
+`ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
+`ocelle-workflow-node`, a selectable workflow step with descriptive outcomes,
+`ocelle-step-indicator`, an ordered progress list,
+`ocelle-workflow-canvas`, a branching workflow map with named navigation,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
@@ -12,7 +18,20 @@ and `ocelle-personal-rail`, two controls that follow the control conventions bel
 `ocelle-action-row`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an
 empty or loading panel, `ocelle-progress`, a progress bar, and the three status elements, `ocelle-status-indicator`, a
 status dot, `ocelle-metric`, a label and its value, and `ocelle-pill-tag`, a state pill or a count badge that can also
-be a toggle button or a link.
+be a toggle button or a link. It also has `ocelle-listbox` with its `ocelle-option` children,
+`ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children, `ocelle-segmented-choice` with its
+`ocelle-segment` children, `ocelle-copy-field`, `ocelle-link`, `ocelle-disclosure`, `ocelle-code-block`, and the
+app-frame elements `ocelle-app-shell`,
+`ocelle-top-bar`, `ocelle-nav-item`, `ocelle-nav-pill`, `ocelle-breadcrumbs` and `ocelle-skip-link`.
+
+Since 019 it also has `ocelle-data-table`, a native
+table in a scroll region, `ocelle-event-timeline`, an event history, with its item `ocelle-timeline-event`, and
+`ocelle-evidence-chain`, an evidence chain, with its item `ocelle-evidence-step`.
+
+The elements need Chromium 135 or WebKit 17.4 and later (see Engines). Each element has its own entry point. A parent
+element's entry point also defines the elements it owns as children, and the copy field's defines `ocelle-icon`.
+Examples shows each selection and input element built into a screen, with no ARIA, `ResizeObserver` or clipboard code
+of the host's own.
 
 ## Entry points
 
@@ -21,9 +40,16 @@ be a toggle button or a link.
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-form-input.js` | `dist/ocelle-form-input.js` | `ocelle-form-input` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-form-select.js` | `dist/ocelle-form-select.js` | `ocelle-form-select` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-form-textarea.js` | `dist/ocelle-form-textarea.js` | `ocelle-form-textarea` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-workflow-canvas.js` | `dist/ocelle-workflow-canvas.js` | `ocelle-workflow-canvas` and the `ocelle-workflow-node` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-workflow-node.js` | `dist/ocelle-workflow-node.js` | `ocelle-workflow-node` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-step-indicator.js` | `dist/ocelle-step-indicator.js` | `ocelle-step-indicator` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |
@@ -39,6 +65,28 @@ be a toggle button or a link.
 | `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-data-table.js` | `dist/ocelle-data-table.js` | `ocelle-data-table` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-event-timeline.js` | `dist/ocelle-event-timeline.js` | `ocelle-event-timeline` and its item `ocelle-timeline-event`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-timeline-event.js` | `dist/ocelle-timeline-event.js` | `ocelle-timeline-event` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-evidence-chain.js` | `dist/ocelle-evidence-chain.js` | `ocelle-evidence-chain` and its item `ocelle-evidence-step`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-evidence-step.js` | `dist/ocelle-evidence-step.js` | `ocelle-evidence-step` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-listbox.js` | `dist/ocelle-listbox.js` | `ocelle-listbox` and `ocelle-option`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-option.js` | `dist/ocelle-option.js` | `ocelle-option` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-tabs.js` | `dist/ocelle-tabs.js` | `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-tab.js` | `dist/ocelle-tab.js` | `ocelle-tab` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-tab-panel.js` | `dist/ocelle-tab-panel.js` | `ocelle-tab-panel` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-segmented-choice.js` | `dist/ocelle-segmented-choice.js` | `ocelle-segmented-choice` and `ocelle-segment`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-link.js` | `dist/ocelle-link.js` | `ocelle-link` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-nav-item.js` | `dist/ocelle-nav-item.js` | `ocelle-nav-item` and its compact label tooltip; for hosts with a bundler |
+| `@ocelle/elements/ocelle-top-bar.js` | `dist/ocelle-top-bar.js` | `ocelle-top-bar`, its brand mark and its menu icon; for hosts with a bundler |
+| `@ocelle/elements/ocelle-app-shell.js` | `dist/ocelle-app-shell.js` | `ocelle-app-shell` and its frame dependencies; for hosts with a bundler |
+| `@ocelle/elements/ocelle-nav-pill.js` | `dist/ocelle-nav-pill.js` | `ocelle-nav-pill` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-breadcrumbs.js` | `dist/ocelle-breadcrumbs.js` | `ocelle-breadcrumbs` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-skip-link.js` | `dist/ocelle-skip-link.js` | `ocelle-skip-link` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-code-block.js` | `dist/ocelle-code-block.js` | `ocelle-code-block` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` and the `ocelle-tooltip` it renders; for hosts with a bundler |
@@ -163,6 +211,289 @@ In forced colours the ring and the spot are painted in `currentColor` in every v
 context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
 every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
 
+## `ocelle-notice`
+
+```html
+<ocelle-notice tone="success">Saved.</ocelle-notice>
+<ocelle-notice tone="danger" announce>
+  <span slot="heading">Run failed</span>
+  The lane stopped at step 3. <a href="/runs/7">View run 7</a>
+</ocelle-notice>
+<ocelle-notice size="compact" tone="warning">Disk almost full.</ocelle-notice>
+```
+
+`ocelle-notice` shows a message about a state or result in a box whose look follows its tone, with an optional
+heading, in the regular or the compact size.
+
+- `tone` (attribute and property, reflected): `info` (the default), `success`, `warning`, `danger` or `neutral`; any
+  other value behaves as `info` and the property reads `"info"`, while the attribute keeps the value as written. The
+  box's ground is `--ocelle-color-<tone>-bg`, with a bar of `--ocelle-bar-width` in `--ocelle-color-<tone>` along its
+  inline-start edge; the text is `--ocelle-color-ink`. The bar and the ground differ from one tone to another only by
+  colour, and not at all in forced colours, so the host's text must state the tone, as "Run failed" or "Saved." does:
+  the look of the box alone does not tell a warning from a success.
+- `size` (attribute and property, reflected): `regular` (the default) or `compact`; any other value behaves as
+  `regular` and the property reads `"regular"`, while the attribute keeps the value as written. The compact size sets
+  the text in `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, the scale of the base styles' compact density,
+  with a smaller padding.
+- `announce` (boolean attribute and property, reflected): the notice announces its text once, politely for `info`,
+  `success` and `neutral` and assertively for `warning` and `danger`.
+
+Slots: `heading` (optional; only elements are assigned to it) and the default slot, the body. CSS parts: `heading` and
+`body`. The notice has no event and no CSS custom property of its own. `ocelle-notice` reads the tokens
+`--ocelle-color-<tone>`, `--ocelle-color-<tone>-bg`, `--ocelle-color-ink`, `--ocelle-radius-row`,
+`--ocelle-bar-width`, `--ocelle-border-width`, `--ocelle-space-1` to `--ocelle-space-4`, `--ocelle-font-size-subhead`,
+`--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-tight` and
+`--ocelle-line-height-compact`. Slotted content keeps its own semantics and focus: the notice sets no `tabindex` and
+traps no focus. Long unbroken text wraps inside the box at any character. In forced colours the box has a border of
+`--ocelle-border-width` in `CanvasText`, the bar in `CanvasText` too, and the text is `CanvasText` on `Canvas`.
+
+**Heading.** The heading is absent when no element is assigned to the `heading` slot or the text content of its
+elements is empty or whitespace only: it then draws no box and leaves no gap, so a server template can write
+`<span slot="heading"></span>` for a null heading. The rule reads text content only, so a heading whose only content is
+an `ocelle-icon` or an `img` is absent, and a heading whose only text is inside an `aria-hidden="true"` element is drawn
+but adds nothing to the announced text. A present heading is drawn above the body at `--ocelle-font-weight-strong`, in
+`--ocelle-font-size-subhead` and `--ocelle-line-height-tight` with a gap of `--ocelle-space-2` (compact:
+`--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-space-1`).
+
+**Announced text.** The announced text is the heading text, then the body text, joined by one space: the text nodes, the
+`label` of an `ocelle-icon` and the `alt` of an `img`, skipping elements with `hidden` or `aria-hidden="true"` and
+`script`, `style` and `template` elements. Other accessible names (`title`, a slotted element's `aria-label`) do not
+count. For other slotted content (an element with `role="img"` and an `aria-label`, an `svg`, CSS-generated content,
+content hidden by a host rule without `hidden`) the announced text is not specified.
+
+**When it announces.** "Announced" in this library's tests means a change of a live region's text in Chromium's
+accessibility tree, read from the states that Chromium can hand to assistive technology; no screen reader runs in the
+tests. With `announce`, a notice announces its text when it is inserted after the page has loaded, when its `hidden`
+is removed, and on each change of its text or of its politeness. A notice that is part of the page as first loaded is
+not announced: one connected while `document.readyState` is `"loading"`, or upgraded by the registration of the
+definition. A notice inserted after the build has loaded is announced, however it is inserted (`innerHTML`, a
+`<template>`, a `DOMParser` document, an htmx swap or `document.createElement`). Load the build before any swap or
+script inserts announcing notices: a notice upgraded by the registration does not announce. Setting `announce`, or a
+host `role` of `alert` or `status`, on an existing notice announces nothing: its current text is the baseline for the
+next change. Moving a notice within the page in one task, or a re-render, announces nothing; the same text set again,
+or a change of whitespace only, is no change. Removing `announce` stops the announcements.
+
+**How it announces.** The notice announces through a separate live region in its shadow root, visually hidden and
+atomic, that never holds the visible content: a copy of the text is written into it `W` after the last trigger. `W` is
+twice Chromium's accessibility serialisation delay, 150 ms once `document.readyState` is `"complete"` and 350 ms before
+(`AXObjectCacheImpl::GetDeferredEventsDelay()` in `ax_object_cache_impl.cc`), so 300 ms after load and 700 ms before;
+the region is empty for that time first, so a screen reader is handed the whole text as a change. The wait also ends
+no earlier than `W` of the load state in which the region last became empty, counted from then, so a change right
+after a first load is written no earlier than the pre-load `W` after the notice was first rendered (about 650 to 690
+ms after the change on Chromium), since the tests' reading of Chromium's serialisation holds an empty state begun
+before the load to the pre-load delay. Changes closer together than `W`, in one task or in different tasks, merge: only the final text is announced, once, and a text that
+is back to the last announced text when the wait ends announces nothing. A text that keeps changing more often than
+every `W` is not announced until it stops changing. A copy is held for `H`, 5000 ms, or until the next announcement but
+at least `W`, and then removed. `H` is a chosen figure, not measured: the tests cannot see when a screen reader fetches
+the text. For up to `H` a browse-mode user may meet the text twice, in the notice and in the copy.
+
+**Host roles.** A host `role="alert"` announces assertively and `role="status"` politely whatever the tone, with or
+without `announce`; with a role that gives the host's node no live politeness, such as `note`, `region` or `none`, the
+notice behaves as with no role. The host's node keeps the role and is never a second live region. For a host
+`role="alert"`, the insertion, the reveal and a change of the role to `alert` write no copy: Chromium's alert event for
+the host's node reads the notice (`ui/accessibility/ax_event_generator.cc`, lines 394, 416-417 and 1081-1082). The alert
+event is Chromium's behaviour and is not measured; WebKit is not measured, and its live regions in shadow roots are an
+open limitation. What the event does for a `role="alert"` notice of the page as first loaded is not measured either,
+and a later Chromium may change it. Text or a `tone` set in the same task as that insertion, reveal or role change is
+part of the alert reading and is not announced again. A change made in a later task but before Chromium's next
+serialisation is read twice, by the alert event and by the copy, so set the text before, or in the same task as, the
+insertion, reveal or role change. A notice inserted or revealed as `role="alert"` and changed to `role="status"` in the
+same task announces its text politely once, as a `status` notice would, since no alert event fires. Later text changes
+of a `role="alert"` notice announce assertively through the copy.
+
+**Hiding.** Only the host's own `hidden` attribute hides and reveals the notice: removing it announces the current
+text once, as an insertion does, and changes while hidden are not announced. A notice shown by a hidden ancestor (a
+container with `hidden`, a closed `<details>`, a `display: none` panel) is not announced by its live region; a
+`role="alert"` notice shown that way is read by Chromium's alert event all the same.
+
+## Form controls
+
+`ocelle-form-input` and later form-like elements are form-associated custom elements: the native control, its visible
+label, its description and its error live in one open shadow root, so every ID reference among them stays inside it.
+This is the convention every form-like element of this library follows. The host takes part in its form through
+`ElementInternals`: it submits its value under `name` (nothing without `name` or while disabled), joins the form a
+`form` attribute names, follows a disabled `<fieldset>`, restores its default value on a form reset and its state on
+history restore, and is associated with an external `<label for>`. The `form` attribute joins the form it names, as
+on a native control; it is a standard attribute and the manifest does not list it.
+
+**Members.** Shared attributes and properties: `name`, `label`, `description`, `error`, `required` and `disabled` (all
+reflected), and the `value` property. The host exposes `form`, `labels`, `validity`, `validationMessage`,
+`willValidate`, `checkValidity()` and `reportValidity()` as a native control does; `focus()` on the host focuses the
+inner control, and the host is not a tab stop of its own. The host's validity flags and message are the inner
+control's native constraint validation, and `reportValidity()` focuses the inner control and makes the browser show its
+message. CSS parts: `label`, `control`, `description` and `error`. Slots: none: the label, the description and the
+error are text attributes.
+
+**Naming.** The inner control's accessible name is a host `aria-label` that is not blank, alone; otherwise the text of
+each external `<label>` in `labels` order, then the `label` text, each with whitespace collapsed and trimmed, joined by
+one space; with none of them the control has no name, and one is required. When a visible label is drawn (`label` or
+an external `<label>`), a host `aria-label` must contain the visible label text; any other combination is not
+supported. A label that is associated later is picked up when the control next renders or takes focus; a changed text
+of an associated label renames the control at once. The `description` is the control's accessible description,
+followed by a host `aria-description` and the error. A host `aria-label` and `aria-description` also stay on the host's
+node, so Chromium exposes the host as a generic with the same name and description beside the control. A host
+`aria-labelledby` and a host `aria-describedby` are not supported: they would reference across the shadow root; use
+`label`, `aria-label` or `description` instead. A host `aria-invalid`, `aria-required` or `aria-disabled` reaches the
+inner control only with the value `"true"`, combined with the element's own `error`, `required` and `disabled`; write
+only `"true"` or nothing: any other value is not supported. Prefer the element's own attributes. A host
+`aria-required="true"` adds no constraint, and a host `aria-disabled="true"` leaves the control focusable.
+
+**Events.** The native `input` event of the inner control reaches the host with `value` already updated; each
+committed change dispatches `ocelle-form-input-change`, a `CustomEvent` with `detail: { value }`, `bubbles` and
+`composed`; a change by script, by reset or by restore dispatches none. For htmx, trigger on
+`hx-trigger="ocelle-form-input-change"` (or `input`): the native `change` event does not leave the shadow root, and
+htmx's default trigger for an unknown element is `click`. A plain form submit or `hx-post` on the form needs nothing,
+since the values are in the form's data.
+
+**Size and look.** The host is `display: block` and the control fills its inline size; the element sets no width of
+its own, so in a filter bar the page sets the element's width or places it as a flex or grid item. The label is drawn
+above the control, the description under the label and the error under the control. The form controls are for the main
+grounds; a control on a state ground, `--ocelle-color-accent-low`, an inset or a hover ground is not supported.
+
+**Error.** A non-empty `error` is shown under the control in `--ocelle-color-danger`, with the control's boundary in
+`--ocelle-color-danger` at `--ocelle-bar-width`, makes the control invalid for assistive technology, is added after the
+description to its accessible description, and is announced politely once each time it changes to a new text. The
+error does not block submission or change the form's validity: the host clears it. It is announced through a separate
+live region in the control's shadow root, as `ocelle-notice` announces, with the same wait `W`, hold `H` and merging.
+Setting `error` to empty resets the baseline, so the same text set again is announced again; a change of whitespace
+only is no change; changes closer together than `W` merge. An `error` in the page as first loaded is not announced and
+does not move focus: it is read with the control's description when the user reaches it, so put an error summary or a
+notice at the top of the page and focus it. A control inserted after the build has loaded with an `error` announces it
+politely once, each control its own; moving a control within the page in one task announces nothing. Load the build
+before any swap or script inserts form controls with `error`: a control upgraded by the registration does not announce.
+Only the host's own `hidden` attribute counts as a reveal for a form control: removing it announces the current error
+once; a control shown through a hidden ancestor announces nothing.
+
+**Implicit submission.** In a form with no submit button that holds a native text input and a form control, Enter in
+the native input submits, since the browser does not count the custom element as a field that blocks implicit
+submission; Enter in the form control does not.
+
+**Before the definition loads.** Before the definition has loaded, a form control is not in its form's data and is
+not validated; to hide undefined elements, add a rule such as `ocelle-form-input:not(:defined) { visibility: hidden; }`
+to the page's own stylesheet. The base stylesheet ships no such rule.
+
+**Limits.** Not measured: restore by autofill, where the browser draws the validation message, the `email` keyboard
+hint and the masking of `password`. WebKit is not measured for form controls: its form association and
+`ElementInternals` are an open limitation.
+
+## `ocelle-form-input`
+
+```html
+<form method="post" action="/lanes">
+  <ocelle-form-input name="title" label="Title" description="Shown on the lane card" required></ocelle-form-input>
+  <ocelle-form-input name="email" label="Email" type="email" autocomplete="email" error="Email is taken"></ocelle-form-input>
+  <button>Save</button>
+</form>
+```
+
+`ocelle-form-input` is a labelled text field with an optional description and a host-set error, that takes part in its
+form like a native input. It follows the form-control convention above.
+
+- `type` (attribute and property, reflected): `text` (the default), `email`, `url`, `tel`, `search`, `password` or
+  `number`; any other value behaves as `text` and the property reads `"text"`, while the attribute keeps the value as
+  written.
+- `placeholder`, `autocomplete`, `inputmode` (`inputMode`), `pattern`, `min`, `max` and `step` (strings), `minlength`
+  (`minLength`) and `maxlength` (`maxLength`) (numbers) and `readonly` (`readOnly`, boolean), attributes and reflected
+  properties, pass to the inner field unchanged; an absent one reads `undefined` (`readOnly` reads `false`).
+- The input's `value` attribute is its default value, restored on reset; the `value` property is the current value.
+  Changing the attribute changes the current value only while the user has not edited it and no script has set `value`
+  since the last reset. There is no `defaultValue` property.
+
+Pressing Enter in the field dispatches `ocelle-form-input-change` if the value changed, then submits the form as a
+native input does. Event: `ocelle-form-input-change`, `detail: { value }`. CSS parts: `label`, `control`,
+`description` and `error`. Slots: none. No CSS custom property of its own. `ocelle-form-input` reads the tokens
+`--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
+`--ocelle-color-danger`, `--ocelle-color-focus`, `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`,
+`--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`,
+`--ocelle-space-1`, `--ocelle-space-2` and `--ocelle-space-3`. The label is in `--ocelle-font-size-sm`,
+`--ocelle-font-weight-strong` and `--ocelle-line-height-normal` in `--ocelle-color-ink`; the field is on
+`--ocelle-color-sheet` with a boundary of `--ocelle-border-width` in `--ocelle-color-control-border`, radius
+`--ocelle-radius-2`, at least `--ocelle-target-min` high, with the token focus ring on `:focus-visible` and the
+disabled colours when disabled; the description is in `--ocelle-color-ink-muted` and the error in
+`--ocelle-color-danger`, both in `--ocelle-font-size-sm` and `--ocelle-line-height-normal`. The placeholder is in
+`--ocelle-color-ink-muted`. The field inherits the host's font. In forced colours the boundary is `CanvasText`, the
+focus ring `Highlight`, and the error keeps its boundary at `--ocelle-bar-width`. Long unbroken text in the label, the
+description or the error wraps at any character.
+
+## `ocelle-form-select`
+
+```html
+<form method="get" action="/board">
+  <ocelle-form-select name="lane" label="Lane" description="Only cards in this lane are shown">
+    <option value="">All lanes</option>
+    <optgroup label="Active">
+      <option value="todo">To do</option>
+      <option value="doing" selected>Doing</option>
+    </optgroup>
+    <option value="done">Done</option>
+  </ocelle-form-select>
+  <button>Filter</button>
+</form>
+```
+
+`ocelle-form-select` is a labelled native select for closed choices, with an optional description and a host-set
+error, that takes part in its form like a native select. It follows the form-control convention above. Attributes and
+reflected properties: `name`, `label`, `description`, `error`, `required` and `disabled`. Properties: `value`, `form`,
+`labels`, `validity`, `validationMessage` and `willValidate`. Methods: `checkValidity()`, `reportValidity()` and
+`focus()`.
+
+- Its choices are its light-DOM `<option>` and `<optgroup>` children, written as for a native `<select>`: the native
+  select inside mirrors their order, labels, values, `selected` (the default selection, restored on reset) and
+  `disabled`, and follows every later change to them. The light-DOM children are not rendered and not exposed, so a
+  server-rendered page needs no script to fill the select. One choice only: there is no `multiple` and no `size`.
+- A host `value` attribute is ignored: the default selection is the last option marked `selected`, or the first
+  enabled option without one. The `value` property is the current choice; setting it to a value no option has selects
+  nothing and reads `""`, as on a native select. There is no `defaultValue` property. With nothing selected (no
+  option, or such a value), the select submits nothing, as a native select.
+- When the chosen option is removed, the choice falls back to the first enabled option, as on a native select, with
+  no event.
+- The native select's own keys are unchanged: ArrowDown and ArrowUp change the choice, and typing a letter selects the
+  next option whose label starts with it. Each change the user makes dispatches `ocelle-form-select-change`.
+- The open-list indicator is the `chevron-down` icon of the set, drawn in `currentColor` at `--ocelle-icon-size` at
+  the inline end of the select, decorative and visible in forced colours; it takes no pointer events, so a click on it
+  reaches the select. Importing `@ocelle/elements/ocelle-form-select.js` defines `ocelle-form-select` only: the select
+  draws its indicator itself and does not define `ocelle-icon`.
+
+Event: `ocelle-form-select-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`.
+Slots: none. No CSS custom property of its own. For htmx, trigger on `hx-trigger="ocelle-form-select-change"` (or
+`input`). `ocelle-form-select` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`,
+`--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`,
+`--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`,
+`--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`,
+`--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2`,
+`--ocelle-space-3` and `--ocelle-icon-size`, the last for its indicator. The label, the select, the description and the
+error are drawn as for `ocelle-form-input`; the select leaves room for the indicator at its inline end.
+
+Before the definition has loaded, a select's `<option>` children may show as text, as the browser draws an unknown
+element's content; the rule above for undefined elements hides them. Not measured for `ocelle-form-select`: that
+Alt+Down or Space opens the list, and how the browser draws the open list.
+
+## `ocelle-form-textarea`
+
+```html
+<form action="/decisions" method="post">
+  <ocelle-form-textarea name="answer" label="Decision"
+    description="Explain the rationale" value="Approve.&#10;&#10;Confirm the deployment window." required
+  ></ocelle-form-textarea>
+  <button>Save</button>
+</form>
+```
+
+The `value` attribute sets the default for reset and the `value` property holds the current answer. Like a native
+textarea, the control uses LF in its value and in script-visible FormData. It participates before the first render once
+it is connected to the form. An empty editable `required` field blocks submission. A `readonly` field can be focused,
+selected and submitted. A `disabled` field is omitted from submission and cannot receive keyboard focus. A disabled
+fieldset also disables the control.
+
+Typing or pasting updates the current and submitted value before the native bubbling, composed `input` event reaches
+the host. Committing a changed answer by leaving the field emits the bubbling, composed
+`ocelle-form-textarea-change` event with `detail: { value }`. Enter inserts a newline. Script writes, reset and browser
+restoration do not emit user events. The host owns saving and can set or clear `error` without losing the edited value.
+The error is associated with the textarea and new errors are announced politely.
+
+CSS parts are `label`, `control`, `description` and `error`. There are no slots or component-specific tokens.
+
 ## `ocelle-dialog`
 
 ```html
@@ -212,7 +543,8 @@ dialog.addEventListener("ocelle-dialog-close", (e) => { /* e.detail.reason */ })
 **Focus.** On open, focus moves to the first slotted element marked `autofocus` in the body, else to the body's first
 focusable element, else to the close control. While the dialog is open, Tab and Shift+Tab move only among its
 focusable elements (the close control, the body's content and the footer's) and wrap at the ends; elements that are
-not rendered are skipped and a radio group is one stop. Between the cycle's ends Tab moves as the engine does, so
+not rendered are skipped and a radio group is one stop. The content of a closed `<details>`, apart from its summary, is
+not rendered, so it is no stop. Between the cycle's ends Tab moves as the engine does, so
 content with a closed shadow root, an iframe or media controls keeps its inner focusable parts reachable by Tab and
 Shift+Tab in both directions: Shift+Tab from the close control onto such content at the dialog's end enters it from
 its end, with or without `delegatesFocus`. Leaving a slotted iframe past the cycle's end with Tab can cost one extra
@@ -705,16 +1037,13 @@ orient();
 narrow.addEventListener("change", orient);
 ```
 
-For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail. A
-shell that wants the rail horizontal inside its drawer and vertical in its column sets `orientation` from its own
-tier, with an exclusive bound in its own query; the rail does not care where the value comes from. It emits no event.
-The container-tier convention (Element conventions) describes the tiers of an element that chooses its own.
+Set the rail's `orientation` to `horizontal` or `vertical` when an application changes its layout.
+The rail exposes a navigation landmark named with `label` and emits no event.
 
-The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px), the size #12's
-`ocelle-nav-item` is expected to have. The rail sets only the gap, the items' centring and the chrome ink as its
-colour, which an item takes when it inherits colour. A plain `<a>` does not: give `<a>` items `color: inherit` and a
-target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no release of this package ships
-`ocelle-nav-item` yet.
+The rail leaves destination sizing to its items. It provides the gap, centers items and sets the chrome ink.
+In a standalone rail, give plain links `color: inherit` and a target of at least 24 px. Inside an
+`ocelle-app-shell` rail region, the shell applies chrome colors to `ocelle-nav-item`, which uses
+`--ocelle-size-rail-item` (40 px).
 
 `ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
 `--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and
@@ -790,9 +1119,12 @@ root; a keyboard user and a screen-reader user meet a normal button or a normal 
   its description, or its name when nothing else names it.
 - The default slot is the label; the `icon` slot holds one icon before it (the slot convention). With no label in
   the default slot (no non-whitespace text in what it holds), the icon takes no gap and is centred in the button; a
-  `flush` button still starts it at its inline start. Name such an icon-only button with `label`. The button follows
-  text written into or removed from its own content; a label forwarded through another component's shadow-root
-  `<slot>` is read when that slot's assignment changes, not when the forwarded text changes.
+  `flush` button still starts it at its inline start. Name such an icon-only button with `label`. A slotted icon is
+  decorative and adds nothing to the button's name, which comes from the default slot's text when nothing on the host
+  names it, in the button and the link mode. Known limitation: with a slotted icon and a one-character text label,
+  axe reports `label-content-name-mismatch` as needing review (incomplete); the button's name is correct. The button
+  follows text written into or removed from its own content; a label forwarded through another component's
+  shadow-root `<slot>` is read when that slot's assignment changes, not when the forwarded text changes.
 
 On a container whose surface changes (a list or table row that takes `color-hover-bg` on hover, or `color-accent-low`
 when selected), set `ground` for the changed surface statically (`hover-bg` or `accent-low`):
@@ -1036,9 +1368,11 @@ after it) follows these rules. An interactive `ocelle-pill-tag`, in button mode 
    `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ.
 5. **Name order.** The inner control's name is, in this order: the host's `aria-labelledby`, the host's `aria-label`,
    the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content;
-   slotted icons never contribute. When a control's content is visible, its `label` contains the visible text, ideally
-   at its start, so a user who speaks a control's visible name reaches it (label in name); so does a host
-   `aria-label`. A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
+   slotted icons never contribute to the name of an `ocelle-button` that is named by its label (the default slot's
+   text, which is its content), its `label` or the host. An icon-only `ocelle-button` with none of these is still named
+   from its content, icon included: name it with `label`. When a
+   control's content is visible, its `label` contains the visible text, ideally at its start, so a user who speaks a control's
+   visible name reaches it (label in name); so does a host `aria-label`. A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
    reports; the element adds no fallback text.
 6. **Current.** On `ocelle-button`, `aria-current` is passed through to the inner control with any value and draws no
    visual mark; a host that wants a visible mark styles `:state(current)` or uses a row, whose `current` property draws
@@ -1241,6 +1575,766 @@ system-colour outline and the fill is `Highlight`.
 `--ocelle-color-inset`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
 `--ocelle-font-size-sm`, `--ocelle-figures`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-1`,
 `--ocelle-border-width`, `--ocelle-measure-cell`, `--ocelle-motion-base` and `--ocelle-easing-standard`.
+
+## `ocelle-listbox`
+
+`ocelle-listbox` is a single-select listbox of `ocelle-option` children: the host writes the options as its children,
+in the page's own markup, and reads the selected value from the listbox. The options stay in the page's tree beside
+each other, so the listbox needs no id reference and the host writes no ARIA attribute of its own.
+
+```html
+<ocelle-listbox label="Folders">
+  <ocelle-option value="alpha"><ocelle-icon slot="icon" name="folder"></ocelle-icon>alpha</ocelle-option>
+  <ocelle-option value="beta">beta</ocelle-option>
+</ocelle-listbox>
+```
+
+`value` (attribute and property, not reflected): the selected option's value, `""` when none. Setting it to a value an
+enabled option has selects the first such option; setting it to `""` or to a value no enabled option has clears the
+selection. A host set never emits an event, and setting the current value changes nothing. A non-empty `value` that
+no enabled option has is remembered until an option with that value appears or is enabled, which is then selected,
+with no event; the next user selection or host set forgets it.
+
+`label` (attribute and property, not reflected): the listbox's accessible name, trimmed; a host `aria-label` decides
+over it. Without either the listbox is unnamed: a host must name it.
+
+`ocelle-listbox-change` with `detail` `{ value }`: the user selected another option with Enter, Space or a click;
+`value` already reads the new value when it is dispatched. `ocelle-listbox-activate` with `detail` `{ value }`: the
+user confirmed an option, with Enter on the selected option or a double-click on an enabled option (whose first click
+selects it, so its change event comes first); not cancelable. A host confirms the choice by listening to it, for
+example to open a folder. Both events bubble and are composed.
+
+Keys, on an option: ArrowDown and ArrowUp move focus to the next and previous enabled option without wrapping, Home and
+End to the first and last; selection does not follow focus. Enter and Space select the focused option. The listbox
+handles no other key: Escape, Tab, ArrowLeft, ArrowRight and letters (there is no typeahead) reach the page unhandled.
+The listbox is one tab stop: the selected option when it is enabled, else the option that last had focus, else the
+first enabled option. Disabled options are skipped by the keys and the tab stop but stay focusable, so a focused option
+that becomes disabled keeps focus.
+
+`ocelle-option`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). An option with no
+`value`, or a blank one, has its index among the listbox's options as its value, as a string; the default is not
+written to the attribute. An option's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to
+the option's name. An `ocelle-option` is only meaningful inside an `ocelle-listbox`: outside one it has no role and no
+tab stop.
+
+Options added, removed or reordered after render are followed; when the focused option is removed, focus moves to the
+next enabled option after it, else the nearest one before it; when the selected option is removed, `value` becomes
+`""` with no event. A moved option keeps its selection and its focus. The listbox writes `aria-selected`,
+`aria-disabled` and `tabindex` on its options; a host's own values of these on an option are overwritten. Keep option
+values unique: a host set selects the first option with the value. A listbox has no `disabled` of its own; disable
+every option to disable it. A listbox whose every option is disabled, or with no option, has no tab stop.
+
+The scroll container is the part `list`: a host that limits the listbox's height sets `max-block-size` on
+`ocelle-listbox`, and the focused option is scrolled into view with its focus ring inside the list. Each option is at
+least `--ocelle-target-min` high and its label wraps; a hovered enabled option is filled `--ocelle-color-hover-bg`.
+The selected option shows a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` on its inline-start edge, and
+`Highlight` in forced colours; the listbox is for the main grounds. A keyboard-focused option shows the token focus
+ring on all four sides, above its neighbours.
+
+`ocelle-listbox` and `ocelle-option` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`,
+`--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and
+`--ocelle-icon-size`.
+
+## `ocelle-tabs`
+
+`ocelle-tabs` is a tablist of `ocelle-tab` children with their `ocelle-tab-panel` panels: the host writes the tabs and
+the panels as its children, in the page's own markup, and the tabs pair with the panels by order (the first tab with the
+first panel, and so on); tabs or panels without a partner are not rendered. The tabs write the association themselves:
+an `id` on each tab and panel that has none (a child's own `id` is kept and used), `aria-controls` on every paired tab
+and `aria-labelledby` on the shown panel. A host writes no `id`, `aria-*` or `slot` on the children.
+
+```html
+<ocelle-tabs label="Mission views">
+  <ocelle-tab value="spec">Spec</ocelle-tab>
+  <ocelle-tab value="plan"><ocelle-icon slot="icon" name="file"></ocelle-icon>Plan</ocelle-tab>
+  <ocelle-tab-panel>…the spec…</ocelle-tab-panel>
+  <ocelle-tab-panel>…the plan…</ocelle-tab-panel>
+</ocelle-tabs>
+```
+
+`value` (attribute and property, not reflected): the selected tab's value. Exactly one tab is selected whenever a tab is
+enabled: on first render the tab whose value `value` names, else the first enabled tab. Setting `value` to a value an
+enabled tab has selects the first such tab; setting it to `""` or to a value no enabled tab has keeps the selection. A
+host set never emits an event, and setting the current value changes nothing. A non-empty `value` that no enabled tab
+has is remembered until a tab with that value appears or is enabled, which is then selected, with no event; the next
+user selection or host set forgets it.
+
+`label` (attribute and property, not reflected): the tablist's accessible name, trimmed. Name the tabs with `label`: a
+host `aria-label` on `ocelle-tabs` does not name the tablist (the element does not forward it, and it would name the
+host as a second node around the tablist).
+
+`ocelle-tabs-change` with `detail` `{ value }`: the user selected another tab with an arrow key, Home, End, Enter, Space
+or a click; `value` already reads the new value when it is dispatched. It bubbles and is composed.
+
+Keys, on a tab: ArrowRight and ArrowLeft move focus and selection to the next and previous enabled tab in visual order
+(swapped under right-to-left), wrapping at the ends; Home and End to the first and last enabled tab. Enter and Space
+select a focused tab that is not selected. The tabs handle no other key: ArrowUp, ArrowDown, Escape and letters reach
+the page unhandled, and keys pressed inside a panel are the panel content's. Only the selected tab is in the tab order.
+Tab from it moves into the selected panel: to the panel's first focusable element, or to the panel itself, which then
+shows the focus ring, when the panel holds nothing focusable (focusables inside shadow roots count, and the panel's
+content is followed after render).
+
+When the selected tab is removed or disabled, the next enabled tab after it is selected, else the nearest one before it,
+with no event; focus moves with the selection when the tab had focus. With every tab disabled, or none, no tab is
+selected, no panel is shown and `value` reads `""`.
+
+`ocelle-tab`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). A tab with no `value`, or
+a blank one, has its index among the tabs as its value, as a string; the default is not written to the attribute. A
+tab's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the tab's name or its panel's.
+An `ocelle-tab` or `ocelle-tab-panel` is only meaningful inside an `ocelle-tabs`: outside one it has no role and no tab
+stop.
+
+The tabs write `aria-selected`, `aria-disabled` and `tabindex` on their tabs and `tabindex` on the shown panel; a host's
+own values of these are overwritten. Keep tab values unique: a host set selects the first tab with the value. The tabs
+have no `disabled` of their own; disable every tab to disable them.
+
+The tab row is the part `tablist`, and the shown panel sits in the part `panels`, beside the tablist; when the tabs are
+wider than the row they wrap onto further rows, and the row never scrolls sideways. The selected tab shows a bar of
+`--ocelle-bar-width` in `--ocelle-color-accent-strong` on its block-end edge, and `Highlight` in forced colours; the
+tabs are for the main grounds. Each tab is at least `--ocelle-target-min` high and its label wraps; a hovered enabled
+tab is filled `--ocelle-color-hover-bg`. A keyboard-focused tab shows the token focus ring on all four sides, above its
+neighbours.
+
+`ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`,
+`--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and
+`--ocelle-icon-size`.
+
+## `ocelle-segmented-choice`
+
+`ocelle-segmented-choice` is a toolbar of `ocelle-segment` toggle buttons, exactly one of them pressed: the host writes
+the segments as its children, in the page's own markup, and the group is one tab stop with arrow keys between the
+segments. It is for a few mutually exclusive options, such as a filter or a view switch.
+
+```html
+<ocelle-segmented-choice label="Lane filter" value="all" joined>
+  <ocelle-segment value="all">All</ocelle-segment>
+  <ocelle-segment value="mine"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Mine</ocelle-segment>
+  <ocelle-segment value="blocked">Blocked</ocelle-segment>
+  <ocelle-segment value="done">Done</ocelle-segment>
+</ocelle-segmented-choice>
+```
+
+`value` (attribute and property, not reflected): the pressed segment's value. Exactly one segment is pressed whenever a
+segment is enabled: on first render the segment whose value `value` names, else the first enabled segment. Setting
+`value` to a value an enabled segment has presses the first such segment; setting it to `""` or to a value no enabled
+segment has keeps the press. A host set never emits an event, and setting the current value changes nothing. A
+non-empty `value` that no enabled segment has is remembered until a segment with that value appears or is enabled,
+which is then pressed, with no event; the next user press or host set forgets it.
+
+`label` (attribute and property, not reflected): the toolbar's accessible name, trimmed; a host `aria-label` names it
+too and, when present, decides alone (see Host ARIA).
+
+`joined` (boolean, reflected): the joined variant. The segments touch, one shared line of `--ocelle-border-width` lies
+between neighbours and between rows, and only each row's first segment has rounded start corners and each row's last
+segment rounded end corners. The group recomputes the rounding itself when it wraps or unwraps: no host script,
+observer or `style` attribute is needed. It observes its own size and its segments' sizes while joined, and regroups
+when its segments change.
+
+`ocelle-segmented-choice-change` with `detail` `{ value }`: the user pressed another segment with Enter, Space or a
+click; `value` already reads the new value when it is dispatched. It bubbles and is composed.
+
+Keys, on a segment: ArrowRight and ArrowDown move focus to the next enabled segment, ArrowLeft and ArrowUp to the
+previous one (ArrowLeft and ArrowRight swapped under right-to-left), wrapping at the ends; Home and End to the first and
+last enabled segment. The arrows move focus only. Enter and Space press the focused segment. The group handles no
+other key: Escape and letters reach the page unhandled, and Tab leaves the group. Only the pressed segment is in the
+tab order. A pressed segment cannot be un-pressed by the user.
+
+When the pressed segment is removed or disabled, the next enabled segment after it is pressed, else the nearest one
+before it, with no event; focus moves with the press when the segment had focus. With every segment disabled, or none,
+no segment is pressed and `value` reads `""`.
+
+`ocelle-segment`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). A segment with no
+`value`, or a blank one, has its index among the segments as its value, as a string; the default is not written to the
+attribute. A segment's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the segment's
+name. An `ocelle-segment` is only meaningful inside an `ocelle-segmented-choice`: outside one it has no role and no tab
+stop.
+
+The segmented choice writes `aria-pressed`, `aria-disabled` and `tabindex` on its segments; a host's own values of
+these are overwritten. Keep segment values unique: a host set presses the first segment with the value. The segmented
+choice has no `disabled` of its own; disable every segment to disable it.
+
+In the default variant the segments stand `--ocelle-space-2` apart, each with a border of `--ocelle-border-width` in
+`--ocelle-color-control-border` and the radius `--ocelle-radius-2`; the pressed segment is filled
+`--ocelle-color-accent-low` with a border of `--ocelle-bar-width` in `--ocelle-color-accent-strong`. In the joined
+variant the lines around the pressed segment, and around a hovered one, are `--ocelle-color-accent-strong` at the same
+width, and the pressed segment is filled `--ocelle-color-accent-low` with a bar of `--ocelle-bar-width` in
+`--ocelle-color-accent-strong` along its block-end edge inside its box; in forced colours the bar and the default
+pressed border are `Highlight` and every line is `ButtonBorder`; the segmented choice is for the main grounds. Each
+segment's box is at least `--ocelle-target-min` high and its label wraps; a hovered enabled segment is filled
+`--ocelle-color-hover-bg` with `--ocelle-color-accent-strong` lines. A keyboard-focused segment shows the token focus
+ring on all four sides, above its neighbours.
+
+`ocelle-segmented-choice` and `ocelle-segment` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`,
+`--ocelle-color-accent-low`, `--ocelle-color-accent-strong`, `--ocelle-color-control-border`,
+`--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
+`--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-2`,
+`--ocelle-space-3` and `--ocelle-icon-size`.
+
+## `ocelle-copy-field`
+
+`ocelle-copy-field` shows a command or identifier the user may copy, with a Copy control flush at its inline end. It
+never writes or reads the clipboard: activating the Copy control emits `ocelle-copy-field-request`, the host writes the
+clipboard (through a desktop bridge or the page's clipboard API) and reports the outcome in its own words by setting
+`status`. Importing `ocelle-copy-field` defines `ocelle-icon` too, for its copy icon.
+
+```html
+<ocelle-copy-field aria-label="Manifest command" value="pnpm --filter @ocelle/elements run manifest"></ocelle-copy-field>
+<script type="module">
+  const field = document.querySelector("ocelle-copy-field");
+  field.addEventListener("ocelle-copy-field-request", async (event) => {
+    try {
+      await bridge.copy(event.detail.text);
+      field.status = "Copied to clipboard";
+    } catch {
+      field.status = "Could not copy: the bridge is unavailable";
+    }
+  });
+</script>
+```
+
+`value` (attribute and property, not reflected): the text shown and requested, as written. It wraps at any point when
+it does not fit, never scrolls sideways, keeps its whitespace runs, is drawn in the sans with tabular figures on
+`--ocelle-color-inset` and stays selectable. With an empty or missing `value` the Copy control is disabled and emits
+nothing. The text is plain text; a host that shows a digest in groups of four formats `value` itself.
+
+`copy-label` (attribute and property `copyLabel`, not reflected): the Copy control's accessible name, trimmed; without
+it, or blank, the control is named "Copy".
+
+`status` (attribute and property, not reflected): the host's outcome text, shown as the content of the field's one
+polite live region (`role="status"`) after the Copy control. The region is present and empty from first render; a
+blank `status` shows nothing. Setting the text the region already holds changes nothing. The field draws no colour or
+icon of its own for success or failure: the words are the host's.
+
+The field clears `status` (the property reads `""` and the region is emptied) when a new request starts and when
+`value` changes after first render; it changes `status` in no other way and emits nothing on its own. A `status`
+attribute the host wrote stays as written and is read again only when it changes.
+
+`ocelle-copy-field-request` with `detail` `{ text }`: the user activated the Copy control with a click, Enter or Space;
+`text` is `value` at the activation. It bubbles and is composed, and is not cancelable.
+
+The request is not dispatched in the activation's task: the field clears `status` at once, then dispatches the request
+after the next rendering update, once the emptied live region has reached the accessibility tree, so a screen reader
+hears the host's new text even when it is the same as before. Each activation emits one request; a field removed from
+the page before the dispatch emits none.
+
+A host that writes the clipboard from the page (`navigator.clipboard.writeText(event.detail.text)`) receives the
+request outside the click's task, a frame later, and must check its engines' user-activation rules for clipboard
+writes: Chromium still counts the click's activation then, and WebKit is not measured. A host that writes the
+clipboard through a desktop bridge is not affected.
+
+Name the field with a host `aria-label`: it is exposed as a group holding the text and the Copy control, unnamed
+without one. A host `aria-label` names the group, not the control.
+
+Keys: the Copy control is one tab stop, and Enter and Space activate it, as on any button. The field handles no other
+key: Escape and letters reach the page unhandled.
+
+CSS parts: `value` (the text) and `copy-control` (the Copy control). `copy-control` guarantees its box (its position,
+its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which
+element carries it: a native `<button>` today. Rules a host writes against `:disabled`, `:focus-visible` or the inner
+border of the native button are outside that surface. The Copy control will become `ocelle-button` (#7) in a later
+change once that element has merged. The `value` and `copy-control` parts, the control's accessible name and its
+events stay, so the swap is a PATCH under the surface stated here.
+
+The field's outer border is `--ocelle-border-width` in `--ocelle-color-control-border` with the radius
+`--ocelle-radius-2`. The Copy control sits flush at the field's inline end, inside that border, filled
+`--ocelle-color-sheet`, with one line of `--ocelle-border-width` in `--ocelle-color-accent-strong` between it and the
+text: no gap and no double line. The control is at least `--ocelle-target-min` in both dimensions and shows the token
+focus ring when focused by keyboard. In forced colours the boundaries are `ButtonBorder`, the icon is `ButtonText` and
+the ring `Highlight`. The copy field is for the main grounds.
+
+`ocelle-copy-field` reads the tokens `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink`,
+`--ocelle-color-inset`, `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-accent-strong`,
+`--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
+`--ocelle-border-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-1`, `--ocelle-space-2`,
+`--ocelle-space-3` and `--ocelle-icon-size`.
+
+## `ocelle-link`
+
+`ocelle-link` is a link inside running text: it is drawn inline in `--ocelle-color-link` with an underline, in
+`--ocelle-color-link-hover` under the pointer, and shows the token focus ring around each line it wraps onto. It always
+tells the host it was activated, with `ocelle-link-activate`; without `href` it never navigates, and with `href` it
+navigates unless the host cancels the event.
+
+```html
+<p>See <ocelle-link href="missions/014.html">the mission log</ocelle-link> for details.</p>
+<p>Open <ocelle-link label="the task board, opens in the viewer">the task board</ocelle-link> beside the log.</p>
+<script type="module">
+  document.addEventListener("ocelle-link-activate", (event) => {
+    if (event.detail.href === null) {
+      event.preventDefault();
+      viewer.open("task-board");
+    }
+  });
+</script>
+```
+
+`href` (attribute and property, reflected): the link's target, as written. Without it the link is still a link in the
+tab order and only emits its event.
+
+`label` (attribute and property, not reflected): the link's accessible name instead of its text, trimmed; blank counts
+as none. Name the link with `label`: a host `aria-label` on `ocelle-link` does not name the link (the element does not
+forward it, and it would name the host as a second node around the link). A `label` must contain the link's visible
+text, best starting with it (text "the mission log", label "the mission log, opens in the viewer"): a name without the
+visible text fails WCAG 2.5.3, Label in Name, and the `axe` gate's `label-content-name-mismatch`.
+
+`ocelle-link-activate` with `detail` `{ href }`: the user activated the link with Enter or a primary-button click;
+`href` is the `href` attribute as written, or `null` without one. It bubbles, is composed and is cancelable: a host
+that routes the activation itself calls `preventDefault()`. `detail.href` is the attribute as written and is not
+validated: it may be a `javascript:` or `data:` URL. The element refuses those, and any scheme other than `http:`,
+`https:` and the document's own, only for its own navigation.
+
+With `href`, after the event and unless a listener cancelled it, the link resolves `href` against the document's base
+URL at that moment and navigates to it only when the resolved protocol is `http:`, `https:` or the document's own
+protocol. The check is on the resolved URL, so spaces before the scheme or a tab inside it do not bypass it. An empty
+`href` is an `href`, and a fragment navigates within the document. A host that navigates itself from the event applies
+the same check: resolve `detail.href` against `document.baseURI` and navigate only when the resolved protocol is
+`http:`, `https:` or the document's own. A host that needs another scheme (an app's own scheme on a page served over
+`http:`, say) handles the event: it cancels it and navigates or acts itself.
+
+Only plain activations emit: Enter, or a primary-button click, with no modifier or with Alt alone. A user's modified
+activation (Ctrl, Meta or Shift held on a click or on Enter, or a middle-button click) emits nothing, and the element
+leaves its default to the browser: a new tab or window for Ctrl, Shift and the middle click, and the platform's
+convention for Meta (on macOS Meta is Cmd, which opens a new tab; Chromium on Linux follows the link in place). A
+modified activation of a link without `href` does nothing: it emits no event and the page does not navigate. The link
+has no `target`, `download` or `rel`. A host that wants to open a new window itself handles the event: it cancels it and
+opens the window.
+
+Keys: the link is one tab stop. Enter activates it; Space does not, and scrolls the page as on any link. It handles no
+other key. The link's focusable anchor is in its shadow root (`delegatesFocus`); a parent that counts its focusable
+content, such as a tab panel, counts the link.
+
+CSS part: `anchor`, the link's anchor. In forced colours the link is `LinkText`, underlined, and its focus ring
+`Highlight`. The link is for the main grounds.
+
+axe-core 4.14.0 reports a serious `color-contrast` incomplete (`bgOverlap`) on a link whose text wraps onto exactly two
+lines: the link's text is slotted, so axe measures the union box of that text, whose centre lies on the surrounding
+paragraph, and cannot find the background. It is not a contrast failure: the link's colours are checked pairs of the
+tokens, and on one line or on three lines axe reports nothing.
+
+`ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`,
+`--ocelle-focus-width` and `--ocelle-focus-offset`.
+
+## App frame and navigation
+
+Use `ocelle-app-shell` with `layout="mission"` for an optional rail and a sidebar, `layout="project"` for a project
+sidebar or `layout="personal"` for personal destinations. Supply primary content in its default slot, a skip
+control in `skip-link`, and application actions in `actions`. The shell owns its top bar and narrow navigation.
+The `main` part marks its content region, and `navigation` marks each rendered navigation wrapper. Set
+`flush-block-end` and `flush-inline-end` independently to remove the corresponding main padding.
+
+### Named regions and keyboard navigation
+
+A region with its own navigation landmark, such as a labelled `ocelle-personal-rail` or `ocelle-context-sidebar`,
+keeps that landmark and its name. The shell names bare navigation lists with `rail-label` or `sidebar-label`.
+Give the regions distinct names. Empty regions expose no landmark.
+
+```html
+<ocelle-app-shell id="project-shell" layout="mission" product-name="Projects"
+  sidebar-label="Project sections" menu-label="Show navigation"
+  drawer-label="Project navigation" close-label="Close navigation">
+  <ocelle-skip-link id="project-skip" slot="skip-link">Skip to project content</ocelle-skip-link>
+  <ocelle-personal-rail slot="rail" label="Workspace destinations">
+    <ocelle-nav-item href="/inbox" label="Inbox">
+      <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+    </ocelle-nav-item>
+  </ocelle-personal-rail>
+  <ocelle-nav-item slot="sidebar" href="/projects/plan" label="Plan" current="page">
+    <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  </ocelle-nav-item>
+  <button slot="actions" type="button">Create project</button>
+  <h1>Project plan</h1>
+  <button type="button">Review plan</button>
+</ocelle-app-shell>
+<script type="module" src="/project-frame.js"></script>
+```
+
+Wire the skip control to the shell's internal main from the external module after registering the elements.
+This bundled example imports the package root. A page using the browser build loads that module before wiring
+the reference. `contentTarget` is available after the shell renders.
+
+```js
+import "@ocelle/elements";
+
+const shell = document.querySelector("#project-shell");
+const skip = document.querySelector("#project-skip");
+await shell.updateComplete;
+skip.target = shell.contentTarget;
+```
+
+At narrow widths, the shell presents the same destinations in a modal drawer with the supplied dialog and close
+labels. Opening moves focus to the first sequential destination when there is one. Escape closes the drawer and
+restores focus to the menu control. If a compact label bubble owns the first Escape, the next Escape closes the
+drawer. When no destinations are present, the shell omits the menu control.
+
+### Frame thresholds
+
+The shell measures its own border-box inline size. The default narrow and collapse thresholds are 45rem and
+68.75rem. Sizes below the narrow threshold select `narrow`; sizes from there up to the collapse threshold select
+`collapsed`; sizes at or above the collapse threshold select `expanded`. Equal thresholds skip the collapsed tier.
+
+Set `narrow-below` and `collapse-below` or use the corresponding camel-case properties. Bounds accept nonnegative
+`px`, `rem` or `em` values, including unitless `0`. Set threshold tokens in an external CSS file when the surrounding
+layout owns the breakpoints.
+
+```css
+#project-shell {
+  --ocelle-app-shell-narrow-below: 42rem;
+  --ocelle-app-shell-collapse-below: 65rem;
+}
+```
+
+Each threshold resolves independently in this order: a valid explicit setting, a valid token override, then the
+published default. If the resulting narrow threshold exceeds the collapse threshold, the shell uses both
+defaults. Call `shell.remeasure()` after changing only the threshold styles without resizing the shell.
+Read `shell.tier` for the current tier. After a transition, the bubbling, composed
+`ocelle-app-shell-tier-change` event supplies `{ tier, previousTier }` after navigation settles.
+
+### Navigation controls
+
+- `ocelle-top-bar` shows a rosette and `product-name`, plus controls in `actions`. With `show-menu`, its
+  native button uses `menu-label` and reports `menu-expanded`. In standalone use, set `menuExpanded` from
+  the bubbling, composed `ocelle-top-bar-menu-request` event's `detail.expanded` when handling the request.
+  The shell handles this request from its own top bar.
+- `ocelle-nav-item` takes `href`, `label`, `current` and `compact`, with a decorative `icon` slot.
+  `current="page"` or `current="true"` marks the native link as current. Compact mode keeps the link's accessible
+  name and shows its label on hover or keyboard focus. The shell controls compact presentation for its
+  mission and project sidebar items and restores their full labels in the drawer.
+- `ocelle-nav-pill` takes a localized `label` and a readonly `items` property of `{ label, href, current? }`.
+  Its native links wrap in input order, and the first destination with `current: true` marks the current page.
+  Set actions separately in the top bar's `actions` slot.
+- `ocelle-breadcrumbs` takes a localized `label` and a readonly `items` property of `{ label, href? }`.
+  It links ancestors with URLs and presents the last item as current text. Place it alongside the page title at
+  the logical inline start. An empty pill or breadcrumb trail exposes no navigation landmark.
+- `ocelle-skip-link` uses a native button that becomes visible on keyboard focus. Its default slot supplies a
+  localized label, with “Skip to main content” as the fallback. Set its property-only `target` for direct focus
+  or use `target-selector` for the first match in the same document or shadow root. A direct reference takes
+  precedence even when it cannot receive focus. An unsuccessful activation leaves focus on the skip control,
+  where Tab can continue normally.
+
+## `ocelle-disclosure`
+
+```html
+<ocelle-disclosure>
+  <span slot="summary">Advanced settings</span>
+  <p>Artifacts are kept for thirty days after a mission ends.</p>
+</ocelle-disclosure>
+<ocelle-disclosure open>
+  <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  <span slot="summary">Mission artifacts</span>
+  <p>…</p>
+</ocelle-disclosure>
+```
+
+`ocelle-disclosure` is a disclosure: a summary that opens and closes a panel inline, on native `details` and `summary`
+semantics. The summary is the one control: Tab reaches it, Enter, Space and a click toggle it, and assistive technology
+reads it with its expanded state. The panel is laid out directly below the summary, in the element's own box, and
+pushes the content after it down. The chevron points to the inline end while closed (`chevron-end`, mirrored under
+`dir="rtl"`) and down while open (`chevron-down`); an icon slotted into `icon` replaces it in both states.
+
+**State.** The open state is the `open` attribute: render it from the server. A morph that keeps it keeps the
+disclosure open; a morph that drops it closes the disclosure and fires `ocelle-disclosure-toggle`. A user toggle, find
+in page and a script set the attribute alike. The browser's find in page opens a closed disclosure whose panel holds
+the text it finds (Chromium), as a user toggle does. The element exposes `:state(open)` while open, so a page can style
+an open disclosure without a selector on the attribute.
+
+**Event.** Listen to `ocelle-disclosure-toggle` (its `detail.open` is the new state), not to `toggle`: the inner
+`details`' native `toggle` does not leave the element. The event is dispatched after the change, in a later task, once
+the attribute is reflected; it bubbles, is composed and cannot be cancelled. Do not count events to count changes:
+changes made before the inner `details`' native `toggle` runs are coalesced into one event with the final state, and
+none fires when the state ends where the last event left it. The initial state at upgrade fires no event. Nested
+disclosures work independently: an inner disclosure's event bubbles through the outer one, so tell them apart by
+`event.target`.
+
+**Host ARIA.** The host's `aria-label`, `aria-labelledby`, `aria-describedby` and `title` are moved onto the summary,
+as the control conventions' rule 4 says (with their `data-ocelle-moved-*` mirrors). A host `aria-expanded` is mapped
+onto `open` and removed from the host: `"true"` opens, `"false"` closes, any other value changes nothing. Prefer
+`open`. At upgrade the mapped attribute is read after `open`, so `<ocelle-disclosure open aria-expanded="false">`
+upgrades closed. With no host `aria-labelledby` or `aria-label`, the `summary` slot's text alone names the summary: a
+slotted icon adds nothing to the name. An empty summary has no name, which is the host's mistake: give every
+disclosure a summary. Put no interactive content in the summary: a link or a button there is a control inside a
+control.
+
+**Focus and clicks.** Two departures from the control conventions' rule 1, both because the host holds the panel's
+content: no host click guard, so clicks on the panel's content reach the page's listeners; and no `delegatesFocus`, so
+a click on the panel's content moves no focus. `focus()` is overridden to focus the summary, and `click()` clicks it,
+so it toggles once; a `click` dispatched on the host itself toggles nothing. When a script or a morph closes the
+disclosure while focus is in its panel, also inside the shadow root of a control in the panel, focus moves to the
+summary.
+
+**Look.** The summary takes the library's focus ring, a hover ground and a pointer cursor, and is at least 24 × 24 CSS
+px. In forced colours the summary is `CanvasText` on `Canvas`, the chevron follows it and the focus ring is
+`Highlight`. The disclosure does not animate: it opens and closes at once, with or without reduced motion. Before the
+element is defined, the summary and the panel show as plain content.
+
+**Tokens.** `ocelle-disclosure` reads the tokens `--ocelle-font-size-md`, `--ocelle-font-weight-medium`,
+`--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-space-1`, `--ocelle-space-2`,
+`--ocelle-radius-2`, `--ocelle-icon-size`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`.
+
+## `ocelle-code-block`
+
+```html
+<ocelle-code-block>git push origin main</ocelle-code-block>
+<ocelle-code-block overflow="scroll" label="Build log">2026-11-21T09:14:03Z build 17 started</ocelle-code-block>
+<ocelle-code-block digest>sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08</ocelle-code-block>
+```
+
+`ocelle-code-block` is a preformatted block for code, commands, logs and digests, in the library's sans with tabular
+figures, never monospace. It sits on the inset ground (`--ocelle-color-inset`) at the relaxed line height, with the
+prose `pre`'s padding and radius, and is never wider than the reading measure (`--ocelle-measure-reading`).
+
+- `overflow` (attribute and property, reflected): `scroll` (trimmed, any ASCII case) keeps long lines on one line and
+  scrolls the block sideways; anything else, or none, wraps lines inside the block (`pre-wrap` and
+  `overflow-wrap: anywhere`), so a wrap block never scrolls sideways at 320 px and is never a tab stop.
+- `label` (attribute and property, not reflected): the scroll box's name while it overflows, trimmed; empty or
+  whitespace-only counts as none, and a non-blank host `aria-label` wins. No effect in wrap mode.
+- `digest` (boolean attribute and property, reflected): shows the text as a digest, by the digest rule of the element
+  conventions below.
+- Parts `block` (the inset box) and `code` (the `pre` that holds the text). No slot, no event, no CSS custom property.
+
+**Content.** The code is the element's light-DOM text content, read as a copy: start the text on the opening tag's
+line, because a newline directly after the tag is shown as an empty first line. Markup inside the element is not
+rendered: child elements add no markup or style, their text is shown, and markup-like text stays text. A change of the
+text (a swap of the content, `textContent` set by a script, a text node's data) is followed. Before the element is
+defined its text shows as an inline run.
+
+**Direction.** Each line of code is shown left to right, also in an `rtl` page, while the block keeps the page
+direction, so the fade of a scroll block is on the side where text is hidden. An `rtl` scroll block opens at the line
+starts: the element scrolls it there, instantly, when it first appears and when its text changes, so the start of
+every line is in view and the fade is at the right, where the line ends are hidden. That holds once the block has laid
+out in its font: the one write uses the widths of the first layout, and a font swap does not repeat it. On a page where
+the sans face (`--ocelle-font-sans`) arrives after the first layout, the lines widen after the write and their starts
+can end up out of view (the content stays reachable with the arrow keys), so preload the sans face for `rtl` scroll
+blocks. A block that only starts to overflow after a resize keeps the platform's scroll position.
+
+**Scroll mode.** While it overflows, a scroll block is a tab stop and, with a name, a `group` named by its `label`;
+while its text fits it is neither. In scroll mode the `ocelle-scroller` statements on keyboard, focus, fades,
+scrollbar, motion and sizing hold for the code block (see `ocelle-scroller`): the arrow keys scroll it 40 px with no
+animation, and when it stops overflowing while focused, focus moves to the block's frame and stays in the element. A
+switch from `scroll` to wrap while focus is in the scroll block moves focus to the block, which shows the library's
+focus ring.
+
+**Naming.** Always give a scroll block a `label`: without one, an overflowing scroll block is a tab stop with no role
+and no name. Do not set a host `aria-label` in wrap mode: the host has no role, so the label names nothing; use
+`label`.
+
+**Sizing.** In a shrink-to-fit host (a default flex item, a dialog, a table cell) a scroll block takes its content's
+size and does not overflow: give it a definite or maximum inline size there.
+
+**Print.** Print shows what is laid out: a wrap block prints wrapped, and a scroll block's text off-screen is not
+printed, as for `ocelle-scroller`.
+
+**Scope.** The element has no copy control and no syntax highlighting: a copy is the browser's own, and the block reads
+and writes no clipboard. In forced colours the text is `CanvasText` and the block shows a `CanvasText` edge; a scroll
+block keeps the overflow region's edge lines.
+
+**Tokens.** `ocelle-code-block` reads the tokens `--ocelle-color-inset`, `--ocelle-font-sans`, `--ocelle-figures`,
+`--ocelle-font-size-md`, `--ocelle-line-height-relaxed`, `--ocelle-measure-reading`, `--ocelle-space-1`,
+`--ocelle-space-3`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset` and
+`--ocelle-color-focus`, and through the overflow-region module the same focus tokens, `--ocelle-scroller-fade-size`
+and `--ocelle-color-ink` (mask only).
+
+## Examples
+
+Each example below is one screen of a host with a bundler, such as kitty-mission-ui, built from the elements'
+attributes, properties and events alone. The host writes no ARIA attribute, `id` or `tabindex`, observes no size and
+calls no clipboard API: the elements write their roles, states and associations themselves, wrap by themselves, and
+leave the clipboard to the host's bridge.
+
+### The Open project folder picker
+
+The folders are a listbox; a selection enables the Open project button, and Enter on the selected folder or a
+double-click opens it at once. A long list scrolls inside the listbox when the host's stylesheet sets its
+`max-block-size`.
+
+```html
+<ocelle-listbox label="Project folders">
+  <ocelle-option value="/home/ana/kitty-desktop"><ocelle-icon slot="icon" name="folder"></ocelle-icon>kitty-desktop</ocelle-option>
+  <ocelle-option value="/home/ana/ocelle-console"><ocelle-icon slot="icon" name="folder"></ocelle-icon>ocelle-console</ocelle-option>
+  <ocelle-option value="/home/ana/archive" disabled><ocelle-icon slot="icon" name="folder"></ocelle-icon>archive</ocelle-option>
+</ocelle-listbox>
+<button type="button" class="open-project" disabled>Open project</button>
+<script type="module">
+  import "@ocelle/elements/ocelle-listbox.js";
+
+  const folders = document.querySelector("ocelle-listbox");
+  const open = document.querySelector(".open-project");
+  folders.addEventListener("ocelle-listbox-change", () => {
+    open.disabled = folders.value === "";
+  });
+  folders.addEventListener("ocelle-listbox-activate", (event) => projects.open(event.detail.value));
+  open.addEventListener("click", () => projects.open(folders.value));
+</script>
+```
+
+### Tabbed screens
+
+A mission's screens are tabs paired with their panels by order; the selected screen is kept in the URL's fragment
+and restored by setting `value`, which emits no event. The tab row wraps onto rows when it does not fit.
+
+```html
+<ocelle-tabs label="Mission views">
+  <ocelle-tab value="spec"><ocelle-icon slot="icon" name="file"></ocelle-icon>Spec</ocelle-tab>
+  <ocelle-tab value="plan">Plan</ocelle-tab>
+  <ocelle-tab value="tasks">Tasks</ocelle-tab>
+  <ocelle-tab-panel>…the spec…</ocelle-tab-panel>
+  <ocelle-tab-panel>…the plan…</ocelle-tab-panel>
+  <ocelle-tab-panel>…the tasks…</ocelle-tab-panel>
+</ocelle-tabs>
+<script type="module">
+  import "@ocelle/elements/ocelle-tabs.js";
+
+  const views = document.querySelector("ocelle-tabs");
+  views.value = location.hash.slice(1);
+  views.addEventListener("ocelle-tabs-change", (event) => {
+    history.replaceState(null, "", `#${event.detail.value}`);
+  });
+</script>
+```
+
+### Segmented choices
+
+A filter is a segmented choice with exactly one segment pressed; the joined variant draws the segments as one bar and
+rounds each row's ends itself when it wraps.
+
+```html
+<ocelle-segmented-choice label="Lane filter" value="all" joined>
+  <ocelle-segment value="all">All</ocelle-segment>
+  <ocelle-segment value="mine">Mine</ocelle-segment>
+  <ocelle-segment value="blocked">Blocked</ocelle-segment>
+  <ocelle-segment value="done">Done</ocelle-segment>
+</ocelle-segmented-choice>
+<script type="module">
+  import "@ocelle/elements/ocelle-segmented-choice.js";
+
+  document.querySelector("ocelle-segmented-choice").addEventListener("ocelle-segmented-choice-change", (event) => {
+    board.filter(event.detail.value);
+  });
+</script>
+```
+
+### In-text links
+
+Links in running text tell the host they were activated; this host routes every plain activation itself, with the
+same scheme check the link applies, and opens a link without `href` in its side panel. A modified activation is left
+to the browser and emits nothing.
+
+```html
+<p>The run stopped at <ocelle-link href="/missions/014/log">the mission log</ocelle-link>; open
+<ocelle-link label="the task board, in the side panel">the task board</ocelle-link> beside it.</p>
+<script type="module">
+  import "@ocelle/elements/ocelle-link.js";
+
+  document.addEventListener("ocelle-link-activate", (event) => {
+    event.preventDefault();
+    if (event.detail.href === null) {
+      sidePanel.open("task-board");
+      return;
+    }
+    const url = new URL(event.detail.href, document.baseURI);
+    if (["http:", "https:", location.protocol].includes(url.protocol)) router.go(url);
+  });
+</script>
+```
+
+### Copy fields
+
+A command the user may copy: the field asks, the host's desktop bridge writes the clipboard, and the host reports the
+outcome in `status`, which the field announces. The field is named with a host `aria-label`, its documented name: it
+has no `label` property.
+
+```html
+<ocelle-copy-field aria-label="Install command" value="pnpm add @ocelle/elements"></ocelle-copy-field>
+<script type="module">
+  import "@ocelle/elements/ocelle-copy-field.js";
+
+  const field = document.querySelector("ocelle-copy-field");
+  field.addEventListener("ocelle-copy-field-request", async (event) => {
+    try {
+      await bridge.copy(event.detail.text);
+      field.status = "Copied to clipboard";
+    } catch {
+      field.status = "Could not copy: the bridge is unavailable";
+    }
+  });
+</script>
+```
+
+## `ocelle-data-table`
+
+`ocelle-data-table` holds one native `<table>` as its first child and shows it unchanged in a scroll region: `<ocelle-data-table label="Work packages"><table>…</table></ocelle-data-table>`. The table keeps its own rows, cells, headers and caption; the element writes nothing on it and emits no event. Its other children are not shown.
+
+The region's name is the host `aria-label` when it is not blank, else `label`, else the caption's text; give an overflowing table a caption or a `label`. Give an overflowing table a `label` that differs from its caption's text: a region named by its caption is announced with the table's own name. The `hidden` attribute, not CSS, hides part of a caption from the name. While the table fits, the region has no tab stop, role or name, and the table is exposed as it is; while it overflows, the region is a tab stop and a named `group` holding the same table, scrolled by ArrowLeft and ArrowRight, with fades at the edges that have content beyond them.
+
+Sizing: a wrapper that is itself the flex or grid item, around the element, needs `min-inline-size: 0` too. In a shrink-to-fit host (a dialog, an inline-block, a start-aligned flex) the data table takes its table's width and overflows only when its own inline size is bounded.
+
+The caption scrolls with the table until the overflow-region module's pinned-start option lands. The caption's longest word widens the table; in a bounded host a caption word wider than the box overflows it and the region scrolls. Otherwise the caption wraps inside the box's unmasked width. A caption that grows after load (its text edited, a style changed or a web font loaded late) widens the table as it would on a fresh load.
+
+The look comes from `@ocelle/styles`: link its `base.css` on the page, or adopt it in a consumer's shadow root. Inside a `data-ocelle-prose` container a consumer rule on the table needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`. Before upgrade the table is styled by `@ocelle/styles` with no scroll region. Chromium names each column header by its drawn upper-case text, so the accessible names of column headers follow the upper case, as for the eyebrow heading of `ocelle-section-header`.
+
+Base-style hook: the element writes `--data-table-box-size` (the box's measured inline size) and `--data-table-end-fade` (the end fade's depth while it shows) for `@ocelle/styles`' caption cap. Both are public surface of `@ocelle/elements` and `@ocelle/styles`, and a consumer does not set them.
+
+`sticky-header` pins the `<thead>` while the body scrolls in a block size the page bounds on the host with its own `block-size` or `max-block-size`; with no bound nothing scrolls in the block axis. The caption scrolls away in the block axis. ArrowUp and ArrowDown scroll the region, and PageUp, PageDown, Home, End, Space and Shift+Space scroll it as the browser does. A focused link in the body is kept below the pinned header. The block end fades while rows are below, never under the header, with a line in forced colours. A bounded table prints its box only.
+
+`striped` gives each `<tbody>`'s even rows the `--ocelle-color-inset` ground, hidden rows counted. A hovered body row takes the `--ocelle-color-hover-bg` ground: a look only, with no event, no tab stop and no cursor; always on where the device can hover, nothing on a touch screen. In the light theme a hovered striped row shows no change, because `hover-bg` equals `inset` there. For an end-aligned numeric column, put `@ocelle/styles`' `data-ocelle-align="end"` on the column's cells.
+
+Printed, content past the box is clipped; a consumer who prints sets a print rule of its own. No change the data table makes to its region leaves it in a state a fresh load would not give, and nor does a change to its table or caption after load.
+
+## `ocelle-event-timeline`
+
+`ocelle-event-timeline` shows an event history as one ordered list of its `ocelle-timeline-event` children, in source order: `<ocelle-event-timeline label="Mission history"><ocelle-timeline-event time="14:02">Mission created</ocelle-timeline-event></ocelle-event-timeline>`. Each event is one list item: a dot on a line that joins the events, its time above its content, and its content. The dots and the line are drawn and hidden from assistive technology; a screen reader hears the list's name, then each item's time and content.
+
+The list is named by a non-blank host `aria-label`, trimmed, else by `label`; a blank host `aria-label` counts as absent. With neither the list is unnamed. `ocelle-event-timeline` names its list with the overflow-region module's `resolveName`, as `ocelle-workflow-lane` does, and uses nothing else of that module. Only `ocelle-timeline-event` children are shown and exposed; an event with `hidden` or `aria-hidden="true"` is neither, and no line joins it. With no visible event the timeline renders no list. The element neither sorts nor formats times: events show in source order with the time as written.
+
+The `time` attribute is the event's time as plain text. For a machine-readable time, write it in the `time` slot instead: `<time slot="time" datetime="2026-11-15T14:41">14:41</time>`. The `time` slot takes precedence over the `time` attribute while one of its nodes is visible (neither `hidden` nor `aria-hidden="true"`) and has text that is not blank; an empty, blank or hidden slotted time counts as none, and a `time` attribute then applies. A slotted time keeps the consumer's `datetime`, `title`, `lang`, `dir` or htmx target, which the attribute cannot carry. Write one time element per event. A slotted time takes the attribute time's type through `::slotted()`, wherever it is written in the event; a consumer rule on the slotted node beats that type. An event's item text is its time, a space and its content: the time is read first even when the slotted time is written after the content.
+
+`wrap="anywhere"` on an event breaks a long identifier in its content anywhere; the time keeps its own line. Outside a timeline an event shows its time above its content as plain text, with no dot, line or list role. Before upgrade: `@ocelle/styles`' `base.css` shows each visible event on its own line; an event's `time` attribute shows only once the elements are defined, and a slotted time shows inline where it is written.
+
+The timeline has no live region, landmark, heading or tab stop; a link in an event keeps its own tab stop. Announce new events with the consumer's own live region. In forced colours the dots and the line are drawn in `CanvasText` and the text in the system text colour.
+
+**Parts.** `ocelle-event-timeline` exposes the list as `::part(list)`; `ocelle-timeline-event` its time and content as `::part(time)` and `::part(content)`.
+
+**Tokens.** The timeline reads `--ocelle-size-dot`, `--ocelle-space-1`, `--ocelle-space-3`, `--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-line-height-normal`, `--ocelle-border-width`, `--ocelle-color-ink-muted` and `--ocelle-color-rule-strong`; the event reads `--ocelle-font-sans`, `--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-regular`, `--ocelle-figures`, `--ocelle-line-height-normal`, `--ocelle-color-ink-muted` and `--ocelle-color-ink`.
+
+## `ocelle-evidence-chain`
+
+`ocelle-evidence-chain` shows an evidence chain as one ordered list of its `ocelle-evidence-step` children, in source
+order: `<ocelle-evidence-chain label="Evidence"><ocelle-evidence-step>Spec</ocelle-evidence-step><ocelle-evidence-step variant="chip">3 checks</ocelle-evidence-step></ocelle-evidence-chain>`.
+Each default step shows a round marker with its ordinal before its content. The markers, ordinals and connectors are
+drawn and hidden from assistive technology: a screen reader hears the list's name, then each step's content, and the
+list's order conveys the position. A default step's ordinal is its position among the visible steps, chip steps
+counted, so the numbers shown skip a chip.
+
+`variant="chip"` draws a step as a compact chip: an outline with the `--ocelle-radius-2` corner and no fill, no marker
+and no ordinal, its text one size smaller than a default step's; any other value acts as unset. The chip is the
+chain's own and draws nothing of the pill tag.
+
+The steps sit in rows from the inline start and wrap onto further lines when the chain is too narrow for them; a
+connector joins consecutive steps on one line, never across lines or past the chain's edges. The chain follows its
+container's width, not the viewport's. Long content wraps between words inside the step; `wrap="anywhere"` on a step
+breaks a long identifier anywhere.
+
+The list is named by a non-blank host `aria-label`, trimmed, else by `label`; a blank host `aria-label` counts as
+absent. With neither the list is unnamed. `ocelle-evidence-chain` names its list with the overflow-region module's
+`resolveName`, as `ocelle-event-timeline` does, and uses nothing else of that module. Only `ocelle-evidence-step`
+children are shown and exposed; a step with `hidden` or `aria-hidden="true"` is neither and takes no ordinal. With no
+visible step the chain renders no list: place 013's `ocelle-empty-state` in its place.
+
+Outside a chain a step shows its content as plain text, with no marker, ordinal, connector or chip box. Before upgrade:
+`@ocelle/styles`' `base.css` shows each visible step on its own line, with no marker or ordinal.
+
+The chain has no live region, landmark, heading or tab stop; a link in a step keeps its own tab stop. In forced
+colours the markers, connectors and chip outlines are drawn in `CanvasText` and the text in the system text colour.
+
+**Parts.** `ocelle-evidence-chain` exposes the list as `::part(list)`; `ocelle-evidence-step` its content as
+`::part(content)`.
+
+**Tokens.** The chain reads `--ocelle-size-step`, `--ocelle-ring-step`, `--ocelle-radius-2`, `--ocelle-space-1`,
+`--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-5`, `--ocelle-border-width`, `--ocelle-font-sans`,
+`--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-figures`,
+`--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-ink-muted` and
+`--ocelle-color-rule-strong`; the step reads none.
 
 ## `ocelle-status-indicator`
 
@@ -1463,8 +2557,10 @@ An interactive pill also reads `--ocelle-color-accent-strong`, `--ocelle-color-d
 
 ## Mapping from kitty-mission-ui
 
-Each `.sk-facts`, `.sk-empty-state` and `.sk-progress` modifier and state that kitty-mission-ui uses, by role, with the
-element and variant that replaces it, or the consumer's own remedy.
+Each `.sk-facts`, `.sk-empty-state` and `.sk-progress` modifier and state that kitty-mission-ui uses, and each
+modifier, state and structure role of the design library's `.sk-data-table` and `.sk-event-timeline` (which have no
+part), and each property, stage field, behaviour state and part of its `sk-evidence-chain` element, by role, with the element and variant that replaces it, or the consumer's own remedy. No data-table row of the
+mapping reads "pending inventory".
 
 | Class family | Role | Element and variant |
 |---|---|---|
@@ -1521,6 +2617,58 @@ element and variant that replaces it, or the consumer's own remedy.
 | `.sk-progress` | progress slotted | `ocelle-progress` in another element's slot; nothing is needed from the element |
 | `.sk-progress` | progress grid layout | `ocelle-progress` with `show-label` at the default size: the label at the inline start and the value text at the inline end of the row above the bar, which spans the full width below; the consumer no longer places the parts |
 | `.sk-progress` | progress centred | `ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure |
+| `.sk-data-table` | data table scroller | `ocelle-data-table`'s region: a named `group` tab stop only while the table overflows, with the overflow-region focus ring; give an overflowing table a `label` that differs from its caption |
+| `.sk-data-table` | data table class | the consumer's own `<table>` inside `ocelle-data-table`, with no class |
+| `.sk-data-table` | data table caption | the table's `<caption>`, styled by `@ocelle/styles` |
+| `.sk-data-table` | data table header cells | the eyebrow column headers of `@ocelle/styles`; for sentence case, the consumer's own rule on the header cells, which wins over the (0,0,0) rules. The prototype's mono headers map to the sans face with tabular figures, its 0.06em tracking to `--ocelle-tracking-eyebrow`, and its larger header padding to the cells' padding, so each header's text starts on its column's text line |
+| `.sk-data-table` | data table body cells | the compact body cells of `@ocelle/styles`. The prototype's mono cells map to the sans face with tabular figures |
+| `.sk-data-table` | data table numeric cell | `data-ocelle-align="end"` on the column's cells, `@ocelle/styles`' hook |
+| `.sk-data-table` | data table sticky header | `ocelle-data-table sticky-header`, with the page's block bound on the host (`block-size` or `max-block-size`) |
+| `.sk-data-table` | data table zebra rows | `ocelle-data-table striped` |
+| `.sk-data-table` | data table row hover | built in: the hover ground of `@ocelle/styles` on a device that can hover |
+| `.sk-data-table` | data table forced colours | built in: system colours for text and rules, and the row band for the stripe and the hover |
+| `.sk-data-table` | data table overflowing | built in: the region's tab stop, role and name while the table overflows |
+| `.sk-data-table` | data table tone | none: the data table carries no tone |
+| `.sk-data-table` | data table light mode | built in: the light and dark themes |
+| `.sk-event-timeline` | event timeline class | `ocelle-event-timeline`: an ordered list of its `ocelle-timeline-event` children in source order, named by `label` or a non-blank host `aria-label`; the measure cap maps to the container: for a cap, `max-inline-size` on the host |
+| `.sk-event-timeline` | event timeline item | each `ocelle-timeline-event`: one list item with a drawn dot and a gapped line to the next visible event; long identifiers break with `wrap="anywhere"` |
+| `.sk-event-timeline` | event timeline summary | the consumer's markup in the event's content, for example a `<strong>` title and text |
+| `.sk-event-timeline` | event timeline metadata time | the event's `time` attribute or `time` slot, on its own line above the content; the time after the title maps to that order, and the item text stays time first |
+| `.sk-event-timeline` | event timeline metadata actor and facts | the consumer's markup in the event's content; a later issue covers a metadata slot |
+| `.sk-event-timeline` | event timeline content | the consumer's markup in the event's content |
+| `.sk-event-timeline` | event timeline marker | the consumer's text in the event's content, the verification worded in text; a later issue covers a trust slot |
+| `.sk-event-timeline` | event timeline leading marker | the default dot; a later issue covers a marker slot |
+| `.sk-event-timeline` | event timeline compact | the default timeline, already at the compact type sizes; for more density, the consumer's rules on `::part(time)` and `::part(content)`; a later issue covers a density property |
+| `.sk-event-timeline` | event timeline narrow | the container: the timeline follows its column's width; for a cap, `max-inline-size` on the host |
+| `.sk-event-timeline` | event timeline one event | built in: a list of one item, with no line |
+| `.sk-event-timeline` | event timeline two events | built in: the events in source order, the supporting content the consumer's markup in the content |
+| `.sk-event-timeline` | event timeline twenty events | built in: the events in the supplied order; the element neither sorts nor formats times |
+| `.sk-event-timeline` | event timeline long transition | built in: content wraps between words inside the event; `wrap="anywhere"` for identifiers |
+| `.sk-event-timeline` | event timeline linked | a link in the event's content keeps its own tab stop; an `id` on `ocelle-timeline-event` is the consumer's fragment target |
+| `.sk-event-timeline` | event timeline degraded | a rule in the consumer's own stylesheet (no inline style), with the degraded state stated in text beside the timeline, never by muting alone |
+| `.sk-event-timeline` | event timeline unavailable retention | 013's `ocelle-empty-state` in place of the timeline; an announcement is the consumer's own notice or live region |
+| `.sk-event-timeline` | event timeline forced colours | built in: the dot and the line in `CanvasText`, the text in the system text colour |
+| `.sk-event-timeline` | event timeline light mode | built in: the light and dark themes |
+| `sk-evidence-chain` | evidence chain stages | `ocelle-evidence-chain` with one `ocelle-evidence-step` child per stage, in source order; the chain takes no property, and the consumer changes the children in place of assigning a new array, which the chain observes |
+| `sk-evidence-chain` | evidence chain stage id | an `id` the consumer sets on the step, if it needs one; the element neither reads nor writes an `id` |
+| `sk-evidence-chain` | evidence chain stage label, value and annotation | the consumer's markup in the step's content; the step draws no pill tag of its own; a later issue covers a valued stage |
+| `sk-evidence-chain` | evidence chain stage tone | none: the state worded in the step's text, with no state colour on any mark; a later issue covers a tone |
+| `sk-evidence-chain` | evidence chain compact step | the default step: a round `--ocelle-size-step` marker ringed by `--ocelle-ring-step`, showing the step's ordinal, before its content. #517's pill-shaped chip maps to `variant="chip"` with `--ocelle-radius-2`, never the pill radius |
+| `sk-evidence-chain` | evidence chain list part | the chain's `list` part, its shadow ordered list, named by `label` or a non-blank host `aria-label` |
+| `sk-evidence-chain` | evidence chain stage part | the `ocelle-evidence-step` host, a light-DOM element the consumer styles directly, and its `content` part |
+| `sk-evidence-chain` | evidence chain connector part | none: the connector is decorative and hidden from assistive technology, not a styling hook |
+| `sk-evidence-chain` | evidence chain connector arrow | the plain connector line, with no arrowhead; the ordered list and the ordinals convey the direction; a later issue covers an arrowhead |
+| `sk-evidence-chain` | evidence chain empty-state part | none |
+| `sk-evidence-chain` | evidence chain empty state | 013's `ocelle-empty-state`, placed by the consumer in place of the chain; an empty chain renders nothing and writes no text of its own |
+| `sk-evidence-chain` | evidence chain invalid input | none: with slotted steps there is no invalid whole input; children other than steps are neither shown nor exposed |
+| `sk-evidence-chain` | evidence chain wide layout | built in: the steps in one row while they fit, with a connector between consecutive steps on the row |
+| `sk-evidence-chain` | evidence chain narrow layout | the wrapping chain, which follows its container, not the viewport: the steps wrap onto further lines, with connectors only within a line; no stacked layout |
+| `sk-evidence-chain` | evidence chain forced colours | built in: markers, connectors and chip outlines as `CanvasText` borders, the text in the system text colour |
+| `sk-evidence-chain` | evidence chain light mode | built in: the light and dark themes |
+| `sk-evidence-chain` | evidence chain two and six stages | built in: one list item per visible step in source order, ordinals 1 to N, a connector between steps on a line |
+| `sk-evidence-chain` | evidence chain long content | built in: content wraps between words inside the step; `wrap="anywhere"` for identifiers |
+| `sk-evidence-chain` | evidence chain static form | none needed: the chain is markup, and before upgrade `@ocelle/styles` shows the visible steps one per line |
+| `sk-evidence-chain` | evidence chain composition | the consumer's layout: the chain follows its container wherever the consumer places it |
 
 ## Slot convention
 
@@ -1572,7 +2720,8 @@ A host then slots its icons with no size of its own (here into `ocelle-button`, 
   icon itself has no effect.
 - **Naming.** An icon-only control names its own inner control (for example with `aria-label` on its inner
   `<button>`), never its icon: a slotted icon stays decorative and is never given a `label`. The convention adds no
-  generated content, so a control named by its visible label keeps exactly that name.
+  generated content, so a control named by its visible label keeps exactly that name when the control keeps a
+  slotted icon out of it, as `ocelle-button` does.
 - **Lint.** The `style-lint` gate allows the unit `lh` only as `1lh`, alone or once as an operand of `+` or `-` beside
   an `--ocelle-*` token inside `calc()`; a factor on a parenthesised `calc()` group that holds `1lh`, such as
   `calc((var(--ocelle-space-1) + 1lh) * 2)`, passes the gate and is checked in review.
@@ -1684,6 +2833,124 @@ default slot, the lane's content, such as cards.
   widen for it, and the count stays visible.
 - `ocelle-workflow-lane` has no event, CSS part or CSS custom property.
 
+## `ocelle-workflow-canvas`
+
+Set the canvas's `graph`, `layout`, `viewport`, `selectedNodeId` and `mode` JavaScript properties independently.
+The defaults are an empty graph and layout, `{ x: 0, y: 0, scale: 1 }`, no selection and `"read-only"`.
+Use unique nonempty step IDs and outcome IDs unique within each source step. Provide graph-space locations as
+`{ nodeId, x, y }` entries. Connections identify the source, its outcome and the destination by ID.
+
+Tab enters the visible map actions at the eligible selected step or the first eligible step. Arrow keys, Home
+and End navigate the visible steps in graph order. The named step picker includes clipped and unpositioned steps.
+Reveal focuses the chosen step when its action is visible, or proposes a viewport when the positioned step is
+clipped. Names for unpositioned steps remain available in the picker.
+
+Both modes show the supplied source, outcome and destination in the Outcome connections list. Follow moves to the
+destination through the same reveal operation. A valid destination without a layout position remains named in the
+list with Follow unavailable, and its edge appears when the host supplies the endpoint positions. Follow proposes a
+viewport only when the destination needs revealing and leaves selection to the native step action. An empty graph
+announces No workflow steps through the Step control, which remains the named focus destination.
+
+Use rectangular overflow or paint containment to clip the canvas. Supported CSS shapes on an unfragmented,
+axis-aligned HTML host include rounded `inset()`, `circle()`, `ellipse()` and simple straight-edge `polygon()`
+with pixel or percentage coordinates. Use positive scaling and translation through `transform`. Custom CSS
+paths and SVG clip references are tracked separately. [Custom clipping follow-up](https://github.com/Ocelle-HQ/ocelle-components/issues/95)
+
+Listen on the canvas for the existing `ocelle-workflow-node-select` request with `{ nodeId }` to apply a selection.
+Listen for `ocelle-workflow-canvas-viewport-request` with `{ viewport: { x, y, scale } }` to apply a view. Drag the map
+background to pan or open Canvas controls to pan in each direction, zoom around the map center, or fit the supplied
+graph. Zoom changes the spacing between steps while controls retain their screen sizes. When the host accepts a
+Reveal view and the target becomes visible, the canvas moves focus if the Reveal control still holds focus.
+
+In author mode, drag the handle beside a visible step or choose a step and enter its absolute X and Y coordinates in
+Canvas controls. Press Move step to send `ocelle-workflow-canvas-position-request` with
+`{ nodeId, position: { x, y } }`. A host inspector can provide the same absolute-coordinate operation and replace the
+matching `layout` entry on acceptance. The request events bubble across shadow roots. A declined request leaves the
+supplied layout or view in place. Escape or a changed enclosing frame clears a captured preview. Read-only mode
+keeps selection, navigation and viewport controls available.
+
+To edit an outcome in author mode, drag its arrow-shaped handle onto a visible step, or open Edit connection in
+Canvas controls. Choose a named source, outcome and destination, then press Apply connection. Use Disconnect
+connection to remove the supplied connection. The named controls work by keyboard, mouse and separate taps, and
+their destination choices include off-map steps. The editor identifies duplicate labels with their context and IDs.
+
+Listen for `ocelle-workflow-canvas-connection-request` with `{ operation, sourceId, outcomeId, destinationId }`.
+A connect or reassign proposes the new target ID. A disconnect names the supplied target ID. A host inspector can
+offer the same named choices and use that tuple for its own policy. To accept an edit, replace the corresponding
+relation in `graph.connections` and supply the new graph. Keeping the graph retains the supplied route. Escape,
+invalidated inputs and leaving author mode cancel edits and clear previews. A canceled or unchanged edit emits no
+request.
+
+## `ocelle-step-indicator`
+
+Use the indicator to present progress beside the pane’s actions. The host owns the actions and navigation.
+Supply steps via the `steps` property in display order. Replace the array to update the indicator.
+
+```html
+<ocelle-step-indicator id="approval-progress"></ocelle-step-indicator>
+<script type="module" src="/scripts/approval-progress.js"></script>
+```
+
+```js
+import "@ocelle/elements/ocelle-step-indicator.js";
+
+document.querySelector("#approval-progress").steps = [
+  { label: "Review", state: "completed" },
+  { label: "Choose", state: "current" },
+  { label: "Confirm", state: "upcoming" },
+];
+```
+
+The current step has an ochre fill, an outline and `aria-current="step"`. The first step requested as current wins
+when multiple steps have that state. A completed step has a check and the accessible text “Completed”; the numbers
+on the other markers reflect their original positions. An empty array renders no list.
+
+Leave enough inline space for the indicator in its host layout. At 30rem or less of allocated width, only the
+current step's label is shown. All labels remain in the accessibility tree. The indicator adds no tab stops
+and emits no action events.
+
+## `ocelle-workflow-node`
+
+The workflow node shows the supplied step title (`label`), `kind`, `accountable-role` (property
+`accountableRole`) and ordered labels in the `outcomes` array property. Set `node-id`
+(`nodeId`) to the step's stable identifier. The host owns the step data and `selected` state.
+
+The native button has one Tab stop and supports pointer, Enter and Space activation. Its `control` part has a
+token focus ring. Calling `focus(options)` on the host focuses that same button after render. A host that
+coordinates Tab navigation sets the `selectionTabIndex` property to `-1` to skip the button and `0` to restore it.
+The button can still receive direct focus and keyboard activation at `-1`. The property has no corresponding
+markup attribute.
+
+The Boolean attributes and properties `selected`, `waiting` and `invalid` default to false and can coexist.
+Their text cues remain readable when forced colors change the palette. The button exposes selection with
+`aria-pressed`, and its description contains the step metadata and active state text. Titles, roles and
+outcomes wrap in a narrow layout, with their full text available to assistive technology.
+
+The full visible title comes first in the button's accessible name. Resolved `aria-labelledby` references in
+the host's document or shadow root append naming context in reference order. A nonblank `aria-label` adds
+context when no naming references resolve. Host `aria-describedby` references add to the built-in description,
+and `aria-current` reaches the button independently of selection. Updates to these host attributes refresh
+the button's associations.
+
+Edits to a referenced element's text are read from that same element. To replace an element under an existing
+ID, insert the replacement, remove the corresponding reference attribute from the workflow node, and await
+`node.updateComplete`. Then reapply the reference attribute using the desired ID. The button retains its
+title and built-in description throughout the refresh.
+
+For read-only run inspection, pass readable, noninteractive content as a child with `slot="status"`. It appears
+outside the selection button and adds its text to the button's accessible description. Host edits and replacements
+update that text, and an empty slot adds no status text. The reviewer uses the same button and selection request
+to inspect the step. Outcome labels remain descriptive, and the host retains ownership of the step data.
+
+An activation dispatches one `ocelle-workflow-node-select` request from the element with detail
+`{ nodeId: string }`. The request bubbles, crosses shadow boundaries and is noncancelable. It reaches ancestor
+listeners before the native click bubbles to them. The host handles the request and applies selection as needed.
+A node with an empty ID still has its native button and emits no selection request.
+
+Keep one mounted node per step ID. For example, use the ID as the key in a rendered collection. Renaming a step
+updates the same node, and displaying a different ID mounts a distinct node. A pointer press interrupted by
+replacement cannot request selection for the new step.
+
 ## `ocelle-list-detail`
 
 `ocelle-list-detail` lays out a list beside the selected record's detail, with an optional inspector: three columns
@@ -1734,20 +3001,39 @@ gap, padding or divider with nothing in it. Forward a slot only when it has cont
 ## Host ARIA
 
 A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it
-decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. For `ocelle-scroller`,
-`ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names
-the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these
-elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed,
-or else by `label`. `ocelle-list-detail` takes no name: a host `aria-label` is not used. When both are set, the host
-`aria-label` is the name; removing it falls back to `label`. Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed;
-the element never rewrites it. An unknown icon name exposes nothing, named or not.
+decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. On a form control a host
+`aria-label` that is not blank names the control alone; a blank one, empty or whitespace only, is skipped, and the
+labels and `label` name the control. For `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table`, `ocelle-event-timeline` and `ocelle-evidence-chain` a blank
+host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present
+`aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their
+shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`. `ocelle-list-detail` takes no
+name: a host `aria-label` is not used. On `ocelle-icon` and `ocelle-brand-mark`, when both are set, the host
+`aria-label` is the name; removing it falls back to `label`. On `ocelle-icon` and `ocelle-brand-mark`, Chromium uses a
+host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it. On a
+form control the control's name is a host `aria-label` with whitespace collapsed and trimmed, while the host's node
+keeps it as written, surrounding spaces included, so pass it trimmed with single spaces. An unknown icon name exposes
+nothing, named or not.
 
-This is the rule of `ocelle-icon` and `ocelle-brand-mark`; the controls move their host ARIA onto their inner control
-instead (Control conventions, Host ARIA is moved).
+The exceptions are `ocelle-tabs`, whose tablist is a part inside its shadow root rather than the host: it is named by
+`label` only, and a host `aria-label` on it does not name the tablist (see `ocelle-tabs`); and `ocelle-link`, whose
+link is the anchor inside its shadow root: it is named by its text or by `label`, and a host `aria-label` on it does
+not name the link (see `ocelle-link`).
 
-A host `aria-hidden="true"` hides the element, labelled or not. A host `hidden` attribute removes the element: no box
-and no node, labelled or not. A host `role` or `aria-hidden="false"` is not supported: name the element with `label` or
-`aria-label` instead.
+`ocelle-button` and `ocelle-action-row` follow none of these `aria-label` rules: they move their host ARIA onto their
+inner control instead (Control conventions, Host ARIA is moved).
+
+On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-hidden="true"` hides the element, labelled or not. On
+`ocelle-icon` and `ocelle-brand-mark`, a host `hidden` attribute removes the element: no box and no node, labelled or
+not. On `ocelle-notice` a host `aria-hidden="true"` is not supported: hide the notice with a host `hidden` attribute,
+which gives it no box and announces nothing while it is set. On a form control a host `aria-hidden="true"` is not
+supported, since the control stays focusable: hide the control with a host `hidden` attribute instead. On `ocelle-icon`
+and `ocelle-brand-mark`, a host `role` or `aria-hidden="false"` is not supported: name the element with `label` or
+`aria-label` instead. On a form control a host `role` or `aria-hidden="false"` is not supported: name the control with
+`label`, a `<label>` or `aria-label` instead. `ocelle-notice` takes a
+host `role` as its section says: `alert` and `status` make it announce, a role that gives its node no live politeness
+leaves it as without a role, and `log`, other live roles and a host `aria-live`, `aria-atomic`, `aria-relevant` or
+`aria-hidden="false"` are not supported. On the other elements, a host `aria-hidden="true"` hides the element, a host
+`hidden` attribute removes it, and a host `role` or `aria-hidden="false"` is not supported.
 
 With a host `aria-label`, an open `ocelle-dialog` exposes one named node, its modal dialog, named by the host
 `aria-label`; while it is closed, Chromium exposes the host itself as a named generic node. With a host `aria-label`,
@@ -1768,7 +3054,7 @@ newest feature the elements use:
 - ARIA element reflection (`ariaControlsElements`, `ariaLabelledByElements`, `ariaDescribedByElements`): Chromium 135,
   WebKit 16.4 (the controls' ID references);
 - Custom states (`ElementInternals.states` and `:state()`): Chromium 125, WebKit 17.4 (`ocelle-button`'s moved
-  states);
+  states) and the joined segmented choice's rows (014);
 - The Popover API: Chromium 114, WebKit 17 (the tooltip's bubble in the top layer; it raised the floor from WebKit 16.4);
 - `:dir()`: Chromium 120, WebKit 16.4 (the inline-direction icons' mirroring);
 - `@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4
@@ -1789,7 +3075,9 @@ Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not: its
 mirroring are an open limitation.
 WebKit is not measured for the layout elements either: the tab stop of `ocelle-scroller` and `ocelle-workflow-board`
 while they overflow, their arrow keys, their focus handover when overflow ends and `ocelle-list-detail`'s focus moves
-are untested there.
+are untested there. Nor is `ocelle-code-block`'s scroll mode, on the same module: its tab stop while it overflows, its
+arrow keys, its focus handover when overflow ends, the focus move on a switch to wrap and the `rtl` opening write are
+untested in WebKit.
 
 ## Layout elements: screens, print and states
 
@@ -1816,24 +3104,30 @@ Every element of this library is written the same way, so a later element follow
 question.
 
 **Module and registration.** Each element lives in its own module, `src/<tag>.ts`, which ends with one
-`define("<tag>", <Class>)` call: importing the module defines that element and no other, except that a container module
-also imports its item element, and importing the package root defines every element. `define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of
+`define("<tag>", <Class>)` call: importing the module defines that element and the elements it renders or owns as children, and importing the package root
+defines every element. `define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of
 the same tag does nothing and throws nothing. The module exports the class and declares it in
 `HTMLElementTagNameMap`; `src/index.ts` re-exports it.
 
 **Properties.** Elements declare their reactive properties with `static override properties = { … }` and `declare`
-fields, not decorators. Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a
-description and `@default undefined`: the manifest takes the tag name and the defaults from them. An element that
+fields, not decorators. Every element class carries the JSDoc tag `@tagname <tag>`, every public property a
+description, and every public property that can be set a `@default` tag with the value the property reads before
+anything sets it, `@default undefined` for an optional one: the manifest takes the tag name and the defaults from them.
+An element that
 observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so
-the manifest does not list it. An element that moves a standard attribute declares it with `@attr` and a description,
-with its mirror, so the manifest lists both.
+the manifest does not list it. An attribute that is the element's own and has no property of its own, such as
+`ocelle-form-input`'s `value` (its default value), is declared in the manifest with the class's JSDoc tag `@attribute`,
+with its type, default and description. An element that moves a standard attribute declares it with `@attr` and a
+description, with its mirror, so the manifest lists both.
 
 **Styles.** An element's styles are its shared `static styles`, one or more `css` tagged templates built only from
 `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one
-per-instance constructed stylesheet that holds only px figures the element measured from layout. The per-instance sheet
-never holds a value from an attribute, a property, a token's text or slotted text, and it is written through
-`CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size and
-`ocelle-list-detail`'s intrinsic sizes are its two uses. No template has a
+per-instance constructed stylesheet of its own that holds only px figures the element measured from layout, and, in an
+element that uses the overflow-region module, the module's per-instance sheet beside it. A per-instance sheet never
+holds a value from an attribute, a property, a token's text or slotted text, and it is written through
+`CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size,
+`ocelle-list-detail`'s intrinsic sizes and `ocelle-data-table`'s caption cap (its box size and end fade depth) are its
+uses. No template has a
 `style` attribute or a `<style>` element. Every element's styles hold `:host([hidden]) { display: none; }` beside its
 `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule. Variant rules that set colours or
 grounds go inside `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant
@@ -1849,12 +3143,25 @@ inheritance is not one of the element's CSS custom properties and is not in its 
 tokens each element reads, and overriding a token is the way to change what the element takes from it. An element's
 own hook is a CSS custom property named `--ocelle-<element>-<property>`, which matches no token name.
 
+**One native element.** A container whose content is one native element is styled by `@ocelle/styles` rules scoped to
+it and assigns that element by manual slot assignment; other children are not shown. `ocelle-data-table` is the first.
+
 **Slotted items.** A container element renders its items' structure in its own shadow root and assigns each item
 there by manual slot assignment; its items are its direct children of one item element, and its module imports that
 item element. Other children are not shown. `ocelle-facts` and `ocelle-fact` are the first container and item.
 
 **Identifier wrap.** An element whose values can hold machine identifiers takes a `wrap` property with the one value
 `anywhere`, which sets `overflow-wrap: anywhere` on the value only, never on a label.
+
+**Digests.** An element that shows a digest (a hash, with or without an algorithm prefix) groups it the same way: the
+prefix is everything up to and including the last colon and is shown as written; the rest is split into groups of
+four code points from the start, the last group holding the remainder. Units are inline boxes separated by a
+`<wbr>`, with a `--ocelle-space-1` gap after every unit but the last, so a line never starts with a gap; no character
+is added, so a copy and the screen-reader reading give the digest as written. Groups do not wrap inside
+(`white-space: nowrap`, as `-` and `/` in base64 and base64url are break opportunities), so lines break only between
+units; a prefix that with its gap is wider than the line breaks inside (WCAG 1.4.10). Text holding whitespace is not a
+digest and is shown ungrouped. `ocelle-code-block`'s `digest` is the first use; `ocelle-facts` values are the
+consumer's text and are not grouped.
 
 **Stories.** Every element has a story per variant and per state in `storybook/stories/<element>.stories.ts`, in light
 and dark, and its stories pass the `csp` and `prefix` gates' Storybook checks.
@@ -1868,11 +3175,20 @@ README are in `test/node/`; tests that run the build or `pnpm pack` are in `test
 
 **Overflow region.** The overflow-region module (`src/overflow-region.ts`, internal) gives an element a scroll box that
 is a tab stop and a named group, or region, only while it overflows: `ocelle-scroller` uses it, and so does any later
-element with a scroll region. Its interface:
+element with a scroll region. `ocelle-data-table` uses the overflow-region module, as `ocelle-scroller`,
+`ocelle-workflow-board` and `ocelle-workflow-lane` do. Its interface:
 
-- Inputs: the host element (`new OverflowRegion(host, { box, role, step })`), `box`, a function that returns the
-  scroll box in the host's shadow root, `role`, `"group"` by default or `"region"`, `step`, 40 px by default, and the
+- Inputs: the host element (`new OverflowRegion(host, { box, role, step, blockAxis, blockStartBox })`), `box`, a
+  function that returns the scroll box in the host's shadow root, `role`, `"group"` by default or `"region"`, `step`,
+  40 px by default, the block-axis option `blockAxis`, a function that returns whether the box also scrolls in the
+  block axis, and `blockStartBox`, a function that returns the box the host pins at the block start or `null`, and the
   label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change.
+- `ocelle-data-table` with `sticky-header` is the only user that sets the block-axis option. While it is on and the box
+  overflows in the block axis, the module sets `data-axis="both"` on the box, handles ArrowUp and ArrowDown, leaves
+  PageUp, PageDown, Home, End, Space and Shift+Space to the browser, keeps a focused element clear of the pinned box,
+  and fades the block end while content is below (`data-block-fade="end"`, drawn by `.region-edge.block-end` as a line
+  in forced colours). The host renders that third edge after the two others. `ocelle-scroller`,
+  `ocelle-workflow-board` and `ocelle-workflow-lane` do not set it, and nothing changes for them.
 - Outputs, read by the host's render: `overflowing`, `offStart`, `offEnd`, `fadeStart`, `fadeEnd`, `fadeAttribute`
   (`"start"`, `"end"`, `"both"` or undefined) and `name`; the module requests an update when one changes.
 - Effects, on the scroll box and the module's own shadow nodes only, never on the host: the box's `tabindex`, `role`

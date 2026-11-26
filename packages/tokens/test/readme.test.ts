@@ -72,6 +72,8 @@ const fragments = [
   "`--ocelle-line-height-snug` (1.2) is the line height of the compact `ocelle-pill-tag` of `@ocelle/elements`, with `--ocelle-font-size-xs`",
   // 018 (research.md R-07, R-10; tasks.md T048): the interactive pill tag's minimum target
   "`--ocelle-target-small` (`1.5rem`) is the minimum block size and inline size of an interactive `ocelle-pill-tag` of `@ocelle/elements`, 24 px at the default root font size, the minimum target size for a pointer; it is not a primary action, so `--ocelle-target-min` does not apply to it",
+  "`--ocelle-app-shell-narrow-below` defaults to `45rem` and `--ocelle-app-shell-collapse-below` defaults to `68.75rem`.",
+  "A valid `narrow-below` or `collapse-below` setting wins, followed by a valid token override and then its published default.",
 ];
 
 describe("packages/tokens/README.md", () => {
@@ -90,6 +92,14 @@ describe("packages/tokens/CHANGELOG.md", () => {
   it("names every token as added in the Unreleased section (FR-025)", () => {
     const named = new Set([...added.matchAll(/`(--ocelle-[a-z0-9-]+)`/g)].map((match) => match[1]));
     expect([...named].sort()).toEqual(expectedTokens.map((token) => `--ocelle-${token.name}`).sort());
+  });
+
+  // Since the second merge of main, 012's entry declares color-accent-strong on every main ground, so 014's entry names
+  // its use of those pairs and adds none.
+  it("names the selected bars' color-accent-strong on the main grounds under Unreleased / Added (014 FR-058, research.md R-17)", () => {
+    expect(added.replace(/\s+/g, " ")).toContain(
+      "`@ocelle/elements`' listbox, tabs and segmented choice (mission 014) draw their selected bars in `color-accent-strong` on the main grounds, which the contrast check covers through the grounds above; no token name, value or pair is added.",
+    );
   });
 
   it("names no excluded token (A.6)", () => {

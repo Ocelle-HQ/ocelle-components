@@ -7,15 +7,22 @@
 #   3. if the phase has a scaffold commit (scaffold.sh), the final test files, run against the scaffold, fail too:
 #      against the base a missing module alone makes them fail, so only the scaffold run shows they test behaviour;
 #   4. the tests pass at HEAD.
-# Writes reviews/phase-N/tdd-check.json and prints it. status: pass | fail | exempt | unavailable.
+# Writes reviews/phase-N/tdd-check.json and prints it, both redacted (op 023). status: pass | fail | exempt | unavailable.
 # Always exits 0: the review reads the status, and a "fail" is a blocking finding.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 story_require_phase "${1:-}"
+story_require_redactor
 phase=$1
 root=$(story_repo_root); feature_dir=$(story_feature_dir); feature_rel=${feature_dir#"$root"/}
+focused=$(story_config focused_runner)
+if [[ -n "$focused" ]]; then
+  cd "$root"
+  exec node "$root/$focused" check "$feature_rel" "$phase" "$(story_config setup_command)" "$(story_config test_pathspec)"
+fi
 dir="$feature_dir/reviews/phase-$phase"; mkdir -p "$dir"
 out="$dir/tdd-check.json"
-emit() { printf '%s\n' "$1" | tee "$out"; exit 0; }
+# The record, redacted (op 023), is written and printed.
+emit() { printf '%s\n' "$1" | "$(story_redactor)" | tee "$out"; exit 0; }
 
 [[ -f "$dir/base.sha" ]] || emit "{\"phase\":\"$phase\",\"status\":\"fail\",\"problems\":[\"no base.sha: the phase was not started by the story workflow\"]}"
 base=$(tr -d '[:space:]' < "$dir/base.sha")

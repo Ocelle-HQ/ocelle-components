@@ -4,7 +4,9 @@
 // verbatim as a `mutate` input, is exit 2 naming the header or every such path (phase 3 round 7, O7-01 and O7-02),
 // so the gate never passes with changed code it did not check; nor does it after Stryker runs: a `mutate` entry
 // Stryker's output reports it did not read (a file under a folder such as `.next`) is exit 2 naming each such entry,
-// in the whole-diff and `--files` runs alike (phase 3 round 12, O12-01); a changed file Stryker read that is absent
+// in the whole-diff and `--files` runs alike (phase 3 round 12, O12-01); so is a file Stryker's type checker rejects
+// itself, every mutant on its changed lines a CompileError on one diagnostic of the file off their lines (019 gate gap
+// rule (c), report.ts); a changed file Stryker read that is absent
 // from its report has no mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards, splitting a file of more than
 // 30 changed lines into `path:start-end` entries (002 phase 5 round 6, O6-01: 60; 007 spec FR-014, 2026-11-11: 30),
 // two entries of one file never in one shard, and writes the number of shards and of cuts within files to stderr, the JSON on stdout staying one array for
@@ -30,7 +32,7 @@ import { changedFiles, mutateSpecs, scopePathspecs, unusableMutatePaths } from "
 import type { ChangedFile } from "../lib/mutation/ranges.ts";
 import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
 import type { EquivalentRecord } from "../lib/mutation/records.ts";
-import { classifyMutants } from "../lib/mutation/report.ts";
+import { classifyMutants, shadowMutantInventory } from "../lib/mutation/report.ts";
 import type { RunEntry, StrykerRun, UndecidedMutant } from "../lib/mutation/report.ts";
 import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
 import { runTool } from "../lib/spawn.ts";
@@ -54,6 +56,7 @@ interface Options {
   readonly base: string | undefined;
   readonly plan: boolean;
   readonly files: string | undefined;
+  readonly shadowGrouped: boolean;
 }
 
 /**
@@ -110,11 +113,16 @@ function parseOptions(args: readonly string[]): Options | string {
   let base: string | undefined;
   let files: string | undefined;
   let plan = false;
+  let shadowGrouped = false;
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === "--") continue;
     if (arg === "--plan") {
       plan = true;
+      continue;
+    }
+    if (arg === "--shadow-grouped") {
+      shadowGrouped = true;
       continue;
     }
     if (arg !== "--base" && arg !== "--files") return `unknown argument ${String(arg)}`;
@@ -124,7 +132,14 @@ function parseOptions(args: readonly string[]): Options | string {
     else files = value;
     i += 1;
   }
-  return { base, plan, files };
+  return { base, plan, files, shadowGrouped };
+}
+
+/** Stryker logs its completed initial test run time as net and overhead milliseconds. */
+function shadowBaseline(output: string): { readonly tests: number; readonly elapsedMs: number } | null {
+  const run = /Initial test run succeeded\. Ran (\d+) tests in [^\n]*\(net ([\d.]+) ms, overhead ([\d.]+) ms\)/.exec(output);
+  if (run === null) return null;
+  return { tests: Number(run[1]), elapsedMs: Number(run[2]) + Number(run[3]) };
 }
 
 export async function mutation(context: Context, tools: MutationTools, io: Io): Promise<number> {
@@ -134,6 +149,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   const { base } = options;
   if (base === undefined) {
     return fail(`--base <sha> is required (the pull request's base commit, or the phase's base.sha); ${usage}`);
+  }
+  if (options.shadowGrouped && !options.plan && options.files === undefined) {
+    return fail("--shadow-grouped needs an explicit --files selection or --plan");
   }
   const resolved = await tools.git(["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
   if (resolved.exitCode !== 0) {
@@ -153,10 +171,12 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     return fail(`Stryker cannot take these changed paths as mutate input (${unusableKinds}): ${paths}; rename them`);
   }
   if (options.plan) {
-    const shards = planShards(changed);
+    const shards = planShards(changed, options.shadowGrouped);
     io.out(formatPlan(shards));
     const counts = `${plural(shards.length, "shard")}, ${plural(countCuts(shards), "cut")}`;
-    io.err(`mutation: plan: ${counts} within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)`);
+    io.err(options.shadowGrouped
+      ? `mutation shadow: plan: ${counts} within files`
+      : `mutation: plan: ${counts} within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)`);
     return 0;
   }
 
@@ -195,9 +215,23 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     const group = selected.filter((file) => elementSource(file.path) === configuration.elements);
     if (group.length === 0) continue;
     await tools.remove(configuration.report);
-    const ran = await tools.stryker(mutateSpecs(group), configuration.file);
+    const ranges = mutateSpecs(group);
+    const start = options.shadowGrouped ? performance.now() : 0;
+    const ran = await tools.stryker(ranges, configuration.file);
+    const elapsedMs = options.shadowGrouped ? performance.now() - start : 0;
     const report = await tools.read(configuration.report);
     const stryker: StrykerRun = { report, exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
+    if (options.shadowGrouped) {
+      const inventory = shadowMutantInventory(stryker, group);
+      if (!inventory.ok) return emit({ exit: 2, cause: inventory.cause }, io.out, io.err);
+      io.err(`mutation shadow receipt: ${JSON.stringify({
+        configuration: configuration.file,
+        ranges,
+        baseline: shadowBaseline(stryker.output),
+        totalMs: elapsedMs,
+        mutants: inventory.mutants,
+      })}`);
+    }
     const verdict = classifyMutants(stryker, group);
     if (!verdict.ok) return emit({ exit: 2, cause: verdict.cause }, io.out, io.err);
     findings.push(...verdict.findings);

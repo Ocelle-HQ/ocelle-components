@@ -1,0 +1,26 @@
+# Mutants of the second gate:mutation run (phase 4), each applied alone to HEAD's source and run against the new bodies
+## ocelle-segmented-choice.ts:194 CallExpression (this.#observe() in #apply replaced by ;)
+     × joined: a reorder at the same group size, Done moved before All, regroups at the next delivery: Done takes the start rounding and Blocked the end rounding 371ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected { observed: { …(2) }, clipboard: [] } to deeply equal { observed: { …(2) }, clipboard: [] }
+- Expected
++ Received
++           "0px",
+-           "0px",
++           "4px",
+-           "4px",
+-           "0px",
+-           "0px",
++           "4px",
++           "4px",
++           "0px",
+-           "4px",
+-           "4px",
++           "0px",
+      Tests  1 failed | 61 skipped (62)
+## ocelle-segmented-choice.ts:285 ConditionalExpression (typeof method === "function" replaced by true)
+[Error: Uncaught TypeError: Cannot read properties of undefined (reading 'call')]
+     × presses, writes the states and throws nothing, with no error event, beside the first definition of ocelle-segment kept 183ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'call')
+      Tests  1 failed (1)

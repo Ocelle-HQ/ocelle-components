@@ -1,0 +1,46 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The focused replay will select the full suite on the fixture changes"
+    evidence:
+      - artifact: "plan.md lines 11–15 and 25–27 name two new browser files, two story files, and Visual and Axe inventory changes, but no phase scope file"
+      - code: "story-config.yml line 16 treats *.stories.ts as test changes. gates/lib/story-selection.ts lines 52–67 treats those undiscovered story files as shared support and selects the entire discovered inventory when scope.extra is empty. tooling/speckit/README.md lines 159–172 names the explicit-scope and CI-only receipt contracts."
+    claim: |
+      The test-only missing-story assertion can be a focused red, but adding either planned story makes the head replay select the full inventory. The pilot then measures the fallback rather than the proposed focused path. Counts-only Visual and Axe files also require exact-candidate receipts if deferred.
+    remedies:
+      - "Assign reviews/phase-1/test-scope.txt to the integration owner. Enumerate the new browser cases' runnable files and other affected local consumers. Use ci-only entries only for eligible counts-only collateral files on the chosen Op 030 pin, then require matching Unit inventory and shard results plus the dedicated Visual or Axe check. Require both new browser files to remain local. Use the storybook-integration project's provided per-run build for index discovery and iframe rendering."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "The test plan omits a changed host materiality input"
+    evidence:
+      - artifact: "spec.md US1 and FR-005 require a different displayed judgment for the same retention diff. plan.md lines 17 and 21 names requiresReview and its default, then only requires source order, width and forced colors in the browser test."
+      - code: "storybook/test/integration/setup.ts lines 50–66 provides actual built output to integration tests, enabling both variants to exercise the same story ID without joining another suite."
+    claim: |
+      A fixture that always displays the default materiality could satisfy the planned browser observations. The success criterion needs a second real render with the opposite input and a comparison of the same visible diff.
+    remedies:
+      - "Require the plan fixture test to load the same built story at both requiresReview values through its real Storybook input path. Assert each expected visible judgment and the identical Previous, New and Unchanged labels and values in both renders."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 2
+    title: "Document width alone cannot prove the required labels and digests remain readable"
+    evidence:
+      - artifact: "spec.md FR-003 and US2 require readable labels and both long digests at 320 CSS pixels in forced colors. plan.md line 21 specifies source order and no page overflow."
+      - code: "packages/elements/test/commands.ts lines 700–702 measure document scrollWidth. Lines 719–770 provide readTextBoxes, which separately detects clipping across overflow ancestors and includes the flat tree and shadow DOM."
+    claim: |
+      A clipped copy field or internal scroll box can keep document scrollWidth at 320px and retain correct DOM order while hiding part of a required digest or label. That implementation passes the stated layout checks.
+    remedies:
+      - "For both modes, assert the required text has nonempty rendered boxes and no clipping or out-of-viewport horizontal extent, using readTextBoxes or equivalent flat-tree geometry. Keep the existing no-page-overflow and reading-order assertions."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "The clipboard test double conflicts with simulated handling and leaves keyboard continuation unverified"
+    evidence:
+      - artifact: "spec.md US2 and FR-004 require the simulated host result and continued keyboard use. plan.md lines 17 and 21 require a clipboard double and Tab order and activation, with no post-result keyboard assertion."
+      - code: "packages/elements/src/ocelle-copy-field.ts lines 204–235 clears status on activation, dispatches the composed request after a frame and task, and renders the host-provided result in a separate polite status region."
+    claim: |
+      A real clipboard API double is unnecessary for a simulated fixture and can measure a different boundary. Independently resetting focus to each button can still pass the listed activation assertions after the host moves focus when updating status. The implementation must let the reviewer Tab from the first completed request through the next named action.
+    remedies:
+      - "Record the actual composed ocelle-copy-field-request details on the story and exercise the simulated host handler with no browser clipboard dependency. Wait for each field's accessible result, check the exact accumulated request sequence, and advance between named buttons with a real Tab after the first result without resetting focus. Assert the post-result focus on the active Copy control or the documented next keyboard target."

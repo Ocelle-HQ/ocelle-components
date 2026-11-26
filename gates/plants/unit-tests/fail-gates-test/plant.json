@@ -1,11 +1,16 @@
 {
   "expect": "fail",
-  "why": "A failing gate test (project gates) is a finding (FR-004, FR-028).",
+  "why": "A failing gate test is a finding (FR-004, FR-028). The required Unit tests aggregate must reject the planted missing shard although its complete control manifest passes.",
   "findings": [
     {
       "location": "gates/test/x.test.ts:5",
       "rule": "planted gates-test adds wrongly",
       "message": "expected 2 to be 3"
+    },
+    {
+      "location": "gates/test/x.test.ts:15",
+      "rule": "the required Unit tests aggregate rejects a missing shard artifact",
+      "message": "Unit tests: received 1 of 2 shard results"
     }
   ]
 }

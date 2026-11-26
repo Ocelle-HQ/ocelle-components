@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // gates/README.md after 002 (FR-022, US3 scenario 8, SC-007; contracts/gates.md § Plants, "Registry"): the contrast
@@ -82,9 +82,9 @@ describe("gates/README.md (002 FR-022)", () => {
     expect(plants.filter((plant) => !(row?.[4] ?? "").includes(plant))).toEqual([]);
   });
 
-  it("requires eighteen checks on main: main's fifteen and Storybook build, Visual regression and Accessibility (006 FR-023, plan decision 31)", () => {
+  it("requires nineteen checks on main: main's fifteen, Storybook build, Visual regression and Accessibility (006 FR-023, plan decision 31), and Sandbox paths before Plants (op 023)", () => {
     const required = section("Required checks on `main`");
-    expect(required).toContain("requires exactly these eighteen checks");
+    expect(required).toContain("requires exactly these nineteen checks");
     const listed = required.split("\n").filter((line) => /^\d+\. /.test(line)).map((line) => line.replace(/^\d+\. /, ""));
     expect(listed).toEqual([
       "Typecheck",
@@ -104,6 +104,7 @@ describe("gates/README.md (002 FR-022)", () => {
       "Storybook build",
       "Visual regression",
       "Accessibility",
+      "Sandbox paths",
       "Plants",
     ]);
   });
@@ -207,5 +208,30 @@ describe("gates/README.md (013 R-10, phase 3)", () => {
       plants: names.filter((plant) => !plants.includes(plant)),
       directories: names.filter((plant) => !readdirSync(new URL("../plants/style-lint/", import.meta.url)).includes(plant)),
     }).toEqual({ allowance: [], plants: [], directories: [] });
+  });
+});
+
+// Op 023 (#60, FR-010; plan.md *Plants*): the sandbox-paths gate in "The gates", with its check, its command and the
+// eight plants of gates/plants/sandbox-paths/ (the eighth, fail-gitattributes-diff, from operator round 4, O4-02).
+describe("gates/README.md (op 023)", () => {
+  it("lists sandbox-paths in The gates with its check, its command and its eight plants", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`sandbox-paths`");
+    const dir = new URL("../plants/sandbox-paths/", import.meta.url);
+    const plants = existsSync(dir) ? readdirSync(dir).sort() : [];
+    const listed = { cells: row?.slice(0, 3), plants, unlisted: plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``)) };
+    expect(listed).toEqual({
+      cells: ["`sandbox-paths`", "Sandbox paths", "`pnpm run gate:sandbox-paths`"],
+      plants: [
+        "error-no-tracked-file",
+        "fail-allowed-name-elsewhere",
+        "fail-file-url-in-json",
+        "fail-gitattributes-diff",
+        "fail-store-and-repo-root",
+        "pass-allowed-files",
+        "pass-binary-file",
+        "pass-near-misses",
+      ],
+      unlisted: [],
+    });
   });
 });

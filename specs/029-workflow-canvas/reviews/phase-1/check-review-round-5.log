@@ -1,0 +1,84 @@
+Independent local checks on detached d91403f2cba6062647b771e02242bda94fd71a84
+Candidate tree: d8ee43b7310737b3bdbe5581c4b428a64a3e1c55
+
+$ pnpm run setup:offline
+setup: installed offline; Chromium at /workspace/work/ms-playwright/chromium-1248/chrome-linux64/chrome
+
+$ pnpm -r build
+Exit 0. All package builds and Storybook completed.
+
+$ node gates/bin/typecheck.ts
+typecheck: no type error in the files of tsconfig.json
+Exit 0.
+
+$ node gates/bin/lint.ts
+lint: 651 files checked, no finding
+Exit 0.
+
+$ node gates/bin/test-lint.ts
+test-lint: 490 files checked, no finding
+Exit 0.
+
+$ node gates/bin/style-lint.ts
+style-lint: 76 files checked, no finding
+Exit 0.
+
+$ node gates/bin/prefix.ts
+prefix: 750 files checked, no finding
+Exit 0.
+
+$ node gates/bin/pins.ts
+pins: 5 manifests checked, no finding
+Exit 0.
+
+$ node gates/bin/contrast.ts
+contrast: 207 pairs checked in light, 215 in dark (196 required per theme)
+Exit 0.
+
+$ node gates/bin/brand-rules.ts
+brand-rules: 7 rules checked
+Exit 0.
+
+$ node gates/bin/manifest.ts
+manifest: 43 elements checked, no finding
+Exit 0.
+
+$ node gates/bin/config-copies.ts
+config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical
+Exit 0.
+
+$ node gates/bin/signoff.ts -- --range 3515d2757508bd523fa55c6615af4f3996f842aa..HEAD
+signoff: 87 commits checked, no finding
+Exit 0.
+
+$ node gates/bin/storybook-build.ts
+storybook-build: built 337 stories
+Exit 0.
+
+$ node gates/bin/csp.ts
+csp: 81 files checked, no finding
+Exit 0.
+
+$ node gates/bin/test.ts packages/elements/test/browser/workflow-canvas.test.ts packages/elements/test/workflow-canvas.test.ts packages/elements/test/workflow-canvas-graph.test.ts packages/elements/test/workflow-canvas-navigation.test.ts packages/elements/test/workflow-canvas-viewport.test.ts
+unit-tests: 189 tests passed in 5 files
+Exit 0.
+
+$ node gates/bin/plants.ts -- --affected 3515d2757508bd523fa55c6615af4f3996f842aa --list
+note: affected: every plant, by packages/elements/package.json (not mapped)
+plants: affected since 3515d2757508bd523fa55c6615af4f3996f842aa: 317 of 317 plants selected, none judged (--list)
+Exit 0.
+
+$ node gates/bin/mutation.ts -- --base 3515d2757508bd523fa55c6615af4f3996f842aa --plan
+mutation: plan: 34 shards, 33 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+Exit 0.
+
+Exact CI evidence captured for this review
+{"conclusion": null, "created_at": "2026-11-24T12:12:29Z", "event": "pull_request", "head_branch": "029-workflow-canvas", "head_sha": "d91403f2cba6062647b771e02242bda94fd71a84", "html_url": "https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45391278602", "observed_at": "2026-11-24T12:31:15.475214+00:00", "run_attempt": 1, "run_started_at": "2026-11-24T12:12:29Z", "status": "in_progress", "updated_at": "2026-11-24T12:13:06Z"}
+{"parents": ["7c081d129fa4892cea08f6f1b7c83d82ed685de0", "d91403f2cba6062647b771e02242bda94fd71a84"], "sha": "9cae728db54635c384194659788934c38635c042", "tree": "d8ee43b7310737b3bdbe5581c4b428a64a3e1c55"}
+Unit plan revision: 9cae728db54635c384194659788934c38635c042
+Unit plan shards: 6
+unit-test-shard-0: gates-integration gates/test/integration/visual.test.ts
+unit-test-shard-1: gates-integration gates/test/integration/axe.test.ts
+{"id":138435340542,"lines":["2026-11-24T12:24:30.5945286Z visual: 674 captures match their baselines (docker+podman)"]}
+{"id":138435340707,"lines":["2026-11-24T12:19:27.7625570Z axe: 674 story-theme runs, 0 serious or critical; 58 notes (0 incomplete, 58 excepted)"]}
+Required Unit conclusion and passing deferred-file shards, Mutation aggregate with complete strict matrix, and Plants verdict were pending at review.

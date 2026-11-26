@@ -1921,6 +1921,6 @@ All files  | 100.00 |  100.00 |      147 |         0 |          0 |        0 |  
  source.ts | 100.00 |  100.00 |      147 |         0 |          0 |        0 |        0 |
 -----------|--------|---------|----------|-----------|------------|----------|----------|
 [32m01:36:31 (836) INFO MutationTestReportHelper[39m Final mutation score of 100.00 is greater than or equal to break threshold 100
-[32m01:36:31 (836) INFO JsonReporter[39m Your report can be found at: file:///home/user/ocelle-components/reports/mutation/mutation.json
+[32m01:36:31 (836) INFO JsonReporter[39m Your report can be found at: file://<repo>/reports/mutation/mutation.json
 [32m01:36:31 (836) INFO MutationTestExecutor[39m Done in 59 seconds.
 exit=0 seconds=61

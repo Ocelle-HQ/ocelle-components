@@ -7,6 +7,7 @@ import {
   configurationSet,
   editBaseline,
   exceptionPlans,
+  expandMarkers,
   mayBeAbsent,
   moduleLinks,
   nodeModulesLinks,
@@ -587,5 +588,26 @@ describe("overridesText", () => {
 
   it("writes an empty list", () => {
     expect(overridesText([]).split("\n").slice(3)).toEqual(["export const overrides: readonly TokenOverride[] = [", "];", ""]);
+  });
+});
+
+// Op 023 (#60, plan.md *Plant form*): a tracked-tree plant holds the markers @SANDBOX_ROOT@ and @SANDBOX_HOME_USER@,
+// which the builder expands to the sandbox paths, built here at run time, byte for byte in any file.
+describe("expandMarkers (op 023)", () => {
+  const root = "/" + "root";
+  const home = "/" + "home/user";
+
+  it("replaces every marker, several on one line, and keeps every other byte, placeholders and non-text bytes included", () => {
+    const text = "a @SANDBOX_ROOT@/.local x @SANDBOX_HOME_USER@/ocelle-components @SANDBOX_ROOT@/b\n<pnpm store> <repo> <home>/.cache\n";
+    const binary = Buffer.concat([Buffer.from([0, 255, 10]), Buffer.from("@SANDBOX_ROOT@/c"), Buffer.from([200, 0])]);
+    expect({
+      text: expandMarkers(Buffer.from(text)).toString("utf8"),
+      binary: [...expandMarkers(binary)],
+      none: expandMarkers(Buffer.from("SANDBOX_ROOT @SANDBOX_ROOT @SANDBOX_HOME@/x\n")).toString("utf8"),
+    }).toEqual({
+      text: `a ${root}/.local x ${home}/ocelle-components ${root}/b\n<pnpm store> <repo> <home>/.cache\n`,
+      binary: [0, 255, 10, ...Buffer.from(`${root}/c`), 200, 0],
+      none: "SANDBOX_ROOT @SANDBOX_ROOT @SANDBOX_HOME@/x\n",
+    });
   });
 });

@@ -43,15 +43,108 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: pnpm run gate:style-lint
-  unit-tests:
-    name: Unit tests
+  unit-tests-plan:
+    name: Unit test inventory
+    runs-on: ubuntu-24.04
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - id: plan
+        run: |
+          shards="$(node gates/bin/test-shards.ts plan "$RUNNER_TEMP/unit-test-plan.json" 6)"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-test-plan
+          path: ${{ runner.temp }}/unit-test-plan.json
+          if-no-files-found: error
+  unit-tests-shard:
+    name: Unit test shard
+    needs: unit-tests-plan
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.unit-tests-plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unit-test-plan
+          path: ${{ runner.temp }}
+      - env:
+          SHARD: ${{ matrix.shard }}
+        run: node gates/bin/test-shards.ts run "$RUNNER_TEMP/unit-test-plan.json" "$SHARD" "$RUNNER_TEMP/result.json"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-test-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/result.json
+          if-no-files-found: error
+  unit-tests-full:
+    # Same-repository PRs can opt in to comparing the stock full gate with the matrix.
+    name: Unit tests full suite comparison
+    if: github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- verify-unit-test-parity -->')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - run: pnpm run gate:unit-tests
+      - env:
+          OCELLE_TEST_REPORT: ${{ runner.temp }}/full-result.json
+        run: pnpm run gate:unit-tests --reporter=./gates/reporters/unit-test-inventory.ts
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-test-full
+          path: ${{ runner.temp }}/full-result.json
+          if-no-files-found: error
+  unit-tests:
+    name: Unit tests
+    needs: [unit-tests-plan, unit-tests-shard, unit-tests-full]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          PLAN: ${{ needs.unit-tests-plan.result }}
+          SHARDS: ${{ needs.unit-tests-shard.result }}
+          FULL: ${{ needs.unit-tests-full.result }}
+          COMPARE: ${{ github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- verify-unit-test-parity -->') }}
+        run: |
+          test "$PLAN" = success
+          test "$SHARDS" = success
+          if [[ "$COMPARE" == true ]]; then test "$FULL" = success; fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unit-test-plan
+          path: ${{ runner.temp }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: unit-test-shard-*
+          path: ${{ runner.temp }}/unit-test-results
+      - if: needs.unit-tests-full.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unit-test-full
+          path: ${{ runner.temp }}
+      - env:
+          COMPARE: ${{ github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- verify-unit-test-parity -->') }}
+        run: |
+          args=()
+          if [[ "$COMPARE" == true ]]; then args+=("$RUNNER_TEMP/full-result.json"); fi
+          node gates/bin/test-shards.ts verify "$RUNNER_TEMP/unit-test-plan.json" "$RUNNER_TEMP/unit-test-results" "${args[@]}"
   test-lint:
     name: Test lint
     runs-on: ubuntu-24.04
@@ -62,8 +155,8 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm run gate:test-lint
   # Mutation testing (research.md R-08): the plan job prints the shards of the changed lines as JSON, one shard job
-  # runs per entry (at most 45 minutes for a shard with packages/elements/src/ entries, 10 minutes for any other,
-  # FR-013 and op 015), and the verdict job is the check the ruleset requires.
+  # runs per entry (at most 75 minutes for a shard with packages/elements/src/ entries, 10 minutes for any other,
+  # FR-013, op 015 and 010 operator rounds 6 and 8), and the verdict job is the check the ruleset requires.
   mutation-plan:
     name: Mutation plan
     runs-on: ubuntu-24.04
@@ -87,7 +180,7 @@ jobs:
     needs: mutation-plan
     if: needs.mutation-plan.outputs.shards != '[]'
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 45 || 10 }}
+    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 75 || 10 }}
     strategy:
       fail-fast: false
       matrix:
@@ -246,6 +339,15 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: pnpm run gate:axe
+  sandbox-paths:
+    name: Sandbox paths
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:sandbox-paths
   plants-plan:
     name: Plants plan
     runs-on: ubuntu-24.04

@@ -4,11 +4,105 @@
 // (test/browser/*.test.ts, the `elements-browser` project). Every method reads or acts on the page by element `id`;
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
-import type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+//
+// Since 014 (research.md R-11, T006) a target may also be a child of a parent (`DriverTarget`): the index-th element
+// child of tag `kind` of the element with id `parent`. Real keyboard and pointer input (`pressKeys`, `clickTarget`,
+// `hoverTarget`), focus and computed style on any target (`focusNode`, `computedNode`), the focused element through
+// shadow roots (`focusedElement`), DOM steps in one task (`mutate`), a resize that does not wait for a frame and the
+// wait for its observations (`resize`, `afterResizeDelivery`), shadow parts' and pseudo-elements' computed styles
+// (`computedPart`), the page's scroll offset and viewport (`scrollOffset`, `setViewportSize`), the recorders (keydowns
+// at the document in the bubble phase, clipboard calls, the order of an activation, accessibility tree updates) and the
+// accessibility states (`axStates`, typed `AxNodeState`) are the driver's too. 014's names are kept apart from 008's,
+// 009's, 011's and 012's, which have other signatures (landing operator decision 3, both merges of main). Every
+// `DriverTarget` is found by one resolver, test/page-helpers.ts `resolve`.
+import type { ActiveElement, AxDetail, AxNode, AxNodeState, AxStatesScope, AxUpdate, ForcedColors, Palette, ReducedMotion, Target as AxTarget, TextBox } from "../commands.ts";
+import type { DocumentCapture, LiveCapture } from "../live.ts";
 import type { Pixels } from "../pixels.ts";
 
-export type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+export type { ActiveElement, AxDetail, AxNode, AxNodeState, AxScope, AxStatesScope, AxUpdate, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+export type { DocumentCapture, LiveCapture, Snapshot, StopOptions } from "../live.ts";
+export type { AxTarget };
 export type { Pixels } from "../pixels.ts";
+
+/**
+ * How `clickTarget` clicks: the mouse button (left by default), the modifiers held, and the number of clicks (1 by default).
+ * With `force` the click skips Playwright's actionability checks, so a target it counts as disabled (an
+ * `aria-disabled="true"` element) is still clicked with real input (014 phase 2).
+ */
+export interface TargetClickOptions {
+  readonly button?: "left" | "middle" | "right";
+  readonly modifiers?: readonly Modifier[];
+  readonly count?: number;
+  readonly force?: boolean;
+}
+
+/**
+ * The focused element, found through shadow roots: its `id`; else, when it has a `part` inside the shadow root of a
+ * host with an id, that host and part; else, when its parent element has an id, its place among that parent's children
+ * of its tag; else its local name.
+ */
+export type Focused =
+  | { readonly id: string }
+  | { readonly host: string; readonly part: string }
+  | { readonly parent: string; readonly kind: string; readonly index: number }
+  | { readonly unidentified: string };
+
+/**
+ * One DOM step of `mutate`, on the target's element children as they are when the step runs: append markup at the
+ * end, remove child n, move child n before child m (counted before the move) or to the end, remove child n and insert
+ * it back in its place, set (or with null remove) an attribute of child n, set a property of the target or of child n.
+ */
+export type Step =
+  | { readonly append: string }
+  | { readonly remove: number }
+  | { readonly move: number; readonly before: number | "end" }
+  | { readonly reinsert: number }
+  | { readonly child: number; readonly attribute: string; readonly value: string | null }
+  | { readonly property: string; readonly value: unknown; readonly child?: number };
+
+/** A scroll offset of the page, in CSS pixels. */
+export interface Offset {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** One keydown event as the document saw it in the bubble phase. */
+export interface Keydown {
+  readonly key: string;
+  readonly defaultPrevented: boolean;
+}
+
+/**
+ * What `activationRecord` observes: the event the target dispatches as its request; `read`, a selector in the target's
+ * shadow root (or in the target when it has none) whose text each entry records; `property`, a property of the target
+ * each entry records.
+ */
+export interface ActivationOptions {
+  readonly request: string;
+  readonly read?: string;
+  readonly property?: string;
+}
+
+/**
+ * One entry of an activation's record (research.md R-07): the activating `click` in the capture phase at the document
+ * (`activation`), the same click in the bubble phase at the document, after the target's own handlers in that task
+ * (`activation end`), the first animation frame callback registered in the activation's task (`frame`), and each
+ * request (`request`); each with the number of requests before it, the `read` text and the `property` value (null when
+ * not asked for).
+ */
+export interface ActivationEntry {
+  readonly entry: "activation" | "activation end" | "frame" | "request";
+  readonly requests: number;
+  readonly text: string | null;
+  readonly value: unknown;
+}
+
+/**
+ * Runs a self-contained function with one serialisable argument in the page, and returns its result: in process in the
+ * test's own frame, on the fixture through `page.evaluate`. Only the driver's own tests use it, to set up and observe
+ * what the driver acts on.
+ */
+export type InPage = <A, R>(fn: (arg: A) => R | Promise<R>, arg: A) => Promise<R>;
 
 /** An element's border box, relative to the viewport, and its computed `display`. */
 export interface Box {
@@ -83,10 +177,26 @@ export interface Target {
 }
 
 /**
+ * How `insert` puts markup into a container (specs/010-feedback-forms contracts/testing.md § Driver steps):
+ * `innerHTML` (the container's `innerHTML` set to the markup), `template` (a `<template>`'s content cloned and
+ * appended), `domparser` (the body nodes of a `DOMParser` document adopted and appended), `createElement` (the
+ * elements built with `document.createElement`, their attributes and children set before insertion, then appended).
+ */
+export type InsertHow = "innerHTML" | "template" | "domparser" | "createElement";
+
+/**
  * An element the input and scroll methods act on: the element with an `id`, or the first element matching `inner` in
  * that element's shadow root (009 research.md R-17; 009's `Target`, renamed by operator decision D1).
  */
 export type ElementTarget = string | { readonly id: string; readonly inner: string };
+
+/**
+ * An element 014's driver methods act on (research.md R-11): an `ElementTarget` (the element with an `id`, or the first
+ * element matching `inner` in that element's shadow root), or the `index`-th element child of
+ * tag `kind` of the element with id `parent` (the parent's own children, not its shadow root's). The accessibility
+ * commands take only the id and child forms (`AxTarget`, test/commands.ts).
+ */
+export type DriverTarget = string | { readonly id: string; readonly inner: string } | { readonly parent: string; readonly kind: string; readonly index: number };
 
 /** A point relative to the top-left corner of an element's border box, in CSS pixels. */
 export interface Point {
@@ -94,6 +204,70 @@ export interface Point {
   readonly y: number;
 }
 
+/** Form entries as `[name, value]` pairs, in order (a file's value is its name). */
+export type Entries = readonly (readonly [string, string])[];
+
+/** The announcement wait `W` in force, by the document's load state, in milliseconds. */
+export interface Waits {
+  readonly loaded: number;
+  readonly loading: number;
+}
+
+/**
+ * One DOM operation of a `batch` step (specs/010-feedback-forms phase 2): `insert` appends `markup` to the container by
+ * fragment parsing (`insertAdjacentHTML("beforeend", …)`), `text` replaces the element's children with one text node
+ * (`textContent`), `attribute` sets an attribute (null removes it), `property` sets a property, `move` appends the
+ * element to another container (a removal and an insertion in one operation; an element a `remove` removed is found
+ * by its id too), `remove` removes it, `focus` focuses it. `data` (phase 4) sets the data of the element's first child
+ * node, a text node, so the change is a `characterData` mutation and not a `childList` one. `reset` (phase 4, operator
+ * round 2) resets the form with the id (`HTMLFormElement.reset()`), so a reset can share the task of an insertion.
+ */
+export type Operation =
+  | { readonly op: "insert"; readonly container: string; readonly markup: string }
+  | { readonly op: "text"; readonly id: string; readonly text: string }
+  | { readonly op: "data"; readonly id: string; readonly data: string }
+  | { readonly op: "attribute"; readonly id: string; readonly name: string; readonly value: string | null }
+  | { readonly op: "property"; readonly id: string; readonly name: string; readonly value: string | number | boolean | null }
+  | { readonly op: "move"; readonly id: string; readonly to: string }
+  | { readonly op: "remove"; readonly id: string }
+  | { readonly op: "reset"; readonly id: string }
+  | { readonly op: "focus"; readonly id: string };
+
+/**
+ * One event a `listen` step heard (specs/010-feedback-forms phase 3): its type, the id of the element it was heard on,
+ * the id of its target as the listener saw it (the local name for an element without an id), the `value` property of
+ * the element it was heard on at that moment, its `detail` (a structured copy, null when it has none), and whether it
+ * bubbles and is composed.
+ */
+export interface Heard {
+  readonly type: string;
+  readonly at: string;
+  readonly target: string;
+  readonly value: unknown;
+  readonly detail: unknown;
+  readonly bubbles: boolean;
+  readonly composed: boolean;
+}
+
+/** An element's validity (`validity`'s flags), `validationMessage` and `willValidate`. */
+export interface Validity {
+  readonly valid: boolean;
+  readonly valueMissing: boolean;
+  readonly typeMismatch: boolean;
+  readonly patternMismatch: boolean;
+  readonly tooLong: boolean;
+  readonly tooShort: boolean;
+  readonly rangeUnderflow: boolean;
+  readonly rangeOverflow: boolean;
+  readonly stepMismatch: boolean;
+  readonly badInput: boolean;
+  readonly customError: boolean;
+  readonly message: string;
+  readonly willValidate: boolean;
+}
+
+/** A plain value a `call` step passes to a method. */
+export type Plain = string | number | boolean | null;
 /**
  * A click (012 research.md R-06, R-11): always sent with `force: true`, so a click on an unusable control is sent; at
  * the element's centre, or at `position` from its top-left corner (012 phase 2: the stretched and restyled hosts of
@@ -319,11 +493,6 @@ export interface Driver {
   setProperty(id: string, name: string, value: string | number | boolean | null | undefined): Promise<void>;
   /** Sets an attribute of the element with `id` (null removes it) and waits for it to render. */
   setAttribute(id: string, name: string, value: string | null): Promise<void>;
-  /**
-   * Calls the method `name` of the element with `id` with no argument, then settles (`settle`): since 009 phase 4,
-   * list-detail's `remeasure()` (research.md R-13).
-   */
-  call(id: string, name: string): Promise<void>;
   /** An attribute of the element with `id`, or null. */
   attribute(id: string, name: string): Promise<string | null>;
   /** Sets a CSS property on the element with `id` through the CSSOM (not governed by the CSP), as a host rule does. */
@@ -333,8 +502,8 @@ export interface Driver {
    * CSP does not govern), after the page's own; the next `mount` removes it.
    */
   rules(rules: string): Promise<void>;
-  /** The border box of the element with `id`, or of the first element matching `inner` in its shadow root. */
-  box(id: string, inner?: string): Promise<Box>;
+  /** The border box of the target, or of the first element matching `inner` in its shadow root. */
+  box(target: DriverTarget, inner?: string): Promise<Box>;
   /** The client rects of the element with `id` (`getClientRects()`): for an inline element, one per line it is on. */
   lines(id: string): Promise<Bounds[]>;
   /** What the shadow root of the element with `id` holds. */
@@ -363,6 +532,8 @@ export interface Driver {
   computed(id: string, property: string, inner?: string): Promise<string>;
   /** The computed value of a CSS property of the target, a light-DOM or a shadow element (009's `computed`, renamed by D1). */
   computedOf(target: ElementTarget, property: string): Promise<string>;
+  /** The computed value of a CSS property of the target, of any `DriverTarget` form (014's name for `computed`). */
+  computedNode(target: DriverTarget, property: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
@@ -384,6 +555,147 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
+  // The additions of 014 (research.md R-11, T006); `focus(target)` is 009's, below.
+  /** Presses `key` (a key name such as `"ArrowDown"`, or one character) on the focused element with `modifiers` held, as real keyboard input. */
+  pressKeys(key: string, modifiers?: readonly Modifier[]): Promise<void>;
+  /** Clicks the centre of the target with real mouse input. */
+  clickTarget(target: DriverTarget, options?: TargetClickOptions): Promise<void>;
+  /** Moves the mouse to the centre of the target with real input, pressing no button (014 phase 2). */
+  hoverTarget(target: DriverTarget): Promise<void>;
+  /** The focused element, through shadow roots, or null when nothing but the body is focused. */
+  focusedElement(): Promise<Focused | null>;
+  /** Applies `steps` to the target's children synchronously, in one task, then waits for every element to render. */
+  mutate(target: DriverTarget, steps: readonly Step[]): Promise<void>;
+  /** Sets the target's `inline-size` through the CSSOM, without waiting for a frame. */
+  resize(target: DriverTarget, inlineSize: number): Promise<void>;
+  /** Resolves once a `ResizeObserver` registered on the target now has had its observations delivered. */
+  afterResizeDelivery(target: DriverTarget): Promise<void>;
+  /**
+   * The computed value of `property` of a part of the target's shadow root (`which` the part name), of that part's
+   * pseudo-element (`"<part>::before"`), or of the target's own pseudo-element (`"::after"`).
+   */
+  computedPart(target: DriverTarget, which: string, property: string): Promise<string>;
+  /** The page's scroll offset. */
+  scrollOffset(): Promise<Offset>;
+  /** Sets the page's viewport to `width` × `height` CSS pixels and waits for every element to render. */
+  setViewportSize(width: number, height: number): Promise<void>;
+  /** The keydown events the document saw in the bubble phase since the last `mount`. */
+  keydownRecord(): Promise<Keydown[]>;
+  /** The clipboard calls the page made since the last `mount` (none is ever made for real). */
+  clipboardCalls(): Promise<string[]>;
+  /** Starts recording an activation of the target (research.md R-07); the returned function waits and returns the record. */
+  activationRecord(target: DriverTarget, options: ActivationOptions): Promise<() => Promise<ActivationEntry[]>>;
+  /** The unignored accessibility nodes of the target with their states (test/commands.ts `axStates`). */
+  axStates(target: AxTarget, scope?: AxStatesScope): Promise<AxNodeState[]>;
+  /**
+   * Starts recording Chromium's accessibility tree updates of the target and its descendants
+   * (`Accessibility.nodesUpdated`); the returned function waits for pending updates, stops and returns them.
+   */
+  axUpdates(target: AxTarget): Promise<() => Promise<AxUpdate[]>>;
+  /** The live-region capture (contracts/testing.md § Live-region capture). */
+  readonly liveCapture: LiveCapture;
+  /** Puts `markup` into the element with `containerId` the way `how` says. */
+  insert(containerId: string, markup: string, how: InsertHow): Promise<void>;
+  /**
+   * Returns after a `MessageChannel` round trip of its own, posted after the previous step, and one rendering update,
+   * so a removal and an insertion separated by it are in different tasks.
+   */
+  laterTask(): Promise<void>;
+  /**
+   * Inserts `markup` into the element with `containerId` while `document.readyState` is `"interactive"`, with the
+   * elements already defined, the capture armed before the insertion; returns the insertion's page time.
+   */
+  insertInteractive(containerId: string, markup: string): Promise<number>;
+  /**
+   * Returns no earlier than `ms` after the previous step's end, measured in the page, with the gap it achieved in page
+   * milliseconds (from the previous step's end to its own return).
+   */
+  after(ms: number): Promise<number>;
+  /** The announcement wait `W` in force for both load states, against which scenario bodies state their times. */
+  readonly W: Waits;
+  /** The announcer's hold `H` in force, in milliseconds (specs/010-feedback-forms research.md R-02). */
+  readonly H: number;
+  /**
+   * Runs `operations` in order in one task of the page, then waits until every `ocelle-*` element has rendered, so
+   * several changes of one step are changes "in one task" (specs/010-feedback-forms US1 scenarios 13 and 15).
+   */
+  batch(operations: readonly Operation[]): Promise<void>;
+  /**
+   * A property of the element with `id`, as the page holds it (013 phase 3: a converted attribute): a string, number or
+   * boolean as it is, an unset one as undefined, null and anything else as null.
+   */
+  property(id: string, name: string): Promise<unknown>;
+  /** The computed value of a CSS property of the first element matching `inner` in the shadow root of `id`, or "" without one. */
+  computedIn(id: string, inner: string, property: string): Promise<string>;
+  /** The content box (border and padding removed) of the first element matching `inner` in the shadow root of `id`. */
+  contentBox(id: string, inner: string): Promise<Bounds>;
+  /**
+   * Puts `markup` into the container as part of the page as first loaded, its literal tag `ocelle-first-load` replaced
+   * by `tag`, with the capture armed from before: in process the elements are upgraded by the registration of a fresh
+   * subclass of `tag`'s class (`registerFirstLoad`); on fixture pages the page is navigated afresh (`startDocument`)
+   * and its parser writes the markup, which the build loaded after it upgrades.
+   */
+  firstLoad(containerId: string, markup: string, tag: string): Promise<void>;
+  /**
+   * Defines `tag` once more as a second copy of the package would: through the guarded registration, with another
+   * class; the first definition stays (Edge Cases, two copies).
+   */
+  defineSecond(tag: string): Promise<void>;
+  /** The role of host `id` in the final snapshot of the last capture `liveCapture.stop()` returned. */
+  hostRole(id: string): Promise<string>;
+  /** The entries of `new FormData(form)` of the form with `formId`. */
+  formData(formId: string): Promise<Entries>;
+  /**
+   * Submits the form with `formId` through its own submitter (its first submit button, or `requestSubmit()` when it
+   * has none), or, after a key step, takes the submission that step made; returns the submitted entries, or null when
+   * nothing was submitted.
+   */
+  submit(formId: string): Promise<Entries | null>;
+  /** Resets the form with `formId`. */
+  reset(formId: string): Promise<void>;
+  /** Focuses the element with `id` and types `text` with the keyboard. */
+  type(id: string, text: string): Promise<void>;
+  // The form steps of specs/010-feedback-forms phase 3 that share a name with 008's or 009's are named `pressOn`,
+  // `clickPoint`, `focusChain`, `listenFor` and `heardEvents` (the landing's second merge of main).
+  /** Focuses the element with `id` and presses `key` (a key name, such as `Enter`). */
+  pressOn(id: string, key: string): Promise<void>;
+  /** Moves focus away from the focused element. */
+  blur(): Promise<void>;
+  /** A pointer click at the point `at` of the border box of the element with `id`. */
+  clickPoint(id: string, at: Point): Promise<void>;
+  /** The focused element through shadow roots, outermost first, each as `localName` or `localName#id`. */
+  focusChain(): Promise<string[]>;
+  // The phase 3 steps (specs/010-feedback-forms T031 to T033).
+  /** The unignored accessibility nodes of the element with `id` and of its shadow subtree, with descriptions and states. */
+  axDetails(id: string): Promise<AxDetail[]>;
+  /**
+   * Starts recording the events of `types` that reach each element of `ids` (a listener on the element, bubble phase),
+   * in the order they are heard, until the next `mount`.
+   */
+  listenFor(ids: readonly string[], types: readonly string[]): Promise<void>;
+  /** The events heard since the last `heardEvents` (or `listenFor`), in order; the record is then emptied. */
+  heardEvents(): Promise<Heard[]>;
+  /** The validity flags, `validationMessage` and `willValidate` of the element with `id`. */
+  validity(id: string): Promise<Validity>;
+  /**
+   * The ids of the elements a property of the element with `id` holds: of the element itself for an element, of each
+   * item for a list (a `NodeList`, say), none for null or undefined.
+   */
+  ids(id: string, name: string): Promise<string[]>;
+  /** `typeof` the property `name` of the element with `id`. */
+  typeOf(id: string, name: string): Promise<string>;
+  /** Whether `name in element` holds for the element with `id`. */
+  has(id: string, name: string): Promise<boolean>;
+  /**
+   * Calls the method `method` of the element with `id` with `args`, then settles (`settle`); its result as `property`
+   * reads one (specs/010-feedback-forms phase 3; since 009 phase 4 list-detail's `remeasure()`, research.md R-13, with no
+   * argument).
+   */
+  call(id: string, method: string, ...args: readonly Plain[]): Promise<unknown>;
+  /** A property of the first element matching `inner` in the shadow root of `id`, as `property` reads one; null without one. */
+  propertyIn(id: string, inner: string, name: string): Promise<unknown>;
+  /** The computed value of `property` of the pseudo-element `pseudo` of the first element matching `inner` in the shadow root of `id`. */
+  pseudoIn(id: string, inner: string, pseudo: string, property: string): Promise<string>;
   // 012 (research.md R-11; contracts/checks.md § Test harness): interaction, events, navigation, states and axe.
   /** Focuses the element with `id` (`focus()`). */
   focus(id: string): Promise<void>;
@@ -440,6 +752,8 @@ export interface Driver {
    * id in the copy gets `-<into>` appended.
    */
   copy(id: string, via: CopyVia, into: string): Promise<void>;
+  /** Selects the contents of the element with `id`, then reads the text from a user copy and paste. */
+  copyText(id: string): Promise<string>;
   /**
    * Applies a morph's attribute sync (idiomorph's order) of the first element of `markup` to the live element `id`: set
    * each attribute that differs, then remove, from the last, each live attribute the markup lacks; waits for every
@@ -478,10 +792,22 @@ export interface Driver {
    * keyboard input the target matches it, after a pointer click it does not.
    */
   focusTarget(target: ElementTarget): Promise<void>;
+  /** Focuses the target, of any `DriverTarget` form, by script (`focus()`), then settles (014's name for `focus`). */
+  focusNode(target: DriverTarget): Promise<void>;
   /** The target's `scrollLeft`. */
   scrollLeft(target: ElementTarget): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
   setScrollLeft(target: ElementTarget, value: number): Promise<void>;
+  /**
+   * The item texts of the first `list` node in the accessibility subtree of the element with `id` (019 R-11, T029):
+   * for each of its `listitem`s, the names of the `StaticText` nodes at any depth under it (a slotted `<time>`'s `time`
+   * node included), joined with single spaces, white space collapsed and trimmed; `[]` with no list.
+   */
+  itemTexts(id: string): Promise<string[]>;
+  /** The target's `scrollTop` (019 T079, the block-axis option of the overflow-region module). */
+  scrollTop(target: ElementTarget): Promise<number>;
+  /** Sets the target's `scrollTop` with an instant scroll, then settles (019 T079). */
+  setScrollTop(target: ElementTarget, value: number): Promise<void>;
   /** Whether the last keydown the window saw since the last `mount` was default-prevented; false when there was none. */
   lastKeyPrevented(): Promise<boolean>;
   /**
@@ -670,8 +996,6 @@ export interface Driver {
    * waits for every element to render (013 phase 3: a value set and removed before a frame).
    */
   changeAttributes(id: string, changes: readonly (readonly [string, string | null])[]): Promise<void>;
-  /** The value of the property `name` of the element with `id`, as the page holds it (013 phase 3: a converted attribute). */
-  property(id: string, name: string): Promise<unknown>;
   /** The text content of the first element matching `inner` in the shadow root of the element with `id`, or null when there is none. */
   textOf(id: string, inner: string): Promise<string | null>;
   /**
@@ -735,6 +1059,93 @@ export interface Driver {
    * start lies in, read through every open shadow root (test/find.ts); clears the selection after.
    */
   findInPage(text: string): Promise<FindMatch[]>;
+  // The additions of 020 phase 1 (contracts/checks.md § Driver additions; tasks.md T003), and two readers the
+  // disclosure bodies need beside them (reviews/phase-1/notes.md): the closed-panel oracle's `checkVisibility()` and the
+  // element references of an inner control.
+  /**
+   * Finds `word` in the page as the browser's find in page does (020 research.md R-08): a same-document navigation to a
+   * fresh `#ocelle-find-<n>:~:text=<word>` per call (a new fragment each time, so the same word can be found again), then
+   * waits for every element to render.
+   */
+  findText(word: string): Promise<void>;
+  /**
+   * Sets the property `name` of the element with `id` to each of `values` in order, all in one task, with no wait
+   * between the sets or after them (020 US1-7).
+   */
+  setProperties(id: string, name: string, values: readonly (string | number | boolean | null | undefined)[]): Promise<void>;
+  /** The element with `id`'s `checkVisibility()`: false for content the platform does not render (a closed panel's). */
+  visible(id: string): Promise<boolean>;
+  /**
+   * The elements an element-reflection property (`ariaLabelledByElements`, `ariaDescribedByElements`) of the element
+   * matching `inner` in the shadow root of the element with `id` holds, each as its `id` or, when it has none, its local
+   * name and classes (`span.label`), in order; null when the property is null.
+   */
+  reflected(id: string, inner: string, property: string): Promise<string[] | null>;
+  // The additions of 020 phase 2 (contracts/checks.md § Driver additions; tasks.md T023), and two readers the code-block
+  // bodies need beside them (reviews/phase-2/notes.md): the client rects of shadow elements and the boxes of the
+  // characters of a shadow element's text (the break-position, visual-order and line-start oracles).
+  /**
+   * A user's copy of a whole shadow block (020 research.md R-07): puts a sentinel on the clipboard (a user copy of a
+   * scratch field holding it), triple-clicks the first element matching `inner` in the shadow root of the element with
+   * `id` (2 px in from its top-left corner, so a clipped box is clicked where it shows), presses the platform's copy
+   * shortcut and returns the `text/plain` on the clipboard, read from the `clipboardData` of a user paste into a scratch
+   * field (the sentinel when the copy put nothing there).
+   */
+  copyShadow(id: string, inner: string): Promise<string>;
+  /**
+   * A user's copy of a run of a shadow element's children: puts the sentinel on the clipboard as `copyShadow` does,
+   * selects from before the element child `from` to after the element child `to` (both counted from 0 over the element
+   * children, comments and text left out) of the first element matching `inner` in the shadow root of the element with
+   * `id` (`setBaseAndExtent`), copies and returns the clipboard's `text/plain`.
+   */
+  copyShadowRun(id: string, inner: string, from: number, to: number): Promise<string>;
+  /**
+   * Playwright's aria snapshot of the first element matching `inner` in the shadow root of the element with `id`: on the
+   * fixture `locator.ariaSnapshot()`, in process the same generator as Vitest's browser mode vendors it
+   * (`utils.aria`), so no browser command is added.
+   */
+  ariaSnapshot(id: string, inner: string): Promise<string>;
+  /** The client rects (`getClientRects()`) of every element matching `inner` in the shadow root of the element with `id`, in tree order. */
+  clientRects(id: string, inner: string): Promise<Bounds[][]>;
+  /**
+   * Each code point of the text under the first element matching `inner` in the shadow root of the element with `id`,
+   * in tree order, with the border box of a range over it (zero for a line break): the characters' visual order and
+   * the place of each line's first character.
+   */
+  characters(id: string, inner: string): Promise<CharacterBox[]>;
+}
+
+/** One code point of a shadow element's text and the box of a range over it (`characters`). */
+export interface CharacterBox {
+  readonly text: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** The in-process driver: the shared steps and the steps only the element source can take. */
+export interface InProcessDriver extends Driver {
+  /**
+   * Mounts `markup` into the element with `containerId`, the literal tag `ocelle-first-load` replaced by a fresh
+   * test-only tag, arms the capture on the container, then defines the fresh tag as `class extends base {}` through
+   * `define` of src/define.ts, so the elements are upgraded by the registration (first load). Returns the fresh tag.
+   */
+  registerFirstLoad(containerId: string, markup: string, base: CustomElementConstructor): Promise<string>;
+  /** Makes `document.readyState` read `value` until the next `mount` or the next call (null: the real value). */
+  readyState(value: DocumentReadyState | null): Promise<void>;
+  /** Whether the element with `id` is an instance of `constructor`. */
+  instanceOf(id: string, constructor: abstract new (...args: never[]) => unknown): Promise<boolean>;
+}
+
+/** The fixture driver: the shared steps, the document mode of the capture and history navigation. */
+export interface FixtureDriver extends Driver {
+  readonly liveCapture: DocumentCapture;
+  /**
+   * Navigates away from the page (a page served with `Cache-Control: no-store`) and back through history; returns
+   * the `persisted` flag of the `pageshow` event of the page shown again.
+   */
+  navigateAwayAndBack(): Promise<boolean>;
 }
 
 /** One match of find in page: the element its start lies in, the matched text and that element's border box size. */
@@ -747,6 +1158,25 @@ export interface FindMatch {
 
 /** How `copy` copies the live DOM. */
 export type CopyVia = "outerHTML" | "clone" | "innerHTML";
+
+/**
+ * The item texts of the first `list` node of a flat accessibility subtree in tree order (`axSubtree`'s reading; 019
+ * research R-11, T029): for each `listitem` after the list, the `StaticText` names that follow it before the next
+ * `listitem`, joined with single spaces, white space collapsed and trimmed. Both harnesses read the subtree with
+ * `axSubtree`, so both use this one function. It stops at a second `list` node, so a list nested in an item ends the
+ * reading; the lists it reads hold none.
+ */
+export function itemTextsOf(nodes: readonly AxNode[]): string[] {
+  const start = nodes.findIndex((node) => node.role === "list");
+  if (start === -1) return [];
+  const items: string[][] = [];
+  for (const node of nodes.slice(start + 1)) {
+    if (node.role === "list") break;
+    if (node.role === "listitem") items.push([]);
+    else if (node.role === "StaticText") items.at(-1)?.push(node.name);
+  }
+  return items.map((texts) => texts.join(" ").replace(/\s+/g, " ").trim());
+}
 
 /**
  * The event types `listen` also hears in the capture phase on the elements themselves: those an element could emit

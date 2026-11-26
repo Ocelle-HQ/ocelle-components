@@ -1,0 +1,2 @@
+$ node gates/bin/test-lint.ts
+test-lint: 255 files checked, no finding

@@ -7,8 +7,8 @@ import mutation from "../../vitest.mutation.config.ts";
 import mutationElements from "../../vitest.mutation.elements.config.ts";
 
 // The Vitest projects and the mutation runs (002 contracts/gates.md § Mutation, research.md R-03 *Mutation path*;
-// PLAN-FRESH-2-002): vitest.mutation.config.ts drops exactly the projects whose tests start tools, a browser or a
-// Storybook build, and, resolving every project's include and exclude against the repository's test files, each test
+// PLAN-FRESH-2-002): vitest.mutation.config.ts drops the fixture projects that launch tools or a separate browser,
+// and the element projects run in their own mutation configuration. Resolving every project's paths, each test
 // file belongs to exactly one project, so none sits both in a project Stryker runs and in one it excludes. The check
 // fails if the tokens project's browser exclude or the gates project's integration exclude is removed.
 interface Project {
@@ -43,10 +43,11 @@ function inProject(project: Project, path: string): boolean {
 
 describe("vitest.mutation.config.ts", () => {
   // 005 research.md R-12: elements is mutated by stryker.elements.config.json; elements-build and elements-browser
-  // start tools or Chromium; elements-node stays. 008 research.md R-14: elements-touch is mutated with elements.
-  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-touch", "elements-build", "elements-browser", "storybook-integration", "gates-integration"];
+  // start tools or Chromium; elements-node stays. 008 research.md R-14: elements-touch is mutated with elements. 014
+  // research.md R-09: elements-browser-file starts Chromium on a file: fixture, so no Stryker run does.
+  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-touch", "elements-build", "elements-browser", "elements-browser-file", "storybook-integration", "gates-integration"];
 
-  it("excludes exactly tokens-browser, styles-browser, elements, elements-touch, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
+  it("excludes exactly tokens-browser, styles-browser, elements, elements-touch, elements-build, elements-browser, elements-browser-file, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
     expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual(notMutated);
     // 007 research.md R-05 (lever 1): the mutation configuration splits tokens in two, source-table.test.ts alone in
     // tokens-source-table and the rest in tokens; every other kept project is unchanged. This replaces the plain
@@ -87,6 +88,17 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
 });
 
 describe("the Vitest projects", () => {
+  it("runs in-process Storybook recipe tests in Chromium in both the normal and mutation suites", () => {
+    const recipe = "storybook/test/unit/browser/pane-action-footer.test.ts";
+    const owner = (projects: readonly Project[]) => projects.filter((project) => inProject(project, recipe)).map(({ name }) => name);
+    expect({ normal: owner(all), mutation: owner(kept), elementMutation: owner(keptElements) }).toEqual({
+      normal: ["storybook-browser"], mutation: ["storybook-browser"], elementMutation: [],
+    });
+    const browser = base.test?.projects?.find((project) =>
+      typeof project === "object" && "test" in project && project.test.name === "storybook-browser");
+    expect(browser).toMatchObject({ test: { browser: { enabled: true, headless: true, instances: [{ browser: "chromium" }] } } });
+  });
+
   it("put each test file of the repository in exactly one project", () => {
     const owners = Object.fromEntries(testFiles.map((path) => [path, all.filter((project) => inProject(project, path)).map((project) => project.name)]));
     const notOne = Object.fromEntries(Object.entries(owners).filter(([, names]) => names.length !== 1));
@@ -132,8 +144,11 @@ describe("the Vitest projects", () => {
 
   // 008 research.md R-14: both browser-mode element projects run at the fixture's 1280 × 800, elements as a mouse
   // device and elements-touch in a context with hasTouch; both register the same commands, 011's document readers
-  // (research.md R-13) and 012's press, hover, pointer, axState and axe (012 research.md R-11) among them, and since 018
-  // (research.md R-11, contracts/checks.md § Test harness) animationStates, seek, settleLayout and overflows.
+  // (research.md R-13) and 012's press, hover, pointer, axState and axe (012 research.md R-11) among them, and the
+  // live-region capture's liveStart and liveStop (specs/010-feedback-forms contracts/testing.md § Live-region capture;
+  // the landing's second merge of main), since 014 (research.md R-07, R-11) axStates, axUpdatesStart and
+  // axUpdatesStop, and since 018 (research.md R-11, contracts/checks.md § Test harness) animationStates, seek,
+  // settleLayout and overflows.
   it("run elements and elements-touch in browser mode at 1280 × 800, only elements-touch with hasTouch, with the same commands", () => {
     const browser = (name: string) => {
       const project = (base.test?.projects ?? []).find((each) => (each as { test?: { name?: unknown } }).test?.name === name) as
@@ -147,7 +162,7 @@ describe("the Vitest projects", () => {
         commands: Object.keys(options?.commands ?? {}).sort(),
       };
     };
-    const commands = ["activeElement", "animationStates", "axState", "axTree", "axe", "emulateForcedColors", "emulateReducedMotion", "hover", "overflows", "pointer", "pointerPath", "press", "scrollWidth", "seek", "settleLayout", "textBoxes", "touchTap"];
+    const commands = ["activeElement", "animationStates", "axState", "axStates", "axTree", "axUpdatesStart", "axUpdatesStop", "axe", "emulateForcedColors", "emulateReducedMotion", "hover", "liveStart", "liveStop", "overflows", "pointer", "pointerPath", "press", "scrollWidth", "seek", "settleLayout", "textBoxes", "touchTap"];
     expect({ elements: browser("elements"), touch: browser("elements-touch") }).toEqual({
       elements: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: false, commands },
       touch: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: true, commands },
@@ -164,6 +179,29 @@ describe("the Vitest projects", () => {
     expect(pick("elements")?.exclude).toEqual(
       expect.arrayContaining(["packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"]),
     );
+  });
+
+  // 014 research.md R-09 (PLAN-CORRECTNESS-1-013): User Story 5 scenario 12's file: test runs in its own node project,
+  // elements-browser-file, on exactly packages/elements/test/browser-file/, with Chromium's --allow-file-access-from-files
+  // given to its tests; elements excludes that directory and elements-browser does not include it.
+  it("put an element file: test in elements-browser-file only, a node project on exactly its own directory that provides the file-access flag", () => {
+    const ownersOf = (path: string) => all.filter((project) => inProject(project, path)).map((project) => project.name);
+    const raw = (base.test?.projects ?? []).map((project) => (project as { test?: { name?: unknown; provide?: unknown } }).test ?? {});
+    expect({
+      owners: ownersOf("packages/elements/test/browser-file/x.test.ts"),
+      deep: ownersOf("packages/elements/test/browser-file/deep/x.test.ts"),
+      browser: ownersOf("packages/elements/test/browser/x.test.ts"),
+      project: all.find((project) => project.name === "elements-browser-file"),
+      provide: raw.find((test) => test.name === "elements-browser-file")?.provide,
+      elementsExclude: all.find((project) => project.name === "elements")?.exclude,
+    }).toEqual({
+      owners: ["elements-browser-file"],
+      deep: ["elements-browser-file"],
+      browser: ["elements-browser"],
+      project: { name: "elements-browser-file", environment: "node", include: ["packages/elements/test/browser-file/**/*.test.ts"], exclude: expect.arrayContaining(["gates/plants/**", "gates/test/fixtures/**"]) as unknown },
+      provide: { chromiumArgs: ["--allow-file-access-from-files"] },
+      elementsExclude: expect.arrayContaining(["packages/elements/test/browser-file/**"]) as unknown,
+    });
   });
 
   it("keep no test file both in a project Stryker runs and in one it excludes", () => {
