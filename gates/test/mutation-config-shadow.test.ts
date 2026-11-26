@@ -89,14 +89,19 @@ interface Comparison {
   readonly verdict?: number;
 }
 
-async function compare({ expected, mixed, split }: Fixture): Promise<Comparison | undefined> {
+interface Observation {
+  readonly mixed: unknown;
+  readonly split: unknown;
+}
+
+async function compare({ expected, mixed, split }: Pick<Fixture, "expected"> & Observation): Promise<Comparison | undefined> {
   // The canonical red replay overlays this test on a base that lacks the comparator.
   const source = "../bin/mutation-config-shadow.ts";
   if (!existsSync(new URL(source, import.meta.url))) return undefined;
   const module = await import(source) as {
     readonly compareMutationConfigShadow?: (
       expected: Fixture["expected"],
-      observed: Pick<Fixture, "mixed" | "split">,
+      observed: Observation,
     ) => Comparison;
   };
   return module.compareMutationConfigShadow?.(expected, { mixed, split });
@@ -258,5 +263,119 @@ describe("mutation configuration shadow", () => {
     const result = await compare(trial);
     expect(result?.matched, "an invalid comparison must explicitly reject the receipts").toBe(false);
     expect(result).toMatchObject({ reason });
+  });
+
+  it.each([
+    {
+      name: "an expected plan without both configurations", reason: "configuration",
+      detail: "expected a standard mixed shard with both configurations",
+      change: ({ expected }) => { expected.configurations.pop(); },
+    },
+    {
+      name: "multiple mixed receipts for one configuration", reason: "receipts",
+      detail: `mixed control (${defaultConfiguration}): duplicate configuration receipt`,
+      change: ({ mixed }) => { mixed.receipts[1] = structuredClone(mixed.receipts[0]); },
+    },
+    {
+      name: "two split invocations that claim the same standard selectors", reason: "receipts",
+      detail: `${defaultConfiguration}: duplicate split invocation`,
+      change: ({ split }) => { split[1] = structuredClone(split[0]); },
+    },
+    {
+      name: "a split invocation with selectors assigned to neither configuration", reason: "selectors",
+      detail: `${elementsConfiguration}: missing unchanged split selectors`,
+      change: ({ split }) => { split[1].selectors = [`${elementsFile}:151-166`]; },
+    },
+    {
+      name: "a split baseline whose elapsed time exceeds total mutation time", reason: "timing",
+      detail: `split invocation (${elementsConfiguration}): baseline or mutation time is incomplete`,
+      change: ({ split }) => { split[1].receipts[0].totalMs = split[1].receipts[0].baseline.elapsedMs - 1; },
+    },
+    {
+      name: "split setup and execution that exceed job time", reason: "timing",
+      detail: "split invocation: setup and execution exceed job time",
+      change: ({ split }) => { split[0].timing.elapsedMs = split[0].timing.setupMs + split[0].receipts[0].totalMs - 1; },
+    },
+    {
+      name: "unequal baseline counts with the configuration identified", reason: "timing",
+      detail: `${elementsConfiguration}: baseline test counts differ`,
+      change: ({ split }) => { split[1].receipts[0].baseline.tests += 1; },
+    },
+    {
+      name: "a mutant owned by another configuration on a line inside the reported bounds", reason: "mutants",
+      detail: `mixed control (${defaultConfiguration}): empty, unfinished or out-of-range mutant inventory`,
+      change: ({ mixed, split }) => {
+        mixed.receipts[0].mutants.push(mutant(elementsFile, 2, "Killed"));
+        split[0].receipts[0].mutants.push(mutant(elementsFile, 2, "Killed"));
+      },
+    },
+    {
+      name: "a passing exit code when both arms report an uncovered mutant", reason: "verdict",
+      detail: `mixed control (${elementsConfiguration}): passing gate verdict includes a survivor`,
+      change: ({ mixed, split }) => {
+        mixed.receipts[1].mutants.push(mutant(elementsFile, 155, "NoCoverage"));
+        split[1].receipts[0].mutants.push(mutant(elementsFile, 155, "NoCoverage"));
+      },
+    },
+  ] satisfies readonly (InvalidTrial & { readonly detail: string })[])("diagnoses $name", async ({ reason, detail, change }) => {
+    const trial = fixture();
+    change(trial);
+    expect(await compare(trial)).toEqual({ matched: false, reason, detail });
+  });
+
+  it("requires the complete array of split invocation receipts", async () => {
+    const trial = fixture();
+    const rejection = {
+      matched: false,
+      reason: "receipts",
+      detail: "expected one completed split invocation per configuration",
+    };
+    expect(await compare({ ...trial, split: trial.split.slice(0, 1) })).toEqual(rejection);
+    await expect(compare({ ...trial, split: null })).resolves.toEqual(rejection);
+  });
+
+  it("identifies the configuration missing its split invocation when an entry is malformed", async () => {
+    const trial = fixture();
+    expect(await compare({ ...trial, split: [trial.split[0], null] })).toEqual({
+      matched: false,
+      reason: "selectors",
+      detail: `${elementsConfiguration}: missing unchanged split selectors`,
+    });
+  });
+
+  it.each([150, 168])("rejects matching mutant inventories outside the selected interval at line %s", async (line) => {
+    const trial = fixture();
+    trial.mixed.receipts[1].mutants.push(mutant(elementsFile, line, "Killed"));
+    trial.split[1].receipts[0].mutants.push(mutant(elementsFile, line, "Killed"));
+    expect(await compare(trial)).toEqual({
+      matched: false,
+      reason: "mutants",
+      detail: `mixed control (${elementsConfiguration}): empty, unfinished or out-of-range mutant inventory`,
+    });
+  });
+
+  it("accepts completed mutants that touch either selected boundary and preserves the split job timings", async () => {
+    const trial = fixture();
+    const first = mutant(elementsFile, 150, "RuntimeError");
+    first.location.end.line = 151;
+    const last = mutant(elementsFile, 167, "Timeout");
+    last.location.end.line = 168;
+    trial.mixed.receipts[1].mutants.push(first, last);
+    trial.split[1].receipts[0].mutants.push(structuredClone(last), structuredClone(first));
+    trial.split.reverse();
+    const result = await compare(trial);
+    expect(result?.matched).toBe(true);
+    expect(result).toMatchObject({
+      verdict: 0,
+      measurements: {
+        split: {
+          jobs: [
+            { selectors: [defaultSelector], verdict: 0, timing: { setupMs: 15_000, elapsedMs: 60_000, retries: 1 } },
+            { selectors: [elementsSelector], verdict: 0, timing: { setupMs: 16_000, elapsedMs: 90_000, retries: 0 } },
+          ],
+          configurations: { [elementsConfiguration]: { mutantCount: 4 } },
+        },
+      },
+    });
   });
 });
