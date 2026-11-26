@@ -56,7 +56,14 @@ export interface Job {
 export interface VisualRuntime {
   readonly pinRecord: { readonly jobId: number; readonly artifactId: number; readonly manifestDigest: string; readonly platform: string; readonly skopeoVersion: string };
   readonly runnerSetup: { readonly jobId: number; readonly image: string; readonly version: string; readonly architecture: string };
-  readonly tools: { readonly jobId: number; readonly docker: string; readonly podman: string; readonly node: string; readonly pnpm: string };
+  readonly tools: {
+    readonly jobId: number;
+    readonly docker: string;
+    readonly podman: string;
+    readonly node: string;
+    readonly pnpm: string;
+    readonly observed?: Attempt & { readonly testedMerge: string; readonly fingerprint: string };
+  };
 }
 
 export interface RunEvidence {
@@ -157,17 +164,20 @@ function completeJobs({ jobs, run }: RunEvidence): boolean {
       ((job.name === unitComparison || job.name === "Mutation shard") && job.conclusion === "skipped" || freshSuccess(job, run)));
 }
 
-function runtimeFingerprint({ jobs, runtime }: RunEvidence): readonly string[] | undefined {
+function runtimeFingerprint({ jobs, run, runtime }: RunEvidence): readonly string[] | undefined {
   const job = jobs?.rows.find(({ name }) => name === visualJob);
   if (runtime === null || job === undefined) return undefined;
   const { pinRecord, runnerSetup, tools } = runtime;
+  const observed = tools.observed;
+  if (observed?.runId !== run.id || observed.attempt !== run.attempt ||
+    observed.testedMerge !== run.testedMerge || !digest.test(observed.fingerprint)) return undefined;
   if ([pinRecord.jobId, runnerSetup.jobId, tools.jobId].some((id) => id !== job.id) ||
     !positiveInteger(pinRecord.artifactId) || !digest.test(pinRecord.manifestDigest) ||
     pinRecord.platform !== "linux/amd64" || runnerSetup.image !== "ubuntu-24.04" ||
     runnerSetup.architecture !== "X64" || !/^\d{8}\.\d+\.\d+$/.test(runnerSetup.version) ||
     ![tools.docker, tools.podman, tools.node, tools.pnpm, pinRecord.skopeoVersion].every((version) => toolVersion.test(version))) return undefined;
   return [pinRecord.manifestDigest, pinRecord.platform, pinRecord.skopeoVersion, runnerSetup.image,
-    runnerSetup.version, runnerSetup.architecture, tools.docker, tools.podman, tools.node, tools.pnpm];
+    runnerSetup.version, runnerSetup.architecture, tools.docker, tools.podman, tools.node, tools.pnpm, observed.fingerprint];
 }
 
 function allowedChanges(changes: readonly TreeChange[]): boolean {

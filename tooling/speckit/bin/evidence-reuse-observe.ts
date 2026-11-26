@@ -179,7 +179,18 @@ function gitFile(tree: string, path: string): string {
   return git(["show", `${tree}:${path}`]).toString();
 }
 
-function runnerImage(repoJob: Json, lines: readonly string[]): { image: string; version: string; architecture: string; imageCommit: string; imageManifest: string; docker: string; podman: string } {
+interface RunnerImage {
+  readonly image: string;
+  readonly version: string;
+  readonly architecture: string;
+  readonly imageCommit: string;
+  readonly imageManifest: string;
+  readonly docker: string;
+  readonly dockerBuildx: string;
+  readonly podman: string;
+}
+
+function runnerImage(repoJob: Json, lines: readonly string[]): RunnerImage {
   const start = lines.indexOf("##[group]Runner Image");
   const end = lines.indexOf("##[endgroup]", start + 1);
   requireEvidence(start !== -1 && end > start && lines.lastIndexOf("##[group]Runner Image") === start &&
@@ -218,13 +229,27 @@ function runnerImage(repoJob: Json, lines: readonly string[]): { image: string; 
     "the official inventory describes a different runner build");
   const dockerClient = required(/^- Docker Client (\S+)\s*$/gm, "Docker client");
   const docker = required(/^- Docker Server (\S+)\s*$/gm, "Docker server");
+  const dockerBuildx = required(/^- Docker-Buildx (\S+)\s*$/gm, "Docker Buildx");
   const podman = required(/^- Podman (\S+)\s*$/gm, "Podman");
   requireEvidence(dockerClient === docker, "the official runner inventory reports different Docker client and server versions");
-  return { image, version, architecture: "X64", imageCommit, imageManifest: hash(manifest), docker, podman };
+  return { image, version, architecture: "X64", imageCommit, imageManifest: hash(manifest), docker, dockerBuildx, podman };
 }
 
-function pinRecord(repo: string, repositoryId: number, run: HostedRun, lines: readonly string[], tree: string):
-  { artifactId: number; artifactDigest: string; manifestDigest: string; platform: string; skopeoVersion: string; containerImage: string; browser: string; containerNode: string } {
+interface PinRecord {
+  readonly artifactId: number;
+  readonly artifactDigest: string;
+  readonly manifestDigest: string;
+  readonly platform: string;
+  readonly skopeoVersion: string;
+  readonly containerImage: string;
+  readonly browser: string;
+  readonly containerNode: string;
+  readonly executedTools: Buffer | null;
+}
+
+const runtimeRecordName = "executed-tools.json";
+
+function pinRecord(repo: string, repositoryId: number, run: HostedRun, lines: readonly string[], tree: string): PinRecord {
   const identity = one(lines.flatMap((line) => {
     const match = /^Artifact pin-record has been successfully uploaded! Final size is \d+ bytes\. Artifact ID is (\d+)$/.exec(line);
     return match?.[1] === undefined ? [] : [match[1]];
@@ -247,6 +272,7 @@ function pinRecord(repo: string, repositoryId: number, run: HostedRun, lines: re
     writeFileSync(archive, zip);
     const contents = output("unzip", ["-Z", "-1", archive], "unreadable pin-record archive").toString().trim().split("\n").sort();
     const names = ["podman-inspect.json", "skopeo-inspect-raw-index.json", "skopeo-inspect-raw-manifest.json", "skopeo-version.txt"];
+    if (contents.includes(runtimeRecordName)) names.unshift(runtimeRecordName);
     requireEvidence(contents.length === names.length && contents.every((name, index) => name === names[index]),
       "the pin-record archive has missing or unexpected files");
     const read = (name: string): Buffer => output("unzip", ["-p", archive, name], `unreadable pin-record file ${name}`, 2 * 1024 * 1024);
@@ -269,10 +295,66 @@ function pinRecord(repo: string, repositoryId: number, run: HostedRun, lines: re
     const skopeoVersion = /^skopeo version (\S+)$/.exec(read("skopeo-version.txt").toString().trim())?.[1];
     requireEvidence(skopeoVersion !== undefined && toolVersion.test(skopeoVersion), "pin-record lacks an exact skopeo tool version");
     return { artifactId, artifactDigest, manifestDigest, platform, skopeoVersion, containerImage,
-      browser: string(pin.browser), containerNode: string(pin.node) };
+      browser: string(pin.browser), containerNode: string(pin.node),
+      executedTools: names[0] === runtimeRecordName ? read(runtimeRecordName) : null };
   } finally {
     rmSync(directory, { force: true, recursive: true });
   }
+}
+
+function executedToolsDigest(lines: readonly string[]): string {
+  const command = '##[group]Run VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts ';
+  const verificationSteps = lines.flatMap((line, index) => line.startsWith(command) &&
+    line.includes(`/pin-record/${runtimeRecordName}`) ? [index] : []);
+  const start = verificationSteps[0];
+  requireEvidence(verificationSteps.length === 1 && start !== undefined,
+    "missing or ambiguous Visual executed-tool verification step log");
+  const end = lines.findIndex((line, index) => index > start && line.startsWith("##[group]Run "));
+  const proofs = lines.slice(start + 1, end === -1 ? lines.length : end).flatMap((line) => {
+    const proof = /^Visual executed tools digest: (sha256:[a-f0-9]{64})$/.exec(line)?.[1];
+    return proof === undefined ? [] : [proof];
+  });
+  requireEvidence(proofs.length === 1, "missing or ambiguous executed tools digest in the Visual verification step");
+  return one(proofs, "missing executed tools digest");
+}
+
+function observedTools(pin: PinRecord, lines: readonly string[], run: HostedRun, runner: RunnerImage, node: string, pnpm: string): {
+  readonly tools: Omit<VisualRuntime["tools"], "jobId">;
+  readonly recordDigest: string;
+  readonly executables: Record<string, string>;
+} {
+  requireEvidence(pin.executedTools !== null, "the Visual pin-record has no executed tool observation");
+  const recordDigest = hash(pin.executedTools);
+  requireEvidence(recordDigest === executedToolsDigest(lines), "the executed tool record does not match the exact Visual job log");
+  const record = parse(pin.executedTools.toString());
+  requireEvidence(record.schema === 1 && record.repository === run.repository && record.event === run.event && record.job === "visual" &&
+    record.runId === run.id && record.attempt === run.attempt && record.testedMerge === run.testedMerge,
+  "the executed tool record is from a different Visual run, attempt or tested merge");
+  requireEvidence(record.platform === pin.platform && record.dockerContext === "default" &&
+    record.dockerEndpoint === "unix:///var/run/docker.sock" && record.podmanLocal === true,
+  "the Visual tool observation did not verify the audited local engines and OCI architecture");
+  const versions = object(record.versions);
+  const expectedVersions = {
+    node, pnpm, dockerClient: runner.docker, dockerServer: runner.docker, dockerBuildx: runner.dockerBuildx,
+    podman: runner.podman, skopeo: pin.skopeoVersion,
+  };
+  requireEvidence(Object.entries(expectedVersions).every(([name, version]) => versions[name] === version && toolVersion.test(version)),
+    "an executed tool version differs from the official runner inventory, project pin or OCI artifact");
+  const dockerCommits = [string(versions.dockerClientCommit), string(versions.dockerServerCommit)];
+  requireEvidence(dockerCommits.every((commit) => /^[a-f0-9]{7,40}$/.test(commit)), "the executed Docker build identities are unreadable");
+  const binaryDigests = object(record.executables);
+  const executableNames = ["node", "pnpm", "docker", "dockerBuildx", "podman", "skopeo"];
+  const executables = Object.fromEntries(executableNames.map((name) => [name, string(binaryDigests[name])]));
+  requireEvidence(Object.keys(binaryDigests).length === executableNames.length && Object.values(executables).every((value) => digest.test(value)),
+    "the executed tool record has unknown or unreadable executable identities");
+  const fingerprint = hash(Buffer.from(JSON.stringify([expectedVersions, dockerCommits, executables])));
+  return {
+    tools: {
+      node: string(versions.node), pnpm: string(versions.pnpm), docker: string(versions.dockerServer), podman: string(versions.podman),
+      observed: { runId: run.id, attempt: run.attempt, testedMerge: run.testedMerge, fingerprint },
+    },
+    recordDigest, executables,
+  };
 }
 
 interface AttemptReceipt {
@@ -287,6 +369,7 @@ interface AttemptReceipt {
   audit?: {
     workflowBlob: string;
     setupBlob: string;
+    runtimeRecorderBlob: string;
     lockfileBlob: string;
     playwright: string;
   };
@@ -298,6 +381,8 @@ interface AttemptReceipt {
     imageManifest?: string;
     artifact?: string;
     artifactDigest?: string;
+    executedToolsDigest?: string;
+    executables?: Record<string, string>;
     containerImage?: string;
     browser?: string;
     containerNode?: string;
@@ -311,11 +396,15 @@ function visualRuntime(context: Context, job: Job, rawJob: Json, run: HostedRun,
   // These blob IDs cover the audited CI job and shared setup. Re-audit before accepting a new version of either.
   const workflowBlob = git(["rev-parse", `${tree}:${ciWorkflow}`]).toString().trim();
   const setupBlob = git(["rev-parse", `${tree}:.github/actions/setup/action.yml`]).toString().trim();
-  requireEvidence(workflowBlob === "0ce61052f9665d34f335261fbe7d3d345898c564" &&
+  const recorderPath = "tooling/speckit/bin/record-visual-runtime.ts";
+  const runtimeRecorderBlob = git(["rev-parse", `${tree}:${recorderPath}`]).toString().trim();
+  requireEvidence(workflowBlob === "6eb0ec30c806e0c7d578c70cbc8beff48e8af534" &&
     setupBlob === "3c8211a282364e46895d9bdc0d173f85402fddbf" &&
+    runtimeRecorderBlob === "4d1ac78be5084f244be326ad0c76b47d687ed767" &&
     git(["rev-parse", `${baseTree}:${ciWorkflow}`]).toString().trim() === workflowBlob &&
-    git(["rev-parse", `${baseTree}:.github/actions/setup/action.yml`]).toString().trim() === setupBlob,
-  "the Visual CI job or shared setup differs from the audited common base");
+    git(["rev-parse", `${baseTree}:.github/actions/setup/action.yml`]).toString().trim() === setupBlob &&
+    git(["rev-parse", `${baseTree}:${recorderPath}`]).toString().trim() === runtimeRecorderBlob,
+  "the Visual CI job, shared setup or runtime recorder differs from the audited common base");
   const manifest = parse(gitFile(tree, "package.json"));
   const scripts = object(manifest.scripts);
   const node = gitFile(tree, ".node-version").trim();
@@ -325,7 +414,7 @@ function visualRuntime(context: Context, job: Job, rawJob: Json, run: HostedRun,
     scripts["setup:online"] === "pnpm install --frozen-lockfile && pnpm exec playwright install chromium" &&
     pnpm !== undefined && [node, pnpm, playwright].every((version) => toolVersion.test(version)),
   "the Visual build or Node, pnpm and Playwright setup differs from the audited entry points");
-  receipt.audit = { workflowBlob, setupBlob, playwright,
+  receipt.audit = { workflowBlob, setupBlob, runtimeRecorderBlob, playwright,
     lockfileBlob: sha(git(["rev-parse", `${tree}:pnpm-lock.yaml`]).toString().trim()) };
   requireEvidence(job.conclusion === "success" && lines.some((line) => /^visual: [1-9]\d* captures match their baselines \(docker\+podman\)$/.test(line)),
     "the matched Visual job did not report successful captures under both engines");
@@ -338,10 +427,13 @@ function visualRuntime(context: Context, job: Job, rawJob: Json, run: HostedRun,
   const runner = runnerImage(rawJob, lines);
   receipt.runtimeSources.imageCommit = runner.imageCommit;
   receipt.runtimeSources.imageManifest = runner.imageManifest;
+  const observed = observedTools(pin, lines, run, runner, node, pnpm);
+  receipt.runtimeSources.executedToolsDigest = observed.recordDigest;
+  receipt.runtimeSources.executables = observed.executables;
   return {
     pinRecord: { jobId: job.id, artifactId: pin.artifactId, manifestDigest: pin.manifestDigest, platform: pin.platform, skopeoVersion: pin.skopeoVersion },
     runnerSetup: { jobId: job.id, image: runner.image, version: runner.version, architecture: runner.architecture },
-    tools: { jobId: job.id, docker: runner.docker, podman: runner.podman, node, pnpm },
+    tools: { jobId: job.id, ...observed.tools },
   };
 }
 
