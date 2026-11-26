@@ -248,12 +248,14 @@ export interface UpdateArgs {
   readonly engine: string;
   readonly plant?: string;
   readonly story?: string;
+  readonly stories?: readonly string[];
 }
 
-const updateOptions = new Set(["--engine", "--plant", "--story"]);
+const updateOptions = new Set(["--engine", "--plant", "--story", "--stories"]);
+const scopedStoryId = /^[a-z0-9]+(?:-[a-z0-9]+)*--[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /**
- * The baseline command's arguments (`--engine`, `--plant`, `--story`), or the cause that stops it; a leading `--`,
+ * The baseline command's arguments, or the cause that stops it; a leading `--`,
  * which `pnpm run <script> -- <options>` passes on, is skipped.
  */
 export function parseUpdateArgs(argv: readonly string[]): UpdateArgs | { readonly cause: string } {
@@ -264,12 +266,24 @@ export function parseUpdateArgs(argv: readonly string[]): UpdateArgs | { readonl
     if (!updateOptions.has(option)) return { cause: `unknown argument ${option}` };
     const value = args[i + 1];
     if (value === undefined || value.startsWith("--")) return { cause: `${option} needs a value` };
+    if (option === "--stories" && values.has(option)) return { cause: "duplicate --stories option" };
     values.set(option, value);
   }
+  const engine = values.get("--engine") ?? "auto";
   const plant = values.get("--plant");
   const story = values.get("--story");
+  const selection = values.get("--stories");
+  if (selection !== undefined) {
+    if (plant !== undefined || story !== undefined) return { cause: "--stories cannot be combined with --plant or --story" };
+    if (engine !== "both") return { cause: "--stories needs --engine both" };
+    const stories = selection.split(",");
+    const invalid = stories.find((id) => !scopedStoryId.test(id));
+    if (invalid !== undefined) return { cause: `--stories has an invalid story ID: ${JSON.stringify(invalid)}` };
+    if (new Set(stories).size !== stories.length) return { cause: "--stories contains duplicate story IDs" };
+    return { engine, stories };
+  }
   if (story !== undefined && plant === undefined) return { cause: "--story needs --plant" };
-  return { engine: values.get("--engine") ?? "auto", ...(plant === undefined ? {} : { plant }), ...(story === undefined ? {} : { story }) };
+  return { engine, ...(plant === undefined ? {} : { plant }), ...(story === undefined ? {} : { story }) };
 }
 
 /** The cause that stops the plant mode before any build, or undefined (`spec` undefined: no such plant). */
