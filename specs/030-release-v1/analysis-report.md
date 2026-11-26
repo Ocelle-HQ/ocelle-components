@@ -1,124 +1,107 @@
 ---
-analyzed_at: 2026-11-26T00:04:11Z
-head: 2a145bf65ddac5a22e36d441963d86c071363ec7
-critical: 4
-high: 1
-medium: 9
-low: 4
+analyzed_at: 2026-11-26T01:35:59Z
+head: c7073958dbbe1ec27588e3a991f42e6297de2fe5
+critical: 0
+high: 0
+medium: 3
+low: 3
 coverage: 100
 ---
 
 ## Specification Analysis Report
 
-Feature: `specs/030-release-v1` (spec.md, plan.md, tasks.md; research.md, data-model.md, contracts/ and quickstart.md
-read for cross-checks). Constitution 1.3.1. No `before_analyze` or `after_analyze` hooks are registered
-(`.specify/extensions.yml`: `hooks: {}`).
+Feature: `specs/030-release-v1` (spec.md, plan.md, tasks.md; research.md, data-model.md, contracts/ and quickstart.md read for cross-checks). Constitution 1.3.1. This is the second run, after the fixes in `reviews/analysis/fixes.md` (operator decisions in `reviews/analysis/operator-decisions.md`: fix scope "everything now", A1 "Treat as asset"). tasks.md is now numbered T001 to T069. No `before_analyze` or `after_analyze` hooks are registered (`.specify/extensions.yml`: `hooks: {}`).
+
+**The 18 findings of the first run.** All are resolved in the artifacts as `fixes.md` says. The checks:
+
+- K1: T009 replaces every pinned package test that was found (tokens and styles `build.test.ts`, styles and elements peer and README tests, elements NOTICE). Every replacement derives `<v>` from the tokens manifest, so it fails on the `0.0.0` state. The README sentences move to phase 1 (T013).
+- K2: T025 covers the styles, elements and tokens changelog tests. The note on the tokens test is F8 below.
+- K3: phase 5 has red tasks T058 to T060. `git grep` over `test_pathspec` finds no test that reads the constitution or spec 001. Two tests mention the constitution's path as a string; see L6.
+- K4: only `gates/test/fixtures/install-check/` and `specs/` paths are in phase 4's red commit. `gates/release/provenance-reference.json` is created in T053.
+- E1, E2, F1 to F6, C1, A1 and L1 to L4: each fix is present at the locations `fixes.md` names.
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| K1 | Constitution Alignment | CRITICAL | tasks.md:T011 (L88), T004-T009 (L78-83), T055 (L208); packages/styles/test/build.test.ts:L62-L68; packages/tokens/test/build.test.ts:L105-L113; packages/styles/test/readme.test.ts:L38-L39, L164-L168; packages/elements/test/node/readme.test.ts:L1188-L1192 | Existing package tests assert the manifests and READMEs as they are today: `files: ["dist", "CHANGELOG.md", "README.md"]`, the build `scripts`, `peerDependencies` `workspace:0.0.0`, and README sentences that must contain the same pin ("exact peer dependency, `workspace:0.0.0`", "stay at 0.0.0 until the first release"). T011 changes all of these (files plus LICENSE/NOTICE/THIRD_PARTY_NOTICES, build copies, `workspace:^1.0.0`), so these tests fail at phase 1's green commit. No phase 1 red task replaces them, and T055 rewrites the README peer sentences only in phase 5, although the README tests tie them to the phase 1 pin. Principle VIII: a test that turns out wrong is replaced by a stricter one with the reason recorded, red first in a test-only commit. Changing these tests in the green commit, or leaving them red until phase 5, breaks VIII. | Add phase 1 red tasks (in the T009 commit) that replace each of these assertions with the 1.0.0 state (files, scripts, `workspace:^1.0.0`, the new README peer and version sentences) and record why. Move the README peer and version sentence changes from T055 into phase 1 green. |
-| K2 | Constitution Alignment | CRITICAL | tasks.md:T029 (L126), T020-T024 (L114-L118); packages/tokens/test/readme.test.ts:L79-L99; packages/styles/test/readme.test.ts:L172-L220; packages/elements/test/node/changelog.test.ts:L20-L30 | The changelog tests read "## Unreleased" (tokens: "names every token as added in the Unreleased section"; styles: eight "under Unreleased / Added" cases; elements: "states under Unreleased: ..."). T029 moves the Unreleased content into `## 1.0.0 - <date>` and leaves Unreleased empty, so these tests fail at phase 2's green commit. Phase 2's red commit (T020-T023) does not replace them. The tokens test also contradicts R-09: it needs every token by full name, while R-09 accepts prefix mentions. Same VIII conflict as K1. | Add a phase 2 red task that rewrites these tests to read the `1.0.0` section (or "any section", matching R-09) and record why. Decide whether the tokens test keeps the stricter full-name rule or follows R-09's prefix rule, and say so in tasks.md. |
-| K3 | Constitution Alignment | CRITICAL | tasks.md Phase 5 goal (L202-L204), T055 (L208), T057 (L210), T058 (L211); plan.md § Phases 5 (L175); packages/{tokens,styles}/test/readme.test.ts, packages/elements/test/node/readme.test.ts | Phase 5 claims the VIII exemption ("behaviour-free ... no test can fail for it"). The package READMEs are under test: all three packages have readme tests that assert README content fragment by fragment. T055 (install section, removing the `workspace:0.0.0` statements) and T057 (links) change those READMEs. VIII allows the exemption only when no test could fail, so `tdd-exempt.md` would make a false statement. | Split phase 5: write the README changes (install section, peer range, provenance verification, the RELEASING.md link) red first, as new assertions in the existing readme tests. Keep the exemption only for the constitution, spec 001, RELEASING.md and CONTRIBUTING.md, or show that no test reads those files. |
-| K4 | Constitution Alignment | CRITICAL | tasks.md:T047 (L185), T049 (L187); .specify/extensions/story/story-config.yml:L16 (`test_pathspec`) | T049 puts `gates/release/provenance-reference.json` into phase 4's red, test-only commit ("the fixtures and the reference file are test inputs"). That path matches none of the `test_pathspec` globs (`**/*.test.ts`, `**/*.spec.ts`, `**/test/**`, `**/*.stories.ts`). It is also production data: `install-check --rehearse` reads it in the dry run and in `release.yml`'s `prepare` job. `tdd-check.sh 4` will report "red commit changes non-test files", and VIII requires a red commit to change only test files. | Keep the recorded responses (`gates/test/fixtures/install-check/`) in the red commit. Create `gates/release/provenance-reference.json` in the green commit (T050). If the unit tests need the values, give them a copy under `gates/test/fixtures/`. |
-| E1 | Coverage Gap | HIGH | spec.md:FR-006 (L307-L310), FR-044 (L432-L437); tasks.md:T017 (L94), T031 (L128), T045 (L164), T054 (L207) | FR-006 requires the pack-contents gate to be listed in `specs/001-*/contracts/ci-checks.md`. T031 and T045 add Release readiness and Release workflow to ci-checks.md, but T017 (pack-contents registration) does not touch ci-checks.md, and T054 amends spec.md, plants.md and gate-cli.md, not ci-checks.md. No task adds the "Pack contents" check to ci-checks.md. | Add the ci-checks.md entry for "Pack contents" to T017, in the same phase as its `ci.yml` job, as FR-044 and T031/T045 do for the other two gates. |
-| F1 | Inconsistency | MEDIUM | tasks.md:T047 (L185); data-model.md § Provenance reference (L134-L143); contracts/install-check.md (L84) | T047 defines `provenance-reference.json` as `{ name, version, repository, commit }` plus `withoutProvenance`. data-model.md defines `withProvenance: { name, version, repository, commit, workflow, ref }`. `--rehearse` needs `workflow` and `ref` for its `workflow-mismatch` and `ref-mismatch` cases. | Align T047 with data-model.md: a `withProvenance` key that includes `workflow` and `ref`. |
-| F2 | Inconsistency | MEDIUM | tasks.md:T028 (L125); data-model.md § Secret allow-list entry (L81); research.md R-08 (L177) | Allow-list entry key: T028 says `{ path, rule, sha256, reason }`, while data-model.md and R-08 say `valueSha256`. | Use `valueSha256` in T028, or change data-model.md and R-08, so the tests (T021), the plants (T030) and the file agree. |
-| F3 | Inconsistency | MEDIUM | tasks.md Phase 3 independent test (L143-L145) vs T040 (L159) and Phase 3 checkpoint (L167-L168) | The phase 3 independent test says "Release dry run" runs all four jobs "and is green". T040 and the checkpoint say the composite action's install-check steps fail until US4 lands, so the verdict is red in phase 3. | Reword the phase 3 independent test: "Release dry run" is red only because the US4 install-check steps are missing, and it turns green in phase 4 (T052). |
-| F4 | Inconsistency | MEDIUM | tasks.md:T007 (L81), T022 (c) (L116); research.md R-15 case 2 (L503-L507) | T007 and T022 (c) hardcode version `1.0.0` against the real workspace (`... at version 1.0.0`, `ready (17/17 rows, 0 secrets, version 1.0.0)`). R-15's version-bump pull request contains "exactly" the manifests, peers, lockfile and changelogs, so its CI would fail on these tests. K1's replaced package tests may pin the version the same way. | Make these integration tests read the expected version from `packages/tokens/package.json`, or add the test updates to R-15's list of what the version-bump pull request contains. |
-| F5 | Inconsistency | MEDIUM | spec.md:Story 3 (L147), FR-022 (L345-L346), Assumptions (L519-L524); plan.md Constitution Check "DCO" row (L76); research.md R-10 Sign-off (L318-L327) | The spec says the release workflow confirms "every merge gate" (Story 3) and "every required merge-gate check (spec 001 FR-020 ...)" (FR-022). The plan skips ci.yml's Sign-off job in the release run (`release: true`). The spec's Assumptions record the narrowed mutation range but not the Sign-off skip, so spec and plan disagree. | Add the Sign-off exception and its reason (squash commits on `main`; DCO is enforced on every pull request) to the spec's Assumptions or FR-022. |
-| F6 | Inconsistency | MEDIUM | spec.md:FR-040 (L411-L413), Story 5 scenario 1 (L243-L244); tasks.md:T053 (L206); research.md R-14 (L473-L474) | FR-040 requires the amended constitution to say that a bootstrap credential is "held by the operator only and revoked after use". T053 (and R-14) say "the operator's own and never reaches CI" and leave out revocation. Story 5's independent test checks each FR-040 statement. | Add "and revoked (logged out) after use" to T053's list of statements. |
-| E2 | Coverage Gap | MEDIUM | spec.md:FR-033 (L395-L398); research.md R-12 (L416-L418); tasks.md:T048 (L186) | FR-033 requires the tarball rehearsal to include a planted failure. R-12 makes it a unit test of `--from-tarballs` with a fixture tarball that lacks a declared export. T048 covers `entry-point-unresolved` only through the stub registry, and no test is named for `--from-tarballs` mode with its declared-peer-only peer step. | Add to T048 a `--from-tarballs` test with a fixture tarball whose declared export is missing (`entry-point-unresolved`), plus the peer step's declared-peer-only behaviour in that mode. |
-| C1 | Underspecification | MEDIUM | spec.md Build order (L67-L70); plan.md (L7-L9); tasks.md Build order (L13-L17), T002 (L48), T014 (L91) | The spec and plan start implementation only after mission 018 and op 023 are both on `main`. The tasks' "go" condition names only mission 018 and states op 023 "is already on `main`" (18 gates, `gates/lib/sandbox-paths.ts`, the redaction script). This checkout cannot confirm that: the local `origin/main` (183b20f, which may be stale) has 17 gates and no `gates/lib/sandbox-paths.ts`. T014 and T016 (`sandbox-path` rule) depend on that file. | Make the "go" condition name both mission 018 and op 023, as the spec does. T002 already rechecks `sandbox-paths.ts`; have it stop for the operator if the file is missing. |
-| A1 | Ambiguity | MEDIUM | tasks.md:T047 (L185); research.md R-11 (L393-L402); constitution § Technology, Licence and Supply Chain ("Any other third-party asset needs the same treatment and the operator's approval") | T047 commits recorded registry responses (packument and attestation bundles) of third-party packages under `gates/test/fixtures/install-check/`. The plan does not say whether third-party registry metadata counts as a "third-party asset" under the constitution (licence note, `THIRD_PARTY_NOTICES`, operator approval). A full packument can carry the third party's README and licence text. | State in research.md R-11 that the fixtures hold only the fields the decoder needs (no README or licence text), and say why they are not a third-party asset. Otherwise, list them in `THIRD_PARTY_NOTICES` with the operator's approval. |
-| L1 | Inconsistency | LOW | spec.md:FR-030 (L388), Story 4 scenario 1 (L213); plan.md Constitution IV row (L68); tasks.md:T050 (L191) | The spec says the browser build loads "under the constitution's strict CSP". The plan and T050 use that policy plus `font-src 'self'`. This is the project's established fixture policy (packages/tokens/test/browser/csp.test.ts) but not the constitution's text. | Say "the constitution's CSP plus `font-src 'self'` for the tokens' font" in FR-030, or note the addition in the plan's Constitution IV row. |
-| L2 | Coverage Gap | LOW | plan.md Performance Goals (L48-L49) | The plan sets time bounds (release-readiness under 60 s on the full history; pack-contents under the build time plus 30 s). No task measures or records them. | Record the measured durations in T059 or T060, or drop the goals. |
-| L3 | Coverage Gap | LOW | spec.md:FR-002 (L292-L293); data-model.md § Pack manifest `identical` (L13); research.md R-04 (L76-L77) | FR-002 requires licence files in the packages to be identical to the repository's. The `identical` rule compares only with root files (`LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`). `dist/fonts/OFL.txt` has its repository copy at `packages/tokens/fonts/OFL.txt` and is required but not compared. | Allow `identical` to name a repository path (`packages/tokens/fonts/OFL.txt`) for `dist/fonts/OFL.txt`, or state why the existing font test (packages/tokens/test/font.test.ts) already covers it. |
-| L4 | Underspecification | LOW | tasks.md:T001 (L45) | T001 says the merge is "signed off" but its command `git merge --no-edit -s ort FETCH_HEAD` has no `--signoff`. | Add `--signoff` to the command. |
+| C2 | Underspecification | MEDIUM | tasks.md:T055 (L225), T018 (L113); research.md R-17 (L590-L593: package trees with "licence files"); contracts/pack-contents-gate.md (L4-L7, L14, L27); data-model.md § Pack manifest `identical` (L13) | The `pack-tree` plants hold committed package trees with their own copies of the licence files. The gate runs with `--root <tmp>`, whose root `THIRD_PARTY_NOTICES` comes from the configuration set (T006), and the `identical` rule compares the tokens and elements copies of `THIRD_PARTY_NOTICES` with that root file. Phase 4's T055 rewrites the root `THIRD_PARTY_NOTICES`: it adds the repository-only section and changes the opening sentence. After that, the plant copies from phase 1 differ from the root file. `pass-minimal` and `pass-star-export` would then report `not-identical`, and every fail plant would report it as an extra finding beside its expected one. The plant job (a required check) turns red in phase 4. No task updates the plant trees, and R-17 does not say that the plant builder copies the root licence files into the trees. | Do one of these: (a) T055 also updates the `THIRD_PARTY_NOTICES` copies in `gates/plants/pack-contents/*/tree/`; (b) R-17 and T017 state that the plant builder copies the root `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES` into each tree unless the plant ships its own (so only `fail-notice-differs` carries a copy). Have T057 run the pack-contents plants. |
+| F7 | Inconsistency | MEDIUM | tasks.md:T040 (L186); data-model.md § First-release base (L89-L91); research.md R-10 (L243-L245) | Three files give different initial values for `gates/release/first-release-base`. T040 says "the commit before this mission's first commit on the branch", which is the branch's fork point from the old `main`. data-model.md and R-10 say it is committed in US3 "holding the `main` commit merged in Setup" (T001's `FETCH_HEAD`). These are different commits whenever `main` moved after the branch was cut, which it did (mission 018, op 023). The pre-tag pull request later rewrites the file. Until then, `release-step base` in the dry run computes a range that differs depending on which document is followed. | Make T040 match data-model.md and R-10: write the `main` commit that T001 merged (recorded in `reviews/recheck.md`). Otherwise, change data-model.md and R-10 to match T040. |
+| F8 | Inconsistency | MEDIUM | tasks.md:T025 (L142); research.md R-09; constitution VIII ("replaced by a stricter one with the reason recorded") | The styles and elements changelog tests now read only the `## 1.0.0 - <YYYY-MM-DD>` section. The tokens test "names every token as added" reads "any section of the changelog". The old test read only "Unreleased". T025 calls the new test stricter, but only than R-09's prefix rule. Compared with the test it replaces, the section scope is wider: a token named only under some other heading now passes. The decision is recorded, the 1.0.0 heading is still required, and the practical loss is small, so this is not a definite VIII conflict. Still, the three packages' tests disagree on which section counts, and "stricter" is not shown against the old test. | Have the tokens test read the `1.0.0` section plus "Unreleased", which are the sections at or after the first release, instead of any section. Or record in `reviews/phase-2/replaced-tests.md` why "any section" is at least as strict as the old "Unreleased" reading. |
+| L5 | Inconsistency | LOW | tasks.md:T063 (L255), T065 (L257) | T063 and T065 are both marked [P], but both edit `packages/{tokens,styles,elements}/README.md`. T063 writes the install sections and T065 adds the `RELEASING.md` link to them. Running them in parallel conflicts. | Remove [P] from T065, or fold the README link into T063 and keep only the `CONTRIBUTING.md` link in T065. |
+| L6 | Underspecification | LOW | tasks.md:T002 (L64), T066 (L258); gates/test/governance.test.ts:L51; gates/test/plant-runner.test.ts:L855 | T002's `git grep` must show that "no test reads `.specify/memory/constitution.md` or `specs/001-repository-foundation/`". The grep matches two test lines that name the constitution's path without reading the file: governance.test.ts asserts that `CONTRIBUTING.md` contains the path, and plant-runner.test.ts lists it as a no-plant path. A literal grep would therefore report hits, and T066's statement would need a judgement that T002 does not ask for. | In T002, record each grep hit and whether the test reads the file (both of these are mentions, not reads). Base phase 5's no-red claim for the constitution on that record. |
+| L7 | Inconsistency | LOW | research.md R-17 "Configuration set" (L594-L596); tasks.md:T006 (L93); fixes.md L3 | The L3 fix added `packages/tokens/fonts/OFL.txt` to the plant configuration set in T006, for `fail-ofl-differs` and the `{ path, source }` identity. R-17's configuration-set list was not updated. T062 amends spec 001 `contracts/plants.md` from R-17, so the amendment may miss that path. | Add `packages/tokens/fonts/OFL.txt` to R-17's configuration-set list. |
 
 **Coverage Summary Table:**
 
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
-| FR-001 package-metadata | Yes | T005, T011, T016 | `repository-mismatch`, `license-field`, `private-flag` rules |
-| FR-002 licence-files | Yes | T005, T010, T011, T013, T016 | L3 (OFL.txt identity) |
-| FR-003 peer-range | Yes | T004, T005, T011, T012, T016 | |
-| FR-004 pack-contents-gate | Yes | T005, T007, T013, T014, T016 | |
-| FR-005 changelog-1.0.0 | Yes | T029 | K2 (existing changelog tests) |
-| FR-006 pack-contents-check | Yes | T008, T016, T017 | E1 (ci-checks.md listing missing) |
-| FR-010 gap-rows | Yes | T021, T022, T026, T027, T030 | |
-| FR-011 secret-scan | Yes | T021, T022, T027, T028, T030 | F2 |
-| FR-012 version-tag | Yes | T021, T027, T030 | |
-| FR-013 changelog-check | Yes | T021, T027, T029, T030 | |
-| FR-014 readiness-verdict-gate | Yes | T022, T023, T027, T031 | |
-| FR-015 readiness-proven | Yes | T021, T022, T030 | |
-| FR-020 tag-only-trigger | Yes | T033, T034, T041, T044 | |
-| FR-021 least-privilege | Yes | T034, T041, T044 | |
-| FR-022 pre-publish-steps | Yes | T039, T040, T041 | F5 (Sign-off skip) |
-| FR-023 env-publish-order | Yes | T033, T038, T041 | |
-| FR-024 oidc-bootstrap | Yes | T041, T056 | bootstrap procedure in RELEASING.md |
-| FR-025 rerun-safe | Yes | T033, T038 | |
-| FR-026 workflow-static-check | Yes | T034, T043, T044, T045 | |
-| FR-027 dry-run-path | Yes | T033, T034, T042, T044, T052 | F3 |
-| FR-030 install-check | Yes | T048, T050, T041 | L1 |
-| FR-031 provenance-verify | Yes | T047, T048, T050 | F1 |
-| FR-032 visibility-retry | Yes | T048, T050 | |
-| FR-033 tarball-rehearsal | Yes | T040, T050, T052 | E2 (planted failure test) |
-| FR-034 provenance-proof-real | Yes | T047, T048, T050, T052 | K4 |
-| FR-040 constitution-amendment | Yes | T053 | F6 |
-| FR-041 security-md-line | Yes | T053 | |
-| FR-042 readme-install | Yes | T055, T057 | K1, K3 |
-| FR-043 release-procedure | Yes | T056 | |
-| FR-044 spec-001-amendment | Yes | T031, T039, T045, T054 | E1 |
-| FR-045 no-credential-no-sandbox | Yes | T021, T022, T030, T061 | |
-| SC-001 clean-install | Yes | T041, T050 | measured at release (O7) |
-| SC-002 provenance-3-of-3 | Yes | T048, T050 | measured at release |
-| SC-003 plants-100pct | Yes | T016, T030, T044 | |
-| SC-004 readiness-17-of-17 | Yes | T022, T026 | |
-| SC-005 approval-rerun | Yes | T033, T041, T056 | |
-| SC-006 no-long-lived-credential | Yes | T053, T056, T061 | O8 is the operator's |
-| SC-007 operator-steps-listed | Yes | T056 | |
-| SC-008 provenance-proof-1-and-3 | Yes | T047, T048, T050, T052 | |
-| SC-009 dry-run-zero-writes | Yes | T034, T042, T044 | |
+| FR-001 package-metadata | Yes | T005, T009, T012, T016 | `repository-mismatch`, `license-field`, `private-flag` |
+| FR-002 licence-files | Yes | T005, T009, T011, T012, T015, T016, T018 | OFL.txt identity covered (L3 fixed); C2 |
+| FR-003 peer-range | Yes | T004, T005, T009, T012, T014, T016 | |
+| FR-004 pack-contents-gate | Yes | T005, T007, T015, T016, T018 | |
+| FR-005 changelog-1.0.0 | Yes | T025, T031 | F8 |
+| FR-006 pack-contents-check | Yes | T008, T018, T019 | ci-checks.md entry in T019 (E1 fixed) |
+| FR-010 gap-rows | Yes | T022, T023, T028, T029, T032 | |
+| FR-011 secret-scan | Yes | T022, T023, T029, T030, T032 | `valueSha256` throughout (F2 fixed) |
+| FR-012 version-tag | Yes | T022, T029, T032 | |
+| FR-013 changelog-check | Yes | T022, T029, T031, T032 | |
+| FR-014 readiness-verdict-gate | Yes | T023, T024, T029, T033 | |
+| FR-015 readiness-proven | Yes | T022, T023, T032 | |
+| FR-020 tag-only-trigger | Yes | T035, T036, T043, T046 | |
+| FR-021 least-privilege | Yes | T036, T043, T046 | |
+| FR-022 pre-publish-steps | Yes | T041, T042, T043 | Sign-off exception in spec (F5 fixed) |
+| FR-023 env-publish-order | Yes | T035, T040, T043 | |
+| FR-024 oidc-bootstrap | Yes | T043, T064 | bootstrap procedure in RELEASING.md |
+| FR-025 rerun-safe | Yes | T035, T040 | |
+| FR-026 workflow-static-check | Yes | T036, T045, T046, T047 | |
+| FR-027 dry-run-path | Yes | T035, T036, T044, T046, T057 | F7 (base value) |
+| FR-030 install-check | Yes | T043, T050, T054 | CSP wording aligned (L1 fixed) |
+| FR-031 provenance-verify | Yes | T049, T050, T054 | |
+| FR-032 visibility-retry | Yes | T050, T054 | |
+| FR-033 tarball-rehearsal | Yes | T042, T050, T054, T057 | planted `--from-tarballs` failure (E2 fixed) |
+| FR-034 provenance-proof-real | Yes | T049, T050, T053, T054, T057 | |
+| FR-040 constitution-amendment | Yes | T061 | revocation stated (F6 fixed) |
+| FR-041 security-md-line | Yes | T061 | |
+| FR-042 readme-install | Yes | T009, T013, T058, T063, T065 | L5 |
+| FR-043 release-procedure | Yes | T059, T064 | |
+| FR-044 spec-001-amendment | Yes | T019, T033, T041, T047, T062 | L7 |
+| FR-045 no-credential-no-sandbox | Yes | T022, T023, T032, T069 | |
+| SC-001 clean-install | Yes | T043, T054 | measured at release (O7) |
+| SC-002 provenance-3-of-3 | Yes | T050, T054 | measured at release |
+| SC-003 plants-100pct | Yes | T018, T032, T046 | C2 |
+| SC-004 readiness-17-of-17 | Yes | T023, T028 | |
+| SC-005 approval-rerun | Yes | T035, T043, T064 | |
+| SC-006 no-long-lived-credential | Yes | T061, T064, T069 | O8 is the operator's |
+| SC-007 operator-steps-listed | Yes | T059, T064 | |
+| SC-008 provenance-proof-1-and-3 | Yes | T049, T050, T053, T054, T057 | |
+| SC-009 dry-run-zero-writes | Yes | T036, T044, T046 | |
 
-**Constitution Alignment Issues:**
+**Constitution Alignment Issues:** none at CRITICAL.
 
-- Principle VIII (Test-First, NON-NEGOTIABLE), the rule that a test that turns out wrong is replaced by a stricter
-  one with the reason recorded, red first. Existing package tests pin the 0.0.0 manifests, the `workspace:0.0.0`
-  peer, the README peer sentences and the "Unreleased" changelog content. Phases 1 and 2 change all of these without
-  a red task to replace the tests (K1, K2).
-- Principle VIII, the exemption. Phase 5 claims "no test can fail" for README changes that existing readme tests
-  assert (K3).
-- Principle VIII, red first. Phase 4's red commit would include a non-test file, `gates/release/provenance-reference.json` (K4).
-- Supply chain. Whether recorded third-party registry responses count as a third-party asset is not stated (A1,
-  MEDIUM; not a definite conflict).
-- The supply-chain contradictions (internal until 1.0.0, token in CI secrets, exact pins) are recorded in Complexity
-  Tracking with scope, sunset and operator approval, as Governance requires. No finding.
+- Principle VIII. Every story phase (1 to 5) now has a test-only red commit, and only phase 0 claims the exemption. Existing tests that a phase makes wrong are replaced in that phase's red commit, with the reasons recorded. No red commit holds production data: the plants, `pack-manifest.json`, `gap-rows.json`, `secret-allowlist.json`, `first-release-base` and `provenance-reference.json` all arrive in green commits. Version-dependent assertions read the tokens manifest. F8 is a VIII-adjacent consistency point, not a definite conflict.
+- Supply chain. The recorded registry fixtures are third-party assets, listed in `THIRD_PARTY_NOTICES` with the operator's approval (A1, T049, T051, T055). The amended supply-chain statements remain in Complexity Tracking, each with a sunset.
 
-**Unmapped Tasks:** none. T001 to T003 (setup and recheck), T018 (an explicit no-op with a confirmation), T019,
-T032, T046, T052 (run and record), and T059 to T061 (polish) support every story and need no requirement of their
-own.
+**Unmapped Tasks:** none. These tasks support every story and need no requirement of their own:
+
+- T001 to T003: setup and recheck.
+- T010, T026, T038, T052 and T060: red runs and red commits.
+- T020, T034, T048 and T057: green runs and records.
+- T056: command-line confirmation.
+- T067 to T069: polish. T067 and T068 also measure the plan's performance goals (L2 fixed).
 
 **Metrics:**
 
 - Total Requirements: 40 (31 functional requirements, 9 success criteria)
-- Total Tasks: 61 (T001 to T061), plus the operator steps O1 to O8, which are not agent tasks
-- Coverage % (requirements with >=1 task): 100% (40 of 40); FR-006 is only partly covered (E1)
-- Ambiguity Count: 1
+- Total Tasks: 69 (T001 to T069), plus the operator steps O1 to O8, which are not agent tasks
+- Coverage % (requirements with >=1 task): 100% (40 of 40)
+- Ambiguity Count: 0
 - Duplication Count: 0
-- Critical Issues Count: 4
+- Critical Issues Count: 0
 
 ## Next Actions
 
-- Resolve the four CRITICAL findings before `/speckit-implement` (the `ocelle-implement` workflow). All four are
-  tasks.md changes that make the phases test-first in full:
-  - K1: add phase 1 red tasks that replace the existing manifest, build and README peer tests. Move the README peer
-    and version sentence changes into phase 1.
-  - K2: add a phase 2 red task that moves the existing changelog tests to the `1.0.0` section.
-  - K3: make the README part of phase 5 test-first, or move it into the earlier phases. Keep the exemption only for
-    untested documents.
-  - K4: create `gates/release/provenance-reference.json` in T050 (green), not in T049's red commit.
-- Fix the HIGH finding E1 in tasks.md: T017 adds "Pack contents" to spec 001 `contracts/ci-checks.md`.
-- MEDIUM findings: F1 to F6, E2 and C1 are edits to tasks.md (F5 and F6 also touch spec.md and research.md R-14).
-  A1 needs one sentence in research.md R-11, or an operator decision on third-party data. Run `/speckit-tasks` again
-  or edit tasks.md by hand, then re-run this analysis.
-- LOW findings (L1 to L4) can be fixed during implementation or folded into the same edit.
+- There are no CRITICAL or HIGH findings. Implementation (the `ocelle-implement` workflow) may proceed once the orchestrator sends "go" (mission 018 and op 023 on `main`).
+- Fix the three MEDIUM findings before their phases, preferably now. All three are short edits:
+  - C2, before phase 4: in tasks.md T055 or T017, together with research.md R-17, keep the pack-contents plant trees' `THIRD_PARTY_NOTICES` identical to the root file after T055. Otherwise the plant job turns red.
+  - F7, before phase 3: make T040's initial `first-release-base` the `main` commit that T001 merged, as data-model.md and R-10 say, or change those two files.
+  - F8, before phase 2: narrow the tokens changelog test in T025 to the `1.0.0` section and "Unreleased", or record why "any section" is at least as strict as the old test.
+- LOW findings: L5 (the [P] marker on T065), L6 (T002 records grep mentions as non-reads) and L7 (R-17's configuration-set list) can be folded into the same edit or fixed during implementation.
+- No re-run of `/speckit-tasks` is needed. Edit tasks.md and research.md (and data-model.md for F7, if that direction is chosen) by hand.
