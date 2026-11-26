@@ -79,7 +79,7 @@ interface Observation {
   } | null;
 }
 
-type Eligibility = { eligible: boolean; reason: string };
+interface Eligibility { eligible: boolean; reason: string }
 type Assess = (input: Observation) => Eligibility;
 
 const shadowModule = new URL("../bin/evidence-reuse-shadow.ts", import.meta.url);
@@ -230,17 +230,17 @@ describe("evidence reuse shadow eligibility", () => {
       const rows = namedJobs(evidence.run);
       evidence.jobs = { totalCount: rows.length + 1, rows };
     } },
-    { label: "one missing required job", change: (evidence) => changeJobs(evidence, (rows) => rows.filter(({ name }) => name !== "Plants")) },
-    { label: "two jobs claiming the same required name", change: (evidence) => patchJob(evidence, "Contrast", { name: "Prefix" }) },
-    { label: "two jobs claiming the same job ID", change: (evidence) => patchJob(evidence, "Contrast", { id: evidence.run.id * 100 + 1 }) },
-    { label: "a job belonging to a different run", change: (evidence) => patchJob(evidence, "Visual regression", { runId: evidence.run.id + 1 }) },
-    { label: "a job belonging to a different attempt", change: (evidence) => patchJob(evidence, "Visual regression", { attempt: evidence.run.attempt + 1 }) },
-    { label: "a job on a different head", change: (evidence) => patchJob(evidence, "Visual regression", { head: sha("8") }) },
-    { label: "a failed required job", change: (evidence) => patchJob(evidence, "Visual regression", { conclusion: "failure" }) },
-    { label: "a pending required job", change: (evidence) => patchJob(evidence, "Unit tests", { status: "in_progress", conclusion: null }) },
-    { label: "a skipped required job", change: (evidence) => patchJob(evidence, "Typecheck", { conclusion: "skipped" }) },
-    { label: "an unknown job conclusion", change: (evidence) => patchJob(evidence, "Mutation testing", { conclusion: "unrecognized" }) },
-    { label: "an unrecognized job alongside the required jobs", change: (evidence) => patchJob(evidence, "Plants shard (1)", { name: "Unexpected job" }) },
+    { label: "one missing required job", change: (evidence) => { changeJobs(evidence, (rows) => rows.filter(({ name }) => name !== "Plants")); } },
+    { label: "two jobs claiming the same required name", change: (evidence) => { patchJob(evidence, "Contrast", { name: "Prefix" }); } },
+    { label: "two jobs claiming the same job ID", change: (evidence) => { patchJob(evidence, "Contrast", { id: evidence.run.id * 100 + 1 }); } },
+    { label: "a job belonging to a different run", change: (evidence) => { patchJob(evidence, "Visual regression", { runId: evidence.run.id + 1 }); } },
+    { label: "a job belonging to a different attempt", change: (evidence) => { patchJob(evidence, "Visual regression", { attempt: evidence.run.attempt + 1 }); } },
+    { label: "a job on a different head", change: (evidence) => { patchJob(evidence, "Visual regression", { head: sha("8") }); } },
+    { label: "a failed required job", change: (evidence) => { patchJob(evidence, "Visual regression", { conclusion: "failure" }); } },
+    { label: "a pending required job", change: (evidence) => { patchJob(evidence, "Unit tests", { status: "in_progress", conclusion: null }); } },
+    { label: "a skipped required job", change: (evidence) => { patchJob(evidence, "Typecheck", { conclusion: "skipped" }); } },
+    { label: "an unknown job conclusion", change: (evidence) => { patchJob(evidence, "Mutation testing", { conclusion: "unrecognized" }); } },
+    { label: "an unrecognized job alongside the required jobs", change: (evidence) => { patchJob(evidence, "Plants shard (1)", { name: "Unexpected job" }); } },
   ])("rejects the prior attempt with $label", async ({ change }) => {
     const input = observation();
     change(input.prior.evidence);
