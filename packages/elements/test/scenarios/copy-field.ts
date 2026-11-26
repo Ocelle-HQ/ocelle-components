@@ -1593,19 +1593,42 @@ const identifierScenarios: readonly CopyFieldScenario[] = [
       await driver.focusNode("before");
       await driver.pressKeys("Tab");
       await driver.setProperty("cf", "value", "");
-      const disabled = { ...(await inPage(buttonIdentity, buttons)), copyDisabled: (await driver.axState("cf", copyButton)).disabled };
+      const fallback = await inPage(() => {
+        const field = document.getElementById("cf");
+        const target = document.activeElement === field ? field?.shadowRoot?.activeElement ?? field : null;
+        if (!(target instanceof HTMLElement)) return null;
+        (window as unknown as { __copyFallback?: HTMLElement }).__copyFallback = target;
+        const box = target.getBoundingClientRect();
+        return {
+          visible: box.width > 0 && box.height > 0 && target.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+          keyboardFocus: target.matches(":focus-visible"),
+          tabIndex: target.tabIndex,
+          attribute: target.getAttribute("tabindex"),
+        };
+      }, null);
+      const disabled = { ...(await inPage(buttonIdentity, buttons)), copyDisabled: (await driver.axState("cf", copyButton)).disabled, fallback };
       await driver.pressKeys("Tab");
       const afterDisabled = await driver.focusedElement();
+      const released = await inPage(() => {
+        const scope = window as unknown as { __copyFallback?: HTMLElement };
+        const target = scope.__copyFallback;
+        delete scope.__copyFallback;
+        return target === undefined ? null : { retained: target.isConnected, attribute: target.getAttribute("tabindex") };
+      }, null);
       await driver.setProperty("cf", "value", rawIdentifier);
       await driver.setProperty("cf", "value", "next:Ab12");
-      return { same, eligible, enabled, disabled, afterDisabled, external: await driver.focusedElement() };
+      return { same, eligible, enabled, disabled, afterDisabled, released, external: await driver.focusedElement() };
     },
     expected: {
       same: { groups: fullGroups, identity: { copy: true, reveal: true, focus: "reveal" }, status: copied },
       eligible: { groups: ["next:", "Ab12", "…", "Zz98"], identity: { copy: true, reveal: true, focus: "reveal" }, status: "" },
       enabled: { groups: ["next:", "Ab12"], identity: { copy: true, reveal: false, focus: "copy" }, status: "" },
-      disabled: { copy: true, reveal: false, focus: "retained", copyDisabled: true },
+      disabled: {
+        copy: true, reveal: false, focus: "retained", copyDisabled: true,
+        fallback: { visible: true, keyboardFocus: true, tabIndex: -1, attribute: "-1" },
+      },
       afterDisabled: { id: "after" },
+      released: { retained: true, attribute: null },
       external: { id: "after" },
     },
   },
