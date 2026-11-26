@@ -7,7 +7,9 @@ in_scope: []
 out_of_scope: [7, 76, 86, 88, 89, 90, 91, 92]
 semver: none
 spec_prompt: "Use the first pilot's retrospective to improve mutation feedback, pinned capture and Visual evidence. Pilot the changes on independently triaged #86."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-26T21:30:44Z
 ---
 
 # Triage 037 — Feedback from the first verification pilot
