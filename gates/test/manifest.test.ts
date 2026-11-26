@@ -384,4 +384,33 @@ describe("component preflight findings and input errors", () => {
     expect(ran.stdout).toBe("");
     expect(ran.stderr).toContain(`${snapshot}: manifest: could not run: ${manifestPath} is not JSON`);
   }, 60_000);
+
+  it("rejects deletion of a tracked manifest overlay snapshot against the pinned base", async () => {
+    const into = root();
+    for (const name of ["fail-lost-attribute", "fail-stale-property", "pass-reordered"]) {
+      const plant = `${manifestPlants}/${name}`;
+      cpSync(join(repo, plant), join(into, plant), { recursive: true });
+    }
+
+    const { execFileSync } = await import("node:child_process");
+    const git = (...args: readonly string[]): string => execFileSync("git", [
+      "-c", "user.name=Plant Fixture", "-c", "user.email=plant@example.invalid", ...args,
+    ], { cwd: into, encoding: "utf8" });
+    git("init", "-q", "--object-format=sha1");
+    git("add", "--", manifestPlants);
+    git("commit", "-q", "--no-gpg-sign", "-m", "Record manifest Plants");
+    const base = git("rev-parse", "HEAD").trim();
+
+    const snapshot = `${manifestPlants}/fail-lost-attribute/tree/${manifestPath}`;
+    git("rm", "-q", "--", snapshot);
+    git("commit", "-q", "--no-gpg-sign", "-m", "Remove the snapshot and retain its descriptor");
+
+    const entry = new URL("../../tooling/speckit/bin/component-preflight.ts", import.meta.url);
+    const { runTool } = await import("../lib/spawn.ts");
+    const ran = existsSync(entry)
+      ? await runTool(process.execPath, [fileURLToPath(entry), "manifest", "--root", into, "--base", base], repo, process.env)
+      : { exitCode: 0, stdout: "", stderr: "" };
+    expect(ran.exitCode).toBe(1);
+    expect(ran.stderr).toContain(`${snapshot}:`);
+  }, 60_000);
 });

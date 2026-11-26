@@ -52,10 +52,17 @@ interface Job {
   completedAt: string;
 }
 
+interface ObservedTools {
+  runId: number;
+  attempt: number;
+  testedMerge: string;
+  fingerprint: string;
+}
+
 interface VisualRuntime {
   pinRecord: { jobId: number; artifactId: number; manifestDigest: string; platform: string; skopeoVersion: string };
   runnerSetup: { jobId: number; image: string; version: string; architecture: string };
-  tools: { jobId: number; docker: string; podman: string; node: string; pnpm: string };
+  tools: { jobId: number; docker: string; podman: string; node: string; pnpm: string; observed?: ObservedTools };
 }
 
 interface RunEvidence {
@@ -107,12 +114,16 @@ function namedJobs(run: HostedRun): Job[] {
   }));
 }
 
+function observedTools(run: HostedRun): ObservedTools {
+  return { runId: run.id, attempt: run.attempt, testedMerge: run.testedMerge, fingerprint: digest("d") };
+}
+
 function runtime(run: HostedRun): VisualRuntime {
   const jobId = run.id * 100 + requiredJobs.indexOf("Visual regression") + 1;
   return {
     pinRecord: { jobId, artifactId: run.id * 10, manifestDigest: digest("b"), platform: "linux/amd64", skopeoVersion: "1.18.0" },
     runnerSetup: { jobId, image: "ubuntu-24.04", version: "20261122.23.1", architecture: "X64" },
-    tools: { jobId, docker: "28.0.4", podman: "4.9.3+ds1-1ubuntu0.2", node: "26.13.0", pnpm: "12.16.1" },
+    tools: { jobId, docker: "28.0.4", podman: "4.9.3+ds1-1ubuntu0.2", node: "26.13.0", pnpm: "12.16.1", observed: observedTools(run) },
   };
 }
 
@@ -323,6 +334,39 @@ describe("evidence reuse shadow eligibility", () => {
   it("rejects ambiguous or unreadable Visual runtime evidence", async () => {
     const input = observation();
     input.prior.evidence.runtime = null;
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "runtime" });
+  });
+
+  it.each(["prior", "current"] as const)("requires an executed tool observation for the %s Visual job even with matching pinned versions", async (side) => {
+    const input = observation();
+    const evidence = input[side].evidence;
+    const unobserved = runtime(evidence.run);
+    delete unobserved.tools.observed;
+    evidence.runtime = unobserved;
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "runtime" });
+  });
+
+  it("rejects equally malformed executed tool fingerprints", async () => {
+    const input = observation();
+    for (const { evidence } of [input.prior, input.current]) {
+      const invalid = runtime(evidence.run);
+      invalid.tools.observed = { ...observedTools(evidence.run), fingerprint: "sha256:unknown" };
+      evidence.runtime = invalid;
+    }
+    expect(await assess(input)).toMatchObject({ eligible: false, reason: "runtime" });
+  });
+
+  it.each<{ label: string; patch: Partial<ObservedTools> }>([
+    { label: "executed tool drift despite identical reported versions", patch: { fingerprint: digest("e") } },
+    { label: "executed tools observed in another run", patch: { runId: 45320000001 } },
+    { label: "executed tools observed in another attempt", patch: { attempt: 2 } },
+    { label: "executed tools observed on another tested merge", patch: { testedMerge: sha("3") } },
+  ])("rejects $label", async ({ patch }) => {
+    const input = observation();
+    const evidence = input.current.evidence;
+    const mismatched = runtime(evidence.run);
+    mismatched.tools.observed = { ...observedTools(evidence.run), ...patch };
+    evidence.runtime = mismatched;
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "runtime" });
   });
 

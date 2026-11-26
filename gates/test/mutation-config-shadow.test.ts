@@ -51,7 +51,7 @@ function fixture() {
     pins: { ...pins },
     selectors: [elementsSelector, defaultSelector],
     verdict: 0,
-    timing: { setupMs: 14_000, elapsedMs: 120_000, retries: 0 },
+    timing: { setupMs: 14_000, elapsedMs: 120_000, retries: 0, priorAttemptMs: 0 },
     receipts: [defaultReceipt, elementsReceipt] satisfies [typeof defaultReceipt, typeof elementsReceipt],
   };
   type SplitJob = Omit<typeof mixed, "receipts"> & { receipts: [typeof defaultReceipt] };
@@ -60,7 +60,7 @@ function fixture() {
       pins: { ...pins },
       selectors: [defaultSelector],
       verdict: 0,
-      timing: { setupMs: 15_000, elapsedMs: 60_000, retries: 1 },
+      timing: { setupMs: 15_000, elapsedMs: 60_000, retries: 1, priorAttemptMs: 20_000 },
       receipts: [{
         ...structuredClone(defaultReceipt),
         baseline: { tests: 310, elapsedMs: 10_000 },
@@ -72,7 +72,7 @@ function fixture() {
       pins: { ...pins },
       selectors: [elementsSelector],
       verdict: 0,
-      timing: { setupMs: 16_000, elapsedMs: 90_000, retries: 0 },
+      timing: { setupMs: 16_000, elapsedMs: 90_000, retries: 0, priorAttemptMs: 0 },
       receipts: [{
         ...structuredClone(elementsReceipt),
         baseline: { tests: 154, elapsedMs: 11_000 },
@@ -377,5 +377,39 @@ describe("mutation configuration shadow", () => {
         },
       },
     });
+  });
+
+  it.each(["Killed", "Ignored"])("rejects the same stable mutant identity repeated in both arms with status %s", async (status) => {
+    const trial = fixture();
+    trial.mixed.receipts[0].mutants.push(mutant(defaultFile, 2, status));
+    trial.split[0].receipts[0].mutants.push(mutant(defaultFile, 2, status));
+    const result = await compare(trial);
+    expect(result?.matched).toBe(false);
+    expect(result).toMatchObject({ reason: "mutants" });
+  });
+
+  it("includes the failed attempt in total runner time when the current split jobs use less compute", async () => {
+    const trial = fixture();
+    trial.mixed.timing.elapsedMs = 180_000;
+    trial.split[0].timing.priorAttemptMs = 90_000;
+    const result = await compare(trial);
+    expect(result?.matched).toBe(true);
+    expect(result).toMatchObject({
+      measurements: {
+        mixed: { runnerMinutes: 3, totalRunnerMinutes: 3, retries: 0 },
+        split: { runnerMinutes: 2.5, totalRunnerMinutes: 4, retries: 1 },
+      },
+    });
+  });
+
+  it("rejects a retry count without observed prior attempt time", async () => {
+    const trial = fixture();
+    const [defaults, elements] = trial.split;
+    const result = await compare({
+      ...trial,
+      split: [{ ...defaults, timing: { ...defaults.timing, priorAttemptMs: undefined } }, elements],
+    });
+    expect(result?.matched).toBe(false);
+    expect(result).toMatchObject({ reason: "timing" });
   });
 });
