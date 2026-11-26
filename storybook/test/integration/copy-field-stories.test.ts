@@ -20,7 +20,7 @@ const modes = [
   { theme: "light", forcedColors: "none", width: 320, scale: 1 },
   { theme: "dark", forcedColors: "none", width: 320, scale: 1 },
   { theme: "light", forcedColors: "active", width: 320, scale: 1 },
-  { theme: "light", forcedColors: "none", width: 520, scale: 2 },
+  { theme: "light", forcedColors: "none", width: 660, scale: 2 },
 ] as const;
 
 const built = inject("storybook");
@@ -124,6 +124,7 @@ async function verifyPresentation(page: Page, field: Locator, variant: typeof va
   const session = await page.context().newCDPSession(page);
   const tree = await axSubtree(session, "copy-field-story-probe");
   await session.detach();
+  expect(tree[0]).toMatchObject({ role: "group", name: variant.name });
   const firstControl = tree.findIndex(({ role }) => role === "button");
   expect(firstControl).toBeGreaterThan(0);
   const identifier = tree.slice(0, firstControl).filter(({ role }) => role === "StaticText").map(({ name }) => name).join("");
@@ -217,8 +218,9 @@ async function exercise(variant: typeof variants[number], mode: typeof modes[num
     const response = await page.goto(`${origin}/iframe.html?${query}`, { waitUntil: "load" });
     expect(response?.status(), "the built Storybook preview loaded").toBe(200);
     const canvas = page.locator("#storybook-root");
-    const field = canvas.getByRole("group", { name: variant.name, exact: true });
+    const field = canvas.locator("ocelle-copy-field");
     await field.waitFor({ state: "visible" });
+    expect(await field.count()).toBe(1);
     await field.evaluate(async (node) => {
       node.id = "copy-field-story-probe";
       await (node as HTMLElementTagNameMap["ocelle-copy-field"]).updateComplete;
