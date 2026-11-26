@@ -1,10 +1,11 @@
-import { globSync, readFileSync } from "node:fs";
+import { existsSync, globSync, readFileSync } from "node:fs";
 import { matchesGlob } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import base from "../../vitest.config.ts";
 import mutation from "../../vitest.mutation.config.ts";
 import mutationElements from "../../vitest.mutation.elements.config.ts";
+import type { Run } from "../lib/cli.ts";
 
 // The Vitest projects and the mutation runs (002 contracts/gates.md § Mutation, research.md R-03 *Mutation path*;
 // PLAN-FRESH-2-002): vitest.mutation.config.ts drops the fixture projects that launch tools or a separate browser,
@@ -26,6 +27,10 @@ function projectsOf(config: typeof base): Project[] {
 }
 
 const repo = fileURLToPath(new URL("../..", import.meta.url));
+const paneFooterSource = "storybook/stories/pane-action-footer.ts";
+const paneFooterBrowserTest = "storybook/test/unit/browser/pane-action-footer.test.ts";
+const paneFooterBuiltTest = "storybook/test/integration/pane-action-footer.test.ts";
+const retainedProject = "storybook-browser";
 const all = projectsOf(base);
 const kept = projectsOf(mutation);
 const keptElements = projectsOf(mutationElements);
@@ -89,8 +94,7 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
 
 describe("the Vitest projects", () => {
   it("runs in-process Storybook recipe tests in Chromium in both the normal and mutation suites", () => {
-    const recipe = "storybook/test/unit/browser/pane-action-footer.test.ts";
-    const owner = (projects: readonly Project[]) => projects.filter((project) => inProject(project, recipe)).map(({ name }) => name);
+    const owner = (projects: readonly Project[]) => projects.filter((project) => inProject(project, paneFooterBrowserTest)).map(({ name }) => name);
     expect({ normal: owner(all), mutation: owner(kept), elementMutation: owner(keptElements) }).toEqual({
       normal: ["storybook-browser"], mutation: ["storybook-browser"], elementMutation: [],
     });
@@ -209,4 +213,56 @@ describe("the Vitest projects", () => {
     expect(both).toEqual([]);
     expect(testFiles.filter((path) => excluded.some((project) => inProject(project, path))).length).toBeGreaterThan(3);
   });
+});
+
+async function hostPreflight(test: string) {
+  const entry = new URL("../bin/component-preflight.ts", import.meta.url);
+  const out: string[] = [];
+  const err: string[] = [];
+  if (!existsSync(entry)) return { code: 0, receipt: null, err };
+  const { run } = (await import(entry.href)) as { readonly run: Run };
+  const code = await run(["host", "--root", repo, "--source", paneFooterSource, "--test", test, "--project", retainedProject], {
+    cwd: repo, env: process.env, out: (line) => out.push(line), err: (line) => err.push(line),
+  });
+  const receipt: unknown = JSON.parse(out.join("\n") || "null");
+  return { code, receipt, err };
+}
+
+describe("component preflight Storybook host discovery", () => {
+  const routing = {
+    source: paneFooterSource,
+    project: retainedProject,
+    normalVitestConfig: "vitest.config.ts",
+    strykerConfig: "stryker.config.json",
+    mutationVitestConfig: "vitest.mutation.config.ts",
+    mutationEvidence: "required",
+  };
+
+  it("discovers the retained #87 pane footer test in the default mutation configuration", async () => {
+    expect(await hostPreflight(paneFooterBrowserTest)).toEqual({
+      code: 0,
+      receipt: {
+        ...routing,
+        test: paneFooterBrowserTest,
+        normalProjects: ["storybook-browser (chromium)"],
+        mutationProjects: ["storybook-browser (chromium)"],
+      },
+      err: [],
+    });
+  }, 60_000);
+
+  it("reports the built-browser pane footer test and the retained project when default mutation excludes it", async () => {
+    const ran = await hostPreflight(paneFooterBuiltTest);
+    expect(ran).toMatchObject({
+      code: 1,
+      receipt: {
+        ...routing,
+        test: paneFooterBuiltTest,
+        normalProjects: ["storybook-integration"],
+        mutationProjects: [],
+      },
+    });
+    expect(ran.err.join("\n")).toContain(paneFooterBuiltTest);
+    expect(ran.err.join("\n")).toContain("storybook/test/unit/browser/");
+  }, 60_000);
 });

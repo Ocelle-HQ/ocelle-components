@@ -18,6 +18,17 @@ import { parsePlant } from "../lib/plant-judge.ts";
 // temporary roots hold the repository's element source and committed manifest, changed as each case says.
 const repo = fileURLToPath(new URL("../..", import.meta.url));
 const manifestPath = "packages/elements/custom-elements.json";
+const manifestPlants = "gates/plants/manifest";
+const fullManifestOverlays = [
+  "fail-lost-attribute",
+  "fail-undescribed-attribute",
+  "fail-undescribed-css-part",
+  "fail-undescribed-css-property",
+  "fail-undescribed-event",
+  "fail-undescribed-property",
+  "fail-undescribed-slot",
+  "pass-reordered",
+];
 const iconSource = "packages/elements/src/ocelle-icon.ts";
 const remedy = "regenerate it with pnpm --filter @ocelle/elements run manifest";
 const made: string[] = [];
@@ -141,27 +152,104 @@ describe("manifest gate on a root", () => {
 });
 
 describe("manifest Plant overlays", () => {
-  it.each([
-    "pass-reordered",
-    "fail-lost-attribute",
-    "fail-undescribed-attribute",
-    "fail-undescribed-css-part",
-    "fail-undescribed-css-property",
-    "fail-undescribed-event",
-    "fail-undescribed-property",
-    "fail-undescribed-slot",
-  ])("reports only the intended raw manifest findings for %s", async (name) => {
-    const plant = join(repo, "gates/plants/manifest", name);
-    const spec = parsePlant(readFileSync(join(plant, "plant.json"), "utf8"));
-    if (typeof spec === "string") throw new Error(spec);
+  it.each(fullManifestOverlays)("reports only the intended raw manifest findings for %s", async (name) => {
+    const plant = join(repo, manifestPlants, name);
+    const { spec, findings } = manifestPlant(plant);
     const into = root();
     cpSync(join(plant, "tree"), into, { recursive: true });
     const ran = await gate(into);
-    const expected = (spec.findings ?? []).map(({ location, rule, message }) => `${location}: manifest: ${rule}: ${message ?? ""}`);
     expect({ code: ran.code, findings: ran.out.slice(0, -1), err: ran.err }).toEqual({
-      code: spec.expect === "pass" ? 0 : 1, findings: expected, err: [],
+      code: spec.expect === "pass" ? 0 : 1, findings, err: [],
     });
   });
+});
+
+function manifestPlant(plant: string) {
+  const spec = parsePlant(readFileSync(join(plant, "plant.json"), "utf8"));
+  if (typeof spec === "string") throw new Error(spec);
+  const findings = (spec.findings ?? []).map(({ location, rule, message }) => `${location}: manifest: ${rule}: ${message ?? ""}`);
+  return { spec, findings };
+}
+
+function rootWithManifestPlants(): string {
+  const into = root();
+  cpSync(join(repo, manifestPlants), join(into, manifestPlants), { recursive: true });
+  return into;
+}
+
+async function manifestPreflight(root: string) {
+  const { io, out, err } = capture();
+  const entry = new URL("../bin/component-preflight.ts", import.meta.url);
+  if (!existsSync(entry)) return { code: 0, receipt: { overlays: [] }, err };
+  const preflight = (await import(entry.href)) as { readonly run: typeof run };
+  const code = await preflight.run(["manifest", "--root", root], io);
+  const receipt: unknown = JSON.parse(out.join("\n") || "null");
+  return { code, receipt, err };
+}
+
+describe("component preflight manifest overlays", () => {
+  it("checks all current full manifest overlays and discovers a newly added full overlay", async () => {
+    const into = rootWithManifestPlants();
+    const newOverlay = "pass-new-full-overlay";
+    cpSync(join(into, manifestPlants, "pass-reordered"), join(into, manifestPlants, newOverlay), { recursive: true });
+
+    const overlays = [...fullManifestOverlays, newOverlay].sort().map((name) => {
+      const plant = `${manifestPlants}/${name}`;
+      const { spec, findings } = manifestPlant(join(into, plant));
+      const locations = new Set([manifestPath, ...(spec.findings ?? []).map(({ location }) => location)]);
+      return {
+        descriptor: `${plant}/plant.json`,
+        fixturePaths: [...locations].sort().map((path) => `${plant}/tree/${path}`),
+        findings,
+        unexpectedFindings: [],
+        missingFindings: [],
+      };
+    });
+    expect(await manifestPreflight(into)).toEqual({ code: 0, receipt: { overlays }, err: [] });
+  }, 60_000);
+
+  it("reports the exact additional stale finding and the manifest snapshot to update", async () => {
+    const into = rootWithManifestPlants();
+    const plant = `${manifestPlants}/fail-lost-attribute`;
+    const snapshot = `${plant}/tree/${manifestPath}`;
+    const manifest = JSON.parse(readFileSync(join(into, snapshot), "utf8")) as Json;
+    const icon = iconOf(manifest);
+    icon.attributes = (icon.attributes as Json[]).filter((attribute) => attribute.name !== "name");
+    writeFileSync(join(into, snapshot), `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const ran = await manifestPreflight(into);
+    const staleName = `${manifestPath}: manifest: stale: ocelle-icon.attribute.name differs from the generated manifest`;
+    expect(ran).toMatchObject({
+      code: 1,
+      receipt: { overlays: expect.arrayContaining([{
+        descriptor: `${plant}/plant.json`,
+        findings: [...manifestPlant(join(into, plant)).findings, staleName],
+        unexpectedFindings: [staleName],
+        missingFindings: [],
+      }]) as unknown },
+    });
+    expect(ran.err.join("\n")).toContain(snapshot);
+  }, 60_000);
+
+  it("reports the exact finding and fixture path for a module lost from a full overlay", async () => {
+    const into = rootWithManifestPlants();
+    const plant = `${manifestPlants}/fail-undescribed-attribute`;
+    const module = `${plant}/tree/packages/elements/src/ocelle-plant.ts`;
+    rmSync(join(into, module));
+
+    const ran = await manifestPreflight(into);
+    const staleModule = `${manifestPath}: manifest: stale: ocelle-plant is not in the generated manifest`;
+    expect(ran).toMatchObject({
+      code: 1,
+      receipt: { overlays: expect.arrayContaining([{
+        descriptor: `${plant}/plant.json`,
+        findings: [staleModule],
+        unexpectedFindings: [staleModule],
+        missingFindings: manifestPlant(join(into, plant)).findings,
+      }]) as unknown },
+    });
+    expect(ran.err.join("\n")).toContain(module);
+  }, 60_000);
 });
 
 describe("manifestFindings(committed, generated)", () => {
