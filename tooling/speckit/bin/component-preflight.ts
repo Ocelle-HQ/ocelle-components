@@ -1,8 +1,8 @@
 // Contributor checks for Op 034. The manifest gate and Vitest supply the observations printed in these receipts.
-import { cp, lstat, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { cp, lstat, mkdtemp, readFile, readdir, realpath, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { parseArgs as parseOptions } from "node:util";
 import { run as runManifest } from "../../../gates/bin/manifest.ts";
 import { main, parseArgs } from "../../../gates/lib/cli.ts";
@@ -20,7 +20,7 @@ const manifestPlants = "gates/plants/manifest";
 const findingMarker = ": manifest: ";
 const normalVitestConfig = "vitest.config.ts";
 const strykerConfig = "stryker.config.json";
-const usage = "usage: component-preflight.ts manifest [--root DIR]\n"
+const usage = "usage: component-preflight.ts manifest [--base FULL-COMMIT-SHA] [--root DIR]\n"
   + "       component-preflight.ts host --source FILE --test FILE --project NAME [--root DIR]";
 
 interface OverlayReceipt {
@@ -94,17 +94,70 @@ async function checkOverlay(root: string, directory: string, io: Io): Promise<Ov
   return { descriptor, fixturePaths, findings, unexpectedFindings, missingFindings };
 }
 
-async function checkManifest(root: string, io: Io): Promise<number> {
-  const entries = await readdir(join(root, manifestPlants), { withFileTypes: true });
+function manifestBase(args: readonly string[]): string | undefined {
+  if (args.length === 0) return undefined;
+  const [flag, base] = args;
+  if (args.length === 2 && flag === "--base" && base !== undefined && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(base)) return base;
+  throw new Error("manifest --base needs one full Git commit SHA");
+}
+
+/** Keep the full pass/fail inventory from the pinned tree even when a fixture vanishes from the working tree. */
+async function baseSnapshots(root: string, base: string, io: Io): Promise<readonly string[]> {
+  // The checkout and its Git objects must come from root, regardless of inherited Git overrides.
+  const env = {
+    ...Object.fromEntries(Object.entries(io.env).filter(([name]) => !name.startsWith("GIT_"))),
+    GIT_NO_REPLACE_OBJECTS: "1",
+    GIT_NO_LAZY_FETCH: "1",
+  };
+  async function git(args: readonly string[], failure: string): Promise<string> {
+    const { exitCode, stdout, stderr } = await runTool("git", args, root, env);
+    if (exitCode !== 0) throw new Error(oneLine(`${failure} ${stderr || stdout}`));
+    return stdout;
+  }
+
+  const top = await git(["rev-parse", "--show-toplevel"], `${root} is not a Git checkout`);
+  if (await realpath(root) !== await realpath(top.replace(/\r?\n$/, ""))) throw new Error(`${root} is not the Git checkout root`);
+  const commit = await git(["rev-parse", "--verify", "--end-of-options", `${base}^{commit}`], `unknown manifest base ${base}`);
+  if (commit.trim() !== base) throw new Error(`${base} does not identify a commit directly`);
+  await git(["merge-base", "--is-ancestor", base, "HEAD"], `manifest base ${base} is not a verified ancestor of HEAD`);
+
+  const tree = await git(["ls-tree", "--full-tree", "-rz", "--name-only", base, "--", manifestPlants], `could not read manifest Plants from ${base}`);
+  const paths = new Set(tree.split("\0"));
+  const snapshots: string[] = [];
+  for (const descriptor of paths) {
+    const directory = posix.dirname(descriptor);
+    if (posix.basename(descriptor) !== "plant.json" || posix.dirname(directory) !== manifestPlants) continue;
+    const snapshot = `${directory}/tree/${manifestPath}`;
+    if (!paths.has(snapshot)) continue;
+    const plant = expectation(descriptor, await git(["cat-file", "blob", `${base}:${descriptor}`], `could not read ${descriptor} from ${base}`));
+    if (plant.expect !== "error") snapshots.push(snapshot);
+  }
+  return snapshots.sort();
+}
+
+async function checkManifest(root: string, base: string | undefined, io: Io): Promise<number> {
+  const missingSnapshots: string[] = [];
+  if (base !== undefined) {
+    for (const snapshot of await baseSnapshots(root, base, io)) {
+      if (await fileExists(join(root, snapshot))) continue;
+      missingSnapshots.push(snapshot);
+      io.err(`${snapshot}: full manifest overlay snapshot from ${base} is missing. Restore it and preserve the Plant's intended finding.`);
+    }
+  }
+  const entries = await readdir(join(root, manifestPlants), { withFileTypes: true }).catch((error: unknown) => {
+    if (missingSnapshots.length > 0 && missingFile(error)) return [];
+    throw error;
+  });
   const directories = entries.filter((entry) => entry.isDirectory()).map(({ name }) => name).sort();
   const overlays: OverlayReceipt[] = [];
   for (const directory of directories) {
     const receipt = await checkOverlay(root, `${manifestPlants}/${directory}`, io);
     if (receipt !== undefined) overlays.push(receipt);
   }
-  if (overlays.length === 0) throw new Error(`${manifestPlants}: found no full manifest overlays`);
-  io.out(JSON.stringify({ overlays }));
-  return overlays.some(({ unexpectedFindings, missingFindings }) => unexpectedFindings.length > 0 || missingFindings.length > 0) ? 1 : 0;
+  if (overlays.length === 0 && missingSnapshots.length === 0) throw new Error(`${manifestPlants}: found no full manifest overlays`);
+  io.out(JSON.stringify(base === undefined ? { overlays } : { base, overlays, missingSnapshots }));
+  const findingsDiffer = overlays.some(({ unexpectedFindings, missingFindings }) => unexpectedFindings.length > 0 || missingFindings.length > 0);
+  return missingSnapshots.length > 0 || findingsDiffer ? 1 : 0;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -172,7 +225,7 @@ async function checkHost(root: string, args: readonly string[], io: Io): Promise
 
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const { root, args: [command, ...args] } = parseArgs(argv, io.cwd);
-  if (command === "manifest" && args.length === 0) return checkManifest(root, io);
+  if (command === "manifest") return checkManifest(root, manifestBase(args), io);
   if (command === "host") return checkHost(root, args, io);
   io.err(usage);
   return 2;

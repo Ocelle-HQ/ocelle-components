@@ -25,10 +25,11 @@ files one owner, and record which expected counts depend on the built index or p
 
 When a task changes the public element manifest, assign `packages/elements/custom-elements.json`, its regeneration,
 and every affected manifest Plant descriptor and fixture path to one task owner. Run
-`node tooling/speckit/bin/component-preflight.ts manifest` to inventory the current full overlays and record each descriptor,
-fixture path and exact intended finding from the receipt. Keep the reordered fixture clean. Record the generation
-step (`pnpm --filter @ocelle/elements run manifest`) and have the owner update the applicable snapshots while
-preserving each Plant's intended defect.
+`node tooling/speckit/bin/component-preflight.ts manifest --base <full-phase-base-sha>` from the candidate checkout root.
+Use the full SHA recorded for the phase base. Record each descriptor, fixture path and exact intended finding from
+the receipt. Restore any missing full snapshot reported against that base and keep the reordered fixture clean.
+Record the generation step (`pnpm --filter @ocelle/elements run manifest`) and have the owner update the applicable
+snapshots while preserving each Plant's intended defect.
 
 When a task changes a shared Storybook host, record the exact source path, default `stryker.config.json`, its active
 Vitest configuration, the retained in-process project and each focused test path. Run
