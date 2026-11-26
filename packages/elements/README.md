@@ -1788,9 +1788,12 @@ clipboard (through a desktop bridge or the page's clipboard API) and reports the
 </script>
 ```
 
-`value` (attribute and property, not reflected) supplies the original text. In the default plain presentation the
-text keeps its whitespace runs, wraps to fit its width, and stays selectable. It uses the sans with tabular figures
-on `--ocelle-color-inset`. With an empty or missing `value` the Copy control is disabled and emits nothing.
+With `grouped` off, the field uses its default plain presentation.
+
+`value` (attribute and property, not reflected): the text shown and requested, as written. It wraps at any point when
+it does not fit, never scrolls sideways, keeps its whitespace runs, is drawn in the sans with tabular figures on
+`--ocelle-color-inset` and stays selectable. With an empty or missing `value` the Copy control is disabled and emits
+nothing. The text is plain text; a host that shows a digest in groups of four formats `value` itself.
 
 `grouped` and `compact` are Boolean properties with same-name HTML attributes. Both default to `false`. Enable
 `grouped` for identifiers and enable both options for a compact preview.
@@ -1838,10 +1841,13 @@ request outside the click's task, a frame later, and must check its engines' use
 writes: Chromium still counts the click's activation then, and WebKit is not measured. A host that writes the
 clipboard through a desktop bridge is not affected.
 
-Use a host `aria-label` to name the group holding the text and controls. Use `copyLabel` to name the Copy control.
+Name the field with a host `aria-label`: it is exposed as a group holding the text and the Copy control, unnamed
+without one. A host `aria-label` names the group, not the control. The compact disclosure, when present, belongs to
+the same group.
 
-The disclosure, when present, is the tab stop immediately before Copy. Enter and Space activate either native
-button. Escape and letters reach the page unhandled.
+Keys: the Copy control is one tab stop, and Enter and Space activate it, as on any button. The field handles no other
+key: Escape and letters reach the page unhandled. The compact disclosure comes immediately before Copy in the tab
+order and also responds to Enter and Space.
 
 CSS parts: `value` (the text) and `copy-control` (the Copy control). `copy-control` guarantees its box (its position,
 its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which
