@@ -74,7 +74,10 @@ workspace link and the pins rule for dependencies generally).
 tarball may contain (for example `dist/**/*.js`, `dist/**/*.d.ts`, `dist/tokens.css`, `dist/fonts/*.woff2`,
 `dist/fonts/OFL.txt`, `LICENSE`, `NOTICE`, `README.md`, `CHANGELOG.md`, `package.json`, and for elements
 `custom-elements.json`, `licenses/**`, `THIRD_PARTY_NOTICES`), the files that must be present, and the files that
-must be byte-identical to the repository root's (`LICENSE`, `NOTICE`, and `THIRD_PARTY_NOTICES` where shipped). Any
+must be byte-identical to their repository copy (`LICENSE`, `NOTICE`, and `THIRD_PARTY_NOTICES` where shipped,
+compared with the root file of the same name; and, for tokens, `dist/fonts/OFL.txt`, compared with
+`packages/tokens/fonts/OFL.txt` through an `identical` entry that names its repository path, so every licence file
+FR-002 requires is compared, not only the root ones; analysis L3). Any
 tarball entry that matches no pattern is a finding; the deny list (test files `*.test.*`, `*.stories.*`, `.npmrc`,
 `.env*`, `*.pem`, `*.key`, `id_*`, source maps of test files) is checked first and reported as such. The packages'
 `files` fields stay as the first filter; the allow list is the gate's independent statement.
@@ -200,6 +203,14 @@ prefix mention `` `--ocelle-<prefix>-*` `` that covers every token whose name st
 in a new family that the changelog never names is a finding `changelog-missing-token`, which lists the uncovered
 names grouped by their first name segment. Base-style hooks have no machine list, so the styles entry must be
 non-empty only.
+
+**The package changelog tests (analysis K2).** The packages' own changelog tests (`packages/tokens/test/readme.test.ts`,
+`packages/styles/test/readme.test.ts`, `packages/elements/test/node/changelog.test.ts` and the changelog cases of
+`packages/elements/test/node/readme.test.ts`) read "Unreleased" today. Phase 2 replaces them red-first so they read the
+`## 1.0.0 - <YYYY-MM-DD>` section, which stays in the changelog after later releases. The tokens test keeps its
+stricter rule (every token named in full, now in any section), rather than the gate's prefix rule: the gate is the
+floor for every future release, the package test is the 1.0.0 contract the changelog already meets, and VIII
+replaces a test only with a stricter one.
 
 With `--tag v<x>`, the `<x>` entry must exist and "Unreleased" must be empty (everything released is named under
 the version). The entry's date is not compared with the tag (operator decision PLAN-FRESH-1-007 (b)): the release
@@ -391,7 +402,8 @@ an injected clock in tests.
 
 **Proof before the release (FR-033, FR-034).**
 - Unit tests, all offline: the decode-and-compare and decision functions run on **recorded real responses**
-  committed under `gates/test/fixtures/install-check/` (recorded from the public registry at implementation time:
+  committed under `gates/test/fixtures/install-check/registry/` (recorded from the public registry at implementation
+  time:
   the attestations response of a package version with provenance, the answer for a version without one, and `npm
   audit signatures --json` output for a passing and a failing audit), with the injected verifier returning them;
   each test asserts the specific rule line (`attestation-missing`, `repository-mismatch`, `commit-mismatch`,
@@ -409,13 +421,35 @@ an injected clock in tests.
   actual rule and exits 0 only if the pass case passes and every planted failure fails with its expected rule. It
   runs in the composite action, so in the dry run on every pull request and in `release.yml`'s `prepare` job before
   the approval (SC-008: 1 of 1 pass, 3 of 3 of FR-034's planted failures, plus the workflow and ref cases).
+- `gates/release/provenance-reference.json` is production data (`--rehearse` reads it in both workflows), so it is
+  created in phase 4's green commit, not in the test-only red commit (constitution VIII, `test_pathspec`; analysis
+  K4). The unit tests read a copy, `gates/test/fixtures/install-check/provenance-reference.json`, and one test
+  asserts that the two files hold the same values, so they cannot drift.
+
+**Recorded registry responses are third-party assets (operator decision A1 "Treat as asset", 2026-11-26,
+`reviews/analysis/operator-decisions.md`).** The recorded packuments, attestation bundles and signature-audit output
+under `gates/test/fixtures/install-check/registry/` are other projects' registry data, and a packument can carry the
+package's README and licence text. The constitution (§ Technology, Licence and Supply Chain) says any third-party
+asset other than the font needs the font's treatment and the operator's approval, so: the fixtures are recorded
+only from package versions whose licence is a permissive OSI licence (the pick is recorded with the fixtures); each
+fixture file is listed in `THIRD_PARTY_NOTICES`, in a section for repository-only assets that ship in no package,
+with the package name and version, the registry URL it was fetched from, the date and the package's licence; the
+operator approved this treatment at the tasks gate. The recorded responses live in
+`gates/test/fixtures/install-check/registry/`; the project's own fixtures (the fixture tarballs, the
+provenance-reference copy) sit beside that directory and are not listed. A governance test asserts that every file
+under `gates/test/fixtures/install-check/registry/` is named in `THIRD_PARTY_NOTICES` with a licence. The fixtures
+sit in no package directory, so no tarball carries them.
 
 ## R-12. Tarball install rehearsal (FR-033)
 
 **Decision.** `install-check --from-tarballs <dir>` installs the three tarballs into the empty project (no registry
 write, registry reads only for `lit`), then runs the same entry-point, browser and declared-peer checks. A planted
-failure (a tarball with a declared export removed) must make it fail; that is a unit test with a fixture tarball. In
-the composite action it runs on a copy of the tarballs, after the digests are taken (R-10).
+failure (a tarball with a declared export removed) must make it fail; that is a unit test of `--from-tarballs` mode
+with a fixture tarball whose `exports` names a file the tarball lacks, asserting `entry-point-unresolved` for that
+package and entry point. A second `--from-tarballs` test proves the declared-peer-only peer step: a fixture elements
+tarball that declares `@ocelle/tokens` at `^<version>` passes without any registry read for tokens, and one that
+declares another range (or `workspace:`) fails with `peer-unresolved`. In the composite action it runs on a copy of
+the tarballs, after the digests are taken (R-10).
 
 ## R-13. Workflow static check (FR-026)
 
@@ -473,7 +507,9 @@ npm registry from 1.0.0 with provenance through the release workflow's OIDC iden
 since 2026-11, before 1.0.0; no publish credential is stored in the repository or in CI secrets, and a bootstrap
 credential, if any, is the operator's own and never reaches CI (D1); a peer range on a workspace package
 (`@ocelle/tokens` at `^<version>`) is the one exception to exact pins (R-03); and `SECURITY.md` "exists" (present
-tense; op 023 owns its content). Spec FR-040 lists every one of these statements.
+tense; op 023 owns its content). The bootstrap statement says, as FR-040 does, that such a credential is held by the
+operator only, never reaches CI, and is revoked (the operator logs out) after use (analysis F6). Spec FR-040 lists
+every one of these statements.
 
 ## R-15. Release procedure location and content (FR-043)
 
@@ -502,7 +538,10 @@ procedure below).
      commit in their provenance and the install check takes one `--commit`. The release continues as lockstep
      `<x.y.z+1>` through a **version-bump pull request** containing exactly: the three manifests' `version` set to
      `<x.y.z+1>`; the peers of styles and elements set to `workspace:^<x.y.z+1>`; `pnpm-lock.yaml` as `pnpm install`
-     rewrites it; in each package's changelog a dated `<x.y.z+1>` entry that names the fix, and the `<x.y.z>` entry
+     rewrites it; the peer range `^<x.y.z+1>` in the styles and elements READMEs' peer sentences and in the three
+     install sections (the readme tests derive the expected range from the manifests, and every other test that
+     names the version reads it from `packages/tokens/package.json`, so no test file changes; analysis F4); in each
+     package's changelog a dated `<x.y.z+1>` entry that names the fix, and the `<x.y.z>` entry
      kept with a line saying which packages of it were published and that `<x.y.z+1>` supersedes it; "Unreleased"
      empty. The operator then tags `v<x.y.z+1>` (O7) on the merged commit; `release-step base` finds `v<x.y.z>` as
      the previous tag. The operator (never the workflow) deprecates the published `<x.y.z>` versions with a message

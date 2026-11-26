@@ -39,8 +39,14 @@ declare `@ocelle/tokens` at `^<version>` and `@ocelle/tokens` to be installed at
 `commit-mismatch`, `workflow-mismatch`, `ref-mismatch`; exit 0 / 1 / 2 as the gates do.
 
 **Tests** (`gates/test/`, offline): decode-and-compare on recorded real registry responses
-(`gates/test/fixtures/install-check/`) with the injected verifier, one test per provenance rule and for
+(`gates/test/fixtures/install-check/registry/`) with the injected verifier, one test per provenance rule and for
 `signature-invalid`, each asserting the rule line; stub-registry tests (no `dist.attestations` advertised) for
 `not-visible` (injected clock), `install-failed`, `entry-point-unresolved`, `peer-unresolved`; fixture tarballs for
 `csp-violation` (inline style) and `network-request` (remote fetch); the environment allow list with a planted
-upper-case per-registry auth-token variable, assembled at run time, that must not reach the child.
+upper-case per-registry auth-token variable, assembled at run time, that must not reach the child. `--from-tarballs` mode (FR-033, research.md R-12): a fixture tarball whose declared
+export is missing fails with `entry-point-unresolved` naming the package and entry point, and the peer step checks the
+declared peer only (a fixture elements tarball declaring `^<version>` passes with no registry read for tokens; one
+declaring another range fails with `peer-unresolved`). The unit tests read the provenance reference from the copy
+`gates/test/fixtures/install-check/provenance-reference.json`, and a test asserts it equals
+`gates/release/provenance-reference.json`. The recorded registry responses are third-party assets listed in
+`THIRD_PARTY_NOTICES` (research.md R-11, analysis A1).

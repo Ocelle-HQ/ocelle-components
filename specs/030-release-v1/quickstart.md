@@ -10,7 +10,8 @@ pnpm run gate:pack-contents
 ```
 
 Expect one line per package (`@ocelle/tokens@1.0.0: <n> files, <m> entry points`) and exit 0. Plants:
-`pnpm run gate:plants -- --affected <base>` locally (CI runs the full plant job).
+`pnpm run gate:plants -- --affected <base>` locally (CI runs the full plant job). Record the "Pack contents" job's
+gate-step duration on the branch's CI run against the plan's goal (under the build time plus 30 s).
 
 ## 2. Readiness (Story 2)
 
@@ -22,7 +23,8 @@ pnpm run gate:release-readiness -- --tag v1.0.0  # what the release workflow run
 Expect `ready (17/17 rows, 0 secrets, version 1.0.0)`. The gates-integration test runs the gap check against the
 pre-018 commit `183b20f` and expects exactly rows 6, 10 and 15 unmet (research.md R-07); another test expects the
 history scan of this repository's own `HEAD` to have zero hits (R-08). Both need the full history: they fail on a
-shallow clone, and CI's unit-test checkouts use `fetch-depth: 0`.
+shallow clone, and CI's unit-test checkouts use `fetch-depth: 0`. Record the "Release readiness" job's gate-step
+duration on the branch's CI run (full history) against the plan's goal (under 60 s).
 
 ## 3. Workflow static check and dry run (Story 3)
 

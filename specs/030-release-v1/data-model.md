@@ -10,7 +10,7 @@ One entry per package, read by the pack-contents gate (contracts/pack-contents-g
 | `dir` | string | the package directory (`packages/tokens`, ...) |
 | `allow` | glob[] | every tarball entry (path below `package/`) must match one; non-empty |
 | `require` | path[] | must be in the tarball: at least `package.json`, `LICENSE`, `NOTICE`, `README.md`, `CHANGELOG.md`; tokens adds `THIRD_PARTY_NOTICES`, `dist/fonts/OFL.txt` |
-| `identical` | path[] | tarball file must be byte-identical to the repository root file of the same name (`LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES` where shipped) |
+| `identical` | (path \| { path, source })[] | tarball file must be byte-identical to its repository copy: a bare path is compared with the repository root file of the same name (`LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES` where shipped); `{ path, source }` names the repository path to compare with, for tokens `{ "path": "dist/fonts/OFL.txt", "source": "packages/tokens/fonts/OFL.txt" }` (FR-002; analysis L3) |
 | `peer` | object | the packed `peerDependencies` exactly: `{ "@ocelle/tokens": "^<version>" }` for styles and elements; `{}` for tokens |
 
 The deny list is code, not data (contracts/pack-contents-gate.md), so a plant cannot widen it.
@@ -134,7 +134,9 @@ GitHub's exact setting labels are re-checked at implementation time.
 ## Provenance reference (`gates/release/provenance-reference.json`)
 
 Two entries, recorded from the public registry at implementation time; used only by `install-check --rehearse`
-(research R-11), which runs in the dry run and in `release.yml`'s `prepare` job:
+(research R-11), which runs in the dry run and in `release.yml`'s `prepare` job. Production data, so it is created in
+phase 4's green commit; the unit tests read the identical copy `gates/test/fixtures/install-check/provenance-reference.json`
+(analysis K4):
 
 - `withProvenance`: `{ name, version, repository, commit, workflow, ref }` of a real public package version with a
   valid signature and provenance attestation (the pass case; the planted repository, commit, workflow and ref

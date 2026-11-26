@@ -144,8 +144,9 @@ the history is clean: it reports ready.
 ### User Story 3 - A release happens only through a reviewed, provenance-attested publish (Priority: P2)
 
 The operator pushes the protected `v1.0.0` tag on the release commit. A release workflow starts from that tag,
-confirms the commit passed every merge gate (including the prefix and no-monospace checks), builds and packs the
-three packages, runs the pack-contents gate and the readiness check on what it is about to publish, and then waits.
+confirms the commit passed every merge gate (including the prefix and no-monospace checks; Sign-off excepted, which
+every pull request already passed, FR-022), builds and packs the three packages, runs the pack-contents gate and
+the readiness check on what it is about to publish, and then waits.
 Only after the operator approves the protected environment does the publish job run: it publishes
 `@ocelle/tokens`, then `@ocelle/styles`, then `@ocelle/elements`, with provenance, using the workflow's own
 short-lived identity and no stored long-lived token. Nobody else can create, move or delete a release tag, and
@@ -210,7 +211,8 @@ planted failures (FR-034), so every part of it is proven before it matters.
 1. **Given** the three packages published at the release version, **When** the post-publish check runs in an empty
    project with no registry credentials, **Then** installing `@ocelle/tokens`, `@ocelle/styles` and
    `@ocelle/elements` succeeds, importing or resolving every entry point each package declares succeeds, and the
-   browser build defines its elements under the constitution's strict CSP with no request off the page's origin.
+   browser build defines its elements under the constitution's strict CSP (plus `font-src 'self'` for the tokens'
+   font, the project's established fixture policy) with no request off the page's origin.
 2. **Given** the installed packages, **When** the check verifies them, **Then** every package's registry signature
    and provenance attestation verify, and the attestation names this repository, the release workflow, the release
    tag's ref and the release commit.
@@ -345,7 +347,10 @@ of FR-040 to FR-045 against them.
 - **FR-022**: Before the publish job, the workflow MUST: confirm every required merge-gate check (spec 001 FR-020
   plus this mission's gate) passed on the tagged commit, or run them; build and pack the three packages; run the
   pack-contents gate and the readiness check on exactly those tarballs; and run a publish dry run. Any failure stops
-  the workflow before the environment approval.
+  the workflow before the environment approval. One exception: spec 001's Sign-off (DCO) check is not re-run on the
+  tagged commit, because `main` lands every pull request as one squash commit that GitHub, not the contributor,
+  commits; the DCO is enforced on every pull request before merge, including the pre-tag pull request (operator
+  decision PLAN-FRESH-1-001 (a), research.md R-10; see Assumptions).
 - **FR-023**: The publish job MUST run in a protected GitHub environment that requires a reviewer's approval
   (O4) and MUST publish the tarballs the earlier job verified (not a rebuild), in the order `@ocelle/tokens`,
   `@ocelle/styles`, `@ocelle/elements`, each with a provenance attestation.
@@ -385,7 +390,8 @@ of FR-040 to FR-045 against them.
 - **FR-030**: After the publish job, the workflow MUST run an install check in an empty project with no registry
   credentials (no token in any user, project or environment configuration) that installs the three packages at the
   released version from the public registry, imports or resolves every entry point each package declares, loads the
-  browser build under the constitution's strict CSP with every off-origin request blocked and recorded, and fails
+  browser build under the constitution's strict CSP plus `font-src 'self'` for the tokens' font (the policy of
+  `packages/tokens/test/browser/csp.test.ts`) with every off-origin request blocked and recorded, and fails
   naming the package and entry point (or the violation or request) on any failure.
 - **FR-031**: The install check MUST verify each installed package's registry signature and provenance attestation
   and that the attestation names this repository, the release workflow (`.github/workflows/release.yml`), the
@@ -522,5 +528,11 @@ consumer migrations; rewriting git history; automated version bumps or a release
   mutation check, which each of them passed on its own pull request; the release run mutates only what the tagged
   commit adds to its parent (for 1.0.0, what the release adds to the first-release base), and the dry run only the
   pull request's own range (operator decision PLAN-FRESH-3-001 (a), research.md R-10).
+- "Every merge gate" in Story 3 and FR-022 excludes spec 001's Sign-off check in the release run only: the tagged
+  commit on `main` is a squash commit, which cannot carry each contributor's sign-off, so the release run skips
+  ci.yml's Sign-off job (`release: true`). Sign-off still runs, and is still required, on every pull request,
+  including the pre-tag pull request and the dry run's `workflow_call` (`release: false`); the release-workflow gate
+  keeps the skip out of pull-request runs (operator decisions PLAN-FRESH-1-001 (a), PLAN-FRESH-2-002 (a); research.md
+  R-10, R-13).
 - The constitution amendment is MINOR (operator decision PLAN-CORRECTNESS-1-007 (b)): no principle is added or
   removed, but the peer-range exception materially expands the supply-chain guidance.
