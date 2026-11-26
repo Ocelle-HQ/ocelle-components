@@ -1,9 +1,9 @@
 ---
-analyzed_at: 2026-11-26T01:29:38Z
-head: 1c4b3b406c7aafe180d93dca2447169f39c9767c
-critical: 1
-high: 1
-medium: 2
+analyzed_at: 2026-11-26T01:30:55Z
+head: 8f5754b8bec80e6a005b4affdab42713444fea1c
+critical: 0
+high: 0
+medium: 0
 low: 0
 coverage: 100
 ---
@@ -12,10 +12,17 @@ coverage: 100
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |---|---|---|---|---|---|
-| C1 | Constitution alignment | CRITICAL | Constitution V, plan Technical Context and Phase 2, T007, T010–T012 | The plan defines an empty indicator as a supported state and tests it in a browser. The pinned Storybook inventory covers a populated list without a current step and a populated list with all three marker states. It has no assignment for the empty state. | Show the empty indicator at rest in a pinned example. Keep all three required action arrangements. If this adds a fourth story, assign its exact ID and two baseline paths and update the dependent inventories. |
-| I1 | Execution inconsistency | HIGH | Plan Phase 2, T006–T009, T011, `gates/lib/story-selection.ts` | The strict-CSP HTML fixture matches the story test pathspec but has no runnable test identity. The empty-index Plant stub also matches that pathspec and has no runnable identity. The focused selector expands to the full inventory for these support changes when there are no explicit local scope paths. The `implementation-story` and `ci-only` directives do not supply those paths. | Give T006 the exact runnable consumers of the added support files as plain lines in `test-scope.txt`. Keep the recorded red assertions local and check that the expected local inventory is reported on the canonical red and head. |
-| I2 | Prerequisite inconsistency | MEDIUM | T010–T013, `gates/plants/visual/fail-token-changed/plant.json` | T011 only depends on the canonical red. Its token-change Plant expectation needs a rendered recipe. The Plant compares token-shifted captures against the committed baselines, so its final verification also needs the new pinned PNGs. | Stage count and stub edits after red. Require the rendered story and pinned PNGs before completing the token-change Plant proof, either by assigning the proof separately or adding the prerequisites. |
-| A1 | Execution ambiguity | MEDIUM | Plan Phase 2, T008, `packages/elements/test/browser/serve.ts` | The existing strict-CSP server copies packaged bundles by a fixed list. It will not serve the new Storybook TypeScript module and CSS from their source paths by itself. The task assigns only a test and HTML fixture. | In T008's test, bundle the shared module and expose it and the stylesheet as same-origin external assets under the fixture policy, as existing browser tests do for extra bundles. Keep the positive asset assertion before navigation so historical red is an assertion failure. |
+
+The amended plan and tasks have no open findings. This recheck covers the changes after the previous report at `3e1ccccc`.
+
+### Verified Resolutions
+
+| ID | Status | Verification |
+|---|---|---|
+| C1 | Resolved | Phase 2 and T010 include an empty step configuration in a separate fourth story. T012 assigns light and dark PNGs to each exact ID. Four new stories and eight new baselines yield 398 repository stories and 796 repository story-themes. The violating Axe fixture adds one story in both themes for 798 runs. |
+| I1 | Resolved | T006 lists the actual Storybook and browser test paths as plain local scope entries. An isolated call to the installed selector kept those two tests local in red despite the fixture HTML. At head, the changed build-count integration test remained included, the eligible Visual case was deferred, and neither the fixture HTML nor the empty-index Plant stub pulled in unrelated tests. |
+| I2 | Resolved | T011 permits count and stub edits after canonical red and makes token-change Plant verification depend on both the rendered recipe from T010 and the pinned PNGs from T012. T013 remains downstream of all three. |
+| A1 | Resolved | Phase 2 and T008 check the shared recipe sources before navigation, then assign compilation and staging of the same host script and CSS to the test. The task uses the existing strict-CSP policy and external same-origin assets. |
 
 ### Coverage Summary
 
@@ -27,7 +34,7 @@ coverage: 100
 | FR-004 | Yes | T002, T003, T007 | Full labels, display compaction, tab order and host updates. |
 | FR-005 | Yes | T007, T008, T010 | 72 px alignment, three action combinations and keyboard focus through navigation. |
 | FR-006 | Yes | T007, T010, T013 | Independent 1200 px, 320 px and desktop 200% text checks and clipping control. |
-| FR-007 | Yes | T002, T005–T013 | Focused browser, separate strict CSP, Visual, Axe, and protected replay. See C1 and I1. |
+| FR-007 | Yes | T002, T005–T013 | Focused browser tests, separate strict CSP, Visual, Axe and protected replay. |
 | FR-008 | Yes | T002, T004, T010 | Public package surface, bundler and aggregate entry checks, documentation and changelog. |
 | SC-001 | Yes | T002, T003 | Named current step, completion text and zero marker tab stops. |
 | SC-002 | Yes | T007, T008, T010, T013 | DOM and focus order, host activation and one-line standard actions. |
@@ -36,7 +43,7 @@ coverage: 100
 
 ### Constitution Alignment Issues
 
-C1 covers the missing pinned empty-state example under Principle V. The planned package and CEM surface, token and CSP treatment, red-first evidence and changed element mutation otherwise map to tasks.
+None open. The plan assigns the public render states to pinned examples and covers package and manifest, token use, strict CSP, test-first replay and mutation evidence.
 
 ### Unmapped Tasks
 
@@ -47,10 +54,10 @@ None. The base, evidence and inventory tasks support the requirements and their 
 - Total requirements: 12, including four testable success criteria
 - Total tasks: 13
 - Coverage: 100%
-- Ambiguity count: 1
+- Ambiguity count: 0
 - Duplication count: 0
-- Critical issues count: 1
+- Critical issues count: 0
 
 ### Next Actions
 
-Update the plan and tasks to assign a pinned empty render state before running `/speckit-implement`. Record the local support consumers at phase setup and make the token-change Plant proof depend on pinned baseline availability. Then rerun `/speckit-analyze`.
+Start the test-first implementation with Phase 1. Keep the two Phase 2 test slices disjoint and join their evidence for canonical red replay.
