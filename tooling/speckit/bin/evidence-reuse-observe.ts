@@ -127,16 +127,18 @@ function logLines(log: string): string[] {
 }
 
 function testedMerge(lines: readonly string[], pr: number): string {
-  const checkout = lines.findIndex((line) => line === "##[group]Checking out the ref");
+  const group = "##[group]Checking out the ref";
+  const checkout = lines.indexOf(group);
+  const end = lines.indexOf("##[endgroup]", checkout + 1);
   const ref = `refs/remotes/pull/${String(pr)}/merge`;
-  requireEvidence(checkout !== -1 && lines.slice(checkout, checkout + 12)
-    .some((line) => /^\[command\](?:\/[^ ]+\/)?git checkout /.test(line) && line.endsWith(` ${ref}`)),
-  "the Visual job log does not verify checkout of this PR's merge ref");
-  const results = lines.flatMap((line, index) =>
-    /^\[command\](?:\/[^ ]+\/)?git log -1 --format=%H$/.test(line) &&
-      revision.test(lines[index + 1] ?? "") ? [lines[index + 1] ?? ""] : []);
-  requireEvidence(results.length === 1, "the Visual checkout log has a missing or ambiguous tested merge SHA");
-  return sha(results[0]);
+  const commands = lines.slice(checkout + 1, end).filter((line) => /^\[command\](?:\/[^ ]+\/)?git checkout /.test(line));
+  requireEvidence(checkout !== -1 && end > checkout && lines.lastIndexOf(group) === checkout &&
+    commands.length === 1 && commands[0]?.endsWith(` ${ref}`), "the Visual job log does not verify unique checkout of this PR's merge ref");
+  const logs = lines.flatMap((line, index) => /^\[command\](?:\/[^ ]+\/)?git log -1 --format=%H$/.test(line) ? [index] : []);
+  const index = logs[0];
+  requireEvidence(logs.length === 1 && index !== undefined && index > end && revision.test(lines[index + 1] ?? ""),
+    "the Visual checkout log has a missing or ambiguous tested merge SHA");
+  return sha(lines[index + 1]);
 }
 
 function verifiedCommit(repo: string, commit: string): RunEvidence["mergeCommit"] {
@@ -150,6 +152,11 @@ function verifiedCommit(repo: string, commit: string): RunEvidence["mergeCommit"
   }
   requireEvidence(git(["rev-parse", `${commit}^{tree}`]).toString().trim() === result.tree,
     "the local tree differs from the trusted GitHub commit object");
+  // The raw object retains its ordered parents even in a shallow checkout.
+  const header = git(["cat-file", "commit", commit]).toString().split("\n\n", 1)[0] ?? "";
+  const parents = header.split("\n").flatMap((line) => line.startsWith("parent ") ? [line.slice(7)] : []);
+  requireEvidence(parents.length === result.parents.length && parents.every((parent, index) => parent === result.parents[index]),
+    "the local parents differ from the trusted GitHub commit object");
   return result;
 }
 
@@ -451,18 +458,16 @@ function collect(context: Context, receipt: AttemptReceipt, known?: Candidate): 
   const actual = api(`repos/${repo}/actions/runs/${String(runId)}/attempts/${String(attempt)}`);
   const links = objects(actual.pull_requests);
   const link = links[0];
+  // The embedded association is live. Its repository and PR identities link the attempt, while the attempt pins its own head.
   requireEvidence(links.length === 1 && link?.number === pull.number &&
     object(object(link.head).repo).id === repositoryId && object(object(link.base).repo).id === repositoryId &&
     object(actual.repository).id === repositoryId && object(actual.head_repository).id === repositoryId &&
     actual.id === runId && actual.run_attempt === attempt && actual.event === "pull_request" &&
     actual.workflow_id === context.workflowId && actual.path === ciWorkflow && actual.status === "completed",
   "the requested completed CI attempt lacks exact same-repository, workflow and PR provenance");
-  const head = sha(object(link.head).sha);
-  const base = sha(object(link.base).sha);
-  requireEvidence(actual.head_sha === head, "the CI attempt head differs from its GitHub pull request association");
-  requireEvidence(base === pull.base, "the CI attempt did not use the exact current base");
+  const head = sha(actual.head_sha);
+  requireEvidence(object(actual.head_commit).id === head, "the CI attempt lacks matching immutable head SHAs");
   receipt.head = head;
-  receipt.base = base;
   receipt.conclusion = actual.conclusion === null ? null : string(actual.conclusion);
   const jobs = jobsFor(repo, receipt.attempt);
   receipt.jobs = jobs.rows;
@@ -477,14 +482,17 @@ function collect(context: Context, receipt: AttemptReceipt, known?: Candidate): 
   receipt.merge = merge;
   const mergeCommit = verifiedCommit(repo, merge);
   receipt.tree = mergeCommit.tree;
-  requireEvidence(mergeCommit.parents.length === 2 && mergeCommit.parents[0] === base && mergeCommit.parents[1] === head &&
-    (known === undefined || (head === known.head && base === known.base && merge === known.merge)),
-  "the Visual checkout is not the exact expected PR head/base merge");
+  const [base, mergedHead] = mergeCommit.parents;
+  requireEvidence(mergeCommit.parents.length === 2 && mergedHead === head, "the Visual checkout is not the exact expected PR head/base merge");
+  requireEvidence(base === pull.base, "the CI attempt did not use the exact current base");
+  requireEvidence(known === undefined || (head === known.head && base === known.base && merge === known.merge),
+    "the Visual checkout is not the exact current tested merge");
+  receipt.base = base;
   const expected = known ?? { runId, attempt, head, base, merge };
   const run: HostedRun = {
     repository: string(object(actual.repository).full_name), headRepository: string(object(actual.head_repository).full_name),
     pullRequests: [pull.number], workflowId: number(actual.workflow_id), workflowPath: string(actual.path), event: string(actual.event),
-    id: number(actual.id), attempt: number(actual.run_attempt), head: sha(actual.head_sha), testedMerge: merge,
+    id: number(actual.id), attempt: number(actual.run_attempt), head, testedMerge: merge,
     status: string(actual.status), conclusion: receipt.conclusion, startedAt: string(actual.run_started_at),
   };
   receipt.visualInputs = visualInputs(mergeCommit.tree);

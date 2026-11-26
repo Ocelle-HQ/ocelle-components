@@ -173,7 +173,7 @@ function replay(scenario: Scenario): ReturnType<typeof observe> | undefined {
 
 it("authenticates the historical checkout after the live PR link advances and reaches the runtime safeguard", () => {
   const result = replay("advanced");
-  expect(result?.run.status, result?.run.stderr).toBe(0);
+  expect(result?.run.status).toBe(0);
   expect(result?.receipt).toMatchObject({
     prior: {
       attempt: { runId: 101, attempt: 2 }, head: result?.priorHead, base: result?.base, merge: result?.priorMerge,
@@ -187,7 +187,7 @@ it("authenticates the historical checkout after the live PR link advances and re
 
 it("rejects a contradictory immutable prior head even with matching PR membership and Visual checkout", () => {
   const result = replay("conflicting-head");
-  expect(result?.run.status, result?.run.stderr).toBe(0);
+  expect(result?.run.status).toBe(0);
   expect(result?.receipt).toMatchObject({
     prior: { attempt: { runId: 101, attempt: 2 } },
     verdict: { eligible: false, reason: "provenance" },
@@ -211,7 +211,7 @@ it.each([
   ["incomplete-jobs", /incomplete GitHub pagination for jobs/],
 ] as const)("fails closed for %s in the exact workflow observation", (scenario, detail) => {
   const result = replay(scenario);
-  expect(result?.run.status, result?.run.stderr).toBe(0);
+  expect(result?.run.status).toBe(0);
   expect(result?.receipt).toMatchObject({ verdict: { eligible: false, reason: "provenance" } });
   expect(result?.receipt?.detail).toMatch(detail);
   expect(result?.receipt).not.toHaveProperty("treeDiff");
