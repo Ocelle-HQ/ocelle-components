@@ -95,7 +95,7 @@ describe("the Vitest projects", () => {
       normal: ["storybook-browser"], mutation: ["storybook-browser"], elementMutation: [],
     });
     const browser = base.test?.projects?.find((project) =>
-      typeof project === "object" && "test" in project && project.test?.name === "storybook-browser");
+      typeof project === "object" && "test" in project && project.test.name === "storybook-browser");
     expect(browser).toMatchObject({ test: { browser: { enabled: true, headless: true, instances: [{ browser: "chromium" }] } } });
   });
 
