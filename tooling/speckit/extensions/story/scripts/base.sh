@@ -13,9 +13,9 @@ if (( $# > 1 )); then
     echo 'usage: base.sh <phase> [--with-main <full-main-sha>]' >&2
     exit 2
   fi
-  if [[ ! -s "$dir/base.sha" ]] || ! git merge-base --is-ancestor "$upstream" refs/remotes/origin/main ||
-    ! git merge-base --is-ancestor "$upstream" HEAD; then
-    echo 'story: pin a main revision already integrated into an existing phase' >&2
+  if [[ ! -s "$dir/base.sha" ]] || ! merge_base=$(git merge-base --all HEAD refs/remotes/origin/main) ||
+    [[ "$upstream" != "$merge_base" ]]; then
+    echo 'story: pin the unique merge base of HEAD and origin/main for an existing phase' >&2
     exit 2
   fi
   printf '%s\n' "$upstream" > "$dir/replay-upstream.sha"

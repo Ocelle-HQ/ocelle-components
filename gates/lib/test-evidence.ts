@@ -205,8 +205,11 @@ function shardShape(value: unknown): value is ShardResult {
 }
 
 function passingShardTests(expected: readonly TestFile[], result: ShardResult): number {
-  const errorSummary = result.errors.map(({ name, message }) =>
-    [name, message].filter(Boolean).join(": ").replace(/\s+/g, " ").trim().slice(0, 500)).join("; ");
+  const shownErrors = result.errors.slice(0, 8).map(({ name, message }) =>
+    [name, message].filter(Boolean).join(": ").replace(/\s+/g, " ").trim().slice(0, 500));
+  const omittedErrors = result.errors.length - shownErrors.length;
+  if (omittedErrors > 0) shownErrors.push(`${String(omittedErrors)} runner errors omitted (see result.json)`);
+  const errorSummary = shownErrors.join("; ");
   if (!sameInventory(expected, result.files)) {
     const missing = unmatchedFiles(expected, result.files);
     const unexpected = unmatchedFiles(result.files, expected);

@@ -11,3 +11,5 @@ note: affected: every plant, by gates/bin/story-evidence.ts (shared gate source)
 plants: affected since b8f06d5c652aae2c308d0a09f3e991e800138004: 326 of 326 plants selected, none judged (--list)
 plants: 326 plants of 18 gates and the registry judged, every plant as expected
 ```
+
+The round 3 corrections still select 326 of 326 Plants with the same base and list command, which exited 0. The hosted Plants verdict for the corrected candidate is pending.

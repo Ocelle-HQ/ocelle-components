@@ -6,3 +6,5 @@
 - Result: 168 mutants on changed lines across three files, zero survivors and zero timeouts. The gate reported 38 compile errors and one existing documented process-boundary record.
 
 The first run exposed gaps around mixed red ancestry, omission of metadata without an upstream pin, and runner diagnostics. Added focused assertions for each condition before rerunning the affected gate.
+
+Changed-source mutation for the round 3 corrections is pending on the next hosted candidate.

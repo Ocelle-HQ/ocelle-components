@@ -398,6 +398,14 @@ function ancestor(git: PhaseTools["git"], older: string, newer: string): boolean
   }
 }
 
+function sharedMain(git: PhaseTools["git"]): string {
+  try {
+    return git(["merge-base", "--all", "HEAD", "refs/remotes/origin/main"]).trim();
+  } catch {
+    return "";
+  }
+}
+
 // Intern an unreferenced, deterministic replay snapshot. The historical red and scaffold records stay intact.
 function replayRevision(git: PhaseTools["git"], original: string, upstream: string | undefined): string {
   if (upstream === undefined || ancestor(git, upstream, original)) return original;
@@ -473,8 +481,9 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   const base = revision(git, tools.read(baseFile).trim());
   const redRecords = records(dir, tools);
   const upstreamFile = join(dir, "replay-upstream.sha");
-  const upstream = tools.exists(upstreamFile) ? revision(git, tools.read(upstreamFile).trim()) : undefined;
-  if (upstream !== undefined && (!ancestor(git, upstream, "refs/remotes/origin/main") || !ancestor(git, upstream, current)
+  const pin = tools.exists(upstreamFile) ? tools.read(upstreamFile).trim() : undefined;
+  const upstream = pin === undefined ? undefined : revision(git, pin);
+  if (upstream !== undefined && (sharedMain(git) !== pin
     || redRecords.some(({ sha }) => ancestor(git, revision(git, sha), upstream)))) {
     throw new Error("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
   }
