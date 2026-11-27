@@ -13,16 +13,17 @@
 ## Requirement Completeness
 
 - [x] Each outcome has an independent test and observable acceptance criteria.
-- [x] Default and opt-in layouts, empty groups, and narrow and wide widths are covered.
+- [x] Rail placement is measured with spare height, including default and opt-in placement, a focus-preserving orientation switch, and empty groups.
+- [x] The 320 px reference fixture checks overflow, focus visibility, and the inherited minimum menu hit area.
 - [x] Existing app-owned layout, navigation, and focus boundaries are explicit.
 - [x] Scope and assumptions identify which related work belongs to separate issues.
 
 ## Feature Readiness
 
 - [x] Each user story maps to measured outcomes.
-- [x] Documentation, manifest and browser evidence are in scope.
+- [x] Documentation, manifest, pinned light and dark baselines, forced colours, and strict-CSP evidence are in scope.
 - [ ] Independent specification review and recorded verdict.
 
 ## Notes
 
-The independent spec check follows this initial author review.
+The two blocking findings from [spec check 1](../reviews/spec/check-1.md) are addressed in the updated spec. The independent recheck is pending.
