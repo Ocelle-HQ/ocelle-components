@@ -1,0 +1,29 @@
+name: Shell 038 governance proof
+on:
+  push:
+    branches: [ci/038-governance]
+permissions:
+  contents: read
+jobs:
+  spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SPECIFY_FEATURE_DIRECTORY: specs/038-shell-chrome-alignment
+      SPECIFY_FEATURE_NO_PERSIST: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 494a0eaf1ecc212b4ab0300ea50f318353c9fa0e
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate exact spec review and initialize plan
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "494a0eaf1ecc212b4ab0300ea50f318353c9fa0e"
+          test -z "$(git status --porcelain)"
+          tooling/speckit/bin/scope-check.sh spec-check ad51bc9ee58f0db6aa31e00451e2c8c65e942477
+          status=$(.specify/extensions/squad/scripts/spec-status.sh)
+          echo "$status"
+          jq -e '.check == 2 and .verdict == "clean" and .blocking == 0 and .operator_questions == 0' <<< "$status"
+          .specify/scripts/bash/setup-plan.sh --json
