@@ -81,11 +81,12 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
   it("is stryker.config.json with its own Vitest config and its own report file", () => {
     const read = (path: string): Record<string, unknown> => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8")) as Record<string, unknown>;
     const general = read("stryker.config.json");
-    expect(read("stryker.elements.config.json")).toEqual({
+    const { dryRunTimeoutMinutes, ...elementConfig } = read("stryker.elements.config.json");
+    expect(dryRunTimeoutMinutes).toBe(40);
+    expect(elementConfig).toEqual({
       ...general,
       vitest: { configFile: "vitest.mutation.elements.config.ts", related: false },
       jsonReporter: { fileName: "reports/mutation/mutation-elements.json" },
-      dryRunTimeoutMinutes: 40,
     });
     expect(general.vitest).toEqual({ configFile: "vitest.mutation.config.ts", related: false });
     expect(Object.keys(general)).not.toContain("dryRunTimeoutMinutes");

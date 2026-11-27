@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 env:
-  OCELLE_PROOF_HEAD: 2df1d9de7fb0df22063fe9a350ec24ebdd1763c3
+  OCELLE_PROOF_HEAD: 7ce080de55bf064a6afa75168ab85ec3833dea2e
   OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
   OCELLE_PROOF_PHASE: '1'
 
