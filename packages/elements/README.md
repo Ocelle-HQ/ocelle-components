@@ -36,6 +36,7 @@ of the host's own.
 | Specifier | File | Defines |
 |---|---|---|
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
+| `@ocelle/elements/ocelle-anchored-popover.js` | `dist/ocelle-anchored-popover.js` | `ocelle-anchored-popover` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |
@@ -727,6 +728,35 @@ html`<ocelle-tooltip text="Projects" placement="end"><a href="/projects" aria-la
 // inside ocelle-pill-tag's shadow root
 html`<ocelle-tooltip text="${this.text}" ?disabled=${!this.truncated}><button class="pill">${this.text}</button></ocelle-tooltip>`;
 ```
+
+## `ocelle-anchored-popover`
+
+Use `ocelle-anchored-popover` to put compact controls such as appearance settings or account actions in a nonmodal
+surface. Import `@ocelle/elements/ocelle-anchored-popover.js` to register it on its own. The package root also
+registers it and exports `OcelleAnchoredPopover`.
+
+```html
+<ocelle-anchored-popover label="Account actions" placement="above">
+  <span slot="trigger">AN</span>
+  <a href="/profile">Profile</a>
+  <button type="button">Sign out</button>
+</ocelle-anchored-popover>
+```
+
+- `label` names the native button. An absent or whitespace-only label disables it.
+- `placement` prefers `below` by default or `above` for a trigger near the bottom of the screen.
+- The `trigger` slot holds decorative content such as an icon or initials. The default slot holds controls in their
+  ordinary tab order. The `trigger` and `surface` parts style the button and panel respectively.
+- `close()` closes the panel. It safely does nothing before the first render or when already closed. If focus is
+  still inside, it returns to the enabled trigger without scrolling. Focus elsewhere stays where it is.
+
+Activating the button toggles the surface and updates its expanded state. Opening leaves focus in place. Tab and
+Shift+Tab move through the controls in native order. When either key moves focus to a regular page control outside
+the popover, the panel closes and that control keeps focus. Escape closes the panel from inside or from its trigger,
+unless a foreground overlay or the native action of clearing an editable, populated search field takes precedence.
+A pointer gesture that starts and ends outside dismisses the panel and lets the outside target receive its normal
+interaction. The host handles actions such as applying a preference and can then call `close()`. The element adds
+no custom events.
 
 ## `ocelle-section-header`
 

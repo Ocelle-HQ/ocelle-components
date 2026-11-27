@@ -5,6 +5,10 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Anchored popover (#86).** `ocelle-anchored-popover` provides a named native button and a nonmodal surface for
+compact controls. The element, its `label` and `placement` attributes and properties, its slots and parts, `close()`
+and the standalone `@ocelle/elements/ocelle-anchored-popover.js` entry are a MINOR addition.
+
 **Step indicator (#87). `ocelle-step-indicator` and its standalone entry are a MINOR addition.**
 It presents host-supplied ordered progress with a current marker and accessible completion.
 
