@@ -1,23 +1,21 @@
 ---
-analyzed_at: 2026-11-27T09:45:22Z
-head: 80ce29b80c97d14feafc143e0fd306e8c7a28de1
+analyzed_at: 2026-11-27T09:46:17Z
+head: 683cd03a5851de57799da07f696ad68acc1d73ea
 critical: 0
 high: 0
-medium: 1
+medium: 0
 low: 0
 coverage: 100
 ---
 
 ## Specification Analysis Report
 
-| ID | Category | Severity | Location(s) | Summary | Recommendation |
-| --- | --- | --- | --- | --- | --- |
-| U1 | Underspecification | MEDIUM | `tasks.md:14,16`; `gates/lib/test-evidence.ts:102–105,373–384`; `gates/test/test-evidence.test.ts:183–186` | T004 keeps the shared build usable on the original base. Its separate availability assertion would fail before loading the fixture on that base, then pass on the scaffold before a different behavior assertion fails. The replay requires the same recorded assertion source and occurrence, including any helper. A different failing assertion in the same named case is rejected. | Check availability before loading, feed the unavailable result or the observed behavior into one shared assertion on both revisions, and keep the assertion site identical. Alternatively use the exact recognized missing-module collection failure for the original base only and demonstrate the named behavior assertion on the scaffold. |
+The independent recheck found no open issues.
 
 ### Recheck of prior findings
 
-- **I1 resolved.** T001 and T010 own their phase scope files and record exact runnable test paths. T006 and T013 inspect the red and head selections. With available plain entries, the selector keeps shared support changes scoped. Full hosted checks remain required.
-- **U1 partially resolved.** T004 avoids a global build failure and T006 rejects setup/navigation failures. The remaining check is exact assertion identity when both revisions reach a named test.
+- **I1 resolved.** T001 and T010 own their phase scope files and record exact runnable test paths. T006 and T013 inspect the red and head selections. When shared support files change, available plain scope entries prevent the replay selector from choosing the full inventory. Full hosted checks remain required.
+- **U1 resolved.** T004 keeps shared setup usable without the new entry and feeds unavailable and observed outcomes into the same named behavior assertion. T006 requires identical assertion source, occurrence and helper identity across base and scaffold, except for the checker’s recognized collection failure on the exact scaffold-added module. Other setup failures remain invalid. A synthetic probe against the repository classifier accepted both outcomes with different diagnostics from an identical assertion site.
 - **U2 resolved.** T026 requires the pilot pull request description to explain the eight new baselines.
 
 ### Coverage summary
@@ -56,4 +54,4 @@ None. The base pins, red and green receipts, and retained mutation route support
 
 ### Next actions
 
-Clarify U1 in T004 and T006 before implementing the strict fixture. Keep the same three phases, all protected checks, and the separate browser-floor proof.
+The checklist is ready for the operator’s tasks decision. Implement Phase 1 first after approval and collect the real browser and CI evidence at the designated checkpoints.
