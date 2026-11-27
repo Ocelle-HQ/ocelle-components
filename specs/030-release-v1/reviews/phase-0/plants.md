@@ -9,6 +9,13 @@ plants were not run; the 12 unit-tests plants report "Chromium not found", the 2
 element mutation plants "Stryker wrote no report" (its initial test run, which runs the element tests in Chromium,
 failed). Every other selected plant was judged as expected. CI's Plants check judges every plant.
 
+Accepted for the phase record by the operator's decision on R1-01 (`operator-plants-decision.md`, "CI decides
+plants"): the exit 2 has only environment causes (no container engine, no pinned Chromium), every other selected
+plant was judged as expected, and CI's required Plants check judges every plant. The run was not repeated after
+review round 1: the environment still has no container engine and no pinned Chromium, and no file outside
+`specs/030-release-v1/` changed between the commit that recorded this run (`deb0de86`) and the fix commit, so a new
+run would select and judge the same plants.
+
 ```text
 $ node gates/bin/plants.ts -- --affected 7af6180b2ac3027f565c296db3c03facfea86aaa
 note: affected: every plant, by .github/workflows/evidence-reuse-shadow.yml (not mapped)
