@@ -76,16 +76,17 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
     expect(keptElements.map((project) => project.name)).toEqual(["elements", "elements-touch"]);
   });
 
-  // 008 plan decision 25, research.md R-15 (operator decision 2026-11-15): the elements configuration alone raises
-  // Stryker's dry-run limit to 30 minutes; the per-mutant limits and stryker.config.json stay at Stryker's defaults.
+  // 008 plan decision 25 and research.md R-15 established a separate dry-run limit for elements. The complete
+  // element baseline gets 40 minutes, with Stryker's default per-mutant limits and the general dry-run limit.
   it("is stryker.config.json with its own Vitest config and its own report file", () => {
     const read = (path: string): Record<string, unknown> => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8")) as Record<string, unknown>;
     const general = read("stryker.config.json");
-    expect(read("stryker.elements.config.json")).toEqual({
+    const { dryRunTimeoutMinutes, ...elementConfig } = read("stryker.elements.config.json");
+    expect(dryRunTimeoutMinutes).toBe(40);
+    expect(elementConfig).toEqual({
       ...general,
       vitest: { configFile: "vitest.mutation.elements.config.ts", related: false },
       jsonReporter: { fileName: "reports/mutation/mutation-elements.json" },
-      dryRunTimeoutMinutes: 30,
     });
     expect(general.vitest).toEqual({ configFile: "vitest.mutation.config.ts", related: false });
     expect(Object.keys(general)).not.toContain("dryRunTimeoutMinutes");
