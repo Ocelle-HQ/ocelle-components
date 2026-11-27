@@ -15,6 +15,20 @@ Every mutation shard that mutates element source (38 on c5d23c12, run 4596372164
 confirm the timeout. If it is confirmed, fold a test-first raise of the cap (staying under the 75-minute
 element-shard job limit in `ci.yml`) as a landing change.
 
+**Measured 2026-11-27, in this sandbox (4 CPUs).** Stryker ran with `stryker.elements.config.json`, its cap
+lifted in a scratch copy, through the gate's own `strykerEnv`, mutating 3 lines. The "Initial test run succeeded"
+line reads:
+
+| Revision | Tests | Initial test run |
+|---|---|---|
+| main 1d599fd4 | 3725 | 30 min 25 s |
+| this branch b23411d8 | 3940 | 32 min 36 s |
+
+Main is already past the 30-minute cap here; 018's 215 tests add 2 min 11 s. The fold raises
+`dryRunTimeoutMinutes` from 30 to 45 minutes. That leaves the branch about 12 minutes of headroom and the 75-minute
+element-shard job limit about 30 minutes for the mutants. The test pin in `gates/test/vitest-config.test.ts`
+changes with it.
+
 ## L-02: phase red/green evidence after main was merged in
 
 **Facts.** #101 (64c57578) added a replay pin: `base.sh N --with-main <sha>` writes `replay-upstream.sha`, and
