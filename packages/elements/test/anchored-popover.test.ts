@@ -177,9 +177,18 @@ describe("anchored popover interaction", () => {
     expect(fixture.panel.matches(":popover-open")).toBe(true);
     const { x, y } = point(fixture.outside);
     expect(document.elementFromPoint(x, y)).not.toBe(fixture.outside);
+    const focusArrivals: { open: boolean; expanded: string | null; trusted: boolean }[] = [];
+    fixture.outside.addEventListener("focusin", (event) => {
+      focusArrivals.push({
+        open: fixture.panel.matches(":popover-open"),
+        expanded: fixture.trigger.getAttribute("aria-expanded"),
+        trusted: event.isTrusted,
+      });
+    }, { once: true });
     fixture.last.focus();
     await commands.press("Tab");
     await settle();
+    expect(focusArrivals).toEqual([{ open: false, expanded: "false", trusted: true }]);
     expect({
       open: fixture.panel.matches(":popover-open"),
       focus: active() === fixture.outside,
@@ -193,7 +202,10 @@ describe("anchored popover interaction", () => {
     fixture.first.addEventListener("click", () => { fixture.outside.focus(); }, { once: true });
     await open(fixture);
     expect(fixture.panel.matches(":popover-open")).toBe(true);
-    fixture.first.focus();
+    await commands.press("Tab");
+    await settle();
+    expect({ open: fixture.panel.matches(":popover-open"), focus: active() === fixture.first })
+      .toEqual({ open: true, focus: true });
     await commands.press("Enter");
     await settle();
     expect({ open: fixture.panel.matches(":popover-open"), focus: active() === fixture.outside })
@@ -337,6 +349,26 @@ describe("anchored popover interaction", () => {
     await settle();
     expect({ foreground: foreground.matches(":popover-open"), popover: fixture.panel.matches(":popover-open"), focus: active() === fixture.first })
       .toEqual({ foreground: false, popover: true, focus: true });
+  });
+
+  it("owns Escape from a nested native manual popover and restores trigger focus", async () => {
+    const fixture = await mount();
+    const foreground = document.createElement("div");
+    foreground.id = "foreground";
+    foreground.popover = "manual";
+    foreground.innerHTML = '<button type="button" autofocus>Continue</button>';
+    fixture.host.append(foreground);
+    fixture.first.addEventListener("click", () => { foreground.showPopover(); }, { once: true });
+    await open(fixture);
+    expect(fixture.panel.matches(":popover-open")).toBe(true);
+    fixture.first.focus();
+    await commands.press("Enter");
+    expect({ foreground: foreground.matches(":popover-open"), focus: active() === foreground.firstElementChild })
+      .toEqual({ foreground: true, focus: true });
+    await commands.press("Escape");
+    await settle();
+    expect({ open: fixture.panel.matches(":popover-open"), expanded: fixture.trigger.getAttribute("aria-expanded"), focus: active() === fixture.trigger })
+      .toEqual({ open: false, expanded: "false", focus: true });
   });
 
   it("consumes Escape from a populated text field before it reaches the containing modal", async () => {
