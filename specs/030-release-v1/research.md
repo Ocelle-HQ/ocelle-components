@@ -600,6 +600,10 @@ copies the plant directory only, so nothing can be built in it; the configuratio
   files, and a later edit of a root file (phase 4's `THIRD_PARTY_NOTICES`, T055) keeps every plant as it was (analysis
   C2). The build-and-pack path (no `--tarballs`) is proven once by a
   gates-integration test on the real workspace.
+  The form is registered where op 023 registered `tracked-tree`: the `PlantForm` union, the `forms` list and its error
+  text in `gates/lib/registry.ts` (with the gate's registration, US1), and the build map of `gates/bin/plants.ts`;
+  `plantValues` lives in `gates/lib/plant-runner.ts` and needs no change, because `plantArgs` replaces `{root}` inside
+  an argument (recheck item 4).
 - **Configuration set.** Extended with `.github/workflows/`, `.github/actions/`, `gates/release/`, the gap-table
   source, `packages/*/CHANGELOG.md`, `packages/styles/src/*.css`, `packages/tokens/fonts/OFL.txt` (the `source` of the tokens
   `identical` entry, for `fail-ofl-differs`; analysis L3, L7), `specs/*/verification.md` and the root `LICENSE`,

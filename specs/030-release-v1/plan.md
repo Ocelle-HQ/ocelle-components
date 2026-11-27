@@ -133,7 +133,12 @@ gates/test/…, gates/test/integration/…             # tests of the above; 183
 gates/test/ci-workflow.test.ts                     # amended red-first for each ci.yml change (US2, US3)
 gates/test/fixtures/install-check/                 # recorded real registry responses and a copy of the
                                                    #   provenance reference for the unit tests (R-11)
-gates/gates.json, gates/lib/registry.ts, gates/README.md   # three new gate entries
+gates/gates.json, gates/lib/registry.ts, gates/README.md   # three new gate entries; registry.ts's PlantForm
+                                                   #   union and forms list gain pack-tree (US1)
+gates/bin/evidence-reuse-shadow.ts                 # the three check names join its required-check list, one per
+                                                   #   registration (#103 observer; recheck item 2b, option (a))
+gates/test/evidence-reuse-shadow.test.ts, gates/test/integration/evidence-reuse-observe.test.ts
+                                                   # their copies of that list, amended red-first per registration
 .github/workflows/ci.yml                           # three new jobs; on: workflow_call (inputs base, release);
                                                    #   Sign-off if: ${{ !inputs.release }} (R-10); unit-test
                                                    #   checkouts fetch-depth: 0 (R-07)
@@ -151,6 +156,11 @@ and share the gate CLI, finding format and plant job; release-only data sits in 
 
 0. **Setup** (no behaviour): merge `main` (after 018 and 023). Each gate's registry entry (`gates.json`, the FR-020
    list, its `ci.yml` job) lands in its own story's green commit, since the plant job requires the three sets equal.
+   The same commit adds its check name to the required-check list of the Visual evidence reuse observer
+   (`gates/bin/evidence-reuse-shadow.ts`, #103), red-first in `gates/test/evidence-reuse-shadow.test.ts` and
+   `gates/test/integration/evidence-reuse-observe.test.ts`, since that observer judges a `ci.yml` run holding an
+   unexpected job ineligible (`reviews/recheck.md` item 2b; operator decision (a),
+   `reviews/phase-0/operator-recheck-decision.md`); and it corrects the job count in the `ci.yml` header comment.
 1. **US1, P1 — pack contents**: metadata, licence files, the root `NOTICE` edit (R-04: every published package holds
    a copy; where `THIRD_PARTY_NOTICES` is) before the pack manifest's `identical` rule freezes it, peer, pins-rule
    change (test-first), pack manifest, the
@@ -243,6 +253,12 @@ rules to the agent permission settings (O5, research R-16), which no agent perfo
 |---|---|---|
 | PLAN-FRESH-3-001 | (a) | `release-step base` returns the tagged commit's parent (`first-release-base` for 1.0.0), so the release run mutates only what `main` has not already proven; the dry run passes no `base` (pull request's own range) and has a cancel-in-progress concurrency group per pull request; rules `gates-inputs`, `dry-run-graph`, `dry-run-concurrency`; spec Assumptions and FR-027 (R-10, R-13) |
 | PLAN-FRESH-3-002 | (b) | `verdict` job "Release dry run" in the dry run, `needs: [release-base, gates, prepare]`, `if: always()`, fails unless all three succeeded; `prepare` loses the check name; rule `dry-run-verdict`; FR-027's last sentence corrected, Story 3 scenario 8, SC-009 (R-10, R-13) |
+
+**Operator decision, phase 0 recheck** (`reviews/phase-0/operator-recheck-decision.md`, on `reviews/recheck.md` item 2b):
+
+| Item | Option | Effect |
+|---|---|---|
+| 2b | (a) | each gate registration (T019, T033, T047) also adds its check name to `requiredJobs` in `gates/bin/evidence-reuse-shadow.ts`, red-first in the phase's registry test task (T008, T024, T037) through `gates/test/evidence-reuse-shadow.test.ts` and `gates/test/integration/evidence-reuse-observe.test.ts` |
 
 ## Complexity Tracking
 
