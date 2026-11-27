@@ -1,0 +1,53 @@
+# Quickstart: validating the status elements (018)
+
+## Prerequisites
+
+- Missions 012 and 008 and op 016 merged into the branch (from `main`, by `/ocelle-land`); T001 done (including the
+  recheck of the tasks against op 016 as merged), T002's spikes recorded in `reviews/phase-1/spikes.md`, and the
+  phase-1 harness self-tests passing (rows 1, 2, 7 and 8 of contracts/checks.md § Test harness; rows 3 to 6 are on
+  `main` as merged).
+- Node 26.13.0 and pnpm 12.16.1 as pinned; `pnpm install --frozen-lockfile`. (T001 found only Node 22.23.4 installed
+  in this container; the pinned Node is provided before the gates run, `reviews/phase-1/recheck.md` (f).)
+- Chromium: `export OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (Chrome for Testing
+  153.0.8010.12, as T001 (f) recorded here; the pinned Playwright's revision 1248 is not installed), or as the frontend
+  findings say for the container at hand.
+- For baselines and plants: dockerd running as root (`nohup dockerd > /tmp/dockerd.log 2>&1 &`; after a container
+  restart also `pnpm run setup:online`) and `OCELLE_VISUAL_ENGINE=docker`.
+
+## Run
+
+```bash
+pnpm run gate:typecheck && pnpm run gate:lint && pnpm run gate:style-lint
+pnpm run test                                   # element scenarios in process and on the strict-CSP fixtures
+pnpm run gate:manifest && pnpm run gate:csp && pnpm run gate:prefix
+pnpm run gate:contrast && pnpm run gate:brand-rules
+OCELLE_VISUAL_ENGINE=docker pnpm run visual:update   # only in a phase that adds or changes stories
+pnpm run gate:storybook-build && OCELLE_VISUAL_ENGINE=docker pnpm run gate:visual && pnpm run gate:axe
+# the affected plants only (op 016's mode); the full plant set is never run locally
+# (phase N's own base; in phase 7, polish, phase 2's base, so the run covers the whole feature)
+OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected "$(cat specs/018-status-elements/reviews/phase-N/base.sha)"
+pnpm run gate:mutation                          # alone, never beside plants
+```
+
+## Expected outcomes
+
+- Every scenario of [contracts/checks.md](contracts/checks.md) passes in process and on the CSP fixture, with zero CSP
+  violations and no serious or critical axe finding; the SC-001 bodies of `test/scenarios/consumers.ts` run through
+  `test/consumers.test.ts`.
+- `custom-elements.json` lists every member of [contracts/elements-status.md](contracts/elements-status.md);
+  `gate:manifest` reports nothing stale.
+- In the Storybook: the indicator stories show solid dots, `Tones` with and without `pulse` (captures run with reduced
+  motion); the metric labels are uppercase; the pill stories show wrapping static pills, outlined badges, compact
+  pills, interactive pills with their resting border, a hovered pill (its border in the status colour) and a hovered
+  badge (the status-ground fill), an active pill and badge (the inset cue), pressed pills and badges, disabled
+  interactive pills, and in `Truncated` unfocused truncated and fitting pills above one truncated pill that is focused
+  inside a clipping container with its ring whole and no tooltip bubble in either theme (the story focuses it after
+  `updateComplete`, as 012's `StoryFocus` does; the bubble is proven by the US5 scenarios). 21 stories in
+  all, each in light and dark.
+- By hand in Chromium (not a gate): an indicator with `pulse` pulses about 4.8 s (three runs of `motion-pulse`) and
+  stops; hovering or tabbing to a
+  truncated interactive pill shows its full text in the tooltip, Escape hides it; a screen reader reads a metric's
+  label as written; the find bar matches a metric's label twice, once on an invisible copy (a known limitation, R-05);
+  a pulsing indicator inside a `<details>` does not pulse again when the `<details>` is opened; a pill in a sentence
+  sits on the sentence's baseline, and a short static pill in a grid cell keeps the width of its text.
+- Mutation: no surviving mutant in new or changed source without a recorded equivalent.

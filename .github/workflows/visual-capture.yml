@@ -1,0 +1,89 @@
+name: Scoped Storybook baseline capture
+
+on:
+  pull_request:
+    types: [edited]
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: Capture requested Storybook baselines
+    if: >-
+      github.repository == 'Ocelle-HQ/ocelle-components' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.changes.body != null &&
+      contains(github.event.pull_request.body, '<!-- capture-storybook:')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - id: capture
+        name: Verify and capture the exact story selection
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { createHash } from 'node:crypto';
+          import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          import { baselineName, parseUpdateArgs, storyThemes, themes } from './gates/lib/visual-verdict.ts';
+
+          const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+          const pull = event.pull_request;
+          const marker = /<!--\s*capture-storybook\b[\s\S]*?-->/g;
+          const matches = [...(pull.body ?? '').matchAll(marker)].map(([match]) => match);
+          const selection = /^<!-- capture-storybook: ([^\r\n]+) -->$/.exec(matches[0] ?? '')?.[1];
+          if (matches.length !== 1 || selection === undefined) {
+            throw new Error('Expected a single <!-- capture-storybook: story-id,story-id --> marker');
+          }
+          const previous = [...(event.changes.body.from ?? '').matchAll(marker)].map(([match]) => match);
+          if (previous.length === 1 && previous[0] === matches[0]) process.exit(0);
+
+          const args = ['--engine', 'both', '--stories', selection];
+          const parsed = parseUpdateArgs(args);
+          if ('cause' in parsed) throw new Error(parsed.cause);
+          if (!parsed.stories?.length) throw new Error('Expected an explicit story selection');
+
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trimEnd();
+          const merge = git('rev-parse', 'HEAD');
+          const header = git('cat-file', 'commit', merge).split('\n\n', 1)[0];
+          const parents = header.split('\n').filter(line => line.startsWith('parent ')).map(line => line.slice(7));
+          if (merge !== process.env.GITHUB_SHA || parents.length !== 2 || parents[0] !== pull.base.sha || parents[1] !== pull.head.sha) {
+            throw new Error('Capture checkout must be the exact pull request merge with its ordered base and head');
+          }
+
+          execFileSync('pnpm', ['run', 'visual:update', '--', ...args, '--remove-docker-image'], { stdio: 'inherit' });
+          const output = join(process.env.RUNNER_TEMP, 'visual-capture');
+          mkdirSync(join(output, 'baselines'), { recursive: true });
+          const files = storyThemes({ stories: parsed.stories, themes }).map(({ story, theme }) => {
+            const name = baselineName(story, theme);
+            const bytes = readFileSync(join('storybook/baselines', name));
+            writeFileSync(join(output, 'baselines', name), bytes, { flag: 'wx' });
+            return { name, sha256: createHash('sha256').update(bytes).digest('hex') };
+          });
+          const receipt = {
+            repository: process.env.GITHUB_REPOSITORY,
+            pullRequest: pull.number,
+            head: pull.head.sha,
+            base: pull.base.sha,
+            testedMerge: merge,
+            runId: process.env.GITHUB_RUN_ID,
+            attempt: process.env.GITHUB_RUN_ATTEMPT,
+            pin: JSON.parse(readFileSync('storybook/visual/container.json', 'utf8')),
+            engines: ['docker', 'podman'],
+            files,
+          };
+          writeFileSync(join(output, 'capture.json'), `${JSON.stringify(receipt, null, 2)}\n`, { flag: 'wx' });
+          appendFileSync(process.env.GITHUB_OUTPUT, 'available=true\n');
+          NODE
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.capture.outputs.available == 'true'
+        with:
+          name: visual-capture-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/visual-capture/
+          if-no-files-found: error

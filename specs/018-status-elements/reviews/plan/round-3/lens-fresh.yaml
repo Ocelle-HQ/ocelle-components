@@ -1,0 +1,105 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/*.md, quickstart.md at 0f6c8d2c; round-1 refute and
+# verify-2; round-2 lens-fresh, refute, fixes-1 and verify-1 (settled findings not repeated). This round attacks the
+# round-2 fixes: the static box of R-06 (inline-block host, block .pill, capped .icon-row, break-word), the flex-row
+# sibling rule of R-09 / decision 14, and the Truncated story wrapper of R-12.
+# Repository read: packages/elements/src/icon-slot.ts (iconSlotStyles), gates/lib/story-page.ts 36-110 (readiness =
+# Storybook's storyRendered), 294-360 (applyPointer), 445-460 (conditionsAfterRender: scrollBack, pointer, settle),
+# gates/lib/capture-plan.ts 189-233, gates/stylelint/token-only.ts 1-60 (keywords pass), packages/tokens/src/source.ts
+# 125-145. Dependency code with git show: origin/claude/007-actions-status storybook/stories/button.stories.ts 1-30
+# (StoryFocus), origin/claude/016-overlays packages/elements/src/ocelle-tooltip.ts 1-20, 255-340.
+# Probes: Chromium 153 headless (/opt/pw-browsers/chromium-1243) via /opt/node-tools playwright-core; scripts in the
+# session scratchpad (p1..p8.cjs), stand-in elements carrying the exact R-06 / R-07 / iconSlotStyles declarations with
+# the token values substituted (14 px, line-height 1.15, padding 4/12, 1 px border).
+# Probed and dropped: (1) a descent gap below the inline-flex .icon-row in the block .pill (none: the pill is 26.1 px,
+# row 16.1 + 8 + 2, with and without an icon); (2) copying a metric duplicating its label (the clipboard holds
+# "Open missions" once); (3) an indicator connected inside a closed <details> starting a run on opening (none starts,
+# as R-04 says); (4) the static `.pill { display: block }` rule also matching the interactive `<button class="control
+# pill">` (it can, but as a grid item the control is blockified anyway and the compact pill is already 24.4 px tall,
+# so no visible effect was found).
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 2
+    title: "A one-line pill, static or interactive, sits 3 px above the baseline of the text around it: 005's .icon-row takes its baseline from the empty icon slot's bottom edge, and R-06's 'sits on the baseline' claim is false"
+    evidence:
+      - artifact: "research.md § R-06: 'A wrapped static pill inline in text sits on the baseline of its last line (inline-block)'; § R-06 shadow root: `.pill` > `.icon-row` > `.icon-slot` then `.text`, with `iconSlotStyles`; § R-07: the control `display: inline-flex` holding the same `.icon-row`; spec.md User Story 1 / 3 narratives place marks 'next to a mission's name'; contracts/checks.md § US3 bodies and § US4 bodies have no baseline row"
+      - code: "packages/elements/src/icon-slot.ts: `.icon-row { display: inline-flex; align-items: flex-start; ... }`, `.icon-slot { display: inline-flex; ... block-size: 1lh }`. With align-items flex-start no item takes part in baseline alignment, so the row's baseline is its first item's (CSS Flexbox § 8.5), the .icon-slot, which is empty or holds an SVG and so gets a baseline synthesized from its bottom edge, 1lh below the row's top: the text is lifted by its descent"
+      - code: "probe p5.cjs (static box as R-06), `<p>Before <ocelle-pill-tag>Blocked</ocelle-pill-tag> after</p>`, same font and size: bottom of the surrounding text 24.1 px, bottom of the pill's text 21.0 px (3.1 px high); with an icon 64.2 vs 61.1; in a flex row with `align-items: baseline` beside 'Name' 192.7 vs 189.6. probe p6.cjs (interactive box as R-07: inline-grid host, inline-flex control): 28.0 vs 25.0"
+      - code: "probe p5.cjs with `.icon-row { align-items: baseline } .icon-slot { align-self: flex-start }` added in the pill's own sheet: 21.0 vs 21.0, with an icon 61.1 vs 61.1, in the baseline flex row 189.6 vs 189.6"
+    claim: |
+      Round 2 rebuilt the static box and R-06 now asserts where a static pill sits in text, but that assertion was not
+      probed and does not hold: on a single line (the common case, "Blocked" next to a name in a sentence, a heading,
+      a list item or a flex row aligned by baseline) the pill's text sits about one descent (3.1 px at 14 px) above the
+      surrounding baseline, in both modes. The cause is not the pill's own CSS but 005's row convention, which aligns
+      to the start and so takes its baseline from the icon slot, which has no baseline of its own. No check measures
+      a baseline, so the defect would pass every planned gate and appear in kitty-mission-ui's first screen. The wrapped
+      case R-06 describes does not arise as written either: a wrapping pill is at its `max-inline-size: 100%` and so
+      always on its own line. (`ocelle-button` very likely has the same offset; that is 012's and is not changed here,
+      but the orchestrator may want a note to 012/005.)
+    remedies:
+      - "R-06 and R-07: in the pill's own static styles (both modes), override the row's alignment as `.icon-row { align-items: baseline; } .icon-slot { align-self: flex-start; }` so the text item gives the row its baseline while the 1lh icon slot stays at the start, centred on the first line as 005 requires (probed: text baselines equal, pill height unchanged). Replace the R-06 sentence with the probed result. Add a § US3 body and a § US4 body: a pill in a paragraph and in an `align-items: baseline` flex row, with and without an icon, each density and mode: the bottom of the pill's first text line equals the surrounding text's at the same font size (within 0.5 px); plant: the override removed. Record the same offset on `ocelle-button` as a note for mission 012 or 005."
+      - "Keep 005's alignment and record the offset as a known limitation in R-06 and the README (pills align by their box, not their text baseline), with a scenario pinning the offset; correct the R-06 sentence."
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "A static pill in a grid cell or a column flex is stretched to the full track: 'Blocked' becomes a 200 px bar, because the stretched host's block-level .pill fills it"
+    evidence:
+      - artifact: "research.md § R-06: host `display: inline-block; max-inline-size: 100%`, `.pill` `display: block`; 'in a block container or a grid track the capped row lets a long unbroken word break inside the pill'; spec.md Edge Cases (long words 'in a block container or a grid track'); contracts/checks.md § US3 bodies US3-8: the grid-track twin uses only a 34-letter word"
+      - code: "probe p2.cjs (R-06 box): 'Blocked' in a `grid-template-columns: 200px` grid: .pill 200.0 x 26.1 px, text right edge at 62.8 px; in a 200 px `flex-direction: column` container: 200.0 x 26.1; in a block container the pill is 75.8 px. A grid item and a stretched flex item are blockified and stretched, and a block .pill fills its host"
+      - code: "probe p2.cjs with `.pill { inline-size: fit-content; max-inline-size: 100%; box-sizing: border-box }`: 75.8 px in the grid and the column; the 34-letter word still breaks inside a 100 px pill in the block container and the grid track (100.0 x 58.3); 'Blocked' in the 220 px flex row still one line, 75.8 px. Without `box-sizing: border-box` the capped pill is 126 px in a 100 px track (overflows). token-only.ts passes keywords, so `fit-content` is allowed"
+    claim: |
+      The round-2 box was probed in block containers and flex rows, and in a grid track only with a word longer than
+      the track. A short state pill in a grid cell (a mission table built with CSS grid, a definition-list grid, a
+      card's column flex with the default `align-items: stretch`) is drawn as a filled bar across the whole cell, its
+      text at the start: not the pill shape US3 describes and not what a state mark looks like next to its neighbours.
+      The same happened with round 1's `inline-grid` host, so neither round caught it. The interactive pill stretches
+      by 012's FR-001 on purpose; the static pill has no such requirement and only shows the defect.
+    remedies:
+      - "R-06 and data-model.md: give the static `.pill` `inline-size: fit-content; max-inline-size: 100%; box-sizing: border-box` (kept off the interactive control, whose stretch 012's FR-001 requires), so the host may be stretched while the visible pill hugs its text up to the track. Add a § US3 body: 'Blocked' in a 200 px grid track and a 200 px column flex: the .pill box equals the same pill's in a block container, one line; the long-word twins stay as they are; plant: the `inline-size: fit-content` removed. Amend the Edge Cases sentence to cover a short pill in a grid track."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The Truncated story's focus has no handshake with 006's capture: the wrapper's multi-frame wait races storyRendered + settle, so whether the committed baseline shows 008's bubble depends on timing"
+    evidence:
+      - artifact: "research.md § R-12 `Truncated`: 'The wrapper therefore waits for `updateComplete`, then for the `ocelle-tooltip` in the pill's shadow root to have `disabled` false (re-reading after each animation frame and `updateComplete`), and only then calls the pill's plain `focus()` ... The baseline shows the focused pill with its ring ... and 008's open bubble'; plan.md phase 6; quickstart.md expected outcomes"
+      - code: "gates/lib/story-page.ts 39-100: readiness is the first of Storybook's `storyRendered` / error events; 445-460 `conditionsAfterRender`: scrollBack, applyPointer, then `settle()` = `document.fonts.ready` and two animation frames (357-360), then the checks and the capture. Nothing waits for a story-only custom element's own promise chain"
+      - code: "origin/claude/007-actions-status storybook/stories/button.stories.ts 17-28: 012's StoryFocus focuses after `updateComplete` alone, one microtask chain, which 012's spike showed lands before capture. R-12's chain needs a layout, the ResizeObserver delivery (after layout, in a later frame than the one that rendered), the pill's Lit update, the tooltip's Lit update, then the wrapper's next animation frame, then focusin and `#show()` (ocelle-tooltip.ts 277-282, 301-309): two or more frames after a render that `storyRendered` may already have reported"
+    claim: |
+      Round 2 removed the ordering dependence between the focus and the tooltip's `disabled`, but moved it to a new
+      place: the wrapper now finishes some frames after the render, and the capture only waits for fonts and two frames
+      after `storyRendered`. If the wrapper finishes first the baseline has the bubble; if not, it has no focus ring and
+      no bubble. A late web-font swap (which `fonts.ready` waits for, but which re-triggers the ResizeObserver) moves
+      the finish later still. The result is a baseline that may be committed without the bubble the plan says it shows,
+      or a `gate:visual` that flakes between captures, and the plan has no check that the captured page is in the state
+      the baseline claims.
+    remedies:
+      - "R-12: do the wait and the focus in the story's Storybook `play` function (Storybook emits `storyRendered` only after `play` resolves), awaiting `updateComplete`, the tooltip's `disabled` false and the bubble's `:popover-open`; record in T001's recheck that 006's readiness is `storyRendered` after `play` on the merged Storybook. Add to the phase-6 review a check that both captured themes show the bubble (or a story test that asserts `:popover-open` after the story renders), so a race shows as a failure rather than a silent baseline."
+      - "R-12: drop the open bubble from the baseline: the `Truncated` story shows the focused ring only, with the tooltip's bubble proven by the § US5 scenarios; the story does not depend on 008's bubble styling."
+  - id: PLAN-FRESH-3-004
+    severity: 1
+    title: "The `flex: 1 1 0` sibling rule of decision 14 stretches every fitting pill in that row to the remaining width, since the control fills the host"
+    evidence:
+      - artifact: "plan.md decision 14; research.md § R-09 'Siblings in a flex row': 'or if the pill takes the remaining room through `flex: 1 1 0` set by the host'; contracts/elements-status.md README rules: 'gives the pill `flex: 1 1 0` (the pill then takes the remaining room)'; spec.md header, PLAN-FRESH-2-003 decision"
+      - code: "probe p7.cjs (R-07 box: inline-grid host, control the stretched grid item, as checks.md § US4 'FR-001 of 012, stretched host' requires), 300 px flex row beside 'Mission name': pill with `flex: 1 1 0`: control 213.6 px wide for 'Blocked'; the same pill with the sibling `flex: none` instead: 75.8 px"
+    claim: |
+      The README offers two equal ways to keep the sibling's size, but one of them changes how every untruncated pill
+      looks: with `flex: 1 1 0` a short filter pill is drawn as a wide bar filling the rest of the row. "Takes the
+      remaining room" reads as layout room, not as the visible pill growing, and the checks.md row only measures the
+      sibling, so nothing records that the pill itself is stretched. Hosts following the README will ship it.
+    remedies:
+      - "R-09, decision 14 and the README rule: recommend `flex: none` (or `flex-shrink: 0`) on the sibling as the way to keep its size, and state that `flex: 1 1 0` on the pill also stretches a fitting pill's visible box to the remaining width (012's stretched host); in checks.md § US5 'flex row and grid track' add to the `flex: 1 1 0` row the measured pill width (the remaining room) so the consequence is pinned."
+  - id: PLAN-FRESH-3-005
+    severity: 1
+    title: "In a flex row with a sibling, a long-word static pill is capped at the row's width but still overflows the row by the sibling's width; the Edge Case says it breaks rather than overflows and the US3-8 check cannot see the overflow"
+    evidence:
+      - artifact: "spec.md Edge Cases: 'a pill's longest word is capped at the container's full inline size, beyond which it breaks inside the pill'; contracts/checks.md § US3 bodies US3-8: 'in a 150 px flex row the long word's host is at most the row's inline size'"
+      - code: "probe p2.cjs (R-06 box): 150 px flex row, sibling 'Name' then a 34-letter pill: the pill is 150.0 px wide (capped) but its right edge is at 192.7 px against the row's 150.0 px: the row overflows by the sibling's 42.7 px"
+    claim: |
+      `max-inline-size: 100%` caps the pill at the whole container, not at the room the siblings leave, so the row
+      overflows whenever a sibling is present; the US3-8 body as worded passes while the pill sticks out of its row. This
+      is the cost of operator decision PLAN-FRESH-2-002 (a), which is fine, but the spec's wording promises more and the
+      check asserts less than what happens.
+    remedies:
+      - "Amend the Edge Case to say the cap is the container's inline size, so beside siblings a row may overflow by their width unless the host sets `min-inline-size: 0` on the pill; in the US3-8 body add the sibling to the 150 px row and pin the overflow (pill right edge beyond the row by the sibling's width), with the `min-inline-size: 0` twin fitting inside the row."

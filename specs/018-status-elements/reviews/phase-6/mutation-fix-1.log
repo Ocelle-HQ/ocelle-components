@@ -1,0 +1,4 @@
+$ node gates/bin/mutation.ts -- --base 51059341856a81658196356abfde9bb592e555c8
+packages/elements/src/ocelle-pill-tag.ts:634: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:634: mutation: compile-error: CallExpression: replaced by ;
+mutation: 10 mutants on the changed lines of 1 file, none survived; 0 timeouts, 2 compile errors, 0 zero-mutant entries; 0 equivalent records

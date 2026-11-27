@@ -36,6 +36,10 @@ import { buildPackage, elements } from "./package-build.ts";
 //   defines it.
 // - since 014 phase 6 (T094, T095): dist/ocelle-link.js imports the internal ./link-target.js and no element; the
 //   selection pairs check on the built link finds R-15's tokens and every pair checked; the browser build defines it.
+// - 018 (tasks.md T016): dist/ocelle-status-indicator.js the same way as 012's, `ocelle-status-indicator`; and (tasks.md T027)
+//   dist/ocelle-metric.js the same way, `ocelle-metric`; and (tasks.md T038) dist/ocelle-pill-tag.js the same way,
+//   `ocelle-pill-tag`, except that from phase 6 (US5, FR-034; review round 1, R1-01) it imports exactly one element
+//   module, ./ocelle-tooltip.js, for the tooltip it renders.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -512,6 +516,67 @@ describe("the module build of ocelle-code-block (020)", () => {
       root: imported.includes("./index.js"),
       elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
     }).toEqual({ lit: true, define: true, region: true, root: false, elements: [] });
+  });
+});
+
+// 018 (tasks.md T016): dist/ocelle-status-indicator.js imports lit, the registration helper and the internal naming and
+// status modules, and no element module nor the root; the root imports it, and the browser build defines the element.
+describe("the module build of ocelle-status-indicator (018)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-status-indicator.js imports lit, ./define.js, ./naming.js and ./status.js, and no element module nor the root, and dist/index.js imports it", () => {
+    const imported = specifiers(read("ocelle-status-indicator.js"));
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      rootImportsIt: specifiers(read("index.js")).includes("./ocelle-status-indicator.js"),
+      status: existsSync(join(dist, "status.js")),
+    }).toEqual({ lit: true, own: ["./define.js", "./naming.js", "./status.js"], rootImportsIt: true, status: true });
+  });
+
+  it("the browser build defines ocelle-status-indicator", () => {
+    expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-status-indicator"')).toBe(true);
+  });
+});
+
+// 018 (tasks.md T027): dist/ocelle-metric.js imports lit and the registration helper, and no element module nor the
+// root; the root imports it, and the browser build defines the element.
+describe("the module build of ocelle-metric (018)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-metric.js imports lit and ./define.js, and no element module nor the root, and dist/index.js imports it", () => {
+    const imported = specifiers(read("ocelle-metric.js"));
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      rootImportsIt: specifiers(read("index.js")).includes("./ocelle-metric.js"),
+    }).toEqual({ lit: true, own: ["./define.js"], rootImportsIt: true });
+  });
+
+  it("the browser build defines ocelle-metric", () => {
+    expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-metric"')).toBe(true);
+  });
+});
+
+// 018 (tasks.md T038; phase 6, FR-034, contracts/elements-status.md: the entry point also defines `ocelle-tooltip`;
+// review round 1, R1-01): dist/ocelle-pill-tag.js imports lit, the internal control conventions (for `linkHref`), the
+// registration helper, the slot convention, the status vocabulary and exactly one element module, ./ocelle-tooltip.js
+// (the tooltip around an interactive pill's control), and no other element module nor the root; the root imports it,
+// and the browser build defines the element.
+describe("the module build of ocelle-pill-tag (018)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-pill-tag.js imports lit, ./control.js, ./define.js, ./icon-slot.js, ./ocelle-tooltip.js and ./status.js, and no other element module nor the root, and dist/index.js imports it", () => {
+    const imported = specifiers(read("ocelle-pill-tag.js"));
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      rootImportsIt: specifiers(read("index.js")).includes("./ocelle-pill-tag.js"),
+    }).toEqual({ lit: true, own: ["./control.js", "./define.js", "./icon-slot.js", "./ocelle-tooltip.js", "./status.js"], rootImportsIt: true });
+  });
+
+  it("the browser build defines ocelle-pill-tag", () => {
+    expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-pill-tag"')).toBe(true);
   });
 });
 

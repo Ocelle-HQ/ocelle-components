@@ -1,0 +1,47 @@
+$ PATH=/opt/node26/bin:$PATH pnpm exec vitest run gates/test/vitest-config.test.ts gates/test/ci-workflow.test.ts
+
+ RUN  v5.0.5 <repo>
+
+ ❯ |gates| gates/test/vitest-config.test.ts (15 tests | 1 failed) 8923ms
+   ❯ vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12) (2)
+     × is stryker.config.json with its own Vitest config and its own report file 10ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates| gates/test/vitest-config.test.ts > vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12) > is stryker.config.json with its own Vitest config and its own report file
+AssertionError: expected { …(14) } to deeply equal { …(14) }
+
+- Expected
++ Received
+
+@@ -3,11 +3,11 @@
+    "checkers": [
+      "typescript",
+    ],
+    "concurrency": 8,
+    "coverageAnalysis": "perTest",
+-   "dryRunTimeoutMinutes": 45,
++   "dryRunTimeoutMinutes": 30,
+    "incremental": false,
+    "jsonReporter": {
+      "fileName": "reports/mutation/mutation-elements.json",
+    },
+    "mutate": [],
+
+ ❯ gates/test/vitest-config.test.ts:85:50
+     83|     const read = (path: string): Record<string, unknown> => JSON.parse…
+     84|     const general = read("stryker.config.json");
+     85|     expect(read("stryker.elements.config.json")).toEqual({
+       |                                                  ^
+     86|       ...general,
+     87|       vitest: { configFile: "vitest.mutation.elements.config.ts", rela…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 26 passed (27)
+   Start at  10:13:18
+   Duration  11.29s (tests 76%, transform 17%, import 4%, worker 2%)
+
+exit=1

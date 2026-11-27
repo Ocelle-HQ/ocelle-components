@@ -1,0 +1,9 @@
+# Phase 1 corrections after round 1
+
+- **R1-01** The observer fixtures now generate stored ZIP archives using Node. With Node, Git and unzip on PATH and no zip command, all 19 targeted observer cases passed. The prior fixture failed at setup twice in this environment.
+- **R1-02** The first hosted Mutation run reported seven findings in the baseline updater and three in the full Visual gate's option handling. The added tests verified exact engine pin and capture order, Podman pin refusal, preservation of unrelated files, full-mode stray cleanup, the unknown-ID diagnostic and the required Visual entry point. Every exact seeded variant reported by the two jobs failed an intended assertion. The normal focused command passed 326 tests on `e7658048`. Production capture code remains the byte-for-byte code exercised by the hosted capture. [Baseline shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45900267968/job/140184248440) · [Visual and mutation shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45900267968/job/140184248459) · [Corrected required run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45901385962)
+- **R1-03** The phase-base listing selects all 326 Plants because the new workflow is an unmapped path. The corrected hosted run judged all 326 as expected. [Plants record](plants.md)
+- **R1-04** The task list records the implemented work and identifies #86 as the separate live mission. Its pilot measurements stay with the component's retrospective.
+- **R1-05** Record the setup cost of unchanged-marker edits in the live retrospective if it occurs. The initial capture took 105 seconds and verified the narrowed artifact end to end. [Capture control](hosted-capture.md)
+
+The canonical replay passed again on the corrected candidate, with the original 32 red assertions, final tests red on the phase base, and green on the candidate.

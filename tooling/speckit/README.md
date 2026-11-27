@@ -221,6 +221,17 @@ For a component change, run the preflight as soon as the canonical manifest and 
 
 On a same-repository PR, `<!-- verify-mutation-config-shadow -->` starts the pinned #87 comparison. The mixed arm and the separate element and default arms run the original selectors. Read the comparison artifact for the exact mutant inventory, verdict, setup and baseline times, slowest job, current attempt and total sample runner minutes, and retries. Record the common setup and comparison jobs separately.
 
+For early element mutation feedback, choose an element-only selection from `node gates/bin/mutation.ts --base <sha> --plan`. Run the two arms serially on the same clean checkout and pinned toolchain, capturing standard output, standard error and the exit code of each.
+
+```sh
+node gates/bin/mutation.ts --base "$base" --files "$selection" --shadow-grouped
+node gates/bin/mutation.ts --base "$base" --files "$selection" --shadow-grouped --shadow-related-elements
+```
+
+Compare the `mutation shadow receipt` records for identical configuration and ranges, one `full` and one `related` test selection, and equal counts and identities for each mutant outcome. A mutant identity consists of its path, start and end location, mutator and replacement. Count every status, including `NoCoverage`, and require the same gate exit code. An absent receipt, duplicate mutant, changed status, or exit 2 makes the comparison unusable. Record baseline test counts, elapsed times, head, base and runtime from both runs. The regular Mutation check uses the full test selection.
+
+For new or changed baselines, use `pnpm run visual:update -- --engine both --stories <id>[,<id>...]`. Use exact IDs from the built Storybook index. Capture both themes and verify the two pinned engines agree. On a same-repository pull request, add `<!-- capture-storybook: ID[,ID...] -->` to request the separate hosted artifact for the selected stories. Keep the full Visual regression check on the finished candidate.
+
 For the Visual evidence reuse trial, first collect successful control CI on a source candidate and its evidence-only successor. Once the successor's exact run has completed, add `<!-- verify-evidence-reuse: RUN_ID/ATTEMPT -->` to the same-repository PR body using the earlier run and attempt. Read `visual-evidence-reuse-shadow` for eligibility on the current head, verified inputs, and the reason for any mismatch. Both candidates have their own required CI and the current candidate needs fresh Sign-off and Sandbox paths results. Count possible savings separately from executed runner time.
 
 After each pilot ticket, attach the control and pilot links to its retrospective. Record elapsed time from issue pickup, time to the first actionable failure and to verified green, runner minutes, failures and retries, verdict and coverage parity, and preflight misses or rework. Apply and verify any workflow adjustment on its own evidence before selecting the next eligible ticket. When no adjustment is warranted, record the observed results that support continuing.

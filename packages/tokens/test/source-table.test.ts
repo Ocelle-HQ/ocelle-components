@@ -59,11 +59,13 @@ describe("the stylesheet from the real source", () => {
   });
 
   // 012 (research.md R-07; tasks.md T042): exactly the motion durations, a stricter replacement of "exactly two".
-  it("sets exactly the motion durations, motion-fast, motion-base and motion-spin, to 0ms under reduced motion, and not motion-turn or easing-standard (FR-007)", () => {
+  // 018 (research.md R-10; tasks.md T015): motion-pulse joins the durations, a stricter replacement of the three names.
+  it("sets exactly the motion durations, motion-fast, motion-base, motion-spin and motion-pulse, to 0ms under reduced motion, and not motion-turn or easing-standard (FR-007)", () => {
     expect([...sheet.reducedMotion.entries()]).toEqual([
       ["--ocelle-motion-fast", "0ms"],
       ["--ocelle-motion-base", "0ms"],
       ["--ocelle-motion-spin", "0ms"],
+      ["--ocelle-motion-pulse", "0ms"],
     ]);
   });
 });
@@ -113,8 +115,10 @@ describe("009's five tokens (FR-033)", () => {
     { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   ];
 
-  it("pins the source at 136 tokens", () => {
-    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([136, 136, 136]);
+  // 018 (tasks.md T015, T038, T048): the status indicator's size-indicator and motion-pulse, the pill tag's
+  // line-height-snug and the interactive pill tag's target-small are four of the 140.
+  it("pins the source at 140 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([140, 140, 140]);
   });
 
   it("has each as a plain record with its group, value and references", () => {

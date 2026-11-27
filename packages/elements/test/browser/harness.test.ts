@@ -1,6 +1,7 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { defineStandIns, harnessScenarios } from "../scenarios/harness.ts";
+import { animationScenarios, defineStatusStandIns, layoutScenarios, overflowScenarios, seekScenarios } from "../scenarios/harness-status.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Recorded, Served } from "./serve.ts";
@@ -45,5 +46,19 @@ describe("the harness self-tests on the strict-CSP fixture (R-14)", { timeout: 6
     await page.page.evaluate(defineStandIns);
     const observed = await run(fixtureDriver(page.page, page.log));
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: blocked(inlineStyles) });
+  });
+});
+
+// The harness self-tests of 018 on the strict-CSP fixture (research.md R-11; contracts/checks.md § Test harness rows 1,
+// 2, 7 and 8; tasks.md T003, T004, T007): every shared body of scenarios/harness-status.ts on its own page, with its
+// stand-in elements defined in the page through the DevTools protocol. Their styles are adopted sheets, so the
+// recorders stay clean.
+describe("the 018 harness self-tests on the strict-CSP fixture", { timeout: 60_000 }, () => {
+  it.each([...animationScenarios, ...seekScenarios, ...overflowScenarios, ...layoutScenarios])("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "icon.html");
+    await page.page.evaluate(defineStatusStandIns);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
   });
 });
