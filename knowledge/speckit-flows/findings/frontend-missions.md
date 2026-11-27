@@ -230,3 +230,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   find them.
 - **Subpixel text in pixel tests.** CI's Chromium antialiases text in colour. A pixel sampled a few px from a glyph, under a translucent ring or overlay, can differ by one channel unit from the local grayscale render. Keep neighbouring glyphs clear of sampled bands, and run such tests once under a subpixel fontconfig.
 - **Elements composed into a container that picks focus at load.** A Lit element's first render is deferred, so a parent such as an `ocelle-dialog` open at load can look for a focus target before the child's shadow DOM exists. A child that must be focusable at that moment renders at connect (`performUpdate()` at the end of `connectedCallback`).
+
+## Status elements 018
+
+- **Font-dependent pixel pins.** A pin that depends on line-box metrics, such as an icon-only pill's height and width, holds only where the real font loads. The in-process test page strips `@font-face`, so pin the pixels on the strict-CSP fixture and assert only token-derived facts in process (018 T044a).
+- **Stylesheet adoption across renders.** An extra update can hide an adoption bug: a sheet added on one render and removed on the next looks right when read at the wrong moment. Count the adopted sheets after every step, not only at the end (018 L-03).
