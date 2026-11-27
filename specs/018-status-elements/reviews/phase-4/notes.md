@@ -184,3 +184,74 @@ Written only by `OCELLE_VISUAL_ENGINE=docker pnpm run visual:update` in #10's pi
 `docker info` checked first): `baselines: wrote 12 files (10 added, 2 changed, 0 removed)`, the five pill stories in
 light and dark, and `tokens--type` in light and dark, whose list of type tokens gains `--ocelle-line-height-snug`.
 None was hand-edited or hand-picked; no cross-engine comparison.
+
+## Operator rounds 2 and 3 fix (T044a; `round-2.md` O2-01, `round-3.md` O3-01, option A; label fix-1)
+
+Commits: `ccd9c5a5` (the test-only change), then the fix commit that adds this section. Base `2f6a3245`. No element
+source, story, baseline or other test changed.
+
+**The change.** `scenarios/pill-tag.ts` exports `pillScenarios(harness)`, with `PillHarness { fontLoaded }` passed by
+each runner as the other runners pass their options (`test/pill-tag.test.ts`: `pillScenarios({ fontLoaded: false })`;
+`test/browser/pill-tag.test.ts`: `pillScenarios({ fontLoaded: true })`). The four Baseline bodies are one body
+(`baselineScenarios(harness)`, listed after the other static bodies), not a fork: every assertion except the icon-only
+pill's is the same in both harnesses. For `only-p` and `only-r`, in each density:
+
+- fixture (`fontLoaded: true`): the row `icon-row bare` and T002's pin, unchanged (`top`, `[height, width]`, the
+  `iconOnly` table written by hand);
+- in process (`fontLoaded: false`): `row` `icon-row bare`; `aboveText` (the pill's top minus the surrounding text's
+  top below 0); `width` (within 0.5 px of 2 × the inline padding + 2 × `border-width` + the icon + `space-2`);
+  `wrapperTop` (the `.icon-slot` box's top within 0.5 px of the pill's top + `border-width` + the block padding);
+  `heightAtLeast` (the height at least 2 × the block padding + 2 × `border-width` + the icon). The padding is the
+  density's from the token table (`sizes`), the icon is one line (`1lh`, the density's `font-size` × `line-height`
+  tokens, the same `lineHeight` the one-line height uses). The lower bound has a 0.02 px allowance, the same as the
+  one-line `height` check, for the 1/64 px layout unit (26.09375 px renders 26.1); no pixel value is written.
+
+**(1) The font.** Measured at `ccd9c5a5` with a scratch test file (not committed) that mounts the Baseline body's
+icon-only paragraph (`<p class="around">`, 14 px, line height 1.15) and reads `document.fonts` after
+`document.fonts.ready`:
+
+- fixture (`vitest run --project elements-browser`, the page `pill-tag.html`, the built browser build): the pill's
+  `.pill` family `"Schibsted Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif`; 1 `@font-face` rule in the
+  page's sheets; `document.fonts` = `Schibsted Grotesk 400 900 loaded`; `document.fonts.check('14px "Schibsted
+  Grotesk"')` true; the icon-only pill top −7.09375 px against "Before", 29.1875 × 50.09375 px, so T002's pin
+  (−7.09, 29.19 × 50.09) exactly;
+- in process (`vitest run --project elements`): 0 `@font-face` rules in the document's and its adopted sheets,
+  `document.fonts` empty, so the text uses the machine's fallback font (`check()` is true there too, but vacuously:
+  with no face for the family it reports nothing to load). Here the sandbox's fallback happens to measure the same
+  box (−7.09375, 29.1875 × 50.09375, the wrapper 5 px below the pill's top), which is why the pin held in the
+  sandbox and failed on the runner.
+
+**The CI failure, reproduced and fixed.** A scratch copy of the scenario (not committed) adds `:root {
+--ocelle-font-sans: "FreeSans"; }` to the Baseline body's rules, then `vitest run --project elements
+test/pill-tag.test.ts -t Baseline`:
+
+- before (the scenario and runner of `2f6a3245`): 4 of 4 Baseline bodies fail, on the icon-only pill only: top
+  −10.09 px and height 30.19 px (compact −9.39 px) against the pinned −7.09 / 29.19 (compact −7.39), the width 50.09
+  unchanged, the four bodies the CI shard named;
+- after (`ccd9c5a5`): 4 of 4 pass.
+
+**(2) Red.** `red.sh 4 fix-1` on `ccd9c5a5`: `tests_only: true`, `red: false`, `recorded: false`, exit 2, after 90
+minutes (`red-fix-1.log`; the focused runner selected 388 test files, the changed scenario module being shared). The
+evidence is `invalid` with no failing assertion of the changed tests: the one failure is `gates/test/integration/
+axe.test.ts` (the whole-repository axe gate, left to CI by `reviews/operator-ci-first.md`), unrelated to this change.
+This change cannot be red on a commit: it is behaviour-neutral and test-only, the element is correct and unchanged,
+and the new assertions hold on it (the in-process facts are true of the merged pill in every font measured), so no
+commit of tests alone fails for the defect, which was in the test. `red-commits` gains no line. Instead each plant was
+hand-applied to `src/ocelle-pill-tag.ts` at `ccd9c5a5`, the four Baseline bodies run in both harnesses
+(`vitest run --project elements test/pill-tag.test.ts -t Baseline`, `vitest run --project elements-browser
+test/browser/pill-tag.test.ts -t Baseline`) and the source restored with `git checkout` after each (the tree clean):
+
+| Plant (applied to `src/ocelle-pill-tag.ts`) | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| `bare` never set: the row `class=${"icon-row"}` | 4 of 4 failed: `only-p`, `only-r` `row` `icon-row` and `wrapperTop` false | 4 of 4 failed: `only-p`, `only-r` `row` `icon-row`, `top` −4 (and the size 39.09 / 35.39 px high) |
+| `bare` on every row: the row `class=${"icon-row bare"}` | 4 of 4 failed: `onBaseline` false for the four one-line pills (`in-p-plain`, `in-r-plain`, `in-p-icon`, `in-r-icon`), `firstLineOnBaseline` false for `wrap`; the icon-only facts hold (its row is `bare` anyway) | 4 of 4 failed: the same `onBaseline` and `firstLineOnBaseline`, and the one-line `height` false |
+| the dropped override: `` css`.icon-row { align-items: baseline; } .icon-slot { align-self: flex-start; }` `` after `iconSlotStyles` | 4 of 4 failed: `only-p`, `only-r` `wrapperTop` false | 4 of 4 failed: `only-p`, `only-r` `top` −4 (and the height) |
+
+Every plant is killed in both harnesses; none survives either. The killing assertions are also in `plants.md`.
+
+**Gates** (Node 26, `OCELLE_CHROMIUM_PATH` as above, one heavy job at a time): `pill-tag.test.ts` 42 of 42 and
+`browser/pill-tag.test.ts` 41 of 41 passed; project `elements-node` 10 files, 1351 tests passed; `gate:typecheck`,
+`gate:lint` (750 files), `gate:style-lint` (88), `gate:test-lint` (574), `gate:manifest` (52 elements),
+`gate:config-copies`, `gate:prefix` (872), `gate:pins` (5), `gate:contrast` (207 / 215 pairs), `gate:brand-rules` (7),
+`gate:sandbox-paths` and `gate:signoff`: no finding; `gate:mutation -- --base 2f6a3245`: exit 0, "nothing to mutate: no package or gate source line changed since 2f6a3245" (the change is test-only). `tdd-check.sh
+4` is not run here (left to the orchestrator).
