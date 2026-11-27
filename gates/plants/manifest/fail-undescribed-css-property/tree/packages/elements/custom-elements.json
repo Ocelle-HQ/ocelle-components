@@ -465,15 +465,6 @@
             "package": "lit"
           },
           "tagName": "ocelle-anchored-popover"
-        },
-        {
-          "kind": "variable",
-          "name": "view"
-        },
-        {
-          "default": "new AbortController()",
-          "kind": "variable",
-          "name": "listeners"
         }
       ],
       "exports": [

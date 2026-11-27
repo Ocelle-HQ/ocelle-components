@@ -479,15 +479,6 @@
               "default": "\"below\""
             }
           ]
-        },
-        {
-          "name": "view",
-          "kind": "variable"
-        },
-        {
-          "name": "listeners",
-          "kind": "variable",
-          "default": "new AbortController()"
         }
       ]
     },
