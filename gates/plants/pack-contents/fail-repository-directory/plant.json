@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The packed styles manifest names another directory of the repository (030 FR-001).",
+  "findings": [
+    {
+      "location": "@ocelle/styles:package.json",
+      "rule": "repository-mismatch",
+      "message": "repository.directory is \"packages/style\", not \"packages/styles\""
+    }
+  ]
+}

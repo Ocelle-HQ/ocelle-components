@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A tarball beside the built ones that is not a gzipped tar archive: the gate could not run (030 contracts/pack-contents-gate.md).",
+  "cause": "pack-contents: could not run: broken.tgz is not a readable tarball"
+}

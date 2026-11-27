@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A ./fonts/* export whose pattern matches files of the tarball, OFL.txt and a font beside it (030 research R-05)."
+}

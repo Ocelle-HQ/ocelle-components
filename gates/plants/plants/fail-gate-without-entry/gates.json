@@ -135,5 +135,13 @@
     "plantCommand": "node gates/bin/sandbox-paths.ts --root {root}",
     "plantForm": "tracked-tree",
     "scope": "every tracked file of the checkout but the four allowed files of gates/lib/sandbox-paths.ts (op 023, #60): no line may match the sandbox-path rule"
+  },
+  {
+    "id": "pack-contents",
+    "check": "Pack contents",
+    "command": "pnpm run gate:pack-contents",
+    "plantCommand": "node gates/bin/pack-contents.ts --root {root} --tarballs {root}/tarballs",
+    "plantForm": "pack-tree",
+    "scope": "the tarball of each of @ocelle/tokens, @ocelle/styles and @ocelle/elements as pnpm pack writes it after the build (030 FR-004): its declared entry points, the files gates/release/pack-manifest.json requires, allows and compares byte for byte with the repository, the deny list, the packed manifest's private flag, version, peer, workspace: specifiers, repository and licence, and op 023's sandbox-path rule on every text entry"
   }
 ]

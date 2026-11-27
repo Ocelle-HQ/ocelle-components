@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The packed elements manifest names the tokens peer exactly, 1.0.0, not the release range ^1.0.0 (030 FR-003, Q3 (a)).",
+  "findings": [
+    {
+      "location": "@ocelle/elements:package.json",
+      "rule": "peer-mismatch",
+      "message": "peerDependencies is {\"@ocelle/tokens\":\"1.0.0\"}, not {\"@ocelle/tokens\":\"^1.0.0\"}"
+    }
+  ]
+}

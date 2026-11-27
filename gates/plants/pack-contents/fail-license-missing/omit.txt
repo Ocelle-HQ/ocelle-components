@@ -1,0 +1,2 @@
+# the styles tree goes without the root licence
+packages/styles/LICENSE

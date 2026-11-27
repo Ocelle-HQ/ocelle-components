@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The elements tree ships its own NOTICE, one byte different from the root's, which the plant builder then keeps (030 FR-002, analysis C2).",
+  "findings": [
+    {
+      "location": "@ocelle/elements:NOTICE",
+      "rule": "not-identical",
+      "message": "differs from the repository's NOTICE"
+    }
+  ]
+}

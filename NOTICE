@@ -2,12 +2,13 @@ ocelle-components
 Copyright the ocelle-components authors
 
 Licensed under the Apache License, Version 2.0; see LICENSE. This NOTICE file is the work's notice under section 4(d)
-of the licence: a redistribution of the work, or of a work derived from it, carries it. The published @ocelle/elements
-package holds a copy.
+of the licence: a redistribution of the work, or of a work derived from it, carries it. Each published @ocelle package
+holds a copy.
 
 Trademarks
 
 "Ocelle" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them
 (section 6 of the licence); they may be used only to refer to Ocelle.
 
-Third-party assets and their licences are listed in THIRD_PARTY_NOTICES.
+Third-party assets and their licences are listed in THIRD_PARTY_NOTICES, in this repository and in the @ocelle/tokens
+and @ocelle/elements packages.

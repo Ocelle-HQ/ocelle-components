@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A gates/release/pack-manifest.json that is not valid JSON: the gate could not run (030 contracts/pack-contents-gate.md).",
+  "cause": "pack-contents: could not run: gates/release/pack-manifest.json is invalid: not valid JSON"
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "@ocelle/tokens",
+    "dir": "packages/tokens",
+    "allow": [
+      "package.json",
+      "README.md",
+      "CHANGELOG.md",
+      "LICENSE",
+      "NOTICE",
+      "THIRD_PARTY_NOTICES",
+      "dist/**/*.js",
+      "dist/**/*.js.map",
+      "dist/**/*.d.ts",
+      "dist/tokens.css",
+      "dist/tokens.json",
+      "dist/fonts/*.woff2",
+      "dist/fonts/OFL.txt"
+    ],
+    "require": ["package.json", "LICENSE", "NOTICE", "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES", "dist/fonts/OFL.txt"],
+    "identical": ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES", { "path": "dist/fonts/OFL.txt", "source": "packages/tokens/fonts/OFL.txt" }],
+    "peer": {}
+  },
+  {
+    "name": "@ocelle/styles",
+    "dir": "packages/styles",
+    "allow": [
+      "package.json",
+      "README.md",
+      "CHANGELOG.md",
+      "LICENSE",
+      "NOTICE",
+      "dist/**/*.js",
+      "dist/**/*.js.map",
+      "dist/**/*.d.ts",
+      "dist/base.css"
+    ],
+    "require": ["package.json", "LICENSE", "NOTICE", "README.md", "CHANGELOG.md"],
+    "identical": ["LICENSE", "NOTICE"],
+    "peer": { "@ocelle/tokens": "^<version>" }
+  },
+  {
+    "name": "@ocelle/elements",
+    "dir": "packages/elements",
+    "allow": [
+      "package.json",
+      "README.md",
+      "CHANGELOG.md",
+      "LICENSE",
+      "NOTICE",
+      "THIRD_PARTY_NOTICES",
+      "custom-elements.json",
+      "licenses/**",
+      "dist/**/*.js",
+      "dist/**/*.js.map",
+      "dist/**/*.d.ts"
+    ],
+    "require": ["package.json", "LICENSE", "NOTICE", "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES", "licenses/lit-BSD-3-Clause.txt"],
+    "identical": ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES"],
+    "peer": { "@ocelle/tokens": "^<version>" }
+  }
+]

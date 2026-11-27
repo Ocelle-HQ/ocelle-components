@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The styles tarball holds a file no allow pattern of the pack manifest names (030 Story 1 scenario 5).",
+  "findings": [
+    {
+      "location": "@ocelle/styles:notes.txt",
+      "rule": "not-allowed",
+      "message": "matches no allow pattern of the pack manifest"
+    }
+  ]
+}

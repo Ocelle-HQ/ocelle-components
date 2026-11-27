@@ -17,7 +17,7 @@ import { directoryNames, filePaths } from "../lib/entries.ts";
 import { emit, formatFinding, plural } from "../lib/findings.ts";
 import { gateKeysProblem, judgePlant, parsePlant, plantFilesProblem, storybookGates } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
-import { buildCommitRepo, buildMutationRepo, buildRepoTree, buildTrackedTree, carriesConfiguration, parseDelta } from "../lib/plant-repo.ts";
+import { buildCommitRepo, buildMutationRepo, buildPackTree, buildRepoTree, buildTrackedTree, carriesConfiguration, parseDelta } from "../lib/plant-repo.ts";
 import { affectedPlants, containerDecision, gateRunsAtOnce, limiter, needsEngine, otherShardSize, plantSeconds, plantShards, plantTimeNote, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { RunnerTools, VisualCopyTools } from "../lib/plant-runner.ts";
 import { affectedInCiFindings, checkRegistry, ciJobs, parseRegistry, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
@@ -592,6 +592,8 @@ function runnerTools(root: string, io: Io): RunnerTools {
       "mutation-repo": (plant, into) => buildMutationRepo(root, plant, into),
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
       "tracked-tree": (plant, into) => buildTrackedTree(plant, into).then(() => ({})),
+      // Stryker disable next-line all: process boundary, covered by gate:plants: gates/plants/pack-contents/ (030, the pack-tree form)
+      "pack-tree": (plant, into) => buildPackTree(root, plant, into).then(() => ({})),
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
       workspace: (plant, into) => cp(plant, into, { recursive: true }).then(() => rm(join(into, "plant.json"))).then(() => ({})),
     },

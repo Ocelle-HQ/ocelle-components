@@ -9,6 +9,12 @@ packages/*/dist/
 packages/elements/LICENSE
 packages/elements/NOTICE
 packages/elements/THIRD_PARTY_NOTICES
+# The tokens and styles packages' packed copies of the root licence files (030 research.md R-04)
+packages/tokens/LICENSE
+packages/tokens/NOTICE
+packages/tokens/THIRD_PARTY_NOTICES
+packages/styles/LICENSE
+packages/styles/NOTICE
 storybook/dist/
 storybook/.generated/
 .stryker-tmp/

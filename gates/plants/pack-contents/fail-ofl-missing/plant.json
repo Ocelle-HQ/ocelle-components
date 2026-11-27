@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The tokens tarball lacks the font's OFL.txt beside the font (030 Story 1 scenario 3, FR-002).",
+  "findings": [
+    {
+      "location": "@ocelle/tokens:dist/fonts/OFL.txt",
+      "rule": "required-missing",
+      "message": "the pack manifest requires it, but the tarball does not hold it"
+    }
+  ]
+}

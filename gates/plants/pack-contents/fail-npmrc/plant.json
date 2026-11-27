@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The styles tarball holds an .npmrc, denied by name; it holds no credential-shaped value (030 Story 1 scenario 5, FR-045).",
+  "findings": [
+    {
+      "location": "@ocelle/styles:.npmrc",
+      "rule": "denied",
+      "message": "matches the deny pattern **/.npmrc"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+BSD-3-Clause (a plant stand-in for Lit's licence text)

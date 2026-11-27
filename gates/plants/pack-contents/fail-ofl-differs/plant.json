@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The tokens dist/fonts/OFL.txt differs from packages/tokens/fonts/OFL.txt by one byte (030 FR-002, analysis L3).",
+  "findings": [
+    {
+      "location": "@ocelle/tokens:dist/fonts/OFL.txt",
+      "rule": "not-identical",
+      "message": "differs from the repository's packages/tokens/fonts/OFL.txt"
+    }
+  ]
+}

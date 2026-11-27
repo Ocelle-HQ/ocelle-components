@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "The styles package is at 1.0.1 while tokens, elements and the release are at 1.0.0 (030 Story 1 scenario 4, FR-003 lockstep).",
+  "findings": [
+    {
+      "location": "@ocelle/styles:package.json",
+      "rule": "version-mismatch",
+      "message": "version is \"1.0.1\", not the release version 1.0.0"
+    },
+    {
+      "location": "@ocelle/styles:package.json",
+      "rule": "version-mismatch",
+      "message": "version is \"1.0.1\", but @ocelle/tokens is at \"1.0.0\""
+    }
+  ]
+}

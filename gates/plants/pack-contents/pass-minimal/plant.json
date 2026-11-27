@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Three package trees that meet every rule: the declared entry points, the required and identical files (the root licence files copied in by the plant builder), only allowed files, the 1.0.0 metadata and the ^1.0.0 peer (030 FR-001 to FR-004)."
+}

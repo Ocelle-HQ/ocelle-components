@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The styles tarball lacks LICENSE: omit.txt keeps the plant builder from copying it in (030 Story 1 scenario 3, analysis C2).",
+  "findings": [
+    {
+      "location": "@ocelle/styles:LICENSE",
+      "rule": "required-missing",
+      "message": "the pack manifest requires it, but the tarball does not hold it"
+    }
+  ]
+}

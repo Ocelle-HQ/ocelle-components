@@ -1,0 +1,23 @@
+{
+  "name": "@ocelle/elements",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ocelle-HQ/ocelle-components.git",
+    "directory": "packages/elements"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./custom-elements.json": "./custom-elements.json"
+  },
+  "customElements": "custom-elements.json",
+  "peerDependencies": {
+    "@ocelle/tokens": "1.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

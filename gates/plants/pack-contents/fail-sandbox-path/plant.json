@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The elements README holds a sandbox path on line 3, written as op 023's marker and expanded by the plant builder (030 Story 1 scenario 5).",
+  "findings": [
+    {
+      "location": "@ocelle/elements:README.md",
+      "rule": "sandbox-path",
+      "message": "line 3 holds a sandbox path"
+    }
+  ]
+}

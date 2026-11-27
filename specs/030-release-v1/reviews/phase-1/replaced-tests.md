@@ -34,3 +34,21 @@ FR-042".
 | `gates/test/integration/plants.test.ts:117`, `:208`, `:259` (the plant job on a plants root) | eighteen gates missing their plants, "50 problems" | the same plus `missing("pack-contents", [])`, "53 problems" | the real registry gains the pack-contents gate, whose plants that root does not hold |
 | `gates/test/integration/plants-robustness.test.ts:182` "has the two gates' plants and the registry's" | `others: 16` | `others: 17` | the pack-contents gate is one other gate more |
 | `gates/test/integration/workspace.ts` `releaseInputs` (new helper), used by the roots of `gates/test/integration/plants.test.ts` and `gates/test/integration/plants-robustness.test.ts` | the roots held no release input | they hold the release inputs the repository has (research R-17), since the configuration set requires them | research R-17 |
+
+## Shared-data failures of the red commit (operator-red-decision.md)
+
+The red commit `1a24aa0b` is accepted as red evidence by `reviews/phase-1/operator-red-decision.md`, although
+`red.sh` reports it `invalid`: about 120 existing tests fail in it on assertion lines the commit did not change,
+because the commit changes data they share. All fail because pack-contents is not registered yet. By file:
+
+| File | Failing tests | Shared data the red commit changes |
+|---|---|---|
+| `gates/test/evidence-reuse-shadow.test.ts` | 63 | `requiredJobs` gains "Pack contents" |
+| `gates/test/plants.test.ts` | 44 | the registry fixture gains pack-contents |
+| `gates/test/registry.test.ts` | 7 | the registry fixture (6) and `ids` against the real registry (`:164`) |
+| `gates/test/plants-job.test.ts` | 4 | the registry fixture |
+| `gates/test/integration/plants.test.ts` | 3 | the real registry's missing pack-contents plants |
+| `gates/test/integration/evidence-reuse-observe.test.ts` | 1 | `jobNames` gains "Pack contents" |
+| `gates/test/plant-runner.test.ts` | 1 | the count of the repository's plants (271 others) |
+
+The other 151 failing assertions are on changed lines and the classifier accepts them.

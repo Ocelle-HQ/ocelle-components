@@ -1,0 +1,22 @@
+{
+  "name": "@ocelle/styles",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ocelle-HQ/ocelle-components.git",
+    "directory": "packages/style"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./base.css": "./dist/base.css"
+  },
+  "peerDependencies": {
+    "@ocelle/tokens": "^1.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

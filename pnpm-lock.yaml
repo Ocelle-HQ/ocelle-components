@@ -239,7 +239,7 @@ importers:
   packages/elements:
     dependencies:
       '@ocelle/tokens':
-        specifier: workspace:0.0.0
+        specifier: workspace:^1.0.0
         version: link:../tokens
       lit:
         specifier: 3.3.3
@@ -248,7 +248,7 @@ importers:
   packages/styles:
     dependencies:
       '@ocelle/tokens':
-        specifier: workspace:0.0.0
+        specifier: workspace:^1.0.0
         version: link:../tokens
 
   packages/tokens: {}
@@ -256,10 +256,10 @@ importers:
   storybook:
     devDependencies:
       '@ocelle/elements':
-        specifier: workspace:0.0.0
+        specifier: workspace:1.0.0
         version: link:../packages/elements
       '@ocelle/tokens':
-        specifier: workspace:0.0.0
+        specifier: workspace:1.0.0
         version: link:../packages/tokens
       '@storybook/html-vite':
         specifier: 10.6.5

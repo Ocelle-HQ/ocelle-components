@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The packed tokens manifest keeps \"private\": true (030 Story 1 scenario 4, FR-001).",
+  "findings": [
+    {
+      "location": "@ocelle/tokens:package.json",
+      "rule": "private-flag",
+      "message": "the packed manifest sets \"private\": true"
+    }
+  ]
+}

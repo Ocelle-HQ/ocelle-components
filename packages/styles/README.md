@@ -16,9 +16,9 @@ does.
 ### Tokens version
 
 `base.css` needs the `@ocelle/tokens` version that adds `line-height-compact`, `line-height-prose`,
-`font-size-subhead`, `measure-reading`, `measure-cell` and `measure-container`. The package declares it as an exact
-peer dependency, `"@ocelle/tokens": "workspace:0.0.0"`. Both packages stay at 0.0.0 until the first release (#11),
-so the pin becomes meaningful at that release.
+`font-size-subhead`, `measure-reading`, `measure-cell` and `measure-container`. The package declares it as a peer
+dependency at a caret range of the same version, `"@ocelle/tokens": "^1.0.0"`. The three packages share one version
+and are released together.
 
 ### Content Security Policy
 

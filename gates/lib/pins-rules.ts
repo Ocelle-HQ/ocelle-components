@@ -1,5 +1,6 @@
 // The pins rules (FR-027, research.md R-14) on a workspace's parsed files, and the lockfile verdict on pnpm's output:
-// every dependency of every manifest is an exact version (a workspace package as `workspace:<its version>`),
+// every dependency of every manifest is an exact version (a workspace package as `workspace:<its version>`, and since
+// 030 a peer as `workspace:^<its version>` too),
 // `.node-version` and `packageManager` are exact, `pnpm-workspace.yaml` keeps the release-age and install-script
 // policy of research.md R-04, hoisting stays off, and a frozen, lockfile-only, offline install either succeeds, finds
 // the lockfile out of date (a finding) or fails for another reason (the gate could not run). Pure, tested in process
@@ -37,7 +38,13 @@ export function dependencyFindings(path: string, manifest: Record<string, unknow
       const sibling = siblings.get(name);
       const workspace = /^workspace:(.*)/.exec(spec)?.[1];
       const named = `${field}.${name} is "${spec}"`;
-      if (workspace !== undefined && !exact.test(workspace)) {
+      // 030 plan decision D2 (research.md R-03; the constitution amendment of 030 US5): a peer range is a statement to
+      // consumers, not an install pin, so peerDependencies alone may name a workspace package as
+      // workspace:^<its own version>, which pnpm pack writes as ^<version>; the lockfile still pins the linked package.
+      const caret = field === "peerDependencies" && sibling !== undefined ? /^\^(.*)/.exec(workspace ?? "")?.[1] : undefined;
+      if (caret !== undefined && exact.test(caret)) {
+        if (caret !== sibling) found.push(finding(path, "workspace", `${named}, but ${name} is at ${String(sibling)}; write "workspace:^${String(sibling)}"`));
+      } else if (workspace !== undefined && !exact.test(workspace)) {
         found.push(finding(path, "range", `${named}, not an exact version`));
       } else if (workspace !== undefined && sibling === undefined) {
         found.push(finding(path, "workspace", `${named}, but ${name} is not a workspace package`));

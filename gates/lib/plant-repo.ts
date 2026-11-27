@@ -2,7 +2,9 @@
 // the repository's configuration set (with the token source since 002, contracts/gates.md § Configuration set),
 // `commit-repo` builds a git history from a plant's commits.txt on an empty signed-off base commit, and
 // `mutation-repo` commits the configuration set with the plant's `base/`, then its `head/`, and since op 023
-// `tracked-tree` commits the plant's `tree/` alone, its sandbox markers expanded (expandMarkers). node_modules is linked from
+// `tracked-tree` commits the plant's `tree/` alone, its sandbox markers expanded (expandMarkers), and since 030
+// `pack-tree` lays `tree/` over the configuration set and archives each `tree/packages/<name>/` with plain tar into
+// `tarballs/<name>.tgz`, the root licence files copied in (licenceCopies, parseOmit). node_modules is linked from
 // the repository in each but a tracked-tree root. A repo-tree plant may state its change of the token source, the pair list or the generator
 // in a delta.json, by key (002 contracts/gates.md § Configuration set, *Plant deltas*). Since 006 (research.md R-16)
 // the configuration set holds the Storybook workspace, storybook/node_modules is linked as well (unless plant.json
@@ -10,11 +12,12 @@
 // entries and their plan files for delta.json `exceptions: "repository"`). The decisions (configurationSet,
 // packagePaths, carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv, baseCommit, ignoreMissing,
 // parseDelta, treeProblems, moduleLinks, exceptionPlans, rootExceptions, checkWrapper, applyPairChanges,
-// overridesText, expandMarkers) are pure and tested in process (gates/test/plant-repo.test.ts); the builders only copy and write
+// overridesText, expandMarkers, parseOmit, licenceCopies) are pure and tested in process (gates/test/plant-repo.test.ts); the builders only copy and write
 // files and run git with their results (the process boundary, tested by gates/test/integration/plant-repo.test.ts).
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { cp, mkdir, readdir, readFile, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, posix } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -93,25 +96,56 @@ const storybookFiles = [
 /** The parts of the configuration set a repository may not hold yet: copied when present. */
 const optionalConfiguration = new Set(["storybook/baselines"]);
 
-/** The configuration set copied into every temporary repository: these root files, plus per package dir. */
+/**
+ * The release inputs (030 research.md R-17): the workflows and the shared action, gates/release/, the gap-table source,
+ * the root licence files (the pack-tree builder copies them into the package trees) and the font licence the tokens
+ * identical entry names; then per package its changelog, the stylesheets of packages/styles/src/ and each spec's
+ * verification.md.
+ */
+const releaseFiles = [
+  ".github/workflows",
+  ".github/actions",
+  "gates/release",
+  "specs/030-release-v1/sources/issue-1-gap-table.md",
+  "LICENSE",
+  "NOTICE",
+  "THIRD_PARTY_NOTICES",
+  "packages/tokens/fonts/OFL.txt",
+];
+
+/** A spec's verification.md, which a spec directory may lack (specs/003-base-styles has none; 030 research.md R-17). */
+const verification = /^specs\/[^/]+\/verification\.md$/;
+
+/**
+ * The configuration set copied into every temporary repository: these root files, plus per package dir, and since 030
+ * the release inputs, with each stylesheet of packages/styles/src/ (by file name) and each spec dir's verification.md;
+ * an entry listed twice (base.css) is copied once.
+ */
 export function configurationSet(packageDirs: readonly string[], specDirs: readonly string[] = [], styleSheets: readonly string[] = []): string[] {
   return [
-    ...rootConfiguration,
-    ...packageDirs.flatMap((dir) => [`${dir}/package.json`, `${dir}/tsconfig.json`]),
-    "gates/eslint",
-    "gates/stylelint",
-    ...tokenFiles,
-    ...elementFiles,
-    ...optionalElementFiles,
-    ...storybookFiles,
-    ...specDirs.slice(0, 0),
-    ...styleSheets.slice(0, 0),
+    ...new Set([
+      ...rootConfiguration,
+      ...packageDirs.flatMap((dir) => [`${dir}/package.json`, `${dir}/tsconfig.json`]),
+      "gates/eslint",
+      "gates/stylelint",
+      ...tokenFiles,
+      ...elementFiles,
+      ...optionalElementFiles,
+      ...storybookFiles,
+      ...releaseFiles,
+      ...packageDirs.map((dir) => `${dir}/CHANGELOG.md`),
+      ...styleSheets.map((name) => `packages/styles/src/${name}`),
+      ...specDirs.map((dir) => `${dir}/verification.md`),
+    ]),
   ];
 }
 
-/** Whether a configuration-set entry may be absent from the repository, and is then not copied (005 research.md R-12). */
+/**
+ * Whether a configuration-set entry may be absent from the repository, and is then not copied (005 research.md R-12):
+ * the element files, storybook/baselines and, since 030, a spec's verification.md.
+ */
 export function mayBeAbsent(path: string): boolean {
-  return optionalElementFiles.includes(path) || optionalConfiguration.has(path);
+  return optionalElementFiles.includes(path) || optionalConfiguration.has(path) || verification.test(path);
 }
 
 /**
@@ -495,8 +529,13 @@ async function git(dir: string, args: readonly string[], env: Record<string, str
 async function copyConfiguration(repo: string, into: string, unlinked?: readonly string[]): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   const packages = packagePaths(directoryNames(await readdir(join(repo, "packages"), { withFileTypes: true })));
+  // 030 research.md R-17: each spec directory (for its verification.md) and each stylesheet of packages/styles/src/.
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  for (const path of configurationSet(packages)) {
+  const specs = directoryNames(await readdir(join(repo, "specs"), { withFileTypes: true }).catch(() => [])).map((name) => `specs/${name}`);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  const sheets = (await readdir(join(repo, "packages/styles/src")).catch(() => [])).filter((name) => name.endsWith(".css"));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  for (const path of configurationSet(packages, specs, sheets)) {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
     const copied = cp(join(repo, path), join(into, path), { recursive: true });
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "rejects building from a repository root without %s, naming it" and "builds from a repository root without the element files that may be absent, leaving them out", and "buildRepoTree: the Storybook workspace (006 research.md R-16) copies storybook/baselines when the repository holds it"
@@ -710,9 +749,12 @@ export async function buildTrackedTree(plant: string, into: string): Promise<voi
   await git(into, ["commit", "-q", "-m", "Plant base"], identityEnv(baseCommit().author));
 }
 
-/** The tree paths of a pack-tree plant's omit.txt (030 research.md R-17; scaffold: none). */
+/** The tree paths of a pack-tree plant's omit.txt (030 research.md R-17): one per line, trimmed, no blank line or # comment. */
 export function parseOmit(text: string | undefined): string[] {
-  return [text ?? ""].flatMap(() => []);
+  return (text ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "" && !line.startsWith("#"));
 }
 
 /** A root licence file the pack-tree builder copies into a package tree: from the root path, to the tree path. */
@@ -721,14 +763,70 @@ export interface LicenceCopy {
   readonly to: string;
 }
 
-/** The root licence files the pack-tree builder copies into the plant's package trees (030 R-17; scaffold: none). */
+/** The packages that ship THIRD_PARTY_NOTICES (030 research.md R-04): tokens (the font) and elements (Lit). */
+const thirdPartyPackages = ["tokens", "elements"];
+
+/**
+ * The root licence files the pack-tree builder copies into a plant's package trees (030 research.md R-17, analysis
+ * C2), package by package: LICENSE and NOTICE into every one, THIRD_PARTY_NOTICES into tokens and elements, each unless
+ * the tree ships that file itself or the plant's omit.txt lists its tree path.
+ */
 export function licenceCopies(packages: readonly string[], treePaths: readonly string[], omitted: readonly string[]): LicenceCopy[] {
-  return [...packages, ...treePaths, ...omitted].flatMap(() => []);
+  return packages.flatMap((name) =>
+    ["LICENSE", "NOTICE", ...(thirdPartyPackages.includes(name) ? ["THIRD_PARTY_NOTICES"] : [])]
+      .map((from) => ({ from, to: `packages/${name}/${from}` }))
+      .filter(({ to }) => !treePaths.includes(to) && !omitted.includes(to)),
+  );
 }
 
-/** A pack-tree root in `into` with one tarball per package tree in `into`/tarballs (030 R-17; scaffold: not implemented). */
-export function buildPackTree(repo: string, plant: string, into: string): Promise<void> {
-  return Promise.reject(new Error(`not implemented: ${repo} ${plant} into ${into}`));
+/**
+ * A pack-tree root in `into` (030 research.md R-17): the configuration set of `repo` with the plant's `tree/` laid over
+ * it, and in `into`/tarballs one `<name>.tgz` per `tree/packages/<name>/`, archived with plain tar under `package/` as
+ * the tree holds it (no build, no pnpm pack; sandbox markers expanded), with the root licence files of licenceCopies
+ * copied in from `into`. A tarball the tree places in `tarballs/` stays.
+ */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+export async function buildPackTree(repo: string, plant: string, into: string): Promise<void> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+  await copyConfiguration(repo, into);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+  await layOver(plant, "tree", into);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) keeps a tarball the tree places in tarballs/ beside the built ones, and builds none without package trees"
+  await mkdir(join(into, "tarballs"), { recursive: true });
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+  const tree = join(plant, "tree");
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+  const paths = filePaths(await readdir(tree, { recursive: true, withFileTypes: true }).catch(() => []), tree);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) keeps a tarball the tree places in tarballs/ beside the built ones, and builds none without package trees"
+  const packages = directoryNames(await readdir(join(tree, "packages"), { withFileTypes: true }).catch(() => []));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+  const copies = licenceCopies(packages, paths, parseOmit(await readFile(join(plant, "omit.txt"), "utf8").catch(ignoreMissing)));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+  const staging = await mkdtemp(join(tmpdir(), "ocelle-pack-tree-"));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+  try {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+    for (const name of packages) {
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+      const own = `packages/${name}/`;
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+      const stage = join(staging, name, "package");
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+      for (const path of paths.filter((file) => file.startsWith(own))) {
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+        await mkdir(dirname(join(stage, path.slice(own.length))), { recursive: true });
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+        await writeFile(join(stage, path.slice(own.length)), expandMarkers(await readFile(join(tree, path))));
+      }
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+      for (const { from, to } of copies.filter((copy) => copy.to.startsWith(own))) await cp(join(into, from), join(stage, to.slice(own.length)));
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+      await run("tar", ["--format=ustar", "-czf", join(into, "tarballs", `${name}.tgz`), "-C", join(staging, name), "package"]);
+    }
+  } finally {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildPackTree (030) archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set"
+    await rm(staging, { recursive: true, force: true });
+  }
 }
 
 /** A git repository in `into`: the configuration set and the plant's `base/`, then a commit with its `head/`. */

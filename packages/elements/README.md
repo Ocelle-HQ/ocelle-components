@@ -126,7 +126,7 @@ The browser build starts with a licence banner naming Apache-2.0, Lit's copyrigh
 ## Tokens
 
 Link `tokens.css` of `@ocelle/tokens` first. The elements read their sizes and colours from its custom properties by
-inheritance and bundle none of them. The package declares it as a peer dependency, `"@ocelle/tokens": "workspace:0.0.0"`.
+inheritance and bundle none of them. The package declares it as a peer dependency, `"@ocelle/tokens": "^1.0.0"`.
 Linked without it, `--ocelle-icon-size` is undefined, so an icon is drawn at the SVG default size (300 × 300 px in a
 paragraph). Linked without it, an `ocelle-brand-mark` is drawn at the SVG default size too, and its ring is not
 painted.

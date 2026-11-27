@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The elements tarball holds a test file inside dist/, which an allow pattern matches but the deny list, checked first, refuses (030 Story 1 scenario 5).",
+  "findings": [
+    {
+      "location": "@ocelle/elements:dist/index.test.js",
+      "rule": "denied",
+      "message": "matches the deny pattern **/*.test.*"
+    }
+  ]
+}

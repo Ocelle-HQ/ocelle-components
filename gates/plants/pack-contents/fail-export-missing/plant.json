@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The styles tarball lacks dist/base.css, which its ./base.css export names (030 Story 1 scenario 2).",
+  "findings": [
+    {
+      "location": "@ocelle/styles:dist/base.css",
+      "rule": "entry-point-missing",
+      "message": "exports \"./base.css\" names it, but the tarball does not hold it"
+    }
+  ]
+}
