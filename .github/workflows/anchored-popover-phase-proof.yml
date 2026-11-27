@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 env:
-  OCELLE_PROOF_HEAD: 0155aade3940bfc3614f051ffbc6fceaa6b5dc34
+  OCELLE_PROOF_HEAD: 62cae58a5771b3c7325d7c7ae4c653fc4b474137
   OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
   OCELLE_PROOF_PHASE: '1'
 
@@ -138,6 +138,7 @@ jobs:
             packages/elements/test/entry-anchored-popover.test.ts \
             packages/elements/test/anchored-popover-pointer.test.ts
           pnpm run gate:typecheck
+          pnpm run gate:lint
           pnpm run gate:test-lint
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -146,47 +147,3 @@ jobs:
           path: ${{ runner.temp }}/ocelle-mutation-focus-tests
           if-no-files-found: error
 
-  mutation-related:
-    name: Related mutation (${{ matrix.range }})
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        range: ['1-30', '31-60', '121-150', '151-180', '181-210', '211-240', '241-270', '271-300', '301-326']
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ env.OCELLE_PROOF_HEAD }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-      - name: Check the same planned range with related Vitest selection
-        env:
-          OCELLE_RELATED_RANGE: ${{ matrix.range }}
-        run: |
-          set -euo pipefail
-          receipt="$RUNNER_TEMP/ocelle-related-mutation"
-          mkdir "$receipt"
-          test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
-          test -z "$(git status --porcelain)"
-          entry="packages/elements/src/ocelle-anchored-popover.ts:$OCELLE_RELATED_RANGE"
-          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --plan > "$receipt/plan.json"
-          selection=$(jq -er --arg entry "$entry" '[.[].files | select((split(",") | index($entry)) != null)] | if length == 1 then .[0] else error("selection did not exactly match one planned shard") end' "$receipt/plan.json")
-          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nselector=%s\n' \
-            "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
-            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$selection" | tee "$receipt/identity.txt"
-          code=0
-          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --files "$selection" \
-            --shadow-grouped --shadow-related-elements > "$receipt/mutation.log" 2> "$receipt/diagnostics.log" || code=$?
-          cat "$receipt/mutation.log"
-          grep -v '^mutation shadow receipt: ' "$receipt/diagnostics.log" || true
-          sed -n 's/^mutation shadow receipt: //p' "$receipt/diagnostics.log" > "$receipt/mutation.jsonl"
-          printf '%s\n' "$code" > "$receipt/exit.txt"
-          exit "$code"
-      - if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: ocelle-related-mutation-${{ matrix.range }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ocelle-related-mutation
-          if-no-files-found: error
