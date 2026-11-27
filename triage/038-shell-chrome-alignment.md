@@ -7,7 +7,9 @@ in_scope: [109]
 out_of_scope: [1, 5, 7, 8, 12, 17, 86, 87, 91, 92]
 semver: minor
 spec_prompt: "Specify #109 and triage/038-shell-chrome-alignment.md as one MINOR mission in @ocelle/elements. Remove the default lower top-bar divider while preserving app-owned pane separators. Give vertical personal rails an opt-in divider immediately above the bottom group while preserving the default and horizontal layouts and empty-group handling. Provide an optional brand accessory through the app shell and top bar beside the product name. Preserve existing names, menu and host actions, keyboard focus and 320 px reflow. Cover both themes, forced colours, strict CSP, manifest and package documentation, and Storybook with pinned visual evidence. Treat closed PRs #83–#85 as requirements evidence."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-27T20:33:06Z
 ---
 
 # Triage 038 — Align shell chrome, rail divider placement, and brand accessory
