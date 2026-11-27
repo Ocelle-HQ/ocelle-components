@@ -14,13 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 72645a36ab2108380cc3614534d85b50c764814f
+          ref: d3b6cec7a34388d3e891c27f6c6dee06e4708318
           fetch-depth: 0
           persist-credentials: false
-      - name: Check fresh lens scope
+      - name: Confirm the clean plan round and task setup paths
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "72645a36ab2108380cc3614534d85b50c764814f"
+          test "$(git rev-parse HEAD)" = "d3b6cec7a34388d3e891c27f6c6dee06e4708318"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh lens f4b24d7cd272bd38d26a5f32ce40e9c0146d6e96
-          grep -Fx 'findings: []' specs/038-shell-chrome-alignment/reviews/plan/round-2/lens-fresh.yaml
+          tooling/speckit/bin/scope-check.sh refute f4b24d7cd272bd38d26a5f32ce40e9c0146d6e96
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 2 and .lens_files == 1 and .confirmed == 0 and .forks == 0 and .unresolved == 0' <<< "$status"
+          task_setup=$(.specify/scripts/bash/setup-tasks.sh --json)
+          jq '{FEATURE_DIR, TASKS_TEMPLATE, AVAILABLE_DOCS}' <<< "$task_setup"
+          test -z "$(git status --porcelain)"
