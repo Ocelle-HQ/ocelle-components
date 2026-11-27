@@ -4,12 +4,12 @@
 - command: pnpm run gate:plants -- --affected 7af6180b2ac3027f565c296db3c03facfea86aaa
 - exit: 2
 
-This environment has no running container engine and no Playwright browsers of the pinned version, so the
-visual plants were not run and the unit-tests, mutation (element), axe and other browser plants could not run (exit 2,
-could not run). No plant failed on its own terms. CI's Plants check judges every plant.
+This environment has no running container engine and no Playwright browser of the pinned version. The 46 visual
+plants were not run; the 12 unit-tests plants report "Chromium not found", the 22 axe plants "no browser", and the 4
+element mutation plants "Stryker wrote no report" (its initial test run, which runs the element tests in Chromium,
+failed). Every other selected plant was judged as expected. CI's Plants check judges every plant.
 
 ```text
-note: affected: every plant, by .github/workflows/evidence-reuse-shadow.yml (not mapped)
 $ node gates/bin/plants.ts -- --affected 7af6180b2ac3027f565c296db3c03facfea86aaa
 note: affected: every plant, by .github/workflows/evidence-reuse-shadow.yml (not mapped)
 note: plant time: contrast/empty-list: 0.7 s
