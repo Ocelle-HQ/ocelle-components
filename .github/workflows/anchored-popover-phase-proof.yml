@@ -1,0 +1,157 @@
+name: Anchored popover phase proof
+
+on:
+  push:
+    branches: [036-anchored-popover-proof]
+
+permissions:
+  contents: read
+
+env:
+  OCELLE_PROOF_HEAD: c218824601f3d61c1027d10f64fdd866d375ec78
+  OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
+  OCELLE_PROOF_PHASE: '1'
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.OCELLE_PROOF_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Replay the exact phase
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/ocelle-proof"
+          mkdir "$receipt"
+          test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
+          git merge-base --is-ancestor "$OCELLE_PROOF_BASE" HEAD
+          folder="specs/036-anchored-popover/reviews/phase-$OCELLE_PROOF_PHASE"
+          test "$(cat "$folder/base.sha")" = "$OCELLE_PROOF_BASE"
+          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\n' \
+            "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" | tee "$receipt/identity.txt"
+          code=0
+          .specify/extensions/story/scripts/tdd-check.sh "$OCELLE_PROOF_PHASE" \
+            > "$receipt/replay.json" 2> "$receipt/replay.stderr" || code=$?
+          cat "$receipt/replay.stderr"
+          if test -f "$folder/tdd-check.json"; then
+            cp "$folder/tdd-check.json" "$receipt/"
+          fi
+          find "$folder" -maxdepth 1 -name 'check-*.log' -exec cp '{}' "$receipt/" \;
+          jq -c '{status,head,problems,head_exit,final_tests_on_base_exit,final_tests_on_scaffold_exit}' "$receipt/replay.json"
+          test "$code" = 0
+          jq -e --arg head "$OCELLE_PROOF_HEAD" --arg base "$OCELLE_PROOF_BASE" \
+            '.head == $head and .base == $base and .status == "pass"' "$receipt/replay.json"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ocelle-phase-replay-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-proof
+          if-no-files-found: error
+
+  browser-floors:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.OCELLE_PROOF_HEAD }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run both exact browsers against the same strict fixture
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/ocelle-browser-proof"
+          chrome="$RUNNER_TEMP/ocelle-chrome-floor"
+          webkit="$RUNNER_TEMP/ocelle-webkit-floor"
+          mkdir "$receipt" "$chrome" "$webkit"
+          test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
+          printf 'head=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\n' "$OCELLE_PROOF_HEAD" \
+            "$(git rev-parse 'HEAD^{tree}')" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" \
+            | tee "$receipt/identity.txt"
+          curl -fLsS --retry 2 --max-time 60 \
+            https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.114/linux64/chrome-headless-shell-linux64.zip \
+            -o "$chrome/chromium.zip"
+          printf 'edc2f6118c68f3c369f0dde3c2c31e400806308ab02ba3e2901e742212246e2e  %s\n' "$chrome/chromium.zip" | sha256sum -c
+          unzip -q "$chrome/chromium.zip" -d "$chrome"
+          npm --prefix "$webkit" install --ignore-scripts --no-audit --no-fund --no-package-lock playwright@1.43.1
+          entry="packages/elements/test/browser/anchored-popover-compat"
+          cp "$entry.mjs" "$webkit/"
+          node "$entry-host.ts" > "$receipt/fixture.log" 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
+          fixture_url=
+          for attempt in {1..60}; do
+            fixture_url=$(sed -n '/^http:\/\/127\.0\.0\.1:[0-9][0-9]*\/anchored-popover\.html$/p' "$receipt/fixture.log")
+            [[ -z "$fixture_url" ]] || break
+            kill -0 "$fixture_pid"
+            sleep 1
+          done
+          test -n "$fixture_url"
+          node "$entry.mjs" chromium "$fixture_url" "$chrome/chrome-headless-shell-linux64/chrome-headless-shell" \
+            | tee "$receipt/chromium.json"
+          image='mcr.microsoft.com/playwright@sha256:1df0e51224b46d872a4185e6c8d6f4b40c22eada49316bb3fd2ade18d0af9536'
+          printf '%s\n' "$image" > "$receipt/webkit-image.txt"
+          docker run --rm --network host --platform linux/amd64 \
+            --mount "type=bind,source=$webkit,target=/compat,readonly" "$image" \
+            node /compat/anchored-popover-compat.mjs webkit "$fixture_url" | tee "$receipt/webkit.json"
+          jq -se 'map([.engine,.version,.client,.result]) == [["chromium","135.0.7049.114","1.64.1","pass"],["webkit","17.4","1.43.1","pass"]]' \
+            "$receipt/chromium.json" "$receipt/webkit.json"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ocelle-browser-floors-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-browser-proof
+          if-no-files-found: error
+
+  mutation-pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.OCELLE_PROOF_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run the full and related arms serially
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/ocelle-mutation-proof"
+          mkdir "$receipt"
+          test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
+          git merge-base --is-ancestor "$OCELLE_PROOF_BASE" HEAD
+          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\nnode=%s\npnpm=%s\nplaywright=%s\nstryker=%s\n' \
+            "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" "$(node --version)" "$(pnpm --version)" \
+            "$(pnpm exec playwright --version)" "$(node -p 'require("./node_modules/@stryker-mutator/core/package.json").version')" \
+            | tee "$receipt/identity.txt"
+          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --plan > "$receipt/plan.json"
+          selection=$(jq -er '[.[].files | select(split(",") | all(startswith("packages/elements/src/")))] | first' "$receipt/plan.json")
+          printf '%s\n' "$selection" | tee "$receipt/selector.txt"
+          for arm in full related; do
+            test -z "$(git status --porcelain)"
+            extra=()
+            if [[ "$arm" = related ]]; then
+              extra+=(--shadow-related-elements)
+            fi
+            code=0
+            timeout --signal=TERM --kill-after=30s 70m node gates/bin/mutation.ts \
+              --base "$OCELLE_PROOF_BASE" --files "$selection" --shadow-grouped "${extra[@]}" \
+              > "$receipt/$arm.log" 2> "$receipt/$arm.stderr" || code=$?
+            printf '%s\n' "$code" | tee "$receipt/$arm.exit"
+            sed -n 's/^mutation shadow receipt: //p' "$receipt/$arm.stderr" > "$receipt/$arm.jsonl"
+            tail -15 "$receipt/$arm.log"
+            grep -v '^mutation shadow receipt: ' "$receipt/$arm.stderr" | tail -15 || true
+          done
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ocelle-mutation-arms-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-mutation-proof
+          if-no-files-found: error
