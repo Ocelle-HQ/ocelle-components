@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
-import "../src/ocelle-anchored-popover.ts";
 import type { OcelleAnchoredPopover } from "../src/ocelle-anchored-popover.ts";
+
+const modules = import.meta.glob("../src/ocelle-anchored-popover.ts", { eager: true });
 
 interface Fixture {
   readonly host: OcelleAnchoredPopover;
@@ -84,6 +85,11 @@ afterEach(() => {
 });
 
 describe("anchored popover interaction", () => {
+  // Report the exact missing dependency during collection on the pre-scaffold base.
+  if (!Object.hasOwn(modules, "../src/ocelle-anchored-popover.ts")) {
+    throw new Error("Cannot find module '../src/ocelle-anchored-popover.ts'");
+  }
+
   it.each([
     { name: "Appearance", decoration: "✦" },
     { name: "Profile for Mira", decoration: "MK" },
