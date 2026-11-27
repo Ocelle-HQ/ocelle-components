@@ -56,3 +56,16 @@ Phase 4's operator round 3 fix (T044a, ccd9c5a5 and 97154a0a) is test-only. Its 
 plants in `phase-4/plants.md`, which reviewer round 4 accepted. HEAD is checked by CI on the merged candidate.
 For the retrospective: #101's replay cannot handle a phase base that conflicts with main, which is the usual
 state of a long mission after its first main merge.
+
+## L-03: three mutants survive on the interactive host sheet (PR defect, no operator decision)
+
+**Facts.** With the cap raised (L-01), CI run 45980648741 on 40d1b7e6 was green except the mutation shard for
+`packages/elements/src/ocelle-pill-tag.ts:751-780`. Three mutants survived on line 765, the line that adopts the
+interactive host sheet. Phase 5 introduced that line (7824d341), and its tests killed three of the four mutants then.
+Phase 6's truncation measure adds a re-render to static pills, so the existing test read each pill at a point where
+the faulty sheet had been removed again. No test counted sheets.
+
+**Fold.** Test-only, in the landing: c19eb084 adds a pill-tag-interactive body that counts the sheets and reads the
+host `display` of five pills over nine steps. 0752a284 records the evidence. Every mutant, applied by hand, is killed
+both in process and on the fixture (`landing/plants-l03.md`). The local `gate:mutation` run on lines 751-780 reports
+58 mutants, none surviving (`landing/mutation-l03.log`). No source changed, so no operator decision was needed.
