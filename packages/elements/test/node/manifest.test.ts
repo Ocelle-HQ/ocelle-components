@@ -462,6 +462,13 @@ async function declared(path: string): Promise<unknown> {
 const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"];
 
 describe("generate(root) on the repository's element source", () => {
+  it("declares only the public class in the popover module", async () => {
+    const manifest = await generate(repo);
+    const module = (manifest.modules as Json[]).find((entry) => entry.path === "src/ocelle-anchored-popover.ts");
+    const declarations = (module?.declarations as Json[] | undefined)?.map(({ kind, name }) => ({ kind, name }));
+    expect(declarations).toEqual([{ kind: "class", name: "OcelleAnchoredPopover" }]);
+  });
+
   it("describes the popover's exact public properties, close method, slots and parts", async () => {
     expect(await declared("src/ocelle-anchored-popover.ts")).toMatchObject({
       name: "OcelleAnchoredPopover",
