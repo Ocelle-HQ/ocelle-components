@@ -94,7 +94,7 @@ const storybookFiles = [
 const optionalConfiguration = new Set(["storybook/baselines"]);
 
 /** The configuration set copied into every temporary repository: these root files, plus per package dir. */
-export function configurationSet(packageDirs: readonly string[]): string[] {
+export function configurationSet(packageDirs: readonly string[], specDirs: readonly string[] = [], styleSheets: readonly string[] = []): string[] {
   return [
     ...rootConfiguration,
     ...packageDirs.flatMap((dir) => [`${dir}/package.json`, `${dir}/tsconfig.json`]),
@@ -104,6 +104,8 @@ export function configurationSet(packageDirs: readonly string[]): string[] {
     ...elementFiles,
     ...optionalElementFiles,
     ...storybookFiles,
+    ...specDirs.slice(0, 0),
+    ...styleSheets.slice(0, 0),
   ];
 }
 
@@ -706,6 +708,27 @@ export async function buildTrackedTree(plant: string, into: string): Promise<voi
   await git(into, ["add", "-A"]);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"
   await git(into, ["commit", "-q", "-m", "Plant base"], identityEnv(baseCommit().author));
+}
+
+/** The tree paths of a pack-tree plant's omit.txt (030 research.md R-17; scaffold: none). */
+export function parseOmit(text: string | undefined): string[] {
+  return [text ?? ""].flatMap(() => []);
+}
+
+/** A root licence file the pack-tree builder copies into a package tree: from the root path, to the tree path. */
+export interface LicenceCopy {
+  readonly from: string;
+  readonly to: string;
+}
+
+/** The root licence files the pack-tree builder copies into the plant's package trees (030 R-17; scaffold: none). */
+export function licenceCopies(packages: readonly string[], treePaths: readonly string[], omitted: readonly string[]): LicenceCopy[] {
+  return [...packages, ...treePaths, ...omitted].flatMap(() => []);
+}
+
+/** A pack-tree root in `into` with one tarball per package tree in `into`/tarballs (030 R-17; scaffold: not implemented). */
+export function buildPackTree(repo: string, plant: string, into: string): Promise<void> {
+  return Promise.reject(new Error(`not implemented: ${repo} ${plant} into ${into}`));
 }
 
 /** A git repository in `into`: the configuration set and the plant's `base/`, then a commit with its `head/`. */

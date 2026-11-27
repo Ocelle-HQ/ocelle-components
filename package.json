@@ -30,6 +30,7 @@
     "gate:visual": "node gates/bin/visual.ts",
     "gate:axe": "node gates/bin/axe.ts",
     "gate:sandbox-paths": "node gates/bin/sandbox-paths.ts",
+    "gate:pack-contents": "node gates/bin/pack-contents.ts",
     "visual:update": "node gates/bin/baselines.ts"
   },
   "devDependencies": {
