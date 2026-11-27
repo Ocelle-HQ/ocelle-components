@@ -1,0 +1,46 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The executable examples have no defined strict-CSP build path"
+    evidence:
+      - artifact: "plan.md:19,28 describes examples built under CSP and makes shared story host logic optional. contracts/verification.md:8,10 identifies a strict-CSP component fixture and an executable Storybook test but calls the built example's serving policy strict. spec.md:35,62 requires the built examples with both host callbacks under strict CSP."
+      - code: "storybook/README.md:26-28 explicitly says the Workbench serves without CSP. It points to the element browser fixture, and line 44 describes the pane footer's separate strict-CSP fixture mounting the same recipe. storybook/test/integration/pane-action-footer.test.ts:55-67 serves and navigates the normal Storybook iframe."
+    claim: |
+      The component fixture proves the package and the normal Storybook fixture proves the examples. Neither currently proves that the actual appearance and profile host code runs under the strict policy. Implementing the plan as written could leave both new host callbacks outside the proof required by SC-003.
+    remedies:
+      - "Specify how the exact appearance and profile recipe implementations are shared and built as external modules in a separate strict-CSP fixture. Keep the normal built Storybook and pinned baseline checks. Assign the shared host routes, built fixture assets and in-process mutation tests together in US3."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "The placement rule can select below for the bottom-rail surface"
+    evidence:
+      - artifact: "contracts/element.md:5 selects the opposite vertical side whenever it has more usable room and the preferred side cannot fit, then considers adjacent sides only when neither vertical side is usable. spec.md:27 requires the top-bar panel below and the bottom-rail panel above or beside as space permits."
+      - code: "For a 600 px visible viewport and an above-placement anchor from y=200 to y=224, a 260 px panel has about 200 px above and 376 px below before gaps. The opposite-side rule chooses below despite a scrollable panel above or available space beside. The same rule can flip below-placement upward when there is usable scroll space below."
+    claim: |
+      The generic tooltip-style fallback contradicts the two chrome placement promises. Unspecified terms such as usable room and favoring above permit incompatible implementations and do not define when the panel ought to scroll.
+    remedies:
+      - "Define an explicit placement priority and usability threshold for each chrome position. For the top bar keep below with internal scrolling when usable. For the bottom rail choose usable above or a fitting adjacent side. Define a bounded fallback for impossible geometry and add a constrained-content case that rejects the wrong vertical flip."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "The mixed-arm workflow still measures a historical #87 checkout"
+    evidence:
+      - artifact: "contracts/verification.md:19 says to use Op 034's mixed comparison when the real plan supplies a mixed selector. triage/036-anchored-popover.md separately requires a live #86 comparison only for a genuinely mixed shard."
+      - code: "At verified head e7658048, .github/workflows/mutation-config-shadow.yml:14-20 pins #87 source, base, tree and selectors. Lines 64-76 check out those fixed inputs, and lines 91-105 require the historical 47-line selection."
+    claim: |
+      A genuine mixed #86 shard does not change what the existing hosted workflow executes. Using that workflow's marker for the new comparison would obtain another #87 receipt, which gives no evidence about #86.
+    remedies:
+      - "Describe the live mixed path as collecting full and configuration-subset receipts from the exact #86 head, base and real shard with the existing receipt runner and comparator when those inputs are available. Treat the historical hosted workflow as #87 evidence. Record an unavailable live arm explicitly if it cannot be verified."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 2
+    title: "The tooling pin has no implementation-start or landing transition if #107 lands"
+    evidence:
+      - artifact: "plan.md:32 always branches from e7658048 and targets 037-pilot-feedback-verified. Its fallback covers changes during paired observation. The pilot must eventually integrate into main under the same protected checks."
+      - code: ".claude/skills/ocelle-land/SKILL.md:28-31 and 103-106 preserve fold evidence and integrate main after the fold. A squash of #107 gives main a new commit rather than ancestry through e7658048. At e7658048, tooling/speckit/bin/evidence-reuse-observe.ts:461-469 and 543 checks the audited setup/recorder blobs and exact current common base."
+    claim: |
+      The pilot branch is safe while the named tooling ref stays available. The plan gives no pre-start route if #107 has already landed and its branch is removed, or final integration route after a successful stacked trial. A branch name or prior green run cannot establish compatible tooling on a different base, and the stacked result does not verify a later main-bound candidate.
+    remedies:
+      - "Define how to begin from a recorded main commit after the tooling lands only after verifying the necessary tooling and audited inputs. For a stacked trial, retain the verified control pair, then integrate and retarget through normal landing once main contains compatible tooling and obtain fresh required CI on the final exact candidate."

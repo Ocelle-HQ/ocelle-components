@@ -1,0 +1,45 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "Keep strict-CSP proof independent of the Storybook preview"
+    evidence:
+      - artifact: "spec.md US3 and contracts/verification.md Test ownership place the assembled example under a built fixture's strict policy, while plan.md makes sharing the story host optional."
+      - code: "storybook/test/integration/elements-stories.test.ts:14-19 says the built preview keeps inline scripts and is served without CSP. gates/lib/storybook-serve.ts sets Content-Type only. specs/033-pane-step-indicator/reviews/plan/round-1/fixes-1.md records the equivalent fix for the pane-action-footer example."
+    claim: |
+      Reusing the normal preview server cannot establish strict CSP, and setting the strict header on the existing
+      preview makes its inline boot scripts a setup failure. A stand-alone element fixture would not prove that the
+      actual appearance and profile host wiring also runs with the strict policy.
+    remedies:
+      - "Specify built preview checks under its normal policy plus a separate strict same-origin host fixture using the same externally built appearance and profile host code. Assign exact module and fixture owners, exercise the real callbacks in both proofs, and collect CSP violations from the strict fixture."
+
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "Define when the stacked pilot is ready for main"
+    evidence:
+      - artifact: "plan.md Pilot base and evidence ends with a PR against the verified #107 branch and a fresh pair if its target changes. It gives no transition to a main-targeted release candidate."
+      - code: ".claude/skills/ocelle-land/SKILL.md:27-32 and 101-111 require a preserved fold followed by integration with origin/main. Existing squash precedent: git merge-base 1d599fd4 724d3a9b yielded 64c57578, and the source was not an ancestor of the resulting main commit."
+    claim: |
+      The stacked checks answer the pilot question on one exact base. A squash of the tooling PR puts its content
+      on main without making its branch commit an ancestor. A direct retarget can change merge provenance and
+      present tooling changes in the mission's merge-base diff. The current plan leaves the release base and its
+      required CI unspecified.
+    remedies:
+      - "Collect the stacked pair before retargeting where practical. After the tooling lands, confirm its required content is on main, fold by the established flow, integrate main without rewriting reviewed history, verify the mission-only tree diff, and run landing review and fresh full CI on the exact main-targeted candidate. Keep the stacked pair as observational evidence with its original base."
+
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "Close when responsive chrome hides a connected anchor"
+    evidence:
+      - artifact: "contracts/element.md Interaction and lifetime and plan.md US2 mention disconnection, while the research mentions detecting an absent box only before measuring."
+      - code: "packages/elements/src/ocelle-app-shell.ts:446-454 hides a connected navigation region at the narrow tier. A Chromium 156.0.8078.4 manual-popover probe observed [connected=true, buttonRects=0, open=true, panelRects=0] while the wrapping region was hidden, followed by [true,1,true,1] when restored without a new activation."
+    claim: |
+      The consumer layout can hide its chrome without removing the trigger. The native manual popover can remain
+      logically open through that transition and resurface afterwards. This can also leave the open lifetime's
+      placement loop and disclosure state active while the trigger has no rendered box.
+    remedies:
+      - "Treat a disappeared trigger box after a rendered opening as a close and cleanup boundary. Add a realistic responsive-hide and show-again test that preserves connectivity and confirms the panel stays closed until a fresh trigger activation."
