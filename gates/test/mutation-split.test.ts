@@ -154,6 +154,8 @@ describe("mutation gate: advisory related element tests", () => {
     [[related, ...files], /needs --shadow-grouped and --files without --plan/],
     [[grouped, related], /needs --shadow-grouped and --files without --plan/],
     [[grouped, related, "--plan", ...files], /needs --shadow-grouped and --files without --plan/],
+    [[grouped, related, "--files", ","], /--files to select at least one changed element source file/],
+    [[grouped, related, "--files", "   "], /--files to select at least one changed element source file/],
     [[grouped, related, "--files", gateFile], /needs element source only/],
     [[grouped, related, "--files", `${selectors},${gateFile}`], /needs element source only/],
   ] as const)("rejects out-of-scope advisory arguments %j before Stryker", async (args, diagnostic) => {
