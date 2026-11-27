@@ -38,6 +38,38 @@ function point(element: Element): { x: number; y: number } {
   return { x: left + width / 2, y: top + height / 2 };
 }
 
+function nextFrame(): Promise<void> {
+  return new Promise((done) => requestAnimationFrame(() => { done(); }));
+}
+
+/** Record the native resources created synchronously by this activation. */
+function observeActivation(trigger: HTMLButtonElement) {
+  const addListener = document.addEventListener;
+  const requestFrame = window.requestAnimationFrame;
+  const signals: AbortSignal[] = [];
+  const scheduled: number[] = [];
+  const ran: number[] = [];
+  document.addEventListener = (type: string, listener: unknown, options?: boolean | AddEventListenerOptions) => {
+    Reflect.apply(addListener, document, [type, listener, options]);
+    if (type === "pointerdown" && typeof options === "object" && options.signal) signals.push(options.signal);
+  };
+  window.requestAnimationFrame = (callback) => {
+    const id = requestFrame.call(window, (time) => {
+      ran.push(id);
+      callback(time);
+    });
+    scheduled.push(id);
+    return id;
+  };
+  try {
+    trigger.click();
+  } finally {
+    document.addEventListener = addListener;
+    window.requestAnimationFrame = requestFrame;
+  }
+  return { signals, scheduled, ran };
+}
+
 afterEach(() => {
   document.getElementById("popover-lifecycle-fixture")?.remove();
 });
@@ -100,6 +132,110 @@ it("keeps a canceled native opening collapsed and allows the next opening", asyn
   trigger.click();
   expect(panel.matches(":popover-open")).toBe(true);
   expect(trigger.getAttribute("aria-expanded")).toBe("true");
+});
+
+it.each(["close", "detach"] as const)("releases the native listener signal and the pending frame on %s", async (exit) => {
+  const { host, trigger, panel } = await mount(fixture());
+  const { signals, scheduled, ran } = observeActivation(trigger);
+  expect(panel.matches(":popover-open")).toBe(true);
+  expect(signals).toHaveLength(1);
+  expect(signals[0]?.aborted).toBe(false);
+  expect(scheduled).toHaveLength(1);
+
+  if (exit === "close") host.close();
+  else host.remove();
+  expect(panel.matches(":popover-open")).toBe(false);
+  expect(signals[0]?.aborted).toBe(true);
+  await nextFrame();
+  expect(ran).toEqual([]);
+});
+
+it("releases native tracking when a later beforetoggle listener cancels opening", async () => {
+  const { trigger, panel } = await mount(fixture());
+  panel.addEventListener("beforetoggle", (event) => { event.preventDefault(); }, { once: true });
+  const { signals, scheduled, ran } = observeActivation(trigger);
+  expect(panel.matches(":popover-open")).toBe(false);
+  expect(signals).toHaveLength(1);
+  expect(signals[0]?.aborted).toBe(false);
+  expect(scheduled).toHaveLength(1);
+
+  await nextFrame();
+  expect(ran).toEqual(scheduled);
+  expect(signals[0]?.aborted).toBe(true);
+  expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  trigger.click();
+  expect(panel.matches(":popover-open")).toBe(true);
+});
+
+it("closes after the host disables its trigger and leaves outside focus in place", async () => {
+  const root = fixture();
+  const { host, trigger, panel } = await mount(root);
+  const outside = button("Outside");
+  root.append(outside);
+  outside.focus();
+  trigger.click();
+  expect(panel.matches(":popover-open")).toBe(true);
+
+  host.label = "";
+  await host.updateComplete;
+  expect(trigger.disabled).toBe(true);
+  await nextFrame();
+  expect(panel.matches(":popover-open")).toBe(false);
+  expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  expect(document.activeElement).toBe(outside);
+});
+
+it("closes after losing its trigger box without taking focus if the host restores that box during close", async () => {
+  const root = fixture();
+  const { host, trigger, panel } = await mount(root);
+  const outside = button("Outside");
+  root.append(outside);
+  outside.focus();
+  trigger.click();
+  expect(panel.matches(":popover-open")).toBe(true);
+  const closing: string[] = [];
+  panel.addEventListener("beforetoggle", (event) => {
+    closing.push(event.newState);
+    host.hidden = false;
+  }, { once: true });
+
+  host.hidden = true;
+  expect(trigger.getClientRects()).toHaveLength(0);
+  await nextFrame();
+  expect(closing).toEqual(["closed"]);
+  expect(panel.matches(":popover-open")).toBe(false);
+  expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  expect(trigger.getClientRects().length).toBeGreaterThan(0);
+  expect(document.activeElement).toBe(outside);
+});
+
+it("dismisses on a trusted outside click even when its target stops pointer bubbling", async () => {
+  const root = fixture();
+  const { trigger, panel } = await mount(root);
+  const outside = button("Outside");
+  root.append(outside);
+  trigger.click();
+  expect(panel.matches(":popover-open")).toBe(true);
+  const stopped: boolean[] = [];
+  const bubbled: string[] = [];
+  const clicked: boolean[] = [];
+  for (const type of ["pointerdown", "pointerup"] as const) {
+    outside.addEventListener(type, (event) => {
+      event.stopPropagation();
+      stopped.push(event.isTrusted);
+    });
+    root.addEventListener(type, (event) => { bubbled.push(event.type); });
+  }
+  outside.addEventListener("click", (event) => { clicked.push(event.isTrusted); });
+
+  const start = point(outside);
+  expect(document.elementFromPoint(start.x, start.y)).toBe(outside);
+  await commands.pointerPath([{ ...start, down: true }, { ...start, up: true }]);
+  expect(stopped).toEqual([true, true]);
+  expect(bubbled).toEqual([]);
+  expect(clicked).toEqual([true]);
+  expect(panel.matches(":popover-open")).toBe(false);
+  expect(document.activeElement).toBe(outside);
 });
 
 it("restores focus to a scrolled-out trigger without moving its scroll container", async () => {
@@ -183,5 +319,30 @@ it("keeps the surface open when a captured release has no hit inside a shadow ho
   }, { once: true });
   await commands.pointerPath([{ ...start, down: true }, end, { ...end, up: true }]);
   expect(releases).toEqual([{ trusted: true, captured: true }]);
+  expect(panel.matches(":popover-open")).toBe(true);
+});
+
+it("keeps the surface open when a captured pointer releases beyond the hit-test viewport", async () => {
+  const root = fixture();
+  const { trigger, panel } = await mount(root);
+  const outside = button("Outside");
+  root.append(outside);
+  trigger.click();
+  expect(panel.matches(":popover-open")).toBe(true);
+  const start = point(outside);
+  const end = { x: -4, y: start.y };
+  expect(document.elementFromPoint(start.x, start.y)).toBe(outside);
+  const releases: { trusted: boolean; captured: boolean; hit: Element | null }[] = [];
+  outside.addEventListener("pointerdown", (event) => { outside.setPointerCapture(event.pointerId); }, { once: true });
+  outside.addEventListener("pointerup", (event) => {
+    releases.push({
+      trusted: event.isTrusted,
+      captured: outside.hasPointerCapture(event.pointerId),
+      hit: document.elementFromPoint(event.clientX, event.clientY),
+    });
+  }, { once: true });
+
+  await commands.pointerPath([{ ...start, down: true }, end, { ...end, up: true }]);
+  expect(releases).toEqual([{ trusted: true, captured: true, hit: null }]);
   expect(panel.matches(":popover-open")).toBe(true);
 });
