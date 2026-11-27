@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./dist/index.js",
+    "./ocelle-anchored-popover.js": "./dist/ocelle-anchored-popover.js",
     "./ocelle-icon.js": "./dist/ocelle-icon.js",
     "./ocelle-brand-mark.js": "./dist/ocelle-brand-mark.js",
     "./ocelle-notice.js": "./dist/ocelle-notice.js",

@@ -462,12 +462,40 @@ async function declared(path: string): Promise<unknown> {
 const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"];
 
 describe("generate(root) on the repository's element source", () => {
+  it("declares only the public class in the popover module", async () => {
+    const manifest = await generate(repo);
+    const module = (manifest.modules as Json[]).find((entry) => entry.path === "src/ocelle-anchored-popover.ts");
+    const declarations = (module?.declarations as Json[] | undefined)?.map(({ kind, name }) => ({ kind, name }));
+    expect(declarations).toEqual([{ kind: "class", name: "OcelleAnchoredPopover" }]);
+  });
+
+  it("describes the popover's exact public properties, close method, slots and parts", async () => {
+    expect(await declared("src/ocelle-anchored-popover.ts")).toMatchObject({
+      name: "OcelleAnchoredPopover",
+      tagName: "ocelle-anchored-popover",
+      members: [
+        { name: "close", described: true },
+        { name: "label", attribute: "label", described: true },
+        { name: "placement", attribute: "placement", default: '"below"', described: true },
+      ],
+      attributes: [
+        { name: "label", fieldName: "label", described: true },
+        { name: "placement", fieldName: "placement", described: true },
+      ],
+      slots: [{ name: "", described: true }, { name: "trigger", described: true }],
+      cssParts: [{ name: "surface", described: true }, { name: "trigger", described: true }],
+      events: [],
+      cssProperties: [],
+    });
+  });
+
   it("declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1)", async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
     expect(modules.map((module) => module.path)).toEqual([
       "src/ocelle-action-row.ts",
+      "src/ocelle-anchored-popover.ts",
       "src/ocelle-app-shell.ts",
       "src/ocelle-brand-mark.ts",
       "src/ocelle-breadcrumbs.ts",

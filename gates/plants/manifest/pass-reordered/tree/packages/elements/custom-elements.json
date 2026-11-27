@@ -380,6 +380,109 @@
       ]
     },
     {
+      "path": "src/ocelle-anchored-popover.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleAnchoredPopover",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleAnchoredPopover",
+            "module": "src/ocelle-anchored-popover.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-anchored-popover",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The native controls presented in the popover."
+            },
+            {
+              "name": "trigger",
+              "description": "Decorative icon or initials for the named trigger."
+            }
+          ],
+          "name": "OcelleAnchoredPopover",
+          "members": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The accessible name of the native trigger. A blank name disables it.",
+              "default": "\"\"",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "\"below\" | \"above\""
+              },
+              "privacy": "public",
+              "name": "placement",
+              "kind": "field",
+              "description": "The preferred vertical placement relative to the trigger.",
+              "default": "\"below\"",
+              "attribute": "placement"
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "name": "close",
+              "kind": "method",
+              "description": "Close the surface and return focus to the enabled trigger when focus is still inside."
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A compact, nonmodal surface opened by a named native button.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "trigger",
+              "description": "The native trigger button."
+            },
+            {
+              "name": "surface",
+              "description": "The nonmodal popover surface."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The accessible name of the native trigger. A blank name disables it.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "\"below\" | \"above\""
+              },
+              "name": "placement",
+              "fieldName": "placement",
+              "description": "The preferred vertical placement relative to the trigger.",
+              "default": "\"below\""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-app-shell.ts",
       "kind": "javascript-module",
       "exports": [

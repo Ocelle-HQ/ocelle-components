@@ -1,0 +1,10 @@
+packages/elements/test/anchored-popover.test.ts
+packages/elements/test/anchored-popover.touch.test.ts
+packages/elements/test/browser/anchored-popover.test.ts
+packages/elements/test/entry-root.test.ts
+packages/elements/test/entry-anchored-popover.test.ts
+packages/elements/test/exports.test.ts
+packages/elements/test/build/build.test.ts
+packages/elements/test/build/pack.test.ts
+packages/elements/test/node/manifest.test.ts
+packages/elements/test/node/readme.test.ts

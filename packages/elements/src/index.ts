@@ -11,6 +11,7 @@
 // overflow-region, lane-count, tier and list-detail measurement modules, the overlays' internal base, the form
 // controls' base class (src/form-control.ts) and the icon drawing (src/icon-svg.ts) are not exported.
 export { OcelleActionRow } from "./ocelle-action-row.ts";
+export { OcelleAnchoredPopover } from "./ocelle-anchored-popover.ts";
 export { OcelleAppShell } from "./ocelle-app-shell.ts";
 export type { AppShellTier } from "./ocelle-app-shell.ts";
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
