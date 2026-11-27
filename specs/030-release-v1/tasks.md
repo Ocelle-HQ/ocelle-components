@@ -53,8 +53,8 @@ gates and no `gates/lib/sandbox-paths.ts`; T002 rechecks this and stops for the 
 before any red commit. No behaviour: the phase is exempt from the red/green check, and its review states why no test
 can fail for it.
 
-- [ ] T001 Merge `origin/main` into `claude/011-release-v1` (`git fetch origin main && git merge --no-edit --signoff -s ort FETCH_HEAD`; the only merge of `main` in this run, decided by the operator) and resolve nothing by hand in `specs/030-release-v1/` (no file there exists on `main`).
-- [ ] T002 Recheck the design against `main` as merged and write `specs/030-release-v1/reviews/recheck.md`, one section per item, each with "as planned", "as on `main`" (file and line) and "difference: none | <what>". Items:
+- [X] T001 Merge `origin/main` into `claude/011-release-v1` (`git fetch origin main && git merge --no-edit --signoff -s ort FETCH_HEAD`; the only merge of `main` in this run, decided by the operator) and resolve nothing by hand in `specs/030-release-v1/` (no file there exists on `main`).
+- [X] T002 Recheck the design against `main` as merged and write `specs/030-release-v1/reviews/recheck.md`, one section per item, each with "as planned", "as on `main`" (file and line) and "difference: none | <what>". Items:
   - mission 018 and op 023 are both in the merged history (their merge commits named); if either is missing, stop before T004 and ask the operator; and the full SHA of the `main` commit T001 merged (`FETCH_HEAD`), which T040 writes into `gates/release/first-release-base` (analysis F7);
   - `gates/gates.json`, `gates/lib/registry.ts` (FR-020 list) and `.github/workflows/ci.yml`: the gate ids and check names on `main` (expected 18 gates with `sandbox-paths`, 19 required checks, plus mission 029's changes), so the three new ids `pack-contents`, `release-readiness`, `release-workflow` and their check names "Pack contents", "Release readiness", "Release workflow" do not collide;
   - `gates/lib/sandbox-paths.ts`: the exported rule and the allowed-files list the pack-contents gate reuses (contract `pack-contents-gate.md`, rule `sandbox-path`); if the file is missing, stop before T004 and ask the operator (T016 and T018 depend on it);
@@ -69,7 +69,7 @@ can fail for it.
   - the commit `183b20f` resolves in the merged history (R-07).
 
   Commit `reviews/recheck.md` signed off. If any item shows a difference that changes a task, stop for the operator before T004: the difference and its effect go to the orchestrator as a multiple-choice question.
-- [ ] T003 Write `specs/030-release-v1/reviews/phase-0/tdd-exempt.md`: phase 0 merges `main` and rechecks documents, with no behaviour, so no test can fail for it. Commit it with T002's record.
+- [X] T003 Write `specs/030-release-v1/reviews/phase-0/tdd-exempt.md`: phase 0 merges `main` and rechecks documents, with no behaviour, so no test can fail for it. Commit it with T002's record.
 
 **Checkpoint**: `tdd-check.sh 0` reports `exempt`; `reviews/recheck.md` records no open difference.
 
