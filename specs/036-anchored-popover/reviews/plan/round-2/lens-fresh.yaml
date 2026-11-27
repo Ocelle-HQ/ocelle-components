@@ -1,0 +1,44 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "Limit search Escape precedence to fields that can clear"
+    evidence:
+      - artifact: "contracts/element.md:14 defers Escape for a populated native search field and closes on the next Escape from an emptied field. contracts/verification.md:27 proves the editable case."
+      - code: "Trusted Chromium 156.0.8078.4 Escape cleared a focused editable type=search, but a populated readonly type=search retained its value and focus. The WebKit floor's SearchInputType.cpp:140-154 branches to the base key handler when the element is not mutable. FR-004 requires Escape dismissal when the focused control has no action to handle it."
+    claim: |
+      A readonly search field is a focusable native control permitted in the default slot. The written exception
+      keeps yielding Escape while its value stays populated, making the popover impossible to dismiss with Escape
+      from that stop even though there is no competing clear action.
+    remedies:
+      - "Confine the precedence rule to an editable populated native search field with a native clear action, and prove with trusted input that a populated readonly search closes on the first Escape and restores the trigger. Keep the editable clear-then-close case."
+
+  - id: PLAN-FRESH-2-002
+    severity: 2
+    title: "Make the pinned WebKit runner reach the packaged fixture"
+    evidence:
+      - artifact: "contracts/verification.md:35-37 places WebKit in a pinned container and invokes the acceptance runner with the packaged fixture URL."
+      - code: "packages/elements/test/browser/serve.ts:126-132 starts the strict asset server on host loopback 127.0.0.1 and returns that URL. In a standard container network, the same address points into the container rather than at the host listener."
+    claim: |
+      The specified WebKit route reaches an unrelated loopback address if the packaged server starts on the host
+      and its returned URL is passed to the disposable container. Neither the contract nor quickstart specifies
+      where that listener runs relative to the browser or how the fixture's exact assets and policy reach it.
+    remedies:
+      - "Specify a runnable Linux host-network invocation for the pinned disposable runner so the browser can reach the host loopback fixture. Verify the exact fixture URL and CSP before browser interactions. Keep the host fixture listener bound to loopback."
+
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "Specify outside release when pointer capture changes the event path"
+    evidence:
+      - artifact: "contracts/element.md:16 requires the primary down/up pair outside the surface and uses composed paths. contracts/verification.md:31 proves an ordinary outside tap but does not discriminate capture from an outside hit."
+      - code: "In Chromium 156.0.8078.4, a trusted down on an outside control set pointer capture, pointer release occurred over an inside panel button, and pointerup still named only the outside target in its composed path. elementFromPoint at the same release coordinates identified the inside button. Pointer Events section 9.1 defines dispatch retargeting under capture."
+    claim: |
+      An event-path-only classifier can report both ends outside while the actual pointer releases inside the
+      popover. This admits a cross-boundary drag as outside dismissal, including controls using implicit touch
+      capture.
+    remedies:
+      - "Define the outside pair using the real hit boundaries even if capture retargets dispatch. Resolve a captured release through viewport hit testing and flat containment, and verify a trusted outside-to-inside captured drag keeps the panel open alongside the ordinary outside activation."
