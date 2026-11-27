@@ -44,7 +44,7 @@ function ownsCloseRequest(element: EventTarget): boolean {
 export class OcelleAnchoredPopover extends LitElement {
   static override properties: PropertyDeclarations = {
     label: { converter: (value: string | null) => value ?? "" },
-    placement: { type: String },
+    placement: {},
   };
 
   static override styles: CSSResultGroup = css`
