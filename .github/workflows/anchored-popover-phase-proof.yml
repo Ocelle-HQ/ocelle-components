@@ -8,14 +8,14 @@ permissions:
   contents: read
 
 env:
-  OCELLE_PROOF_HEAD: b8816eb9f192b0a34db9798d7bde0a85c5f8e58b
+  OCELLE_PROOF_HEAD: f871d4a1b6c1eaeab4ff706e5a2ae4faad5fc1ff
   OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
   OCELLE_PROOF_PHASE: '1'
 
 jobs:
-  mutation-diagnosis:
+  mutation-focus-tests:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -23,36 +23,23 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Read the full instrumented baseline diagnostic
+      - name: Run the restored product and native coverage tests
         run: |
           set -euo pipefail
-          receipt="$RUNNER_TEMP/ocelle-mutation-diagnosis"
+          receipt="$RUNNER_TEMP/ocelle-mutation-focus-tests"
           mkdir "$receipt"
           test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
-          selector='packages/elements/src/ocelle-anchored-popover.ts:211-240'
-          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --plan > "$receipt/plan.json"
-          jq -e --arg selector "$selector" '[.[].files] | index($selector) != null' "$receipt/plan.json"
-          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\nselector=%s\n' \
-            "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
-            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" "$selector" | tee "$receipt/identity.txt"
-          code=0
-          node --input-type=module - "$selector" <<'NODE' > "$receipt/stryker.log" 2>&1 || code=$?
-          import { spawnSync } from "node:child_process";
-          import { strykerEnv } from "./gates/lib/mutation/coverage.ts";
-          const selector = process.argv[2];
-          const result = spawnSync(process.execPath, [
-            "node_modules/@stryker-mutator/core/bin/stryker.js", "run", "stryker.elements.config.json",
-            "--mutate", selector, "--dryRunOnly",
-          ], { env: strykerEnv(process.env), stdio: "inherit" });
-          if (result.error) throw result.error;
-          process.exitCode = result.status ?? 2;
-          NODE
-          printf '%s\n' "$code" | tee "$receipt/exit.txt"
-          tail -120 "$receipt/stryker.log"
-          test "$code" = 0
+          printf 'head=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\n' "$OCELLE_PROOF_HEAD" \
+            "$(git rev-parse 'HEAD^{tree}')" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" \
+            | tee "$receipt/identity.txt"
+          pnpm exec vitest run --project elements --maxWorkers=1 \
+            --reporter=default --reporter=json --outputFile.json="$receipt/vitest.json" \
+            packages/elements/test/anchored-popover.test.ts \
+            packages/elements/test/anchored-popover-lifecycle.test.ts \
+            packages/elements/test/entry-anchored-popover.test.ts
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: ocelle-mutation-diagnosis-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ocelle-mutation-diagnosis
+          name: ocelle-mutation-focus-tests-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-mutation-focus-tests
           if-no-files-found: error
