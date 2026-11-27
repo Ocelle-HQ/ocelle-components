@@ -1,10 +1,10 @@
 ---
-analyzed_at: 2026-11-27T09:43:49Z
-head: 0214575541dd98a4d692936cf86f4762e06fb2b3
+analyzed_at: 2026-11-27T09:45:22Z
+head: 80ce29b80c97d14feafc143e0fd306e8c7a28de1
 critical: 0
-high: 1
+high: 0
 medium: 1
-low: 1
+low: 0
 coverage: 100
 ---
 
@@ -12,9 +12,13 @@ coverage: 100
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 | --- | --- | --- | --- | --- | --- |
-| I1 | Inconsistency | HIGH | `tasks.md:11–16,37–40,48`; `gates/lib/story-selection.ts:61–69` | T004 and T012 change test support files. Phases 1 and 2 omit the plain scope entries that keep canonical red and head replay focused when support files change. The selector therefore chooses the full test inventory, including unrelated integration tests that require hosted Visual infrastructure. | Give T001 and T010 ownership of their phase’s `test-scope.txt` and list the exact focused test files from T003–T005 and T011–T012 as plain entries, plus any real consumers of changed shared fixture support. Verify the returned selection at red and head. Keep the full hosted checks separately. |
-| U1 | Underspecification | MEDIUM | `tasks.md:12,14,16,31`; `packages/elements/test/browser/global-setup.ts:163–174`; `gates/lib/test-evidence.ts:264–270,343–359` | Phase 1 requires the strict fixture to bundle the new isolated module and to replay against the original pre-scaffold base. A missing entry during the shared Vite build can turn that replay into a fixture setup or navigation error. The replay’s missing-module allowance accepts only collection failures attributable to an exact scaffold-added module. | In T004, keep the shared build usable where the entry is absent. Make the named strict-fixture cases produce the same attributable assertion on base/scaffold, or an exact allowed collection error on base and the named assertion on scaffold. Require both replay forms in T006 and keep fixture construction errors invalid. |
-| U2 | Underspecification | LOW | `tasks.md:58–67`; Constitution V | The capture task records input and PNG provenance. It leaves the required reason for those baseline changes implicit in the pull request description. | In T026, add the reason for the four new story states and eight expected baselines to the authorized pilot PR description. |
+| U1 | Underspecification | MEDIUM | `tasks.md:14,16`; `gates/lib/test-evidence.ts:102–105,373–384`; `gates/test/test-evidence.test.ts:183–186` | T004 keeps the shared build usable on the original base. Its separate availability assertion would fail before loading the fixture on that base, then pass on the scaffold before a different behavior assertion fails. The replay requires the same recorded assertion source and occurrence, including any helper. A different failing assertion in the same named case is rejected. | Check availability before loading, feed the unavailable result or the observed behavior into one shared assertion on both revisions, and keep the assertion site identical. Alternatively use the exact recognized missing-module collection failure for the original base only and demonstrate the named behavior assertion on the scaffold. |
+
+### Recheck of prior findings
+
+- **I1 resolved.** T001 and T010 own their phase scope files and record exact runnable test paths. T006 and T013 inspect the red and head selections. With available plain entries, the selector keeps shared support changes scoped. Full hosted checks remain required.
+- **U1 partially resolved.** T004 avoids a global build failure and T006 rejects setup/navigation failures. The remaining check is exact assertion identity when both revisions reach a named test.
+- **U2 resolved.** T026 requires the pilot pull request description to explain the eight new baselines.
 
 ### Coverage summary
 
@@ -35,7 +39,7 @@ coverage: 100
 
 ### Constitution alignment
 
-No procedure authorizes dropping a required check or waiving test-first, CSP, native accessibility, or mutation proof. T017's four possible deferred collateral files match the sampler’s registered list, with local proof for all new behavior and their results recorded from full required CI. They are outside the joined red scope. U2 makes the existing baseline-description obligation explicit.
+No procedure authorizes dropping a required check or waiving test-first, CSP, native accessibility, or mutation proof. T017's four possible deferred collateral files match the sampler’s registered list, with local proof for all new behavior and their results recorded from full required CI. They are outside the joined red scope. T026 now makes the existing baseline-description obligation explicit.
 
 ### Unmapped tasks
 
@@ -52,4 +56,4 @@ None. The base pins, red and green receipts, and retained mutation route support
 
 ### Next actions
 
-Resolve I1 in the checklist before Phase 1. Add U1’s attributable fixture replay and U2’s baseline description to the existing tasks. The three phases and all protected checks stay in place.
+Clarify U1 in T004 and T006 before implementing the strict fixture. Keep the same three phases, all protected checks, and the separate browser-floor proof.
