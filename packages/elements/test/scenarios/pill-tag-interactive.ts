@@ -1158,6 +1158,50 @@ export const pillInteractiveScenarios: readonly Scenario[] = [
       tabs: [],
     },
   },
+  ((): Scenario => {
+    // Five pills: `s` static throughout, `b` interactive (button mode) and `l` a link (an `href`, no `interactive`)
+    // throughout, `p` static then made interactive, `q` interactive then made static. Each step changes an attribute
+    // on every pill, so each renders again; after each step every pill reports how many sheets its shadow root holds
+    // beyond the element's own (the distinct sheets over all five roots, less the one interactive host sheet, which
+    // `b` holds throughout) and its host's `display`, `inline-grid` only while the interactive sheet comes after the
+    // element's `inline-block` host rule (equal specificity).
+    const ids = ["s", "b", "l", "p", "q"] as const;
+    const steps: readonly (readonly [string, (id: string) => readonly (readonly [string, string | null])[]])[] = [
+      ["upgraded", () => []],
+      ['status="warning"', () => [["status", "warning"]]],
+      ['variant="badge"', () => [["variant", "badge"]]],
+      ["disabled set", () => [["disabled", ""]]],
+      ["disabled removed", () => [["disabled", null]]],
+      ["p made interactive, q made static", (id) => (id === "p" ? [["interactive", ""]] : id === "q" ? [["interactive", null]] : [])],
+      ['status="danger"', () => [["status", "danger"]]],
+      ['density="compact"', () => [["density", "compact"]]],
+      ['label="Mine filter"', () => [["label", "Mine filter"]]],
+    ];
+    const at = (modes: Record<(typeof ids)[number], "static" | "interactive">): Record<string, unknown> =>
+      Object.fromEntries(ids.map((id) => [id, modes[id] === "static" ? { extra: 0, display: "inline-block" } : { extra: 1, display: "inline-grid" }]));
+    const before = at({ s: "static", b: "interactive", l: "interactive", p: "static", q: "interactive" });
+    const after = at({ s: "static", b: "interactive", l: "interactive", p: "interactive", q: "static" });
+    const switched = steps.findIndex(([step]) => step.startsWith("p made"));
+    return {
+      name: "Edge cases, the host sheet held once: a static pill never holds the interactive host sheet, at its upgrade, after each re-render (status, variant, disabled, density, label changed) and after an interactive → static switch and the re-renders that follow; an interactive pill, in button and in link mode, holds it exactly once, after the element's own sheets (its host inline-grid), after its upgrade and each re-render; a static → interactive switch adds it once (data-model.md § interactive host sheet; plan decision 11; plants: the sheet adopted while static, the sheet adopted again on each render while held)",
+      run: async (driver) => {
+        await mount(driver, '<ocelle-pill-tag id="s" status="info">Mine</ocelle-pill-tag> <ocelle-pill-tag id="b" interactive status="info">Mine</ocelle-pill-tag> <ocelle-pill-tag id="l" href="#here" status="info">Mine</ocelle-pill-tag> <ocelle-pill-tag id="p" status="info">Mine</ocelle-pill-tag> <ocelle-pill-tag id="q" interactive status="info">Mine</ocelle-pill-tag><span id="here"></span>');
+        const read = async (): Promise<Record<string, unknown>> => {
+          const own = (await driver.sheets("ocelle-pill-tag")).distinct - 1;
+          const each: Record<string, unknown> = {};
+          for (const id of ids) each[id] = { extra: ((await driver.sheets(`#${id}`)).perRoot[0] ?? 0) - own, display: await driver.computed(id, "display") };
+          return each;
+        };
+        const observed: Record<string, unknown> = {};
+        for (const [step, change] of steps) {
+          for (const id of ids) for (const [name, value] of change(id)) await driver.setAttribute(id, name, value);
+          observed[step] = await read();
+        }
+        return observed;
+      },
+      expected: Object.fromEntries(steps.map(([step], index) => [step, index < switched ? before : after])),
+    };
+  })(),
   ...themes.flatMap(themed),
   ...themes.flatMap(forced),
 ];
