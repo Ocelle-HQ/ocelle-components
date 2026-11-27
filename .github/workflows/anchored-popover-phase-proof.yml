@@ -8,19 +8,14 @@ permissions:
   contents: read
 
 env:
-  OCELLE_PROOF_HEAD: 62cae58a5771b3c7325d7c7ae4c653fc4b474137
+  OCELLE_PROOF_HEAD: 2df1d9de7fb0df22063fe9a350ec24ebdd1763c3
   OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
   OCELLE_PROOF_PHASE: '1'
 
 jobs:
-  mutation-budget:
-    name: Full Mutation baseline (${{ matrix.minutes }}m)
+  red:
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
-    strategy:
-      fail-fast: false
-      matrix:
-        minutes: [30, 40]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -28,39 +23,31 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Run the full instrumented baseline and retain the original error
+      - name: Run and record the canonical phase red
         env:
-          OCELLE_BUDGET_MINUTES: ${{ matrix.minutes }}
+          SPECIFY_FEATURE_DIRECTORY: specs/036-anchored-popover
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+          OCELLE_RED_LABEL: 'fix-2'
         run: |
           set -euo pipefail
-          receipt="$RUNNER_TEMP/ocelle-mutation-budget"
+          receipt="$RUNNER_TEMP/ocelle-red-proof"
           mkdir "$receipt"
+          folder="specs/036-anchored-popover/reviews/phase-$OCELLE_PROOF_PHASE"
           test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
-          selector='packages/elements/src/ocelle-anchored-popover.ts:211-240'
-          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --plan > "$receipt/plan.json"
-          jq -e --arg selector "$selector" '[.[].files] | index($selector) != null' "$receipt/plan.json"
-          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\nselector=%s\nminutes=%s\n' \
+          test "$(cat "$folder/base.sha")" = "$OCELLE_PROOF_BASE"
+          git merge-base --is-ancestor "$OCELLE_PROOF_BASE" HEAD
+          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\n' \
             "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
-            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" "$selector" "$OCELLE_BUDGET_MINUTES" | tee "$receipt/identity.txt"
-          code=0
-          node --input-type=module - "$selector" "$OCELLE_BUDGET_MINUTES" <<'NODE' > "$receipt/stryker.log" 2>&1 || code=$?
-          import { spawnSync } from "node:child_process";
-          import { strykerEnv } from "./gates/lib/mutation/coverage.ts";
-          const [selector, minutes] = process.argv.slice(2);
-          if (!["30", "40"].includes(minutes)) throw new Error("Unexpected baseline budget");
-          const result = spawnSync(process.execPath, [
-            "node_modules/@stryker-mutator/core/bin/stryker.js", "run", "stryker.elements.config.json",
-            "--mutate", selector, "--dryRunOnly", "--dryRunTimeoutMinutes", minutes,
-          ], { env: strykerEnv(process.env), stdio: "inherit" });
-          if (result.error) throw result.error;
-          process.exitCode = result.status ?? 2;
-          NODE
-          printf '%s\n' "$code" | tee "$receipt/exit.txt"
-          tail -120 "$receipt/stryker.log"
-          test "$code" = 0
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" | tee "$receipt/identity.txt"
+          .specify/extensions/story/scripts/red.sh "$OCELLE_PROOF_PHASE" "$OCELLE_RED_LABEL" | tee "$receipt/red.json"
+          cp "$folder/red-$OCELLE_RED_LABEL.log" "$receipt/"
+          test -f "$folder/red-commits" && cp "$folder/red-commits" "$receipt/"
+          jq -e --arg head "$OCELLE_PROOF_HEAD" \
+            '.sha == $head and .tests_only and .red and .recorded and .exit_code == 1' "$receipt/red.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: ocelle-mutation-budget-${{ matrix.minutes }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ocelle-mutation-budget
+          name: ocelle-phase-red-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-red-proof
           if-no-files-found: error
+
