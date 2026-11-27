@@ -8,12 +8,51 @@ permissions:
   contents: read
 
 env:
-  OCELLE_PROOF_HEAD: e3741f239efb87a4ecdffd7fe408a7f034d47296
+  OCELLE_PROOF_HEAD: d6b4f289caf37c60091e6bd9d7af5eff87f01ae6
   OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
   OCELLE_PROOF_PHASE: '1'
 
 jobs:
-  red:
+  mutation-full-check:
+    name: Ordinary full Mutation on previously failing range
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.OCELLE_PROOF_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run the ordinary Mutation gate with the reviewed baseline budget
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/ocelle-ordinary-mutation"
+          mkdir "$receipt"
+          test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
+          test -z "$(git status --porcelain)"
+          jq -e '.dryRunTimeoutMinutes==45 and .vitest.related==false' stryker.elements.config.json
+          selector='packages/elements/src/ocelle-anchored-popover.ts:211-240'
+          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --plan > "$receipt/plan.json"
+          jq -e --arg selector "$selector" '[.[].files] | index($selector) != null' "$receipt/plan.json"
+          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\nselector=%s\n' \
+            "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" "$selector" | tee "$receipt/identity.txt"
+          code=0
+          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --files "$selector" \
+            > "$receipt/mutation.log" 2> "$receipt/mutation.stderr" || code=$?
+          printf '%s\n' "$code" > "$receipt/exit.txt"
+          cat "$receipt/mutation.log" "$receipt/mutation.stderr"
+          test "$code" = 0
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ocelle-ordinary-mutation-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-ordinary-mutation
+          if-no-files-found: error
+
+  mutation-budget-config-tests:
+    name: Hosted Mutation config contract
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -23,31 +62,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Run and record the canonical phase red
-        env:
-          SPECIFY_FEATURE_DIRECTORY: specs/036-anchored-popover
-          SPECIFY_FEATURE_NO_PERSIST: '1'
-          OCELLE_RED_LABEL: 'fix-2'
+      - name: Check the baseline setting and CI time budget
         run: |
           set -euo pipefail
-          receipt="$RUNNER_TEMP/ocelle-red-proof"
-          mkdir "$receipt"
-          folder="specs/036-anchored-popover/reviews/phase-$OCELLE_PROOF_PHASE"
           test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
-          test "$(cat "$folder/base.sha")" = "$OCELLE_PROOF_BASE"
-          git merge-base --is-ancestor "$OCELLE_PROOF_BASE" HEAD
-          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\n' \
-            "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
-            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" | tee "$receipt/identity.txt"
-          .specify/extensions/story/scripts/red.sh "$OCELLE_PROOF_PHASE" "$OCELLE_RED_LABEL" | tee "$receipt/red.json"
-          cp "$folder/red-$OCELLE_RED_LABEL.log" "$receipt/"
-          test -f "$folder/red-commits" && cp "$folder/red-commits" "$receipt/"
-          jq -e --arg head "$OCELLE_PROOF_HEAD" \
-            '.sha == $head and .tests_only and .red and .recorded and .exit_code == 1' "$receipt/red.json"
-      - if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: ocelle-phase-red-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ocelle-red-proof
-          if-no-files-found: error
-
+          jq -e '.dryRunTimeoutMinutes==45 and .vitest.related==false' stryker.elements.config.json
+          pnpm exec vitest run --project gates --maxWorkers=1 \
+            gates/test/vitest-config.test.ts gates/test/ci-workflow.test.ts
