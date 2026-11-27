@@ -7,6 +7,18 @@ const modules = import.meta.glob<{ OcelleAnchoredPopover: typeof OcelleAnchoredP
   { eager: true },
 );
 
+it("starts with a blank label and a disabled native standalone trigger", async () => {
+  const popover = document.createElement("ocelle-anchored-popover");
+  document.body.append(popover);
+  try {
+    await popover.updateComplete;
+    const trigger = popover.shadowRoot?.querySelector("button");
+    expect({ label: popover.label, disabled: trigger?.disabled }).toEqual({ label: "", disabled: true });
+  } finally {
+    popover.remove();
+  }
+});
+
 it("registers and opens the standalone anchored popover without registering sibling elements", async () => {
   const exported = modules["../src/ocelle-anchored-popover.ts"]?.OcelleAnchoredPopover;
   const popover = document.createElement("ocelle-anchored-popover");

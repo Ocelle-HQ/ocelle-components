@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands } from "vitest/browser";
 import type { OcelleAnchoredPopover } from "../src/ocelle-anchored-popover.ts";
 
@@ -57,8 +57,8 @@ function active(): Element | null {
   return item;
 }
 
-async function settle(): Promise<void> {
-  await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => { done(); })));
+async function settle(frame = window.requestAnimationFrame.bind(window)): Promise<void> {
+  await new Promise<void>((done) => frame(() => frame(() => { done(); })));
 }
 
 async function open(fixture: Fixture): Promise<void> {
@@ -188,6 +188,88 @@ describe("anchored popover interaction", () => {
     }).toEqual({ open: false, focus: true, hit: true, focusVisible: true });
   });
 
+  it("keeps the surface open when a host action moves focus outside without Tab", async () => {
+    const fixture = await mount();
+    fixture.first.addEventListener("click", () => { fixture.outside.focus(); }, { once: true });
+    await open(fixture);
+    expect(fixture.panel.matches(":popover-open")).toBe(true);
+    fixture.first.focus();
+    await commands.press("Enter");
+    await settle();
+    expect({ open: fixture.panel.matches(":popover-open"), focus: active() === fixture.outside })
+      .toEqual({ open: true, focus: true });
+  });
+
+  it("respects a Tab canceled by the host after it moves focus", async () => {
+    const fixture = await mount();
+    fixture.host.addEventListener("keydown", (event) => {
+      if (event.key !== "Tab") return;
+      fixture.outside.focus();
+      event.preventDefault();
+    });
+    await open(fixture);
+    expect(fixture.panel.matches(":popover-open")).toBe(true);
+    fixture.first.focus();
+    await commands.press("Tab");
+    await settle();
+    expect({ open: fixture.panel.matches(":popover-open"), focus: active() === fixture.outside })
+      .toEqual({ open: true, focus: true });
+  });
+
+  it("dismisses after Tab even when a host intercepts focusin, and stops scheduling frames", async () => {
+    const fixture = await mount();
+    const observeFrame = window.requestAnimationFrame.bind(window);
+    const requests = vi.spyOn(window, "requestAnimationFrame");
+    const listener = new AbortController();
+    const intercepted: boolean[] = [];
+    let requestsAtClose: number | undefined;
+    window.addEventListener("focusin", (event) => {
+      if (event.target !== fixture.outside) return;
+      intercepted.push(event.isTrusted);
+      event.stopPropagation();
+    }, { capture: true, signal: listener.signal });
+    fixture.panel.addEventListener("beforetoggle", (event) => {
+      if (event.newState === "closed") requestsAtClose = requests.mock.calls.length;
+    });
+    try {
+      await open(fixture);
+      expect(fixture.panel.matches(":popover-open")).toBe(true);
+      const requestsWhileOpen = requests.mock.calls.length;
+      await settle(observeFrame);
+      expect(requests.mock.calls.length).toBeGreaterThan(requestsWhileOpen);
+      fixture.last.focus();
+      await commands.press("Tab");
+      await settle(observeFrame);
+      expect({ intercepted, focus: active() === fixture.outside, open: fixture.panel.matches(":popover-open") })
+        .toEqual({ intercepted: [true], focus: true, open: false });
+      expect(requestsAtClose).toBe(requests.mock.calls.length);
+    } finally {
+      listener.abort();
+      requests.mockRestore();
+    }
+  });
+
+  it("preserves Tab focus when it enters a separate foreground dialog", async () => {
+    const fixture = await mount();
+    const foreground = document.createElement("dialog");
+    foreground.id = "foreground";
+    foreground.setAttribute("closedby", "closerequest");
+    foreground.innerHTML = '<button type="button">Continue</button>';
+    fixture.outside.before(foreground);
+    foreground.show();
+    await open(fixture);
+    expect(fixture.panel.matches(":popover-open")).toBe(true);
+    fixture.last.focus();
+    await commands.press("Tab");
+    await settle();
+    expect({ focus: active() === foreground.firstElementChild, popover: fixture.panel.matches(":popover-open") })
+      .toEqual({ focus: true, popover: true });
+    await commands.press("Escape");
+    await settle();
+    expect({ foreground: foreground.open, popover: fixture.panel.matches(":popover-open") })
+      .toEqual({ foreground: false, popover: true });
+  });
+
   it.each([false, true])("leaves a foreground modal to handle its own Escape (portaled %s)", async (portaled) => {
     const fixture = await mount();
     const modal = document.createElement("dialog");
@@ -208,6 +290,105 @@ describe("anchored popover interaction", () => {
     await commands.press("Escape");
     await settle();
     expect({ open: fixture.panel.matches(":popover-open"), focus: active() === fixture.trigger }).toEqual({ open: false, focus: true });
+  });
+
+  it.each([
+    { closedBy: "closerequest", leavesPopoverOpen: true },
+    { closedBy: "any", leavesPopoverOpen: true },
+    { closedBy: "none", leavesPopoverOpen: false },
+  ])("honors a nested nonmodal dialog's Escape behavior when closedby=$closedBy", async ({ closedBy, leavesPopoverOpen }) => {
+    const fixture = await mount();
+    const foreground = document.createElement("dialog");
+    foreground.id = "foreground";
+    foreground.setAttribute("closedby", closedBy);
+    foreground.innerHTML = '<button type="button" autofocus>Continue</button>';
+    fixture.host.append(foreground);
+    fixture.first.addEventListener("click", () => { foreground.show(); }, { once: true });
+    await open(fixture);
+    expect(fixture.panel.matches(":popover-open")).toBe(true);
+    fixture.first.focus();
+    await commands.press("Enter");
+    expect({ open: foreground.open, modal: foreground.matches(":modal"), focus: active() === foreground.firstElementChild })
+      .toEqual({ open: true, modal: false, focus: true });
+    await commands.press("Escape");
+    await settle();
+    expect({
+      dialog: foreground.open,
+      popover: fixture.panel.matches(":popover-open"),
+      focus: active() === (leavesPopoverOpen ? fixture.first : fixture.trigger),
+    }).toEqual({ dialog: !leavesPopoverOpen, popover: leavesPopoverOpen, focus: true });
+  });
+
+  it("lets a nested native auto popover handle its own Escape and focus return", async () => {
+    const fixture = await mount();
+    const foreground = document.createElement("div");
+    foreground.id = "foreground";
+    foreground.popover = "auto";
+    foreground.innerHTML = '<button type="button" autofocus>Continue</button>';
+    fixture.host.append(foreground);
+    fixture.first.addEventListener("click", () => { foreground.showPopover(); }, { once: true });
+    await open(fixture);
+    expect(fixture.panel.matches(":popover-open")).toBe(true);
+    fixture.first.focus();
+    await commands.press("Enter");
+    expect({ foreground: foreground.matches(":popover-open"), focus: active() === foreground.firstElementChild })
+      .toEqual({ foreground: true, focus: true });
+    await commands.press("Escape");
+    await settle();
+    expect({ foreground: foreground.matches(":popover-open"), popover: fixture.panel.matches(":popover-open"), focus: active() === fixture.first })
+      .toEqual({ foreground: false, popover: true, focus: true });
+  });
+
+  it("consumes Escape from a populated text field before it reaches the containing modal", async () => {
+    const fixture = await mount("Appearance", "✦", '<div id="editor-host"></div>');
+    const editorHost = required(fixture.host.querySelector("#editor-host"), "editor host");
+    const editorRoot = editorHost.attachShadow({ mode: "open" });
+    editorRoot.innerHTML = '<input type="text" value="Light">';
+    const editor = required(editorRoot.querySelector("input"), "text field");
+    const modal = document.createElement("dialog");
+    modal.id = "foreground";
+    const stage = required(document.getElementById("popover-fixture"), "popover fixture");
+    stage.before(modal);
+    modal.append(stage);
+    modal.showModal();
+    const keydowns: KeyboardEvent[] = [];
+    const bubbled: boolean[] = [];
+    const cancellations: boolean[] = [];
+    editor.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") keydowns.push(event);
+    });
+    modal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") bubbled.push(event.isTrusted);
+    });
+    modal.addEventListener("cancel", (event) => { cancellations.push(event.isTrusted); });
+    await open(fixture);
+    expect({ modal: modal.matches(":modal"), popover: fixture.panel.matches(":popover-open") })
+      .toEqual({ modal: true, popover: true });
+    editor.focus();
+    await commands.press("Escape");
+    await settle();
+    expect({
+      keydowns: keydowns.map(({ isTrusted, defaultPrevented }) => ({ isTrusted, defaultPrevented })),
+      value: editor.value,
+      bubbled,
+      cancellations,
+      modal: modal.open,
+      popover: fixture.panel.matches(":popover-open"),
+      focus: active() === fixture.trigger,
+    }).toEqual({
+      keydowns: [{ isTrusted: true, defaultPrevented: true }], value: "Light", bubbled: [], cancellations: [],
+      modal: true, popover: false, focus: true,
+    });
+    await open(fixture);
+    editor.focus();
+    await commands.press("Tab");
+    await settle();
+    expect({ modal: modal.open, popover: fixture.panel.matches(":popover-open"), focus: active() === fixture.outside })
+      .toEqual({ modal: true, popover: false, focus: true });
+    await commands.press("Escape");
+    await settle();
+    expect({ modal: modal.open, bubbled, cancellations })
+      .toEqual({ modal: false, bubbled: [true], cancellations: [true] });
   });
 
   it("preserves an already handled Escape in a projected action", async () => {
