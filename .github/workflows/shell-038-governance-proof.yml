@@ -14,12 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: d60640d51ac70e8c3190a071c19e180cb686fa17
+          ref: 5674de7c593158649b84587dd67ef1192d8e129b
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify the planner fix scope
+      - name: Verify resolved findings and open the fresh round
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "d60640d51ac70e8c3190a071c19e180cb686fa17"
+          test "$(git rev-parse HEAD)" = "5674de7c593158649b84587dd67ef1192d8e129b"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh planner 89ff9b749d72707006cf0aaa9d86f26e97cc72ad
+          tooling/speckit/bin/scope-check.sh verify d60640d51ac70e8c3190a071c19e180cb686fa17
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 1 and .confirmed == 7 and .verify == 1 and .unresolved == 0' <<< "$status"
+          git config user.name "Ocelle Spec Kit proof"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          next=$(.specify/extensions/squad/scripts/round.sh)
+          echo "$next"
+          jq -e '.round == 2 and .lenses == ["fresh"]' <<< "$next"
+          test "$(cat specs/038-shell-chrome-alignment/reviews/plan/round-2/base.sha)" = "5674de7c593158649b84587dd67ef1192d8e129b"
