@@ -202,6 +202,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     return fail("--shadow-related-elements needs element source only");
   }
   if (selected.length === 0) {
+    if (options.shadowRelatedElements) {
+      return fail("--shadow-related-elements needs --files to select at least one changed element source file; run --plan for the shards");
+    }
     io.out(`mutation: nothing to mutate: no package or gate source line changed since ${base}`);
     return 0;
   }
