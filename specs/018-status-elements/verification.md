@@ -16,7 +16,8 @@ close only when both missions have landed.
 ## 1. The required checks are green
 
 Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46012196150 is on head `c7511f60`, after the landing
-folds L-01 and L-03. Every check of `gates/gates.json` passed on attempt 1, each verified by its exact name:
+folds L-01 and L-03. The eighteen checks of `gates/gates.json` and Plants passed on attempt 1, each verified by its
+exact name:
 
 1. Typecheck
 2. Code lint
