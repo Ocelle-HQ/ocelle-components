@@ -44,17 +44,19 @@ function nextFrame(): Promise<void> {
 
 /** Record the native resources created synchronously by this activation. */
 function observeActivation(trigger: HTMLButtonElement) {
-  const addListener = document.addEventListener;
-  const requestFrame = window.requestAnimationFrame;
+  const addListener = document.addEventListener.bind(document);
+  const requestFrame = window.requestAnimationFrame.bind(window);
+  const addListenerDescriptor = Object.getOwnPropertyDescriptor(document, "addEventListener");
+  const requestFrameDescriptor = Object.getOwnPropertyDescriptor(window, "requestAnimationFrame");
   const signals: AbortSignal[] = [];
   const scheduled: number[] = [];
   const ran: number[] = [];
-  document.addEventListener = (type: string, listener: unknown, options?: boolean | AddEventListenerOptions) => {
-    Reflect.apply(addListener, document, [type, listener, options]);
+  document.addEventListener = (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
+    addListener(type, listener, options);
     if (type === "pointerdown" && typeof options === "object" && options.signal) signals.push(options.signal);
   };
   window.requestAnimationFrame = (callback) => {
-    const id = requestFrame.call(window, (time) => {
+    const id = requestFrame((time) => {
       ran.push(id);
       callback(time);
     });
@@ -64,8 +66,10 @@ function observeActivation(trigger: HTMLButtonElement) {
   try {
     trigger.click();
   } finally {
-    document.addEventListener = addListener;
-    window.requestAnimationFrame = requestFrame;
+    if (addListenerDescriptor === undefined) Reflect.deleteProperty(document, "addEventListener");
+    else Object.defineProperty(document, "addEventListener", addListenerDescriptor);
+    if (requestFrameDescriptor === undefined) Reflect.deleteProperty(window, "requestAnimationFrame");
+    else Object.defineProperty(window, "requestAnimationFrame", requestFrameDescriptor);
   }
   return { signals, scheduled, ran };
 }
