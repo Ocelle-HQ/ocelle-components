@@ -206,6 +206,8 @@ export class OcelleAnchoredPopover extends LitElement {
     if (event.defaultPrevented) return;
     const { defaultView: view } = this.ownerDocument;
     if (view === null) return;
+    // A canceled opening can leave tracking scheduled until the next frame.
+    this.#releaseTracking();
     this.#trigger?.setAttribute("aria-expanded", "true");
     const open: OpenSurface = { view, listeners: new AbortController(), frame: 0, outsidePointer: undefined };
     this.#open = open;
@@ -218,13 +220,17 @@ export class OcelleAnchoredPopover extends LitElement {
   }
 
   #stop(): void {
+    this.#releaseTracking();
+    this.#trigger?.setAttribute("aria-expanded", "false");
+  }
+
+  #releaseTracking(): void {
     const open = this.#open;
     this.#open = undefined;
     if (open !== undefined) {
       open.listeners.abort();
       open.view.cancelAnimationFrame(open.frame);
     }
-    this.#trigger?.setAttribute("aria-expanded", "false");
   }
 
   #follow = (): void => {
