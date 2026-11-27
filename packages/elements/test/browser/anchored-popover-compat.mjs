@@ -93,7 +93,10 @@ try {
   const profile = page.locator("#profile");
   const profileControl = profile.getByRole("button", { name: "Profile menu", exact: true });
   assert.equal(await profileControl.count(), 1);
-  await profileControl.click();
+  const profileBox = await profileControl.boundingBox();
+  assert.ok(profileBox, "the native profile button has a rendered box");
+  // Let the browser hit-test through the slotted initials to the native trigger.
+  await page.mouse.click(profileBox.x + profileBox.width / 2, profileBox.y + profileBox.height / 2);
   assert.equal(await profile.locator("[part=surface]").evaluate((element) => element.matches(":popover-open")), true);
   assert.deepEqual(errors, [], "no uncaught errors on the actual fixture");
   assert.deepEqual(failedRequests, [], "every fixture asset loads");
