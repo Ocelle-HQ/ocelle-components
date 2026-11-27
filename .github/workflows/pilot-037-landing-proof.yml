@@ -12,19 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 70fa9d6b3a9517fefc7e0f5776c1e53443ec6cc4
+          ref: b5902e6c5440925cac9f51aba212aa0fb93f0ab0
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: |
           set -euo pipefail
           export SPECIFY_FEATURE_DIRECTORY=ops/037-pilot-feedback SPECIFY_FEATURE_NO_PERSIST=1
-          test "$(git rev-parse HEAD)" = "70fa9d6b3a9517fefc7e0f5776c1e53443ec6cc4"
+          test "$(git rev-parse HEAD)" = "b5902e6c5440925cac9f51aba212aa0fb93f0ab0"
           test "$(git show --format= --name-only HEAD)" = gates/test/mutation-split.test.ts
           .specify/extensions/story/scripts/red.sh 1 fix-3 | tee "$RUNNER_TEMP/ocelle-red.json"
-          jq -e --arg sha "70fa9d6b3a9517fefc7e0f5776c1e53443ec6cc4" '.sha == $sha and .tests_only and .red and .recorded and .exit_code == 1' "$RUNNER_TEMP/ocelle-red.json"
+          jq -e --arg sha "b5902e6c5440925cac9f51aba212aa0fb93f0ab0" '.sha == $sha and .tests_only and .red and .recorded and .exit_code == 1' "$RUNNER_TEMP/ocelle-red.json"
           dir=ops/037-pilot-feedback/reviews/phase-1
-          test "$(tail -1 "$dir/red-commits")" = "fix-3 70fa9d6b3a9517fefc7e0f5776c1e53443ec6cc4"
+          test "$(tail -1 "$dir/red-commits")" = "fix-3 b5902e6c5440925cac9f51aba212aa0fb93f0ab0"
           printf '%s\n' OCELLE_RED_LOG_START
           cat "$dir/red-fix-3.log"
           printf '%s\n' OCELLE_RED_LOG_FINISH
