@@ -14,21 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 5674de7c593158649b84587dd67ef1192d8e129b
+          ref: 72645a36ab2108380cc3614534d85b50c764814f
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify resolved findings and open the fresh round
+      - name: Check fresh lens scope
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "5674de7c593158649b84587dd67ef1192d8e129b"
+          test "$(git rev-parse HEAD)" = "72645a36ab2108380cc3614534d85b50c764814f"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh verify d60640d51ac70e8c3190a071c19e180cb686fa17
-          status=$(.specify/extensions/squad/scripts/status.sh)
-          echo "$status"
-          jq -e '.round == 1 and .confirmed == 7 and .verify == 1 and .unresolved == 0' <<< "$status"
-          git config user.name "Ocelle Spec Kit proof"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          next=$(.specify/extensions/squad/scripts/round.sh)
-          echo "$next"
-          jq -e '.round == 2 and .lenses == ["fresh"]' <<< "$next"
-          test "$(cat specs/038-shell-chrome-alignment/reviews/plan/round-2/base.sha)" = "5674de7c593158649b84587dd67ef1192d8e129b"
+          tooling/speckit/bin/scope-check.sh lens f4b24d7cd272bd38d26a5f32ce40e9c0146d6e96
+          grep -Fx 'findings: []' specs/038-shell-chrome-alignment/reviews/plan/round-2/lens-fresh.yaml
