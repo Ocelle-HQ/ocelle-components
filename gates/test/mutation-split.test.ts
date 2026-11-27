@@ -165,6 +165,16 @@ describe("mutation gate: advisory related element tests", () => {
     expect(runStryker).not.toHaveBeenCalled();
   });
 
+  it.each([",", "   "])("rejects an empty advisory selection %j before Stryker", async (selection) => {
+    const fixture = tools({ [elementFile]: 4 }, killed);
+    const runStryker = vi.fn(fixture.stryker);
+    const result = await gate({ ...fixture, stryker: runStryker }, [grouped, related, "--files", selection]);
+    expect(result.code).toBe(2);
+    // The phase base rejects the whole flag before advisory mode exists.
+    expect(result.err[0]).toMatch(/unknown argument --shadow-related-elements|--files to select at least one changed element source file/);
+    expect(runStryker).not.toHaveBeenCalled();
+  });
+
   it("keeps the full required invocation and does not emit a shadow receipt by default", async () => {
     const fixture = tools({ [elementFile]: 4 }, killed);
     const runStryker = vi.fn(fixture.stryker);
