@@ -41,6 +41,14 @@ none there (for example no test file in a project).
 `--root <tmp> --range <base commit>..HEAD`, so the first record has a parent and the range holds exactly the
 records (plan squad round 3).
 
+`tracked-tree` (sandbox-paths; op 023, #60, 2026-11-20): the plant job copies the plant's `tree/` into an empty
+directory, replaces every `@SANDBOX_ROOT@` and `@SANDBOX_HOME_USER@` in any file with the sandbox path it stands for
+(built at run time, so no plant file holds a sandbox path), runs `git init`, and commits the result by
+`Plant Base <base@example.com>` when it holds a file; then it runs `pnpm run gate:sandbox-paths -- --root <tmp>`. It
+copies no configuration set and links no `node_modules`, since the gate reads only the root's tracked files. An empty
+or missing `tree/` gives a repository that tracks no file. Placeholders such as `<pnpm store>` are not markers and are
+copied as they are. Finding locations are paths below `tree/`.
+
 Every gate has at least one `fail`, one `pass` and one `error` (breaking) plant.
 
 | Gate | Plant form | Fail plants (FR-025) | Pass plants | Breaking plants (exit 2) |
@@ -56,6 +64,7 @@ Every gate has at least one `fail`, one `pass` and one `error` (breaking) plant.
 | csp | `repo-tree`: files at `packages/*/dist/` (tracked in the plant; the root `.gitignore`'s `packages/*/dist/` matches only root paths) | one per FR-021 construct (9); a `style` attribute after a newline in a template; `<svg/onload=...>`; indirect `(0, eval)(s)` | `<script src=...>` external module, `setTimeout(fn, 0)`, `retrieval(x)`, `isFunction(x)`; an inline script in `packages/elements/src/x.ts` (source, not built output) | a `.js` file that does not parse |
 | config-copies | `repo-tree`: the two copies at `.specify/extensions/story/story-config.yml` and `tooling/speckit/extensions/story/story-config.yml` | one setting differs; equal copies whose `test_pathspec` differs from FR-028's test code | two equal copies with FR-028's `test_pathspec` | `tooling/speckit/extensions/story/story-config.yml` missing |
 | signoff | `commit-repo`: `commits.txt` in the record format; the plant job builds a temporary repository on an empty base commit and runs the gate with `--root` and `--range <base commit>..HEAD` | no trailer; trailer not matching author | agent author signing off itself; unsigned merge commit | an empty range |
+| sandbox-paths | `tracked-tree`: files at any path, sandbox paths written with the markers (since op 023) | a test log with a store path on line 2 and a checkout path on line 5 (`fail-store-and-repo-root`); a Stryker report whose `projectRoot` and a `file://` URL name the checkout (`fail-file-url-in-json`); a file in the directory of two allowed files (`fail-allowed-name-elsewhere`); text files that a committed `.gitattributes` marks `-diff` and `binary` (`fail-gitattributes-diff`, operator round 4) | the near misses of the rule and the placeholders (`pass-near-misses`); sandbox paths only in the four allowed files (`pass-allowed-files`); one only in a binary file by content, a NUL byte (`pass-binary-file`) | no tracked file (`error-no-tracked-file`, cause `no tracked file`) |
 | plants (registry) | `gates.json` and `ci.yml` pair under `gates/plants/plants/<case>/` | a gate without a registry entry; a gate without a CI job | a matching pair | - |
 
 Identities in plants (sign-off records, and any author in a plant) are invented names on reserved domains (RFC 2606,

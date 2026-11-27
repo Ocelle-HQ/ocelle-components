@@ -61,7 +61,7 @@ export interface PhaseRequest {
 
 export interface PhaseTools {
   readonly root: string;
-  readonly git: (args: readonly string[]) => string;
+  readonly git: (args: readonly string[], input?: string) => string;
   readonly exists: (filename: string) => boolean;
   readonly read: (filename: string) => string;
   readonly write: (filename: string, content: string) => void;
@@ -111,9 +111,31 @@ export const storyFiles = {
   remove: (target: string, recursive = false): void => { rmSync(target, { force: true, recursive }); },
 };
 
-function git(args: readonly string[], cwd = root): string {
+function git(args: readonly string[], cwd = root, input?: string): string {
   // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
-  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  return execFileSync("git", args, { cwd, encoding: "utf8", input, stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"] });
+}
+
+/** The repository's redaction script (op 023, FR-007): the one copy of the sandbox-path rule's redaction. */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "exits 2 with a story-evidence: cause on stderr, and writes no log, red-commits or tdd-check.json, for red and check"
+const redactionScript = "tooling/speckit/bin/redact-sandbox-paths.sh";
+
+/**
+ * Passes a log or record through the redaction script, run from the repository root (stdin to stdout), so the focused
+ * path writes and prints only the op's placeholders, as the shell path does (operator round 4, O4-01). It throws when
+ * the script is missing or fails, before anything is written; the command then exits 2 with this cause.
+ */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "red.sh 1 fix-4 writes red-fix-4.log and prints a JSON line, each with <pnpm store> and <repo> and no line that matches the rule"
+function redact(text: string): string {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "red.sh 1 fix-4 writes red-fix-4.log and prints a JSON line, each with <pnpm store> and <repo> and no line that matches the rule"
+  try {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "red.sh 1 fix-4 writes red-fix-4.log and prints a JSON line, each with <pnpm store> and <repo> and no line that matches the rule"
+    return execFileSync(join(root, redactionScript), [], { cwd: root, input: text, encoding: "utf8", maxBuffer: 1 << 30, stdio: ["pipe", "pipe", "ignore"] });
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "exits 2 with a story-evidence: cause on stderr, and writes no log, red-commits or tdd-check.json, for red and check"
+  } catch {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "exits 2 with a story-evidence: cause on stderr, and writes no log, red-commits or tdd-check.json, for red and check"
+    throw new Error(`story-evidence: ${redactionScript} is missing or failed; it redacts the logs and records this runner writes`);
+  }
 }
 
 function trackedDiff(git: PhaseTools["git"], from: string, to: string, filter: string, patterns: readonly string[] = []): string[] {
@@ -183,25 +205,45 @@ export async function replayStoryWorker(root: string, inputPath: string, outputP
   writeJson(outputPath, result);
 }
 
-function scope(dir: string, tools: PhaseTools): { extra: readonly string[]; ciOnly: readonly string[] } {
+interface PhaseScope {
+  readonly extra: readonly string[];
+  readonly ciOnly: readonly string[];
+  readonly implementationStories: ReadonlySet<string>;
+}
+
+const implementationStoryPath = /^storybook\/stories\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*\.stories\.ts$/;
+
+function scope(dir: string, tools: PhaseTools): PhaseScope {
   const filename = join(dir, "test-scope.txt");
-  if (!tools.exists(filename)) return { extra: [], ciOnly: [] };
+  const implementationStories = new Set<string>();
+  if (!tools.exists(filename)) return { extra: [], ciOnly: [], implementationStories };
   const paths = tools.read(filename).split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== "" && !line.startsWith("#"));
   const extra = new Set<string>();
   const ciOnly = new Set<string>();
-  const entries = paths.map((line) => {
-    const directive = /^ci-only(?:\s|$)/.test(line);
-    return { target: directive ? ciOnly : extra, path: directive ? line.slice("ci-only".length).trim() : line };
-  });
-  if (entries.some(({ path }) => path === "" || isAbsolute(path) || path.startsWith("-") || path.split("/").includes(".."))) {
-    throw new Error("test-scope.txt must contain repository-relative test paths");
+  for (const line of paths) {
+    const directive = /^(ci-only|implementation-story)(?:\s|$)/.exec(line)?.[1];
+    const path = directive === undefined ? line : line.slice(directive.length).trim();
+    if (directive === "implementation-story") {
+      if (!implementationStoryPath.test(path)) {
+        throw new Error("implementation-story requires an exact .stories.ts path under storybook/stories/");
+      }
+      implementationStories.add(path);
+      continue;
+    }
+    if (path === "" || isAbsolute(path) || path.startsWith("-") || path.split("/").includes("..")) {
+      throw new Error("test-scope.txt must contain repository-relative test paths");
+    }
+    (directive === "ci-only" ? ciOnly : extra).add(path);
   }
-  for (const { target, path } of entries) target.add(path);
-  return { extra: [...extra], ciOnly: [...ciOnly] };
+  const conflict = [...implementationStories].find((path) => extra.has(path) || ciOnly.has(path));
+  if (conflict !== undefined) throw new Error(`conflicting test scope for implementation story: ${conflict}`);
+  return { extra: [...extra], ciOnly: [...ciOnly], implementationStories };
 }
 
-function selection(from: string, to: string, patterns: readonly string[], extra: readonly string[], tools: PhaseTools): Selection {
-  const changed = trackedDiff(tools.git, from, to, "AMT", patterns);
+function selection(from: string, to: string, patterns: readonly string[], phaseScope: PhaseScope, tools: PhaseTools): Selection {
+  const selected = (filter: string): string[] => trackedDiff(tools.git, from, to, filter, patterns)
+    .filter((file) => !phaseScope.implementationStories.has(file));
+  const changed = selected("AMT");
   const changedLines = Object.fromEntries(changed.map((file) => {
     const diff = tools.git(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--unified=0", from, to, "--", file]);
     const ranges = [...diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)].flatMap((match) => {
@@ -211,7 +253,7 @@ function selection(from: string, to: string, patterns: readonly string[], extra:
     });
     return [file, ranges];
   }));
-  return { changed, changedLines, deleted: trackedDiff(tools.git, from, to, "D", patterns), extra };
+  return { changed, changedLines, deleted: selected("D"), extra: phaseScope.extra };
 }
 
 function safeLog(value: string, tested: string, root: string): string {
@@ -342,6 +384,11 @@ function testsOnly(git: PhaseTools["git"], from: string, to: string, patterns: r
     `:(exclude)${feature}`]).length === 0;
 }
 
+function changedImplementationStory(git: PhaseTools["git"], from: string, to: string, stories: ReadonlySet<string>): string | undefined {
+  if (stories.size === 0) return undefined;
+  return trackedDiff(git, from, to, "ACDMRTUXB").find((file) => stories.has(file));
+}
+
 function ancestor(git: PhaseTools["git"], older: string, newer: string): boolean {
   try {
     git(["merge-base", "--is-ancestor", older, newer]);
@@ -349,6 +396,28 @@ function ancestor(git: PhaseTools["git"], older: string, newer: string): boolean
   } catch {
     return false;
   }
+}
+
+function matchesSharedMain(git: PhaseTools["git"], pin: string): boolean {
+  try {
+    return git(["merge-base", "--all", "HEAD", "refs/remotes/origin/main"]).trim() === pin;
+  } catch {
+    return false;
+  }
+}
+
+// Intern an unreferenced, deterministic replay snapshot. The historical red and scaffold records stay intact.
+function replayRevision(git: PhaseTools["git"], original: string, upstream: string | undefined): string {
+  if (upstream === undefined || ancestor(git, upstream, original)) return original;
+  let tree: string;
+  try {
+    tree = git(["merge-tree", "--write-tree", original, upstream]).trim();
+  } catch {
+    throw new Error(`cannot integrate pinned main ${upstream} into replay revision ${original}; resolve the replay conflict before proceeding`);
+  }
+  const identity = "Ocelle Spec Kit <spec-kit@ocelle.invalid> 0 +0000";
+  return git(["hash-object", "-t", "commit", "-w", "--stdin"],
+    `tree ${tree}\nparent ${original}\nparent ${upstream}\nauthor ${identity}\ncommitter ${identity}\n\nSpec Kit replay snapshot\n`).trim();
 }
 
 function records(dir: string, tools: PhaseTools): { name: string; sha: string }[] {
@@ -365,9 +434,11 @@ function records(dir: string, tools: PhaseTools): { name: string; sha: string }[
   });
 }
 
-export function emitStoryReport(value: object, filename: string | undefined, print: (message: string) => void): void {
-  if (filename !== undefined) writeJson(filename, value);
-  print(JSON.stringify(value));
+/** Writes the record (when a file is named) and prints it: the serialised JSON, redacted once, is used for both. */
+export function emitStoryReport(value: object, filename: string | undefined, print: (message: string) => void, redactText = (text: string) => text): void {
+  const text = redactText(JSON.stringify(value));
+  if (filename !== undefined) storyFiles.write(filename, `${text}\n`);
+  print(text);
 }
 
 export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Promise<void> {
@@ -377,13 +448,20 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   if (!/^\d+$/.test(phase) || !resolve(dir).startsWith(`${root}/`)) throw new Error("invalid phase path");
   tools.mkdir(dir);
   const current = head(git);
-  const { extra, ciOnly } = scope(dir, tools);
+  const phaseScope = scope(dir, tools);
+  const { ciOnly, implementationStories } = phaseScope;
   if (mode === "red") {
     if (label === undefined || !/^(?:phase|fix-\d+)$/.test(label)) throw new Error("invalid red label");
     const old = `${current}^`;
+    const changedStory = changedImplementationStory(git, old, current, implementationStories);
+    if (changedStory !== undefined) {
+      emit({ phase, label, sha: current, tests_only: false, red: false, recorded: false, exit_code: 2,
+        problem: `red commit changes a declared implementation story: ${changedStory}` });
+      return;
+    }
     const tests = testsOnly(git, old, current, patterns, feature);
     const log = join(dir, `red-${label}.log`);
-    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, extra, tools), expected: [], missingModules: [], log }, setup);
+    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, phaseScope, tools), expected: [], missingModules: [], log }, setup);
     const code = expectedStatus(result);
     const recorded = tests && code === 1;
     if (recorded) {
@@ -402,9 +480,17 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   }
   const base = revision(git, tools.read(baseFile).trim());
   const redRecords = records(dir, tools);
+  const upstreamFile = join(dir, "replay-upstream.sha");
+  const pin = tools.exists(upstreamFile) ? tools.read(upstreamFile).trim() : undefined;
+  const upstream = pin === undefined ? undefined : revision(git, pin);
+  if (pin !== undefined && (!matchesSharedMain(git, pin)
+    || redRecords.some(({ sha }) => ancestor(git, revision(git, sha), pin)))) {
+    throw new Error("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+  }
   const exemption = join(dir, "tdd-exempt.md");
   if (tools.exists(exemption) && redRecords.length === 0) {
     if (ciOnly.length > 0) throw new Error("ci-only scope requires recorded local proof");
+    if (implementationStories.size > 0) throw new Error("implementation-story scope requires recorded local proof");
     emit({ phase, status: "exempt", reason_file: exemption, head: current }, out);
     return;
   }
@@ -420,11 +506,17 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   const discovered = new Map<string, Assertion>();
   for (const { name, sha } of redRecords) {
     const red = revision(git, sha);
-    if (!ancestor(git, red, current) || !testsOnly(git, `${red}^`, red, patterns, feature)) {
+    const old = `${red}^`;
+    if (!ancestor(git, red, current) || !testsOnly(git, old, red, patterns, feature)) {
       problems.push(`red commit ${name} is outside HEAD or changes non-test files`);
       continue;
     }
-    const result = await runCheck({ mode: "red", revision: red, selection: selection(`${red}^`, red, patterns, extra, tools),
+    const changedStory = changedImplementationStory(git, old, red, implementationStories);
+    if (changedStory !== undefined) {
+      problems.push(`red commit ${name} changes a declared implementation story: ${changedStory}`);
+      continue;
+    }
+    const result = await runCheck({ mode: "red", revision: red, selection: selection(old, red, patterns, phaseScope, tools),
       expected: [], missingModules: [], log: join(dir, `check-red-${name}.log`) }, setup);
     const code = expectedStatus(result);
     if (code !== 1) problems.push(`red commit ${name}: ${result.evidence.problem ?? "no failing assertion"}`);
@@ -435,21 +527,23 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
     reds.push({ label: name, sha: red, exit_code: code, ...result });
   }
 
-  const finalSelection = selection(base, current, patterns, extra, tools);
+  const replayBase = replayRevision(git, base, upstream);
+  const replayScaffold = scaffold === undefined ? undefined : replayRevision(git, scaffold, upstream);
+  const finalSelection = selection(replayBase, current, patterns, phaseScope, tools);
   const headSelection = ciOnly.length === 0 ? finalSelection : { ...finalSelection, ciOnly };
   const expected = [...discovered.values()];
-  const missingModules = scaffold === undefined ? [] : trackedDiff(git, base, scaffold, "A");
+  const missingModules = replayScaffold === undefined ? [] : trackedDiff(git, replayBase, replayScaffold, "A");
   const settled = async (kind: Check["mode"], tested: string, name: string, assertions: readonly Assertion[]): Promise<CheckResult> => runCheck({
     mode: kind, revision: tested, overlay: kind === "head" ? undefined : current,
     selection: kind === "head" ? headSelection : finalSelection, expected: assertions,
     missingModules, log: join(dir, name),
   }, setup);
   const initialAssertions = phaseAssertions.length > 0 ? phaseAssertions : expected;
-  const onBase = await settled("base", base, "check-final-tests-on-base.log", initialAssertions);
-  const onScaffold = scaffold === undefined ? undefined : await settled("scaffold", scaffold, "check-final-tests-on-scaffold.log", initialAssertions);
+  const onBase = await settled("base", replayBase, "check-final-tests-on-base.log", initialAssertions);
+  const onScaffold = replayScaffold === undefined ? undefined : await settled("scaffold", replayScaffold, "check-final-tests-on-scaffold.log", initialAssertions);
   const fixes = [];
   for (const proof of fixProofs) {
-    const result = await settled("fix", proof.base, `check-final-tests-on-${proof.label}-base.log`, proof.expected);
+    const result = await settled("fix", replayRevision(git, proof.base, upstream), `check-final-tests-on-${proof.label}-base.log`, proof.expected);
     if (expectedStatus(result) !== 1) problems.push(`final tests on ${proof.label} base: ${result.evidence.problem ?? "no failing assertion"}`);
     fixes.push({ label: proof.label, base: proof.base, ...result });
   }
@@ -462,10 +556,15 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   if (headExit !== 0) problems.push(`final tests on HEAD: ${atHead.evidence.problem ?? "tests failed"}`);
   emit({
     phase, status: problems.length === 0 ? "pass" : "fail", base, head: current, red_commits: reds,
+    ...(upstream === undefined ? {} : { replay_upstream: upstream, replay_base: replayBase }),
     ...(ciOnly.length === 0 ? {} : { deferred_ci: ciOnly.map(collateralTestIdentity) }),
     final_tests_on_base_exit: baseExit, final_tests_on_scaffold_exit: scaffoldExit, head_exit: headExit, problems,
     focused: { base: onBase, scaffold: onScaffold, head: atHead, fixes },
   }, out);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 export async function runStoryCommand(args: readonly string[], tools: StoryCommandTools): Promise<void> {
@@ -480,13 +579,18 @@ export async function runStoryCommand(args: readonly string[], tools: StoryComma
       throw new Error("invalid focused story evidence arguments");
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (mode === "check" && arg !== undefined && phase !== undefined) {
-      emit({ phase, status: "fail", head: head(git), problems: [message] }, join(root, arg, "reviews", `phase-${phase}`, "tdd-check.json"));
-    } else if (mode === "red") {
-      emit({ phase, status: "fail", red: false, recorded: false, problem: message });
-    } else {
-      tools.failure(message);
+    const message = errorMessage(error);
+    try {
+      if (mode === "check" && arg !== undefined && phase !== undefined) {
+        emit({ phase, status: "fail", head: head(git), problems: [message] }, join(root, arg, "reviews", `phase-${phase}`, "tdd-check.json"));
+      } else if (mode === "red") {
+        emit({ phase, status: "fail", red: false, recorded: false, problem: message });
+      } else {
+        tools.failure(message);
+      }
+    } catch (unwritten) {
+      // A failure record that cannot be redacted is not written either (O4-01): its cause goes to the error output.
+      tools.failure(errorMessage(unwritten));
     }
   }
 }
@@ -494,19 +598,22 @@ export async function runStoryCommand(args: readonly string[], tools: StoryComma
 // Stryker disable next-line ConditionalExpression: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
 if (import.meta.main) {
   const checkTools: CheckTools = {
-    ...storyFiles, root, pid: process.pid, now: Date.now, key: checkKey, git, readJson, writeJson, rename: renameSync, writeLog: storyFiles.write,
+    ...storyFiles, root, pid: process.pid, now: Date.now, key: checkKey, git, readJson, writeJson, rename: renameSync,
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/story-redaction.test.ts "tdd-check.sh 1 after a green commit writes every check log and tdd-check.json, and prints it, with the placeholders and no line that matches the rule"
+    writeLog: (filename, log) => { storyFiles.write(filename, redact(log)); },
     // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     setup: (command, cwd) => runTool("bash", ["-c", command], cwd, environment),
     // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     worker: (cwd, input, output) => runTool(process.execPath, [path, "worker", input, output], cwd, environment),
   };
   // Stryker disable next-line BlockStatement,CallExpression: process stdout boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
-  const emit: PhaseTools["emit"] = (value, filename) => { emitStoryReport(value, filename, console.log); };
+  const emit: PhaseTools["emit"] = (value, filename) => { emitStoryReport(value, filename, console.log, redact); };
   const [, , ...args] = process.argv;
   await runStoryCommand(args, {
     root, git, emit,
     phase: (request) => checkPhase(request, {
-      ...storyFiles, root, git, emit, runCheck: (check, command) => runCheck(check, command, checkTools),
+      ...storyFiles, root, emit, git: (args, input) => git(args, root, input),
+      runCheck: (check, command) => runCheck(check, command, checkTools),
     }),
     // Stryker disable next-line BlockStatement: subprocess entry, checked by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     worker: async (input, output) => {

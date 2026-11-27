@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { css, json, names } from "../src/generate.ts";
+import { source as repositorySource } from "../src/source.ts";
 import { fixture, withAdded, withRecord } from "./fixture.ts";
 import { blocks, fontFaceOutline, fourBlocks } from "./stylesheet.ts";
 
@@ -157,6 +158,22 @@ describe("css()", () => {
       ["--ocelle-motion-base", "0ms"],
       ["--ocelle-motion-pause", "0ms"],
     ]);
+  });
+
+  // 018 (research.md R-04, R-10; tasks.md T015): the repository's own source, with the status indicator's pulse: its
+  // reduced-motion block holds exactly the source's four motion durations, motion-pulse among them, each 0ms, in
+  // source order; the spinner's angle, the easing and the tooltip's delay stay out.
+  it("sets exactly motion-fast, motion-base, motion-spin and motion-pulse to 0ms under reduced motion for the repository's source, and keeps motion-pulse at 1600ms outside it (018)", () => {
+    const sheet = blocks(css(repositorySource));
+    expect({ reduced: [...sheet.reducedMotion.entries()], root: sheet.root.get("--ocelle-motion-pulse") }).toEqual({
+      reduced: [
+        ["--ocelle-motion-fast", "0ms"],
+        ["--ocelle-motion-base", "0ms"],
+        ["--ocelle-motion-spin", "0ms"],
+        ["--ocelle-motion-pulse", "0ms"],
+      ],
+      root: "1600ms",
+    });
   });
 
   it("declares a derived token as var() of its source, alone or inside a larger value (FR-002)", () => {

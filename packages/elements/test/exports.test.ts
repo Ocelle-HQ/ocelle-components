@@ -11,15 +11,17 @@ import { describe, expect, it } from "vitest";
 // `OcelleEmptyState`, since 013 phase 3 (T040) `OcelleProgress`, and since 014 (phases 2 to 6) `OcelleListbox`,
 // `OcelleOption`, `OcelleTabs`, `OcelleTab`, `OcelleTabPanel`, `OcelleSegmentedChoice`, `OcelleSegment`,
 // `OcelleCopyField` and `OcelleLink`, since 020 (T006) `OcelleDisclosure` and (T026) `OcelleCodeBlock`, and since
-// 026 `OcelleFormTextarea`, since 019 the five data record elements, in the module namespace's sorted order, code-unit order (010 research R-11), and
+// 026 `OcelleFormTextarea`, since 019 the five data record elements, since 018 (tasks.md T013) `OcelleStatusIndicator`,
+// (tasks.md T025) `OcelleMetric` and (tasks.md T036) `OcellePillTag`, in the module namespace's sorted order, code-unit order (010 research R-11), and
 // nothing else at run time (the `IconName` type is erased; the overflow-region, lane-count, tier and list-detail
 // measurement modules, the overlays' internal base and the form controls' internal `FormControl` base class are
 // internal and not exported).
 describe("@ocelle/elements root exports", () => {
   it("exports exactly the public element classes in code-point order", async () => {
     const module: Record<string, unknown> = await import("../src/index.ts");
-    const names = ["OcelleActionRow", "OcelleAppShell", "OcelleBrandMark", "OcelleBreadcrumbs", "OcelleButton", "OcelleCard", "OcelleCodeBlock", "OcelleContextSidebar", "OcelleCopyField", "OcelleDataTable", "OcelleDialog", "OcelleDisclosure", "OcelleDrawer", "OcelleEmptyState", "OcelleEventTimeline", "OcelleEvidenceChain", "OcelleEvidenceStep", "OcelleFact", "OcelleFacts", "OcelleFormInput", "OcelleFormSelect", "OcelleFormTextarea", "OcelleIcon", "OcelleLink", "OcelleListDetail", "OcelleListbox", "OcelleNavItem", "OcelleNavPill", "OcelleNotice", "OcelleOption", "OcellePageHeader", "OcellePersonalRail", "OcelleProgress", "OcelleScroller", "OcelleSectionHeader", "OcelleSegment", "OcelleSegmentedChoice", "OcelleSkipLink", "OcelleTab", "OcelleTabPanel", "OcelleTabs", "OcelleTimelineEvent", "OcelleTooltip", "OcelleTopBar", "OcelleWorkflowBoard", "OcelleWorkflowLane", "OcelleWorkflowNode"];
-    expect(Object.keys(module)).toEqual(names);
+    const names = ["OcelleActionRow", "OcelleAppShell", "OcelleBrandMark", "OcelleBreadcrumbs", "OcelleButton", "OcelleCard", "OcelleCodeBlock", "OcelleContextSidebar", "OcelleCopyField", "OcelleDataTable", "OcelleDialog", "OcelleDisclosure", "OcelleDrawer", "OcelleEmptyState", "OcelleEventTimeline", "OcelleEvidenceChain", "OcelleEvidenceStep", "OcelleFact", "OcelleFacts", "OcelleFormInput", "OcelleFormSelect", "OcelleFormTextarea", "OcelleIcon", "OcelleLink", "OcelleListDetail", "OcelleListbox", "OcelleMetric", "OcelleNavItem", "OcelleNavPill", "OcelleNotice", "OcelleOption", "OcellePageHeader", "OcellePersonalRail", "OcellePillTag", "OcelleProgress", "OcelleScroller", "OcelleSectionHeader", "OcelleSegment", "OcelleSegmentedChoice", "OcelleSkipLink", "OcelleStatusIndicator", "OcelleStepIndicator", "OcelleTab", "OcelleTabPanel", "OcelleTabs", "OcelleTimelineEvent", "OcelleTooltip", "OcelleTopBar", "OcelleWorkflowBoard", "OcelleWorkflowCanvas", "OcelleWorkflowLane", "OcelleWorkflowNode"];
+    expect(Object.keys(module)).toStrictEqual(names);
+    expect(customElements.get("ocelle-step-indicator")).toBe(module.OcelleStepIndicator);
     expect(names.map((name) => typeof module[name])).toEqual(names.map(() => "function"));
     expect([customElements.get("ocelle-listbox"), customElements.get("ocelle-option")]).toEqual([module.OcelleListbox, module.OcelleOption]);
     expect([customElements.get("ocelle-tab"), customElements.get("ocelle-tab-panel"), customElements.get("ocelle-tabs")]).toEqual([module.OcelleTab, module.OcelleTabPanel, module.OcelleTabs]);

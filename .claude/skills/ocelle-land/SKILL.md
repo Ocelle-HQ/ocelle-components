@@ -8,7 +8,7 @@ user-invocable: true
 # /ocelle-land
 
 <!-- Adapted from the Spec Kitty era ocelle-land (itself spk-land-pr carried over to Ocelle repos) to the Spec Kit
-flow of this repository: triage records, story phases with red/green evidence, agent profiles, the fourteen required CI checks
+flow of this repository: triage records, story phases with red/green evidence, agent profiles, the required CI checks
 and the constitution. Where the two disagree, the constitution wins. -->
 
 You are the **maintainer orchestrator** landing one pull request. The operator merges; you never do.
@@ -35,8 +35,9 @@ $ARGUMENTS
 4. **Delegate roles to their agent profiles** (`.claude/agents/`): code to `implementer-ivan`, spec and plan changes
    to `planner-pim`, triage to `triage-tara`, reviews to `reviewer-renata`. Before each delegation make sure
    `git status --porcelain` is empty and note `BASE=$(git rev-parse HEAD)`. After it run
-   `tooling/speckit/bin/scope-check.sh <role> $BASE` (roles: `implement`, `planner`, `triage`, `review`,
-   `landing`). Profiles never push, merge or touch GitHub. If a profile was refused an action and asks you to do it,
+   `tooling/speckit/bin/scope-check.sh <role> "$BASE"` as a conditional (roles: `implement`, `planner`, `triage`,
+   `review`, `landing`). Exit 1 reports paths outside scope in JSON. Exit 2 means the check could not run.
+   Profiles never push, merge or touch GitHub. If a profile was refused an action and asks you to do it,
    do not: tell the operator.
 5. **Outward actions need the operator's yes** unless this session already authorized exactly that action: a push,
    a PR comment, a PR body edit, a label, a review request, a ready-for-review change, deleting a branch (always its
@@ -49,7 +50,9 @@ $ARGUMENTS
 8. **Personal data stays out**: no `/home/<user>` or `/root/` paths, personal email addresses, tokens or private
    keys in any commit, comment or PR body (FR-034). Check every staged diff:
    `git diff --cached | grep -nE '/home/[a-z]|/root/|PRIVATE KEY|[A-Za-z0-9._%+-]+@(gmail|outlook|hotmail|icloud)\.'`
-   must print nothing.
+   must print nothing. For the commit of step 2.9, read the check over its added lines only
+   (`git show HEAD --format= -U0 | grep '^+'` piped into the same `grep -nE`): its removed lines are the sandbox
+   paths the step takes out.
 9. **Operator decisions are records.** On a mission or op PR, an operator decision that changes the work is
    recorded as an operator round, `reviews/phase-N/round-M.md` with `reviewer: human:<login> (operator round,
    recorded by the orchestrator)`, the answer quoted verbatim, `verdict: changes_requested`. The planner turns it
@@ -103,7 +106,15 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
    `git merge --signoff origin/main` into the PR branch (rule 2). Resolve conflicts
    yourself only when they are mechanical; otherwise delegate to `implementer-ivan` with the conflict list. Run
    `pnpm install --frozen-lockfile` if the lockfile changed.
-3. **Classify every red check** on the latest run, by job, into four bins, with the run link:
+   Before replaying an existing phase on the integrated candidate, run `$S/base.sh N --with-main <merged-main-sha>`
+   and commit the resulting `replay-upstream.sha`. Use the exact integrated main SHA. Replay verifies that pin and
+   checks the final phase tests against snapshots that include the same main revision.
+3. **Classify every red check** on the current candidate's CI run, by job, with the run link. Start with the
+   failed job's artifacts. For Unit tests, download `unit-test-plan` and the failing `unit-test-shard-<index>`
+   from that run. Compare the planned and reported project/file identities and inspect runner, file, and test
+   errors in `result.json`. Use the GitHub workflow artifact download connector or `gh run download <run-id>`.
+   If the connector returns a file ID, download that file before opening the archive. If a receipt is missing,
+   inspect that shard's job log for where it stopped. Classify each failure:
    - **PR defect**: the change itself fails a gate. It needs a fold (step 5).
    - **Contract crossed**: the change breaks a gate contract, a spec FR or a constitution rule (for example a gate
      removed from `ci.yml`, `gates.json` and `registry.ts` together). It needs the operator's decision before any
@@ -114,6 +125,8 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
      fault. A cancelled shard is investigated, never re-run blindly (research.md R-08, operator decision R4-01 of
      mission 001): compare the shard's time with earlier runs of the same files, and if it is the code, it is a
      PR defect. Re-run a true flake once, with the operator's yes, and record both runs.
+
+   A `Sandbox paths` red on a mission or op branch from before op 023 is fixed by step 9, not by a fold.
 4. **Targeted local checks only.** CI runs everything. Locally run the gates for the surfaces the PR changed
    (`pnpm run gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:unit-tests` on changed
    tests, `gate:mutation -- --base <merge-base> --files <changed source>`, `gate:plants` when a gate or plant
@@ -187,6 +200,29 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
       (`git push --force-with-lease=<branch>:<old-head-sha> origin <branch>`), and whether to keep the pre-fold history
       on the remote as `archive/<branch>-prefold` (recommended: the review files name the old SHAs, and after a
       force-push GitHub stops keeping them). Never push without that answer.
+9. **Redact the merged tree** (mission and op PRs; operator decision 2026-11-20,
+   `triage/decisions/023-landing-redaction.md`; op 023 FR-012). Run it after step 8 and after the real
+   `git merge --signoff origin/main` that follows it, before the final push.
+   1. Skip the step when the merged tree has no `tooling/speckit/bin/redact-sandbox-paths.sh` (`main` from before
+      op 023), or when `pnpm run gate:sandbox-paths` exits 0.
+   2. Redact the files the gate finds, with the command of the one-time redaction and the gate's attribute-free
+      options (op 023 operator round 4), so that the file list and the gate agree when a `.gitattributes` exists:
+      `GIT_ATTR_NOSYSTEM=1 git -c core.attributesFile=/dev/null --attr-source=$(git hash-object -t tree /dev/null)
+      grep -lIzE '(^|[^A-Za-z0-9._~-])/(root|home/user)/[A-Za-z0-9._-]' -- . <one ':(exclude,literal)<path>'
+      per allowed file of gates/lib/sandbox-paths.ts> | xargs -0 tooling/speckit/bin/redact-sandbox-paths.sh
+      --in-place`.
+   3. Commit only those files: `chore(landing): redact sandbox paths in the merged tree`, signed off. The body cites
+      `triage/decisions/023-landing-redaction.md`.
+   4. Prove it: `tooling/speckit/bin/redact-sandbox-paths.sh --verify HEAD` and `pnpm run gate:sandbox-paths` must
+      both exit 0. If either fails, stop: do not push and do not hand-edit a file. Tell the operator which files
+      failed. A file whose name holds a sandbox path is such a case.
+   5. Rule 8 for this commit is read over the added lines only (rule 8). The removed lines are the paths the step
+      takes out.
+   6. The commit does not count as editing a review, verdict or check file (operator decision 2026-11-20), and no
+      review round follows it. `verdict.sh` and `tdd-check.sh` results stand: the step changes no test file and no
+      SHA record (`base.sha`, `scaffold.sha` and `red-commits` hold only hex SHAs and labels). If `main` is merged
+      again later, the step runs again as a new commit. The history fold never sees the commit, because the fold
+      runs before the last merge of `main` and refuses merge commits.
 
 ## 3. Deliverable hygiene
 
@@ -226,8 +262,11 @@ when the change is its own record.
 
 ## 4. Hand off
 
-1. Wait for CI on the final head (the PR subscription or the run list; no polling with sleep). All fourteen required checks
-   green, or every red honestly binned (step 2.3) and accepted by the operator.
+1. Wait for CI on the final candidate (the PR subscription or the run list). Record the PR head, base and
+   tested merge SHAs and match the CI run to that candidate. Read the `check` names from `gates/gates.json`
+   at the tested revision and include `Plants`. Fetch every page of jobs and verify each named check by its
+   exact name on that run. Every required check must succeed, or every red must be classified (step 2.3) and
+   accepted by the operator. A missing or skipped check does not establish a green result.
 2. **Retrospective** (mission and op PRs; on a contributor PR or a chore, only if the flow misbehaved). It runs
    here because the whole mission is now visible, CI included. Read the run summary, the reviews, the operator
    decisions, this landing pass and the notes `/ocelle-run` left for it, then:

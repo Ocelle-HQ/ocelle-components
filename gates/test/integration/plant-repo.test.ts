@@ -3,7 +3,7 @@ import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, re
 import { join, relative } from "node:path";
 import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildCommitRepo, buildMutationRepo, buildRepoTree } from "../../lib/plant-repo.ts";
+import { buildCommitRepo, buildMutationRepo, buildRepoTree, buildTrackedTree } from "../../lib/plant-repo.ts";
 import { baseEnv, cleanUp, repo, storybookInputs, tempDir } from "./workspace.ts";
 
 // gates/lib/plant-repo.ts builds the temporary repositories of the plant job (research.md R-10, contracts/plants.md)
@@ -222,7 +222,7 @@ describe("buildRepoTree: the Storybook workspace (006 research.md R-16)", () => 
     await buildRepoTree(fake, join(fixtures, "empty-plant"), into);
     expect(read(into, "storybook/baselines/fixture--story.light.png")).toBe("not a png, a fixture baseline\n");
     const repository = readdirSync(join(repo, "storybook/baselines"));
-    expect(repository).toHaveLength(766);
+    expect(repository).toHaveLength(838);
     expect(readdirSync(join(into, "storybook/baselines")).sort()).toEqual([...repository, "fixture--story.light.png"].sort());
     expect(repository.filter((name) => !readFileSync(join(into, "storybook/baselines", name)).equals(readFileSync(join(repo, "storybook/baselines", name))))).toEqual([]);
   });
@@ -507,4 +507,67 @@ describe("the configuration set of a repository root without some node_modules o
     expect(Object.fromEntries(mayBeAbsent.map((file) => [file, existsSync(join(tree, file))]))).toEqual(Object.fromEntries(mayBeAbsent.map((file) => [file, false])));
     expect(existsSync(join(tree, "stryker.elements.config.json"))).toBe(true);
   }, timeout);
+});
+
+// Op 023 (#60, plan.md *Plant form*, *Test approach* 3): a tracked-tree plant's tree/ is copied with its markers
+// expanded and committed as the only content of a new git repository; an empty or missing tree/ tracks nothing. The
+// plant is made here, so no file of the repository holds a sandbox path.
+describe("buildTrackedTree (op 023)", () => {
+  const root = "/" + "root";
+  const home = "/" + "home/user";
+
+  /** A plant directory with a plant.json and, unless `tree` is undefined, a tree/ holding these files. */
+  function trackedPlant(tree: Readonly<Record<string, string>> | undefined): string {
+    const plant = tempDir("tracked-plant");
+    writeFileSync(join(plant, "plant.json"), JSON.stringify({ expect: "pass", why: "w" }));
+    if (tree === undefined) return plant;
+    mkdirSync(join(plant, "tree"));
+    for (const [path, content] of Object.entries(tree)) {
+      mkdirSync(join(plant, "tree", path, ".."), { recursive: true });
+      writeFileSync(join(plant, "tree", path), content);
+    }
+    return plant;
+  }
+
+  it(
+    "commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree",
+    async () => {
+      const into = tempDir("tracked-tree");
+      const plant = trackedPlant({ "logs/check-head.log": "one\nstore @SANDBOX_ROOT@/.local/share/pnpm/store/v10\n", "notes/a b.md": "at @SANDBOX_HOME_USER@/ocelle-components <repo>\n" });
+      await buildTrackedTree(plant, into);
+      expect({
+        files: git(into, ["ls-files"]).split("\n"),
+        log: git(into, ["log", "--format=%an <%ae>|%s"]),
+        head: git(into, ["show", "HEAD:logs/check-head.log"]),
+        notes: git(into, ["show", "HEAD:notes/a b.md"]),
+        status: git(into, ["status", "--porcelain", "--ignored"]),
+        branch: git(into, ["rev-parse", "--abbrev-ref", "HEAD"]),
+      }).toEqual({
+        files: ["logs/check-head.log", "notes/a b.md"],
+        log: "Plant Base <base@example.com>|Plant base",
+        head: `one\nstore ${root}/.local/share/pnpm/store/v10`,
+        notes: `at ${home}/ocelle-components <repo>`,
+        status: "",
+        branch: "main",
+      });
+    },
+    timeout,
+  );
+
+  it.each([
+    { name: "an empty tree/", tree: {} },
+    { name: "no tree/", tree: undefined },
+  ])(
+    "gives a git repository with no tracked file for $name",
+    async ({ tree }) => {
+      const into = tempDir("tracked-tree");
+      await buildTrackedTree(trackedPlant(tree), into);
+      expect({ top: realpathSync(git(into, ["rev-parse", "--show-toplevel"])), files: git(into, ["ls-files"]), entries: readdirSync(into) }).toEqual({
+        top: realpathSync(into),
+        files: "",
+        entries: [".git"],
+      });
+    },
+    timeout,
+  );
 });

@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "Text files with a sandbox path that a committed .gitattributes marks -diff and binary: no attribute exempts a file, binary is decided by content alone (op 023, operator round 4, O4-02; FR-002).",
+  "findings": [
+    {
+      "location": "notes/hidden.log:1",
+      "rule": "sandbox-path",
+      "message": "holds a sandbox path; redact it with tooling/speckit/bin/redact-sandbox-paths.sh --in-place"
+    },
+    {
+      "location": "notes/hidden.txt:1",
+      "rule": "sandbox-path",
+      "message": "holds a sandbox path; redact it with tooling/speckit/bin/redact-sandbox-paths.sh --in-place"
+    }
+  ]
+}

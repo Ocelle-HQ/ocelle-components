@@ -32,7 +32,8 @@ import { define } from "../src/define.ts";
 import { setAnnouncerTimingForTests } from "../src/live.ts";
 import type { AnnouncerTiming } from "../src/live.ts";
 import type { Delays, Snapshot } from "./live-reading.ts";
-import { runningOf } from "./animations.ts";
+import { advanceOf, moveBeforeOf, runningOf } from "./animations.ts";
+import { findMatchesOf } from "./find.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { activeInnerOf, activePath, characterBoxes, clickElement, computedOf, copyElement, copySentinel, currentOf, dropSentinel, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, selectSentinel, selectShadowRun, sentinelId, shadowClientRects, startOrder, takeRecords } from "./page-side.ts";
@@ -1282,6 +1283,25 @@ export function inProcessDriver(): InProcessDriver {
       }
       return seen;
     },
+    animationStates: (id) => commands.animationStates(id),
+    seek: async (id, inner, ms) => {
+      await commands.seek(id, inner, ms);
+      await settle();
+    },
+    settleLayout: async () => {
+      await settle();
+      await commands.settleLayout();
+    },
+    overflows: (target) => commands.overflows(target),
+    advance: async (id, inner, ms) => {
+      advanceOf({ id, inner, ms });
+      await settle();
+    },
+    moveBefore: async (id, parentId) => {
+      moveBeforeOf({ id, parentId });
+      await settle();
+    },
+    findInPage: (text) => Promise.resolve(findMatchesOf(text)),
     findText: async (word) => {
       finds += 1;
       const url = location.href.replace(/#.*$/, "");

@@ -493,18 +493,22 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-link.ts",
       "src/ocelle-list-detail.ts",
       "src/ocelle-listbox.ts",
+      "src/ocelle-metric.ts",
       "src/ocelle-nav-item.ts",
       "src/ocelle-nav-pill.ts",
       "src/ocelle-notice.ts",
       "src/ocelle-option.ts",
       "src/ocelle-page-header.ts",
       "src/ocelle-personal-rail.ts",
+      "src/ocelle-pill-tag.ts",
       "src/ocelle-progress.ts",
       "src/ocelle-scroller.ts",
       "src/ocelle-section-header.ts",
       "src/ocelle-segment.ts",
       "src/ocelle-segmented-choice.ts",
       "src/ocelle-skip-link.ts",
+      "src/ocelle-status-indicator.ts",
+      "src/ocelle-step-indicator.ts",
       "src/ocelle-tab-panel.ts",
       "src/ocelle-tab.ts",
       "src/ocelle-tabs.ts",
@@ -512,8 +516,16 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-tooltip.ts",
       "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
+      "src/ocelle-workflow-canvas.ts",
       "src/ocelle-workflow-lane.ts",
       "src/ocelle-workflow-node.ts",
+    ]);
+    const [canvas] = modules.find((module) => module.path === "src/ocelle-workflow-canvas.ts")?.declarations ?? [];
+    expect(canvas?.events).toEqual([
+      { name: "ocelle-workflow-canvas-connection-request", description: "A proposed connection edit using stable step and outcome identifiers.", type: { text: "CustomEvent<WorkflowCanvasConnectionRequestDetail>" } },
+      { name: "ocelle-workflow-canvas-viewport-request", description: "A proposed pan, zoom, fit or named reveal viewport.", type: { text: "CustomEvent<WorkflowCanvasViewportRequestDetail>" } },
+      { name: "ocelle-workflow-canvas-position-request", description: "The requested absolute graph position of a step in author mode.", type: { text: "CustomEvent<WorkflowCanvasPositionRequestDetail>" } },
+      { name: "ocelle-workflow-node-select", description: "The original bubbling request from the native node action.", type: { text: "CustomEvent<{nodeId: string}>" } },
     ]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
@@ -1412,6 +1424,181 @@ describe("generate(root) on the repository's element source", () => {
 
   // 013 phase 3 (T048; contracts/elements.md § `ocelle-progress`): every list stated, every member described; the host
   // `aria-label` is observed, not declared (README § Element conventions).
+  // 018 (tasks.md T016; contracts/elements-status.md § `ocelle-status-indicator`): `tone` (the vocabulary, default
+  // "neutral", an attribute-backed accessor), `label` and `pulse` (reflected), each described; the parts dot and ring;
+  // no event, method, slot, CSS property or custom state, paired with the positive presence of `tone`; the host
+  // `aria-label` is not read, so it is not declared.
+  it('declares ocelle-status-indicator with tone (the five values, default "neutral"), label (string | undefined) and pulse (boolean | undefined), both reflected, the parts dot and ring, and no event, method, slot, CSS property or custom state, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [indicator] = modules.find((module) => module.path === "src/ocelle-status-indicator.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const tone = '"info" | "success" | "warning" | "danger" | "neutral"';
+    expect({ kind: indicator?.kind, name: indicator?.name, tagName: indicator?.tagName, customElement: indicator?.customElement, events: indicator?.events }).toEqual({
+      kind: "class",
+      name: "OcelleStatusIndicator",
+      tagName: "ocelle-status-indicator",
+      customElement: true,
+      events: [],
+    });
+    expect(described(indicator?.members)).toEqual([
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", reflects: true, described: true },
+      { kind: "field", name: "pulse", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "pulse", reflects: true, described: true },
+      { kind: "field", name: "tone", type: { text: tone }, default: '"neutral"', described: true },
+    ]);
+    expect(described(indicator?.attributes)).toEqual([
+      { name: "tone", type: { text: tone }, described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "pulse", fieldName: "pulse", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: indicator?.slots,
+      parts: named(indicator?.cssParts),
+      properties: indicator?.cssProperties,
+      states: indicator?.cssStates,
+      methods: ((indicator?.members ?? []) as Record<string, unknown>[]).filter((member) => member.kind === "method"),
+      ariaLabel: JSON.stringify(indicator).includes('"aria-label"'),
+    }).toEqual({
+      slots: [],
+      parts: [
+        { name: "dot", described: true },
+        { name: "ring", described: true },
+      ],
+      properties: [],
+      states: undefined,
+      methods: [],
+      ariaLabel: false,
+    });
+  });
+
+  // 018 (tasks.md T027; contracts/elements-status.md § `ocelle-metric`): `label` and `displayValue` (attribute
+  // `display-value`), reflected, and `layout` ("stack" | "row", default "stack", an attribute-backed accessor), each
+  // described; the parts label and value; no event, method, slot, CSS property or custom state, paired with the
+  // positive presence of `layout`.
+  it('declares ocelle-metric with label and displayValue (string | undefined, reflected, display-value), layout ("stack" | "row", default "stack"), the parts label and value, and no event, method, slot, CSS property or custom state, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [metric] = modules.find((module) => module.path === "src/ocelle-metric.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const layout = '"stack" | "row"';
+    expect({ kind: metric?.kind, name: metric?.name, tagName: metric?.tagName, customElement: metric?.customElement, events: metric?.events }).toEqual({
+      kind: "class",
+      name: "OcelleMetric",
+      tagName: "ocelle-metric",
+      customElement: true,
+      events: [],
+    });
+    expect(described(metric?.members)).toEqual([
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", reflects: true, described: true },
+      { kind: "field", name: "displayValue", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "display-value", reflects: true, described: true },
+      { kind: "field", name: "layout", type: { text: layout }, default: '"stack"', described: true },
+    ]);
+    expect(described(metric?.attributes)).toEqual([
+      { name: "layout", type: { text: layout }, described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "display-value", fieldName: "displayValue", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: metric?.slots,
+      parts: named(metric?.cssParts),
+      properties: metric?.cssProperties,
+      states: metric?.cssStates,
+      methods: ((metric?.members ?? []) as Record<string, unknown>[]).filter((member) => member.kind === "method"),
+    }).toEqual({
+      slots: [],
+      parts: [
+        { name: "label", described: true },
+        { name: "value", described: true },
+      ],
+      properties: [],
+      states: undefined,
+      methods: [],
+    });
+  });
+
+  // 018 (tasks.md T038; contracts/elements-status.md § `ocelle-pill-tag`): the static members, `status` (the five
+  // values, default "neutral"), `variant` ("pill" | "badge", default "pill") and `density` ("default" | "compact",
+  // default "default"), attribute-backed accessors; `interactive` and `disabled` (boolean, default false) and `href`,
+  // reflected; `label`, an attribute and a property, not reflected (FR-025); the default and `icon` slots; the part
+  // `pill`; each described. 018 phase 5 (tasks.md T048; FR-005, SC-006): the interactive surface, each described: the
+  // seven moved attributes of FR-030 in the contract's order and then their `data-ocelle-moved-*` mirrors (as 012's
+  // FR-053 declares `ocelle-button`'s), after the three attribute-backed ones; the methods `focus()` and `click()`; the
+  // events `click` (the native click) and `ocelle-pill-tag-activate` with its `detail` type; the custom states
+  // `pressed` and `current` and no other; the part `control` after `pill`. No CSS custom property.
+  it('declares ocelle-pill-tag with interactive and disabled (boolean, default false) and href (string | undefined), reflected, label (string | undefined, not reflected), status, variant and density (attribute-backed, defaults "neutral", "pill", "default"), the seven moved attributes and their mirrors, focus() and click(), the events click and ocelle-pill-tag-activate, the states pressed and current, the default and icon slots and the parts pill and control, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [pill] = modules.find((module) => module.path === "src/ocelle-pill-tag.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const status = '"info" | "success" | "warning" | "danger" | "neutral"';
+    const variant = '"pill" | "badge"';
+    const density = '"default" | "compact"';
+    const pillMoved = ["aria-label", "aria-labelledby", "aria-describedby", "aria-controls", "aria-current", "aria-pressed", "title"];
+    const members = (pill?.members ?? []) as Record<string, unknown>[];
+    expect({ kind: pill?.kind, name: pill?.name, tagName: pill?.tagName, customElement: pill?.customElement }).toEqual({
+      kind: "class",
+      name: "OcellePillTag",
+      tagName: "ocelle-pill-tag",
+      customElement: true,
+    });
+    expect(described(members.filter((member) => member.kind === "field"))).toEqual([
+      { kind: "field", name: "interactive", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "interactive", reflects: true, described: true },
+      { kind: "field", name: "href", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "href", reflects: true, described: true },
+      { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "status", type: { text: status }, default: '"neutral"', described: true },
+      { kind: "field", name: "variant", type: { text: variant }, default: '"pill"', described: true },
+      { kind: "field", name: "density", type: { text: density }, default: '"default"', described: true },
+    ]);
+    expect(members.filter((member) => member.kind === "method").map(({ kind, name, description }) => ({ kind, name, described: typeof description === "string" && description !== "" }))).toEqual([
+      { kind: "method", name: "focus", described: true },
+      { kind: "method", name: "click", described: true },
+    ]);
+    expect(described(pill?.attributes)).toEqual([
+      { name: "status", type: { text: status }, described: true },
+      { name: "variant", type: { text: variant }, described: true },
+      { name: "density", type: { text: density }, described: true },
+      ...pillMoved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...pillMoved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
+      { name: "interactive", fieldName: "interactive", type: { text: "boolean" }, default: "false", described: true },
+      { name: "href", fieldName: "href", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      events: described(pill?.events),
+      slots: named(pill?.slots),
+      parts: named(pill?.cssParts),
+      properties: pill?.cssProperties,
+      states: named(pill?.cssStates),
+    }).toEqual({
+      // The analyzer lists the event the source dispatches before the one only the JSDoc names (the native click).
+      events: [
+        { name: "ocelle-pill-tag-activate", type: { text: "CustomEvent<Record<string, never>>" }, described: true },
+        { name: "click", type: { text: "MouseEvent" }, described: true },
+      ],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      parts: [
+        { name: "pill", described: true },
+        { name: "control", described: true },
+      ],
+      properties: [],
+      states: [
+        { name: "pressed", described: true },
+        { name: "current", described: true },
+      ],
+    });
+  });
+
   it('declares ocelle-progress with value and max (number | undefined), valueText, label, showLabel, size ("compact" | undefined, reflected) and ground ("tinted" | undefined, reflected), no slot, the parts track, fill, label and value-text, and no event or CSS property, each described', async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];

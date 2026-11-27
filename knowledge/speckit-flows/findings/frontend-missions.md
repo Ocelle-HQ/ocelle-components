@@ -16,6 +16,7 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 
 # Efficiency signals (where effort went to rework)
 
+- **031 Storybook discovery**: the empty-index Plant and negative Axe fixture both depend on the story inventory. Updating them when adding the stories would have saved reruns. The negative fixture adds one story in both themes. [Verification](../../../specs/031-change-list-discovery/verification.md)
 - **003 spec checks**: 3 checks with 10, 2 and 1 blocking findings. Most of them were browser facts (`rem` rescaling
   under a compact root, colour-only links, grid track behaviour, tab stops in scroll boxes) that a pitfall list given
   to the spec author would have prevented.
@@ -203,6 +204,17 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   default option). Set the form value from the light-DOM state at connection, and test a submit and a reset before the
   first update.
 
+## Workflow canvas 029
+
+- Assert a trusted pointer hit and native capture before checking a silent gesture. A layout change can move the intended background out from under a fixed test coordinate while every negative assertion still passes. [Phase 4 review](../../../specs/029-workflow-canvas/reviews/phase-4/round-1.md)
+- Keep one visible relationship phrase in one text run when it is rendered as continuous text. In Chromium, separate text runs led Axe to report incomplete contrast near clipped SVG node controls. The single phrase preserved the visible names and geometry and cleared all the actual story-theme checks. [Phase 4 evidence](../../../specs/029-workflow-canvas/reviews/phase-4/implementation.md)
+- Exercise each native action that moves focus before measuring a controlled graph or viewport. In a trusted click, a host focus callback can remove a step, replace its position, accept a new viewport or redirect focus. Test that the action uses the rendered state, avoids a duplicate request, and preserves host focus. Cover scripted activation separately when it can request a viewport without taking focus. [Landing review](../../../specs/029-workflow-canvas/reviews/landing/round-1.md)
+
+## Step indicator and pane action footer 033
+
+- When a public element adds a custom-elements manifest module, inspect valid manifest Plant overlays that replace that generated manifest. Preserve the declared fixture differences and check every raw finding so an unrelated extra finding in the same file cannot pass unnoticed. [Phase 1 correction](../../../specs/033-pane-step-indicator/reviews/phase-1/round-1-fixes.md)
+- When Storybook and a strict-CSP fixture share an executable recipe host, check which Vitest projects default Stryker retains. Exercise the live host in a retained project as well as through both built entry points. Verify static pane data during browser coverage collection and test the Vitest project inventory. [Phase 2 mutation](../../../specs/033-pane-step-indicator/reviews/phase-2/mutation.md)
+
 # Candidates for a frontend profile or lens
 
 - **A `browser` lens for the plan squad.** It measures every CSS and accessibility claim in a real browser before
@@ -218,3 +230,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   find them.
 - **Subpixel text in pixel tests.** CI's Chromium antialiases text in colour. A pixel sampled a few px from a glyph, under a translucent ring or overlay, can differ by one channel unit from the local grayscale render. Keep neighbouring glyphs clear of sampled bands, and run such tests once under a subpixel fontconfig.
 - **Elements composed into a container that picks focus at load.** A Lit element's first render is deferred, so a parent such as an `ocelle-dialog` open at load can look for a focus target before the child's shadow DOM exists. A child that must be focusable at that moment renders at connect (`performUpdate()` at the end of `connectedCallback`).
+
+## Status elements 018
+
+- **Font-dependent pixel pins.** A pin that depends on line-box metrics, such as an icon-only pill's height and width, holds only where the real font loads. The in-process test page strips `@font-face`, so pin the pixels on the strict-CSP fixture and assert only token-derived facts in process (018 T044a).
+- **Stylesheet adoption across renders.** An extra update can hide an adoption bug: a sheet added on one render and removed on the next looks right when read at the wrong moment. Count the adopted sheets after every step, not only at the end (018 L-03).

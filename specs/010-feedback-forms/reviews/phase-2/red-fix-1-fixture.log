@@ -1,5 +1,5 @@
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ❯ |elements-browser| packages/elements/test/browser/notice.test.ts (78 tests | 7 failed | 55 skipped) 70065ms
    ❯ ocelle-notice on the strict-CSP fixture with the browser build (US1) (63)

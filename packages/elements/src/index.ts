@@ -7,7 +7,8 @@
 // `ocelle-button` and `ocelle-action-row`, since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and
 // `ocelle-progress`, since 014 `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`,
 // `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`, and since 020
-// `ocelle-disclosure` and `ocelle-code-block`, since 019 the table, timeline and evidence chain and their items, and exports their classes, in code-point order of name. The
+// `ocelle-disclosure` and `ocelle-code-block`, since 019 the table, timeline and evidence chain and their items, and since 018
+// `ocelle-status-indicator`, `ocelle-metric` and `ocelle-pill-tag`, and exports their classes, in code-point order of name. The
 // overflow-region, lane-count, tier and list-detail measurement modules, the overlays' internal base, the form
 // controls' base class (src/form-control.ts) and the icon drawing (src/icon-svg.ts) are not exported.
 export { OcelleActionRow } from "./ocelle-action-row.ts";
@@ -40,6 +41,7 @@ export type { IconName } from "./ocelle-icon.ts";
 export { OcelleLink } from "./ocelle-link.ts";
 export { OcelleListDetail } from "./ocelle-list-detail.ts";
 export { OcelleListbox } from "./ocelle-listbox.ts";
+export { OcelleMetric } from "./ocelle-metric.ts";
 export { OcelleNavItem } from "./ocelle-nav-item.ts";
 export { OcelleNavPill } from "./ocelle-nav-pill.ts";
 export type { NavPillItem } from "./ocelle-nav-pill.ts";
@@ -48,12 +50,14 @@ export type { NoticeSize, NoticeTone } from "./ocelle-notice.ts";
 export { OcelleOption } from "./ocelle-option.ts";
 export { OcellePageHeader } from "./ocelle-page-header.ts";
 export { OcellePersonalRail } from "./ocelle-personal-rail.ts";
+export { OcellePillTag } from "./ocelle-pill-tag.ts";
 export { OcelleProgress } from "./ocelle-progress.ts";
 export { OcelleScroller } from "./ocelle-scroller.ts";
 export { OcelleSectionHeader } from "./ocelle-section-header.ts";
 export { OcelleSegment } from "./ocelle-segment.ts";
 export { OcelleSegmentedChoice } from "./ocelle-segmented-choice.ts";
 export { OcelleSkipLink } from "./ocelle-skip-link.ts";
+export { OcelleStatusIndicator } from "./ocelle-status-indicator.ts";
 export { OcelleTab } from "./ocelle-tab.ts";
 export { OcelleTabPanel } from "./ocelle-tab-panel.ts";
 export { OcelleTabs } from "./ocelle-tabs.ts";
@@ -62,4 +66,18 @@ export { OcelleTopBar } from "./ocelle-top-bar.ts";
 export { OcelleTooltip } from "./ocelle-tooltip.ts";
 export { OcelleWorkflowBoard } from "./ocelle-workflow-board.ts";
 export { OcelleWorkflowLane } from "./ocelle-workflow-lane.ts";
+export { OcelleWorkflowCanvas } from "./ocelle-workflow-canvas.ts";
+export type {
+  WorkflowCanvasConnection,
+  WorkflowCanvasGraph,
+  WorkflowCanvasLayoutEntry,
+  WorkflowCanvasMode,
+  WorkflowCanvasNode,
+  WorkflowCanvasOutcome,
+  WorkflowCanvasPoint,
+  WorkflowCanvasViewport,
+  WorkflowCanvasViewportRequestDetail,
+} from "./ocelle-workflow-canvas.ts";
 export { OcelleWorkflowNode } from "./ocelle-workflow-node.ts";
+export { OcelleStepIndicator } from "./ocelle-step-indicator.ts";
+export type { StepIndicatorStep } from "./ocelle-step-indicator.ts";

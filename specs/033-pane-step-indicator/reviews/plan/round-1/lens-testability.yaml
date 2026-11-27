@@ -1,0 +1,46 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Keep the recipe absent on the pre-implementation replay"
+    evidence:
+      - artifact: "plan.md Implementation Phases and Structure name a built-story test and its .stories.ts implementation, but plan only the ci-only scope directive."
+      - code: ".specify/extensions/story/story-config.yml:16 classifies *.stories.ts as test files. gates/bin/story-evidence.ts:243-245 excludes a declared implementation-story from selection and lines 325-330 overlay changed test paths before replay. specs/031-change-list-discovery/reviews/phase-1/test-scope.txt:11-12 uses this declaration for the preceding built-story feature."
+    claim: |
+      The first assertion in each built-recipe case should fail immediately for an absent indexed story. Without the implementation-story declaration, final-on-base also receives the green recipe file. It can pass the missing-story assertion or fail during Storybook build because its new stylesheet was not overlaid. Neither result proves the same red.
+    remedies:
+      - "Pin the exact recipe story path as implementation-story in the phase 2 test-scope.txt. Start each recipe case with an expect on the real built index before navigating or querying the new fixture, so absent implementation gives a named assertion in both red and final-on-base."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Identify where strict runtime CSP is exercised"
+    evidence:
+      - artifact: "plan.md lines 26, 30 and 39 place strict CSP under the built recipe test and name one in-process element test, without a strict-CSP host."
+      - code: "storybook/test/integration/render.test.ts:14-18 documents that the Storybook iframe retains inline harness scripts and its integration server applies no CSP header. packages/elements/test/browser/serve.ts:9-15 serves the built elements under default-src 'none', script-src 'self', style-src 'self' and records violations from before navigation."
+    claim: |
+      Normal iframe success cannot show that the published indicator runs under strict CSP. Applying the strict header to the same iframe blocks the existing harness before the feature runs, yielding an infrastructure failure instead of feature evidence.
+    remedies:
+      - "Assign a focused elements-browser strict-CSP case for the actual built indicator and the recorded violation/request checks, with an explicit registration assertion before interacting. Keep the real Storybook recipe checks for same-origin requests and absence of forbidden inline markup under the fixture root. If the recipe host itself needs runtime CSP evidence, serve its same external implementation in a small strict-CSP page without the Storybook harness."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 2
+    title: "Demonstrate that enlarged text is actually rendered"
+    evidence:
+      - artifact: "plan.md Phase 2 lists 200% text geometry without a positive oracle for the size change or labels requiring more room."
+      - code: "packages/tokens/src/source.ts:164-172 uses rem font tokens, while packages/elements/src/ocelle-button.ts:157 and :184 applies those tokens to the controls. Existing package layout tests change root text size separately from host size at packages/elements/test/app-shell-layout.test.ts:127-131."
+    claim: |
+      An inherited body style or device scale change can leave the tokenized action text at its original CSS size. Overflow and focus checks can then pass without testing the resize requirement. An example whose short labels never need to wrap has the same coverage gap for the desktop enlarged-text case.
+    remedies:
+      - "At a fixed desktop viewport change root text sizing and assert that the actual current-step text and native action text double in computed CSS pixels. Use labels that make the footer grow under that setting and check document overflow, visible text, focus indicators and action order separately from the 320px case."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "Show the recipe's host behavior can fail independently of story registration"
+    evidence:
+      - artifact: "plan.md Phase 2 puts keyboard navigation and updated action labels in the story host and Verification lists changed-source mutation without a separate behavioral control for recipe code."
+      - code: "gates/lib/mutation/ranges.ts:22-42 excludes *.stories.ts and only selects TypeScript paths. vitest.mutation.config.ts:1-9 and :29-39 excludes the built-story integration project. A successful mutation run for the component therefore cannot demonstrate that the recipe assertions reject a registered story with broken host updates or broken footer CSS."
+    claim: |
+      The missing-index red catches an absent recipe but stops before navigation, geometry or focus is observed. Those later assertions are otherwise only seen on green, so a failure to observe the actual listener or responsive layout can escape the test.
+    remedies:
+      - "Keep the real built-story tests local and add a focused negative control on a temporary build with the story IDs intact. Show the host assertions reject a primary action that leaves the pane or step unchanged, and the responsive assertions reject a clipped fixed footer. Keep normal changed-source mutation for the indicator, and record the controls separately from it."

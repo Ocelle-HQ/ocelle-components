@@ -105,6 +105,40 @@ describe("Story command entry", () => {
     expect(tools.emit).not.toHaveBeenCalled();
   });
 
+  // Operator round 4, O4-01 (plan.md *Focused runner*): a record that cannot be redacted is not written; the cause goes
+  // to the error output (exit 2), and the command settles instead of rejecting.
+  it.each([
+    { args: ["check", feature, phase, setup, patterns] },
+    { args: ["red", feature, phase, setup, patterns, "phase"] },
+  ])("sends a failure to write the failure record to the error output ($args.0)", async ({ args }) => {
+    const tools = commandTools();
+    tools.phase.mockRejectedValueOnce(new Error("unavailable revision"));
+    tools.emit.mockImplementation(() => { throw new Error("story-evidence: the redaction failed"); });
+    const settled = await runStoryCommand(args, tools).then(() => "resolved", (error: unknown) => `rejected: ${String(error)}`);
+    expect({ settled, failures: tools.failure.mock.calls }).toEqual({ settled: "resolved", failures: [["story-evidence: the redaction failed"]] });
+  });
+
+  it("redacts the phase report once and writes and prints the same redacted JSON (O4-01)", () => {
+    const root = storyFiles.tempDir();
+    try {
+      const report = join(root, "tdd-check.json");
+      const printed: string[] = [];
+      const redactions: string[] = [];
+      const redact = (text: string): string => {
+        redactions.push(text);
+        return text.replaceAll("/sandbox/", "<home>/");
+      };
+      emitStoryReport({ phase, path: "/sandbox/x" }, report, (value) => { printed.push(value); }, redact);
+      expect({ file: storyFiles.read(report), printed, redactions }).toEqual({
+        file: '{"phase":"7","path":"<home>/x"}\n',
+        printed: ['{"phase":"7","path":"<home>/x"}'],
+        redactions: ['{"phase":"7","path":"/sandbox/x"}'],
+      });
+    } finally {
+      storyFiles.remove(root, true);
+    }
+  });
+
   it("preserves the caller environment and enables Vitest CI behavior", () => {
     const inherited = { CI: "false", OCELLE_CHROMIUM_PATH: "/opt/chromium", PATH: "/usr/bin" };
     expect(storyEnvironment(inherited)).toEqual({ ...inherited, CI: "true" });

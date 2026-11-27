@@ -151,7 +151,7 @@ findings:
     title: "Quickstart's manifest check runs git diff on a path that does not exist from the repository root"
     evidence:
       - artifact: "quickstart.md step 2 '`pnpm --filter @ocelle/elements run manifest && git diff --exit-code custom-elements.json`'"
-      - code: "Probe: from /home/user/ocelle-components, `git diff --exit-code custom-elements.json` -> 'fatal: ambiguous argument …', exit 128; the file is packages/elements/custom-elements.json."
+      - code: "Probe: from <repo>, `git diff --exit-code custom-elements.json` -> 'fatal: ambiguous argument …', exit 128; the file is packages/elements/custom-elements.json."
     claim: "The validation step fails for a reason unrelated to the manifest."
     remedies:
       - "Use `git diff --exit-code -- packages/elements/custom-elements.json`."

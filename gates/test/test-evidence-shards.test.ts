@@ -1,5 +1,6 @@
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { estimateTestSeconds, planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
+import { estimateTestSeconds, planTestShards, validTestPlan, verifyTestShard, verifyTestShards } from "../lib/test-evidence.ts";
 
 const revision = "a".repeat(40);
 const alpha = { project: "gates", file: "gates/test/alpha.test.ts" };
@@ -12,7 +13,10 @@ const betaResult = { ...beta, state: "passed", errors: [], durationMs: 1, tests:
 const firstShard = { revision, index: 0, errors: [], files: [alphaResult] };
 const secondShard = { revision, index: 1, errors: [], files: [betaResult] };
 const measuredFiles = [
-  { project: "gates-integration", file: "gates/test/integration/visual.test.ts", seconds: 2095 },
+  { project: "gates-integration", file: "gates/test/integration/visual.test.ts", seconds: 900 },
+  { project: "gates-integration", file: "gates/test/integration/visual-findings.test.ts", seconds: 900 },
+  { project: "gates-integration", file: "gates/test/integration/visual-cli.test.ts", seconds: 30 },
+  { project: "gates-integration", file: "gates/test/integration/visual-capture.test.ts", seconds: 880 },
   { project: "gates-integration", file: "gates/test/integration/axe.test.ts", seconds: 530 },
   { project: "elements-browser", file: "packages/elements/test/browser/drawer.test.ts", seconds: 349 },
   { project: "elements (chromium)", file: "packages/elements/test/drawer.test.ts", seconds: 332 },
@@ -23,7 +27,55 @@ const measuredFiles = [
   { project: "elements-browser", file: "packages/elements/test/browser/button.test.ts", seconds: 155 },
 ];
 
+const visualCasesByFile = {
+  "visual.test.ts": [
+    "captures the repository's <inventory> story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)",
+  ],
+  "visual-findings.test.ts": [
+    "keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2)",
+  ],
+  "visual-cli.test.ts": [
+    "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)",
+    "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)",
+    "reads the options after the -- that pnpm run passes on",
+    "exits 2 naming skopeo when PATH holds podman but no skopeo, and runs no podman command",
+    "exits 2 naming both engines when --remove-docker-image comes with docker alone, and runs no docker command",
+  ],
+  "visual-capture.test.ts": [
+    "writes nothing on an unchanged tree and says so (FR-008, analysis G1)",
+    "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)",
+    "captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012)",
+    "differs between two screenshots with reduced motion and animations left at Playwright's defaults, and agrees with the capture's options",
+  ],
+};
+
+function visualCaseNames(source: string): string[] {
+  return [...source.matchAll(/^\s*it\(\s*"([^"\n]+)"/gm)].map(([, name]) =>
+    (name ?? "").replace(/repository's \d+ story-themes/, "repository's <inventory> story-themes"),
+  );
+}
+
 describe("unit test shard plans", () => {
+  it("keeps the eleven Visual scenarios in independently planned integration files", () => {
+    const integration = new URL("./integration/", import.meta.url);
+    const files = readdirSync(integration)
+      .filter((name) => /^visual(?:-[a-z-]+)?\.test\.ts$/.test(name))
+      .map((name) => ({ name, entry: { project: "gates-integration", file: "gates/test/integration/" + name } }));
+    const cases = Object.fromEntries(files.map(({ name, entry }) => {
+      const expected = measuredFiles.find((row) => row.project === entry.project && row.file === entry.file);
+      const names = estimateTestSeconds(entry) === expected?.seconds
+        ? visualCaseNames(readFileSync(new URL(name, integration), "utf8"))
+        : [];
+      return [name, names];
+    }));
+    expect(cases).toEqual(visualCasesByFile);
+
+    const inventory = files.map(({ entry }) => entry);
+    const planned = planTestShards(revision, inventory, 4);
+    expect(planned.shards).toEqual(expect.arrayContaining(inventory.map((file) => [file])));
+    expect(planned.shards).toHaveLength(inventory.length);
+  });
+
   it.each([
     ["40 hexadecimal characters", revision],
     ["64 hexadecimal characters", "b".repeat(64)],
@@ -110,7 +162,7 @@ describe("unit test shard plans", () => {
     expect(plan.shards).toEqual([[build, browser], [stories, integration, node, alpha]]);
   });
 
-  it.each(measuredFiles)("uses rollout timing for $project/$file", ({ project, file, seconds }) => {
+  it.each(measuredFiles)("uses scheduled timing for $project/$file", ({ project, file, seconds }) => {
     expect(estimateTestSeconds({ project, file })).toBe(seconds);
   });
 
@@ -131,13 +183,19 @@ describe("unit test shard plans", () => {
     expect(estimateTestSeconds({ project: "elements (chromium)", file: "packages/elements/test/browser/drawer.test.ts" })).toBe(10);
   });
 
-  it("isolates the long visual integration test without losing inventory", () => {
+  it("places the expensive Visual files in different shards without losing inventory", () => {
     const measured = measuredFiles.map(({ project, file }) => ({ project, file }));
-    const visual = { project: "gates-integration", file: "gates/test/integration/visual.test.ts" };
+    const expensive = [
+      "gates/test/integration/visual.test.ts",
+      "gates/test/integration/visual-findings.test.ts",
+      "gates/test/integration/visual-capture.test.ts",
+    ];
     const inventory = [...measured, alpha, beta];
     const planned = planTestShards(revision, inventory, 6);
 
-    expect(planned.shards.find((shard) => shard.some(({ file }) => file === visual.file))).toEqual([visual]);
+    const placements = expensive.map((file) => planned.shards.findIndex((shard) => shard.some((entry) => entry.file === file)));
+    expect(placements).not.toContain(-1);
+    expect(new Set(placements).size).toBe(expensive.length);
     expect(planned.shards.flat()).toEqual(expect.arrayContaining(inventory));
     expect(planned.shards.flat()).toHaveLength(inventory.length);
     expect(planTestShards(revision, [...inventory].reverse(), 6)).toEqual(planned);
@@ -189,9 +247,57 @@ describe("unit test shard reports", () => {
       .toThrow(new Error(`unknown shard index ${String(index)}`));
   });
 
+  it("identifies missing and unexpected project/files alongside the worker error", () => {
+    const incomplete = { ...secondShard, errors: [error], files: [alphaResult] };
+    expect(() => verifyTestShards(manifest, [firstShard, incomplete], revision)).toThrow(
+      'shard 1 inventory differs from the plan; missing: ["gates","gates/test/beta.test.ts"]; unexpected: ["gates","gates/test/alpha.test.ts"]; reported errors: Error: runner failed',
+    );
+  });
+
+  it("identifies an extra copy of the same project/file", () => {
+    const duplicate = { ...secondShard, files: [betaResult, betaResult] };
+    expect(() => verifyTestShards(manifest, [firstShard, duplicate], revision)).toThrow(
+      'shard 1 inventory differs from the plan; unexpected: ["gates","gates/test/beta.test.ts"]',
+    );
+  });
+
+  it("lists missing tests without inventing unexpected files or runner errors", () => {
+    const missing = { ...secondShard, files: [] };
+    expect(() => verifyTestShard([alpha, beta], missing)).toThrow(new Error(
+      'shard 1 inventory differs from the plan; missing: ["gates","gates/test/alpha.test.ts"], ["gates","gates/test/beta.test.ts"]',
+    ));
+  });
+
+  it("lists every extra file without inventing missing files", () => {
+    expect(() => verifyTestShard([alpha], { ...secondShard, files: [alphaResult, betaResult, betaResult] }))
+      .toThrow(new Error('shard 1 inventory differs from the plan; unexpected: ["gates","gates/test/beta.test.ts"], ["gates","gates/test/beta.test.ts"]'));
+  });
+
+  it("reports all runner errors on one line and limits each detail", () => {
+    const runnerErrors = [
+      { name: "", message: "  " + "long  text ".repeat(51) + "end\n" },
+      { name: "Error", message: "\nworker    failed   " },
+    ];
+    const longText = ("long text ".repeat(51) + "end").slice(0, 500);
+    expect(() => verifyTestShard([beta], { ...secondShard, errors: runnerErrors }))
+      .toThrow(new Error(`shard 1 reported errors: ${longText}; Error: worker failed`));
+  });
+
+  it("bounds a large runner error summary and names the full receipt", () => {
+    const errors = Array.from({ length: 1_000 }, (_, index) => ({
+      name: "Error", message: `worker ${String(index)}: ${"x".repeat(600)}`,
+    }));
+    const errorMessage = /^shard 1 reported errors: Error: worker 0: x.{0,4096}992 runner errors omitted \(see result\.json\)$/;
+    expect(() => verifyTestShard([beta], { ...secondShard, errors })).toThrow(errorMessage);
+  });
+
+  it("refuses a malformed individual receipt before comparing its files", () => {
+    expect(() => verifyTestShard([beta], { ...secondShard, errors: null })).toThrow(new Error("malformed shard results"));
+  });
+
   it("rejects a runner error even when every file and test reports passed", () => {
     expect(() => verifyTestShards(manifest, [firstShard, { ...secondShard, errors: [error] }], revision))
-      .toThrow(new Error("shard 1 reported errors"));
+      .toThrow(new Error("shard 1 reported errors: Error: runner failed"));
   });
 
   it.each([

@@ -1,0 +1,36 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Read-only reviewers need a named equivalent for the connection paths"
+    evidence:
+      - artifact: "spec.md L56–62 and SC-004 require reviewers to follow named outcomes to destinations. plan.md L37 keeps edges decorative and names steps and outcomes separately. contracts/workflow-canvas.md L15 and L34–36 remove authoring controls and retain a graph-wide step reveal."
+      - code: "packages/elements/src/ocelle-workflow-node.ts L213–222 and L232–235 expose the source's outcome labels and description. The landed node has no destination input or outcome-to-destination relation."
+    claim: |
+      Under the proposed design, a read-only reviewer using assistive technology can read Approved on Initial review and find Publish and Revise by name, yet cannot determine which destination belongs to Approved. A global step picker and a list of source outcomes give the same information after swapping the two connections, while the decorative paths are absent from the accessibility tree.
+    remedies:
+      - "Specify the accessible and visibly named source/outcome/destination relationship in the read-only path, using the authoritative connection and the same duplicate-name context. Exercise following Approved and Rejected in the accessibility tree and with keyboard and tap, including a swapped destination and a clipped destination. An explicit follow can use the existing named reveal; reading the relation emits zero requests."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "In-bounds node actions can lose their visible focus to an overlapping node"
+    evidence:
+      - artifact: "plan.md L35 fixes the control size in screen pixels and tests focus eligibility by the action and its inset inside the viewport. data-model.md L13 permits one finite position per node without requiring distinct positions."
+      - code: "In a pinned Chromium 156.0.8078.4 strict-CSP scratch probe based on the retained real node fixture, setting the second foreignObject's x to the first's gave identical 170 by 44 action rectangles at x=18, y=39 inside a 450 by 230 SVG. Tab focused node A, and the screenshot of the action plus its focus inset was byte-identical before and after Tab. Clicking the action center selected node B, which painted over A."
+    claim: |
+      Host-supplied positions may coincide or become close after zoom while the node cards retain their screen size. Containment in the viewport then permits a keyboard stop with an entirely obscured focus indicator. A named reveal which only moves the viewport cannot separate coincident actions by translation.
+    remedies:
+      - "Define focus eligibility for overlapping controls as well as clipping. Preserve visible focus and a usable named path to each overlapping node, including a deterministic reveal for coincident nodes without replacing their stable identities. Prove the behavior with two in-bounds overlapping nodes at a reduced scale, actual focus and rendered indication, and the corresponding pointer target."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 3
+    title: "Clipped authoring affordances need the same focus boundary as node selection"
+    evidence:
+      - artifact: "plan.md L35–41 specifies visible focus and tabindex for native workflow-node actions and then introduces distinct on-map layout and outcome controls. The recovery rule addresses removal of an editor control and the plan does not say how a surviving authoring affordance leaves the sequential order when clipping hides it."
+      - code: "packages/elements/src/ocelle-workflow-node.ts L167 and L209 apply selectionTabIndex only to the node's own button. In the pinned Chromium strict-CSP fixture, adding a native Move step A button inside A's foreignObject, moving A to x=-600 and setting both workflow-node actions to selectionTabIndex=-1 still sent Tab to the move button with viewport bounds x=-592 to -502.7."
+    claim: |
+      A CSS or SVG clip does not remove native controls from the focus order. Ordinary native graph-local handles could therefore reintroduce invisible stops after the workflow-node selection controls are correctly filtered. The failure also affects a focused handle when a controlled pan or resize clips it without removing the editor.
+    remedies:
+      - "Apply visibility and focus recovery to every graph-local focusable action. Keep the equivalent named controls reachable outside the clipped region. Test Tab and Shift+Tab with authoring controls rendered outside the view and preserve visible focus when an active authoring control becomes clipped."

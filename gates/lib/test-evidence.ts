@@ -112,10 +112,26 @@ function sameInventory(expected: readonly TestFile[], actual: readonly TestFile[
   return JSON.stringify(fileKeys(expected)) === JSON.stringify(fileKeys(actual));
 }
 
+function unmatchedFiles(files: readonly TestFile[], other: readonly TestFile[]): string[] {
+  const counts = new Map<string, number>();
+  for (const key of fileKeys(other)) counts.set(key, (counts.get(key) ?? 0) + 1);
+  return fileKeys(files).filter((key) => {
+    const count = counts.get(key) ?? 0;
+    if (count === 0) return true;
+    counts.set(key, count - 1);
+    return false;
+  });
+}
+
 // Unit tests rollout run 45046420891 exposed a small group taking over two minutes per file.
 // These whole-second estimates use its six shard reports. Other and newly discovered files use project estimates.
+// The split Visual estimates apportion the unsplit 2709 s measured in run 45672824182. Each of the three
+// capture-heavy files performs at least one whole-repository capture. The CLI cases fail before capture.
 const measuredSeconds = new Map([
-  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual.test.ts" }), 2095],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual.test.ts" }), 900],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual-findings.test.ts" }), 900],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual-cli.test.ts" }), 30],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual-capture.test.ts" }), 880],
   [fileKey({ project: "gates-integration", file: "gates/test/integration/axe.test.ts" }), 530],
   [fileKey({ project: "elements-browser", file: "packages/elements/test/browser/drawer.test.ts" }), 349],
   [fileKey({ project: "elements (chromium)", file: "packages/elements/test/drawer.test.ts" }), 332],
@@ -188,6 +204,39 @@ function shardShape(value: unknown): value is ShardResult {
     && failuresShape(value.errors) && Array.isArray(value.files) && value.files.every(fileResultShape);
 }
 
+function passingShardTests(expected: readonly TestFile[], result: ShardResult): number {
+  const shownErrors = result.errors.slice(0, 8).map(({ name, message }) =>
+    [name, message].filter(Boolean).join(": ").replace(/\s+/g, " ").trim().slice(0, 500));
+  const omittedErrors = result.errors.length - shownErrors.length;
+  if (omittedErrors > 0) shownErrors.push(`${String(omittedErrors)} runner errors omitted (see result.json)`);
+  const errorSummary = shownErrors.join("; ");
+  if (!sameInventory(expected, result.files)) {
+    const missing = unmatchedFiles(expected, result.files);
+    const unexpected = unmatchedFiles(result.files, expected);
+    const details = [`shard ${String(result.index)} inventory differs from the plan`];
+    if (missing.length > 0) details.push(`missing: ${missing.join(", ")}`);
+    if (unexpected.length > 0) details.push(`unexpected: ${unexpected.join(", ")}`);
+    if (result.errors.length > 0) details.push(`reported errors: ${errorSummary}`);
+    throw new Error(details.join("; "));
+  }
+  if (result.errors.length > 0) throw new Error(`shard ${String(result.index)} reported errors: ${errorSummary}`);
+  let tests = 0;
+  for (const entry of result.files) {
+    const incomplete = entry.tests.find((test) => test.state !== "passed" || test.errors.length > 0);
+    if (entry.state !== "passed" || entry.errors.length > 0 || entry.tests.length === 0 || incomplete !== undefined) {
+      const state = incomplete?.state ?? entry.state;
+      throw new Error(`${entry.file} (${entry.project}) reported ${state}, errors, or no tests`);
+    }
+    tests += entry.tests.length;
+  }
+  return tests;
+}
+
+export function verifyTestShard(assigned: readonly TestFile[], result: unknown): { files: number; tests: number } {
+  if (!shardShape(result)) throw new Error("malformed shard results");
+  return { files: assigned.length, tests: passingShardTests(assigned, result) };
+}
+
 export function verifyTestShards(plan: unknown, results: unknown, revision: string): { files: number; tests: number } {
   if (!validTestPlan(plan, revision)) throw new Error("invalid plan inventory or revision");
   if (!Array.isArray(results) || !results.every(shardShape)) throw new Error("malformed shard results");
@@ -203,16 +252,7 @@ export function verifyTestShards(plan: unknown, results: unknown, revision: stri
     if (expected === undefined) throw new Error(`unknown shard index ${String(result.index)}`);
     if (seen.has(result.index)) throw new Error(`duplicate shard index ${String(result.index)}`);
     seen.add(result.index);
-    if (!sameInventory(expected, result.files)) throw new Error(`shard ${String(result.index)} inventory differs from the plan`);
-    if (result.errors.length > 0) throw new Error(`shard ${String(result.index)} reported errors`);
-    for (const entry of result.files) {
-      const incomplete = entry.tests.find((test) => test.state !== "passed" || test.errors.length > 0);
-      if (entry.state !== "passed" || entry.errors.length > 0 || entry.tests.length === 0 || incomplete !== undefined) {
-        const state = incomplete?.state ?? entry.state;
-        throw new Error(`${entry.file} (${entry.project}) reported ${state}, errors, or no tests`);
-      }
-      tests += entry.tests.length;
-    }
+    tests += passingShardTests(expected, result);
   }
   return { files: plan.inventory.length, tests };
 }

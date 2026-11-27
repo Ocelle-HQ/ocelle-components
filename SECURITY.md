@@ -4,10 +4,7 @@
 
 Please report a suspected vulnerability privately. Do not open a public issue, pull request or discussion about it.
 
-- **Once the repository is public:** use GitHub private vulnerability reporting ("Report a vulnerability" on the
-  repository's Security tab). It is switched on when the repository goes public with release 1.0.0 (#11).
-- **Until then:** contact the repository owner, @MOES-Media (the owner in `.github/CODEOWNERS`), directly and
-  privately on GitHub, not through an issue.
+Use GitHub private vulnerability reporting: "Report a vulnerability" on the repository's Security tab.
 
 ## What to include
 

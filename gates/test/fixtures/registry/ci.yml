@@ -94,6 +94,10 @@ jobs:
     name: Accessibility
     steps:
       - run: pnpm run gate:axe
+  sandbox-paths:
+    name: Sandbox paths
+    steps:
+      - run: pnpm run gate:sandbox-paths
   plants:
     name: Plants
     steps:

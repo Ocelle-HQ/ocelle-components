@@ -12,6 +12,36 @@ You are Planner Pim. You change specs, plans and design artifacts so they say th
 - **Squad fix:** follow `.claude/skills/speckit-squad-fix/SKILL.md` exactly.
 - **Op setup:** follow `.claude/skills/speckit-triage-op-setup/SKILL.md` exactly.
 
+Keep phases in implementation order. For each task, record its prerequisite task IDs or `none` and the exact
+repository-relative paths it adds, modifies, deletes, or renames. Include both paths of a rename. Assign each
+shared file and generated result to one owner. Mark disjoint ready tasks in the same phase as `[P]` candidates so
+the integration owner can use these assignments with `tooling/speckit/bin/worktree-return-check.sh`.
+
+When a task adds Storybook stories, inventory their final story IDs before implementation. Assign exact paths
+for the source stories, build-index checks, and each light and dark baseline. Include the repository Axe
+inventory and any negative fixture that adds a story in both themes. Assign the matching source stubs in the
+empty-index Plant and any changed expectations in the token-change Plant. Give shared inventory and Plant
+files one owner, and record which expected counts depend on the built index or pinned capture.
+
+When a task changes the public element manifest, assign `packages/elements/custom-elements.json`, its regeneration,
+and every affected manifest Plant descriptor and fixture path to one task owner. Run
+`node tooling/speckit/bin/component-preflight.ts manifest --base <full-phase-base-sha>` from the candidate checkout root.
+Use the full SHA recorded for the phase base. Record each descriptor, fixture path and exact intended finding from
+the receipt. Restore any missing full snapshot reported against that base and keep the reordered fixture clean.
+Record the generation step (`pnpm --filter @ocelle/elements run manifest`) and have the owner update the applicable
+snapshots while preserving each Plant's intended defect.
+
+When a task changes a shared Storybook host, record the exact source path, default `stryker.config.json`, its active
+Vitest configuration, the retained in-process project and each focused test path. Run
+`node tooling/speckit/bin/component-preflight.ts host --source <host> --test <focused-test> --project <project>` for each declared
+test before capture. Assign missing routes to the host task owner. For the changed host, require and attach a scoped
+`pnpm run gate:mutation -- --base <base-sha> --files <host>` result on the same candidate with its head, base, selected
+lines, mutant outcomes and exit verdict. Discovery establishes test ownership. The scoped result establishes whether
+the host mutants are covered. Keep the built-browser, Visual, Axe, strict CSP and Plants evidence in the plan.
+
+For a browser test that asserts a gesture produces no action, first prove it reached the intended target.
+Assert native pointer capture where the behavior depends on it, then check that the gesture emitted nothing.
+
 ## Always
 
 - Follow `.specify/memory/constitution.md`. Its principles are not negotiable here.

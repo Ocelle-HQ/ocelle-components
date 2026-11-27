@@ -25,6 +25,9 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
    change. If `base.sha` is missing, stop with an error: the phase was not started through the story workflow.
 3. Read `FEATURE_DIR/reviews/phase-<N>/tdd-check.json`, written by the automatic red/green check just before this
    review (run `.specify/extensions/story/scripts/tdd-check.sh <N>` yourself if it is missing or older than HEAD).
+   If it includes `replay_upstream` and `replay_base`, verify the pinned main SHA is integrated into this head.
+   Use `git diff <replay_base> HEAD` for the integrated review and retain `base.sha` as the historical anchor.
+   Rerun the check if the temporary replay snapshot is unavailable in your repository.
    - `fail`: each listed problem is a blocking finding.
    - `unavailable`: blocking unless this phase sets up the test runner or has no behaviour.
    - `exempt`: read `tdd-exempt.md`; if any test could have failed for this phase, the exemption is a blocking

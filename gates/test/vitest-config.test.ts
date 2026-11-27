@@ -1,14 +1,15 @@
-import { globSync, readFileSync } from "node:fs";
+import { existsSync, globSync, readFileSync } from "node:fs";
 import { matchesGlob } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import base from "../../vitest.config.ts";
 import mutation from "../../vitest.mutation.config.ts";
 import mutationElements from "../../vitest.mutation.elements.config.ts";
+import type { Run } from "../lib/cli.ts";
 
 // The Vitest projects and the mutation runs (002 contracts/gates.md § Mutation, research.md R-03 *Mutation path*;
-// PLAN-FRESH-2-002): vitest.mutation.config.ts drops exactly the projects whose tests start tools, a browser or a
-// Storybook build, and, resolving every project's include and exclude against the repository's test files, each test
+// PLAN-FRESH-2-002): vitest.mutation.config.ts drops the fixture projects that launch tools or a separate browser,
+// and the element projects run in their own mutation configuration. Resolving every project's paths, each test
 // file belongs to exactly one project, so none sits both in a project Stryker runs and in one it excludes. The check
 // fails if the tokens project's browser exclude or the gates project's integration exclude is removed.
 interface Project {
@@ -26,6 +27,10 @@ function projectsOf(config: typeof base): Project[] {
 }
 
 const repo = fileURLToPath(new URL("../..", import.meta.url));
+const paneFooterSource = "storybook/stories/pane-action-footer.ts";
+const paneFooterBrowserTest = "storybook/test/unit/browser/pane-action-footer.test.ts";
+const paneFooterBuiltTest = "storybook/test/integration/pane-action-footer.test.ts";
+const retainedProject = "storybook-browser";
 const all = projectsOf(base);
 const kept = projectsOf(mutation);
 const keptElements = projectsOf(mutationElements);
@@ -72,7 +77,8 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
   });
 
   // 008 plan decision 25, research.md R-15 (operator decision 2026-11-15): the elements configuration alone raises
-  // Stryker's dry-run limit to 30 minutes; the per-mutant limits and stryker.config.json stay at Stryker's defaults.
+  // Stryker's dry-run limit, now 45 minutes (specs/018-status-elements/reviews/operator-landing.md L-01); the
+  // per-mutant limits and stryker.config.json stay at Stryker's defaults.
   it("is stryker.config.json with its own Vitest config and its own report file", () => {
     const read = (path: string): Record<string, unknown> => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8")) as Record<string, unknown>;
     const general = read("stryker.config.json");
@@ -80,7 +86,7 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
       ...general,
       vitest: { configFile: "vitest.mutation.elements.config.ts", related: false },
       jsonReporter: { fileName: "reports/mutation/mutation-elements.json" },
-      dryRunTimeoutMinutes: 30,
+      dryRunTimeoutMinutes: 45,
     });
     expect(general.vitest).toEqual({ configFile: "vitest.mutation.config.ts", related: false });
     expect(Object.keys(general)).not.toContain("dryRunTimeoutMinutes");
@@ -88,6 +94,16 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
 });
 
 describe("the Vitest projects", () => {
+  it("runs in-process Storybook recipe tests in Chromium in both the normal and mutation suites", () => {
+    const owner = (projects: readonly Project[]) => projects.filter((project) => inProject(project, paneFooterBrowserTest)).map(({ name }) => name);
+    expect({ normal: owner(all), mutation: owner(kept), elementMutation: owner(keptElements) }).toEqual({
+      normal: ["storybook-browser"], mutation: ["storybook-browser"], elementMutation: [],
+    });
+    const browser = base.test?.projects?.find((project) =>
+      typeof project === "object" && "test" in project && project.test.name === "storybook-browser");
+    expect(browser).toMatchObject({ test: { browser: { enabled: true, headless: true, instances: [{ browser: "chromium" }] } } });
+  });
+
   it("put each test file of the repository in exactly one project", () => {
     const owners = Object.fromEntries(testFiles.map((path) => [path, all.filter((project) => inProject(project, path)).map((project) => project.name)]));
     const notOne = Object.fromEntries(Object.entries(owners).filter(([, names]) => names.length !== 1));
@@ -135,8 +151,9 @@ describe("the Vitest projects", () => {
   // device and elements-touch in a context with hasTouch; both register the same commands, 011's document readers
   // (research.md R-13) and 012's press, hover, pointer, axState and axe (012 research.md R-11) among them, and the
   // live-region capture's liveStart and liveStop (specs/010-feedback-forms contracts/testing.md § Live-region capture;
-  // the landing's second merge of main), and since 014 (research.md R-07, R-11) axStates, axUpdatesStart and
-  // axUpdatesStop.
+  // the landing's second merge of main), since 014 (research.md R-07, R-11) axStates, axUpdatesStart and
+  // axUpdatesStop, and since 018 (research.md R-11, contracts/checks.md § Test harness) animationStates, seek,
+  // settleLayout and overflows.
   it("run elements and elements-touch in browser mode at 1280 × 800, only elements-touch with hasTouch, with the same commands", () => {
     const browser = (name: string) => {
       const project = (base.test?.projects ?? []).find((each) => (each as { test?: { name?: unknown } }).test?.name === name) as
@@ -150,7 +167,7 @@ describe("the Vitest projects", () => {
         commands: Object.keys(options?.commands ?? {}).sort(),
       };
     };
-    const commands = ["activeElement", "axState", "axStates", "axTree", "axUpdatesStart", "axUpdatesStop", "axe", "emulateForcedColors", "emulateReducedMotion", "hover", "liveStart", "liveStop", "pointer", "pointerPath", "press", "scrollWidth", "textBoxes", "touchTap"];
+    const commands = ["activeElement", "animationStates", "axState", "axStates", "axTree", "axUpdatesStart", "axUpdatesStop", "axe", "emulateForcedColors", "emulateReducedMotion", "hover", "liveStart", "liveStop", "overflows", "pointer", "pointerPath", "press", "scrollWidth", "seek", "settleLayout", "textBoxes", "touchTap"];
     expect({ elements: browser("elements"), touch: browser("elements-touch") }).toEqual({
       elements: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: false, commands },
       touch: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: true, commands },
@@ -197,5 +214,96 @@ describe("the Vitest projects", () => {
     const both = testFiles.filter((path) => kept.some((project) => inProject(project, path)) && excluded.some((project) => inProject(project, path)));
     expect(both).toEqual([]);
     expect(testFiles.filter((path) => excluded.some((project) => inProject(project, path))).length).toBeGreaterThan(3);
+  });
+});
+
+async function hostPreflight(test: string) {
+  const entry = new URL("../../tooling/speckit/bin/component-preflight.ts", import.meta.url);
+  const out: string[] = [];
+  const err: string[] = [];
+  if (!existsSync(entry)) return { code: 0, receipt: null, err };
+  const { run } = (await import(entry.href)) as { readonly run: Run };
+  const code = await run(["host", "--root", repo, "--source", paneFooterSource, "--test", test, "--project", retainedProject], {
+    cwd: repo, env: process.env, out: (line) => out.push(line), err: (line) => err.push(line),
+  });
+  const receipt: unknown = JSON.parse(out.join("\n") || "null");
+  return { code, receipt, err };
+}
+
+describe("component preflight Storybook host discovery", () => {
+  const routing = {
+    source: paneFooterSource,
+    project: retainedProject,
+    normalVitestConfig: "vitest.config.ts",
+    strykerConfig: "stryker.config.json",
+    mutationVitestConfig: "vitest.mutation.config.ts",
+    mutationEvidence: "required",
+  };
+
+  it("discovers the retained #87 pane footer test in the default mutation configuration", async () => {
+    expect(await hostPreflight(paneFooterBrowserTest)).toEqual({
+      code: 0,
+      receipt: {
+        ...routing,
+        test: paneFooterBrowserTest,
+        normalProjects: ["storybook-browser (chromium)"],
+        mutationProjects: ["storybook-browser (chromium)"],
+      },
+      err: [],
+    });
+  }, 60_000);
+
+  it("reports the built-browser pane footer test and the retained project when default mutation excludes it", async () => {
+    const ran = await hostPreflight(paneFooterBuiltTest);
+    expect(ran).toMatchObject({
+      code: 1,
+      receipt: {
+        ...routing,
+        test: paneFooterBuiltTest,
+        normalProjects: ["storybook-integration"],
+        mutationProjects: [],
+      },
+    });
+    expect(ran.err.join("\n")).toContain(paneFooterBuiltTest);
+    expect(ran.err.join("\n")).toContain("storybook/test/unit/browser/");
+  }, 60_000);
+});
+
+it("requires a focused test and a single matching owner in each component preflight configuration", async () => {
+  const entry = new URL("../lib/component-preflight.ts", import.meta.url);
+  const nodeTest = "storybook/test/unit/swatches.test.ts";
+  const browserOwner = "storybook-browser (chromium)";
+  const validBrowser = [browserOwner];
+  let routes: unknown;
+  if (existsSync(entry)) {
+    const { hasUniqueHostRoute } = (await import(entry.href)) as {
+      readonly hasUniqueHostRoute: (test: string, project: string, normal: readonly string[], mutation: readonly string[]) => boolean;
+    };
+    routes = {
+      nodeProject: hasUniqueHostRoute(nodeTest, "storybook", ["storybook"], ["storybook"]),
+      builtOnly: hasUniqueHostRoute(paneFooterBuiltTest, retainedProject, validBrowser, validBrowser),
+      noOwner: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, [], []),
+      missingNormal: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, [], validBrowser),
+      missingMutation: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, validBrowser, []),
+      duplicateNormal: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, [browserOwner, browserOwner], validBrowser),
+      duplicateMutation: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, validBrowser, [browserOwner, browserOwner]),
+      extraMutation: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, validBrowser, [browserOwner, "storybook"]),
+      changedOwner: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, ["storybook"], validBrowser),
+      wrongDeclaredOwner: hasUniqueHostRoute(paneFooterBrowserTest, "storybook", validBrowser, validBrowser),
+      malformedBrowserOwner: hasUniqueHostRoute(paneFooterBrowserTest, retainedProject, ["storybook-browser (chromium"], ["storybook-browser (chromium"]),
+    };
+  }
+  expect(routes).toEqual({
+    nodeProject: true,
+    builtOnly: false,
+    noOwner: false,
+    missingNormal: false,
+    missingMutation: false,
+    duplicateNormal: false,
+    duplicateMutation: false,
+    extraMutation: false,
+    changedOwner: false,
+    wrongDeclaredOwner: false,
+    malformedBrowserOwner: false,
   });
 });

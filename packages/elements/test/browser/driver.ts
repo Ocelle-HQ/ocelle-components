@@ -18,10 +18,13 @@
 // context (`visit(…, { touch: true })`), `page.touchscreen`; reduced motion through `page.emulateMedia`; what the page
 // holds is read by the probe of scenarios/probe.ts, installed in the page through the DevTools protocol before the
 // first mount (and before any read that needs it).
+// 018 (research.md R-11): the animation states, `seek`, `settleLayout` and `overflows` through the readers of
+// commands.ts on the page's main frame, the code the in-process browser commands run.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { runningOf } from "../animations.ts";
-import { audit, axDetails, axNodes, axeSetup, axStateOf, axStatesOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readScrollWidth, readTextBoxes, recordAxUpdates } from "../commands.ts";
+import { advanceOf, moveBeforeOf, runningOf } from "../animations.ts";
+import { findMatchesOf } from "../find.ts";
+import { audit, axDetails, axNodes, axeSetup, axStateOf, axStatesOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readAnimationStates, readOverflows, readScrollWidth, readTextBoxes, recordAxUpdates, seekIn, settleLayoutIn } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { fixtureCapture } from "../live.ts";
 import type { Snapshot } from "../live-reading.ts";
@@ -1375,6 +1378,25 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }
       return await stop();
     },
+    animationStates: (id) => readAnimationStates(page.mainFrame(), id),
+    seek: async (id, inner, ms) => {
+      await seekIn(page.mainFrame(), id, inner, ms);
+      await settle(page);
+    },
+    settleLayout: async () => {
+      await settle(page);
+      await settleLayoutIn(page.mainFrame());
+    },
+    overflows: (target) => readOverflows(page.mainFrame(), target),
+    advance: async (id, inner, ms) => {
+      await page.evaluate(advanceOf, { id, inner, ms });
+      await settle(page);
+    },
+    moveBefore: async (id, parentId) => {
+      await page.evaluate(moveBeforeOf, { id, parentId });
+      await settle(page);
+    },
+    findInPage: (text) => page.evaluate(findMatchesOf, text),
     findText: async (word) => {
       finds += 1;
       await page.evaluate((fragment) => {

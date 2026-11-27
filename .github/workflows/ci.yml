@@ -308,6 +308,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
+      - name: Observe Visual tools before capture
+        id: visual-runtime-before
+        continue-on-error: true
+        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/visual-tools-before.json"
       - run: pnpm run gate:visual -- --engine both --remove-docker-image
       - run: |
           reference="$(node -p 'const pin = require("./storybook/visual/container.json"); `${pin.image}@${pin.digest}`')"
@@ -318,6 +322,10 @@ jobs:
           skopeo inspect --raw "docker://$reference" > "$record/skopeo-inspect-raw-manifest.json"
           podman image inspect "$reference" > "$record/podman-inspect.json"
           skopeo inspect --raw "docker://$tag" > "$record/skopeo-inspect-raw-index.json"
+      - name: Verify Visual tools after capture
+        if: steps.visual-runtime-before.outcome == 'success'
+        continue-on-error: true
+        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/pin-record/executed-tools.json" "$RUNNER_TEMP/visual-tools-before.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pin-record
@@ -339,6 +347,15 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: pnpm run gate:axe
+  sandbox-paths:
+    name: Sandbox paths
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:sandbox-paths
   plants-plan:
     name: Plants plan
     runs-on: ubuntu-24.04

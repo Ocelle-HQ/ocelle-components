@@ -1,0 +1,5 @@
+Reused completed evidence b235a8109416e0509fe368ac0960456fe3f46f6771befe3e118c4458e8318d32
+{"mode":"fix","revision":"8d9e3ccadf2a23b2c53ced3833a07848760790d3","overlay":"b380398313474026f949af38ee549bc486b778fe","input":"b235a8109416e0509fe368ac0960456fe3f46f6771befe3e118c4458e8318d32","selected":[{"project":"elements (chromium)","file":"packages/elements/test/workflow-canvas.test.ts"}],"evidence":{"status":"red","assertions":[{"file":"packages/elements/test/workflow-canvas.test.ts","project":"elements (chromium)","test":"workflow canvas in-process selection and navigation > restores supplied paint order and resets the picker when a raised node is removed","source":{"text":"expect(revealControls(canvas).picker.value).toBe(\"publish\");","occurrence":1,"line":622},"diagnostic":"expected 'revise' to be 'publish' // Object.is equality"}]},"seconds":20.974}
+Failed to resolve dependency: lit/directives/class-map.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/if-defined.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/live.js, present in client 'optimizeDeps.include'

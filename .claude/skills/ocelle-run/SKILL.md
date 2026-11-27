@@ -40,7 +40,8 @@ Issue numbers start new work at step 1. `resume` continues existing work (see "R
    pass it your own opinion of the outcome: independence is the point.
 2. **Before each delegation**, make sure `git status --porcelain` is empty (stop and ask the operator if not) and
    note `BASE=$(git rev-parse HEAD)`. **After it**, run
-   `tooling/speckit/bin/scope-check.sh <scope role> $BASE`. If `ok` is false, delegate the same step once more,
+   `tooling/speckit/bin/scope-check.sh <scope role> "$BASE"` as a conditional so you can read its JSON on exit 1.
+   Exit 2 means the check could not run. If `ok` is false, delegate the same step once more,
    telling the profile which files were outside its role and that it must undo them; if it is still false, stop
    and ask the operator.
 3. **Loop decisions come from scripts**, never from your judgement: the JSON of `spec-status.sh`, `status.sh`
@@ -57,7 +58,9 @@ Issue numbers start new work at step 1. `resume` continues existing work (see "R
    to `main`, never force-push without the operator's explicit approval, and never push with uncommitted or
    in-progress work from a running profile. Pull-request CI runs only on `pull_request`, so a branch push starts no
    CI. Profiles do not push; only you do. Beyond pushing, never touch GitHub (no comments, labels, state changes or
-   pull requests). Never edit a review, verdict or check file a profile wrote. The only records you write yourself
+   pull requests). Never edit a review, verdict or check file a profile wrote. The sanctioned landing redaction of
+   `/ocelle-land` (step 2.9, op 023, operator decision 2026-11-20) is not such an edit: it only puts placeholders in
+   place of sandbox paths, and `--verify` proves it. The only records you write yourself
    are the operator's decisions (named below), each committed alone.
 
 Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/squad/scripts`,
@@ -146,6 +149,30 @@ Run `$S/units.sh`. For each unit, in order:
       SHAs the review files name; never delete it.
 4. When every unit is done: `$S/summary.sh --commit`. **Gate "feature"**: show the summary path and its totals.
    Options: `approve`, `reject`.
+
+### Parallel tasks within one phase
+
+1. Select open `[P]` tasks with completed prerequisites and disjoint write paths. Assign each shared file and
+   generated result to one owner. The integration owner pins the clean feature HEAD, prepares any common
+   scaffold, and starts one clean local worktree per worker from the same pin. Give each worker the phase,
+   task ID, worktree, pin, exact paths, and test or implementation assignment. Workers return signed-off
+   commits and focused results.
+2. As each worker returns, run the return checker with the canonical worktree, base pin, worker worktree and
+   assigned paths. Use `--worker` between assignments to verify the complete group's disjointness.
+
+   ```sh
+   tooling/speckit/bin/worktree-return-check.sh "$repo" "$pin" "$first" "$first_file" \
+     --worker "$second" "$second_file"
+   ```
+
+   Require exit zero and `ok: true`. Keep the receipt and stage only its verified `head` from each worker.
+   Run the normal role scope check as part of the delegation. A failed handoff leaves the proposal in its
+   worktree and the integration owner continues from the last verified checkpoint.
+3. Stage the verified commits in a separate local worktree. Combine the test drafts into one signed-off
+   test-only red commit and run the normal phase red proof before dispatching implementation from the new pin.
+   Run focused checks against the combined implementation before promotion. Preserve the combined phase
+   replay, Plants, independent review, and fold decision. Promote by fast-forward when the feature branch is
+   still clean at the group's pin.
 
 ## Resume
 

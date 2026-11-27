@@ -1,0 +1,6 @@
+> ocelle-components@ test
+Content-addressable store is at: @SANDBOX_ROOT@/.local/share/pnpm/store/v10
+
+ RUN
+ RUN  v5.0.5 @SANDBOX_HOME_USER@/ocelle-components
+ Test Files  1 passed (1)

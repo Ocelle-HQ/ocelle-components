@@ -197,6 +197,137 @@ describe("phase record validation", () => {
   });
 });
 
+const upstream = "1".repeat(40);
+const upstreamFile = join(dir, "replay-upstream.sha");
+const virtualBase = "2".repeat(40);
+const virtualScaffold = "3".repeat(40);
+const virtualFix = "4".repeat(40);
+const mergedTree = "5".repeat(40);
+
+function pinnedFixture() {
+  const test = fixture();
+  test.known.add(upstream);
+  test.files.set(upstreamFile, upstream + "\n");
+  test.stale.add(`${initial}:${upstream}`);
+  test.stale.add(`${fix}:${upstream}`);
+  const git: PhaseTools["git"] = (args, input) => {
+    if (args[0] === "merge-base" && args[1] === "--all" && args[2] === "HEAD" && args[3] === "refs/remotes/origin/main") {
+      test.calls.push(args);
+      if (test.stale.has(`${upstream}:refs/remotes/origin/main`) || test.stale.has(`${upstream}:${head}`)) return `${anchor}\n`;
+      return `${upstream}\n`;
+    }
+    return test.tools.git(args, input);
+  };
+  return { ...test, tools: { ...test.tools, git } };
+}
+
+describe("phase replay pinned to integrated main", () => {
+  it("retains historical red revisions and uses integrated snapshots for base, scaffold, fix and selection", async () => {
+    const { tools, files, calls, checks, outputs, stale } = pinnedFixture();
+    files.set(join(dir, "scaffold.sha"), scaffold);
+    files.set(join(dir, "red-commits"), `phase ${initial}\nfix-1 ${fix}\n`);
+    for (const original of [anchor, scaffold, fixParent]) stale.add(`${upstream}:${original}`);
+    const snapshots = new Map([[anchor, virtualBase], [scaffold, virtualScaffold], [fixParent, virtualFix]]);
+    const merged: string[] = [];
+    const objects: string[] = [];
+    const git: PhaseTools["git"] = (args, input) => {
+      if (args[0] === "merge-tree") {
+        merged.push(String(args[2]));
+        calls.push(args);
+        return mergedTree + "\n";
+      }
+      if (args[0] === "hash-object") {
+        objects.push(String(input));
+        calls.push(args);
+        return (snapshots.get(merged.at(-1) ?? "") ?? "") + "\n";
+      }
+      return tools.git(args, input);
+    };
+    await checkPhase(request, { ...tools, git });
+
+    const identities = checks.map(({ check }) => [check.mode, check.revision]);
+    expect(identities).toEqual([["red", initial], ["red", fix], ["base", virtualBase],
+      ["scaffold", virtualScaffold], ["fix", virtualFix], ["head", head]]);
+    expect(calls.filter((args) => args[0] === "merge-tree")).toEqual([anchor, scaffold, fixParent]
+      .map((commit) => ["merge-tree", "--write-tree", commit, upstream]));
+    expect(calls.filter((args) => args[0] === "hash-object")).toEqual(Array.from({length: 3}, () =>
+      ["hash-object", "-t", "commit", "-w", "--stdin"]));
+    const identity = "Ocelle Spec Kit <spec-kit@ocelle.invalid> 0 +0000";
+    expect(objects).toEqual([anchor, scaffold, fixParent].map((commit) =>
+      `tree ${mergedTree}\nparent ${commit}\nparent ${upstream}\nauthor ${identity}\ncommitter ${identity}\n\nSpec Kit replay snapshot\n`));
+    expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=AMT", virtualBase, head, "--", ...patterns]);
+    expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=A", virtualBase, virtualScaffold, "--"]);
+    expect(outputs).toMatchObject([{ output: { base: anchor, replay_base: virtualBase, replay_upstream: upstream, status: "pass" } }]);
+    expect(files.get(join(dir, "base.sha"))?.trim()).toBe(anchor);
+  });
+
+  it("reuses a historical revision when it already includes the upstream", async () => {
+    const { tools, calls, checks, outputs } = pinnedFixture();
+    await checkPhase(request, tools);
+    expect(calls.map(([command]) => command)).not.toContain("merge-tree");
+    expect(checks.map(({ check }) => check.revision)).toEqual([initial, anchor, head]);
+    expect(outputs).toMatchObject([{ output: { base: anchor, replay_base: anchor, replay_upstream: upstream, status: "pass" } }]);
+  });
+
+  it.each([
+    { label: "an older shared pin", mergeBases: `${scaffold}\n` },
+    { label: "multiple best common ancestors", mergeBases: `${upstream}\n${scaffold}\n` },
+    { label: "no common ancestor", mergeBases: "" },
+    { label: "a Git inspection error", mergeBases: undefined },
+  ])("refuses $label before running any replay", async ({ mergeBases }) => {
+    const { tools, checks } = pinnedFixture();
+    const git: PhaseTools["git"] = (args, input) => {
+      if (args[0] === "merge-base" && args[1] === "--all" && args[2] === "HEAD" && args[3] === "refs/remotes/origin/main") {
+        if (mergeBases === undefined) throw new Error("cannot inspect remote main");
+        return mergeBases;
+      }
+      return tools.git(args, input);
+    };
+    await expect(checkPhase(request, { ...tools, git })).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+    expect(checks).toEqual([]);
+  });
+
+  it.each([[`${upstream}:refs/remotes/origin/main`, false], [`${upstream}:${head}`, false], [`${initial}:${upstream}`, true]])(
+    "fails closed on bad replay ancestry %s", async (blocked, isRed) => {
+      const { tools, stale, checks } = pinnedFixture();
+      if (isRed) stale.delete(blocked);
+      else stale.add(blocked);
+      await expect(checkPhase(request, tools)).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+      expect(checks).toEqual([]);
+    },
+  );
+
+  it("rejects a replay pin containing any recorded red even if another red is still separate", async () => {
+    const { tools, stale, checks, files } = pinnedFixture();
+    files.set(join(dir, "red-commits"), `phase ${initial}\nfix-1 ${fix}\n`);
+    stale.delete(`${fix}:${upstream}`);
+    await expect(checkPhase(request, tools)).rejects.toThrow("replay-upstream.sha must pin main integrated into HEAD without the phase's red commits");
+    expect(checks).toEqual([]);
+  });
+
+  it("omits integrated metadata for a phase without a main pin", async () => {
+    const { tools, outputs } = fixture();
+    await checkPhase(request, tools);
+    expect(outputs[0]?.output).not.toHaveProperty("replay_base");
+  });
+
+  it("requires the pinned SHA to identify a real commit", async () => {
+    const { tools, known, checks } = pinnedFixture();
+    known.delete(upstream);
+    await expect(checkPhase(request, tools)).rejects.toThrow("Git could not resolve the revision");
+    expect(checks).toEqual([]);
+  });
+
+  it("reports a replay merge conflict and never runs final tests on an incorrect base", async () => {
+    const { tools, stale, checks } = pinnedFixture();
+    stale.add(`${upstream}:${anchor}`);
+    await expect(checkPhase(request, tools)).rejects.toThrow(
+      `cannot integrate pinned main ${upstream} into replay revision ${anchor}; resolve the replay conflict before proceeding`,
+    );
+    expect(checks.map(({ check }) => check.mode)).toEqual(["red"]);
+  });
+});
+
 describe("red capture", () => {
   it.each([undefined, "", "other", "fix-", "phase-extra"])("rejects invalid red capture labels (%s)", async (label) => {
     const { tools, checks } = fixture();
@@ -441,6 +572,111 @@ describe("phase CI collateral declarations", () => {
     files.set(join(dir, "test-scope.txt"), line + "\n");
     await expect(checkPhase(request, tools)).rejects.toThrow("test-scope.txt must contain repository-relative test paths");
     expect(checks).toEqual([]);
+  });
+});
+
+describe("phase implementation story declarations", () => {
+  const implementation = "storybook/stories/Workflow_Studio-2.0/plan_v2.1.stories.ts";
+  const removed = "storybook/stories/retired.stories.ts";
+  const support = implementation + "-support.stories.ts";
+  const removedSupport = "storybook/stories/removed-support.stories.ts";
+  const scopeFile = join(dir, "test-scope.txt");
+  const scopeError = "implementation-story requires an exact .stories.ts path under storybook/stories/";
+
+  it("cannot exempt a phase that declares an implementation story", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.delete(join(dir, "red-commits"));
+    files.set(join(dir, "tdd-exempt.md"), "documentation only");
+    files.set(scopeFile, "implementation-story " + implementation);
+    await expect(checkPhase(request, tools)).rejects.toThrow("implementation-story scope requires recorded local proof");
+    expect(checks).toEqual([]);
+    expect(outputs).toEqual([]);
+  });
+
+  it("keeps only ordinary changed and deleted stories in the overlay and runs the focused head", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "  implementation-story \t" + implementation + "\nimplementation-story " + removed + "\n" + file);
+    const git: PhaseTools["git"] = (args) => {
+      const output = tools.git(args);
+      if (args[5] !== anchor || args[6] !== head) return output;
+      if (args.includes("--diff-filter=AMT")) return output + implementation + "\0" + support + "\0";
+      if (args.includes("--diff-filter=D")) return removed + "\0" + removedSupport + "\0";
+      return output;
+    };
+    await checkPhase(request, { ...tools, git });
+    expect(checks.filter(({ check }) => check.mode !== "red").map(({ check }) => check.selection)).toEqual([
+      { changed: [file, support], deleted: [removedSupport], extra: [file], changedLines: { ...changedLines, [support]: changedLines[file] } },
+      { changed: [file, support], deleted: [removedSupport], extra: [file], changedLines: { ...changedLines, [support]: changedLines[file] } },
+    ]);
+    expect(outputs).toMatchObject([{ output: { status: "pass", problems: [] } }]);
+  });
+
+  it("checks exact declared paths before recording a red, preserving an unrelated story change", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "implementation-story " + implementation);
+    const git: PhaseTools["git"] = (args) =>
+      args.includes("--diff-filter=ACDMRTUXB") && args.length === 8 ? file + "\0" + support + "\0" : tools.git(args);
+    await checkPhase({ ...request, mode: "red", label: "phase" }, { ...tools, git });
+    expect(checks.map(({ check }) => check.mode)).toEqual(["red"]);
+    expect(checks[0]?.check.selection.extra).toEqual([]);
+    expect(outputs).toMatchObject([{ output: { tests_only: true, red: true, recorded: true } }]);
+    expect(files.get(join(dir, "red-commits"))).toBe("phase " + head + "\n");
+  });
+
+  it("rejects a red that edits a declared story before running the test worker", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "implementation-story " + implementation);
+    const git: PhaseTools["git"] = (args) =>
+      args.includes("--diff-filter=ACDMRTUXB") && args.length === 8 ? file + "\0" + implementation + "\0" : tools.git(args);
+    await checkPhase({ ...request, mode: "red", label: "phase" }, { ...tools, git });
+    expect(checks).toEqual([]);
+    expect(outputs).toMatchObject([{ output: {
+      sha: head, tests_only: false, red: false, recorded: false,
+      problem: "red commit changes a declared implementation story: " + implementation,
+    } }]);
+    expect(files.get(join(dir, "red-commits"))).toBe("phase " + initial + "\n");
+  });
+
+  it("rejects a declared story in recorded red history", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(scopeFile, "implementation-story " + implementation);
+    const git: PhaseTools["git"] = (args) =>
+      args.includes("--diff-filter=ACDMRTUXB") && args.length === 8 ? implementation + "\0" : tools.git(args);
+    await checkPhase(request, { ...tools, git });
+    expect(checks.map(({ check }) => check.mode)).toEqual(["base", "head"]);
+    expect(outputs).toMatchObject([{ output: {
+      status: "fail", red_commits: [],
+      problems: ["red commit phase changes a declared implementation story: " + implementation],
+    } }]);
+  });
+
+  it.each([
+    "", "/storybook/stories/plan.stories.ts", "packages/storybook/stories/plan.stories.ts",
+    "storybook/stories/../plan.stories.ts", "storybook/stories/./plan.stories.ts", "storybook/stories//plan.stories.ts",
+    "storybook/stories/*.stories.ts", ":(glob)storybook/stories/plan.stories.ts", "storybook/stories/plan.test.ts",
+    "storybook/stories/sub\\plan.stories.ts", "storybook/stories/.stories.ts", "storybook/stories/a.stories.tsx",
+    "storybook/stories/my plan.stories.ts",
+  ])("rejects malformed implementation story scope (%s)", async (path) => {
+    const { tools, files, checks } = fixture();
+    files.set(scopeFile, "implementation-story " + path);
+    await expect(checkPhase(request, tools)).rejects.toThrow(scopeError);
+    expect(checks).toEqual([]);
+  });
+
+  it.each([implementation, "ci-only " + implementation])("rejects competing declarations for a story (%s)", async (other) => {
+    const { tools, files, checks } = fixture();
+    files.set(scopeFile, other + "\nimplementation-story " + implementation);
+    await expect(checkPhase(request, tools)).rejects.toThrow("conflicting test scope for implementation story: " + implementation);
+    expect(checks).toEqual([]);
+  });
+
+  it("does not interpret the directive inside an ordinary test path", async () => {
+    const { tools, files, calls, checks } = fixture();
+    const path = "test/implementation-story support.test.ts";
+    files.set(scopeFile, path);
+    await checkPhase(request, tools);
+    expect(checks.at(-1)?.check.selection.extra).toEqual([path]);
+    expect(calls.filter((args) => args.includes("--diff-filter=ACDMRTUXB") && args.length === 8)).toEqual([]);
   });
 });
 

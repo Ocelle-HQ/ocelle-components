@@ -107,6 +107,24 @@ describe("ci.yml axe job (006 FR-017)", () => {
   });
 });
 
+// Op 023 (#60, FR-004; plan.md *Files to change*): the job `sandbox-paths`, named "Sandbox paths", has the shape of
+// config-copies: it checks out without persisted credentials, sets up and runs the gate, nothing else.
+describe("ci.yml sandbox-paths job (op 023)", () => {
+  it("is named Sandbox paths and runs pnpm run gate:sandbox-paths after checkout and setup", () => {
+    expect(job("sandbox-paths")).toEqual([
+      "  sandbox-paths:",
+      "    name: Sandbox paths",
+      "    runs-on: ubuntu-24.04",
+      "    steps:",
+      "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+      "        with:",
+      "          persist-credentials: false",
+      "      - uses: ./.github/actions/setup",
+      "      - run: pnpm run gate:sandbox-paths",
+    ]);
+  });
+});
+
 // 006 FR-017, FR-018, FR-026 and US2 scenario 12 (contracts/gates.md § `visual`, § The registry; research.md R-07, R-11):
 // the job `visual`, named "Visual regression", runs the gate under both engines, records the runner's free disk after
 // both pulls, and uploads storybook/.visual/ (the captures in baseline layout among it) when it fails; the Plants job
@@ -125,8 +143,8 @@ const setup = [
 // Plan decisions 22, 25 and 27 (operator decisions 2026-11-11, "Add the CI step" and "Apply now", and 2026-11-12, "Add
 // the tag read"; contracts/gates.md § The registry; contracts/container.md § The pin record): the gate removes docker's
 // copy after run 1; after the gate passes, the job records skopeo's version, skopeo's raw manifest of the pin, podman's
-// inspect output of the pin and skopeo's raw index of the tag, the image, digest and tag read from container.json, and
-// uploads them as the artifact pin-record.
+// inspect output of the pin and skopeo's raw index of the tag, the image, digest and tag read from container.json. Op 034
+// verifies the tools against their observations before capture and adds the receipt to pin-record before upload.
 const pinRecord = [
   "      - run: |",
   '          reference="$(node -p \'const pin = require("./storybook/visual/container.json"); `${pin.image}@${pin.digest}`\')"',
@@ -137,6 +155,10 @@ const pinRecord = [
   '          skopeo inspect --raw "docker://$reference" > "$record/skopeo-inspect-raw-manifest.json"',
   '          podman image inspect "$reference" > "$record/podman-inspect.json"',
   '          skopeo inspect --raw "docker://$tag" > "$record/skopeo-inspect-raw-index.json"',
+  "      - name: Verify Visual tools after capture",
+  "        if: steps.visual-runtime-before.outcome == 'success'",
+  "        continue-on-error: true",
+  '        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/pin-record/executed-tools.json" "$RUNNER_TEMP/visual-tools-before.json"',
   `      - uses: ${upload}`,
   "        with:",
   "          name: pin-record",
@@ -149,6 +171,10 @@ describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
       "  visual:",
       "    name: Visual regression",
       ...setup,
+      "      - name: Observe Visual tools before capture",
+      "        id: visual-runtime-before",
+      "        continue-on-error: true",
+      '        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/visual-tools-before.json"',
       "      - run: pnpm run gate:visual -- --engine both --remove-docker-image",
       ...pinRecord,
       "      - if: always()",

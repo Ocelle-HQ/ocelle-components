@@ -4,8 +4,9 @@
  * ocelle-drawer and ocelle-tooltip stories' blocks; since 009, the tested frames, keyed on data-frame attributes;
  * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; since 013 the
  * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers; since 014 the scrolling listbox and the
- * wrapped tabs, segmented-choice, copy-field and link stories' sizes; and since 020 the ocelle-disclosure long
- * summary's frame and the ocelle-code-block stories' frame (below).
+ * wrapped tabs, segmented-choice, copy-field and link stories' sizes; since 020 the ocelle-disclosure long
+ * summary's frame and the ocelle-code-block stories' frame; and since 018 the ocelle-pill-tag LongTextWraps
+ * story's narrow block (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -291,4 +292,43 @@
 [data-story="evidence-chain-narrow"] {
   inline-size: calc(var(--ocelle-space-10) * 5);
   max-inline-size: 100%;
+}
+
+[data-story="change-list-plan"],
+[data-story="change-list-upgrade"] {
+  display: grid;
+  gap: var(--ocelle-space-4);
+  inline-size: calc(var(--ocelle-space-10) * 9);
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+[data-story="change-list-upgrade"] > section {
+  display: grid;
+  gap: var(--ocelle-space-2);
+  min-inline-size: 0;
+}
+
+[data-story="change-list-upgrade"] ocelle-copy-field::part(value) {
+  display: none;
+}
+
+/*
+ * The ocelle-pill-tag LongTextWraps, Truncated and DisabledWraps stories' narrow block (018 research.md R-12): 160 px,
+ * so each long static or disabled pill in it wraps onto further lines inside the pill and each long enabled interactive
+ * pill truncates.
+ */
+[data-story="pill-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 2.5);
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-pill-tag Truncated story's clipping container (018 research.md R-12, plan decision 16): as narrow as
+ * `pill-narrow` and `overflow: hidden`, so the focused truncated pill shows its focus ring whole inside it (R-07).
+ */
+[data-story="pill-clip"] {
+  inline-size: calc(var(--ocelle-space-10) * 2.5);
+  max-inline-size: 100%;
+  overflow: hidden;
 }
