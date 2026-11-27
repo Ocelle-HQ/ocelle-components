@@ -1,0 +1,71 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Keep the Storybook implementation off the Phase 3 replay base"
+    evidence:
+      - artifact: "plan.md lines 19–21 and 27 promise a tests-only red and a new .stories.ts implementation. contracts/verification.md lines 10 and 15 name the four stories without a historical replay rule."
+      - code: ".specify/extensions/story/story-config.yml:16 includes *.stories.ts in the test pathspec. gates/bin/story-evidence.ts:216–245 reads test-scope.txt and excludes implementation-story paths from the selected overlay. specs/033-pane-step-indicator/tasks.md:31 applies this mechanism to a recent built-story addition."
+    claim: |
+      The final-on-base replay otherwise overlays the finished story file before building the old revision. The real story can defeat the absent-story red, or the build can fail to import a new host module that was never overlaid. Neither proves the required assertion-level red.
+    remedies:
+      - "Assign Phase 3 a test-scope.txt with implementation-story storybook/stories/anchored-popover.stories.ts and exact focused test paths. Begin each new built-story case with an assertion on its exact ID in the already built index before navigation or lookup. Preserve that failing assertion on the phase base and confirm the indexed story drives the later behavioral assertions on the candidate."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Exercise the assembled examples on a real strict-policy fixture"
+    evidence:
+      - artifact: "spec.md SC-003 calls for built strict-CSP examples. contracts/verification.md line 10 places that proof with the built Storybook integration coverage."
+      - code: "storybook/test/integration/render.test.ts:14–18 documents retained inline iframe scripts and explicitly serves without a CSP header. gates/lib/storybook-serve.ts:64 only sends Content-Type. packages/elements/test/browser/serve.ts:40–41 defines the strict fixture policy."
+    claim: |
+      Success on the ordinary Storybook server cannot establish strict-CSP runtime behavior. Adding the strict policy to the Storybook iframe blocks its inline harness before the examples run, leading to an infrastructure red.
+    remedies:
+      - "Keep the indexed Storybook proof on the ordinary built server. Reuse the same assembled appearance and profile hosts in a small packaged external-script page served under the existing elements policy. Assert the real response policy and empty violation receipt after both interactions. Document which fixture proves each part of SC-003."
+
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "Give the exact-floor check a runnable cross-engine path"
+    evidence:
+      - artifact: "plan.md line 17 and research.md Browser verification ask for Chromium 135 and WebKit 17.4, while the verification contract assigns only the current in-process and built Chromium paths."
+      - code: "vitest.config.ts:182–194 and :201–212 register only Chromium for elements and elements-touch. packages/elements/test/browser/serve.ts:38 re-exports launch from the tokens fixture, where packages/tokens/test/browser/serve.ts:103–106 hardwires chromium.launch. packages/elements/test/commands.ts:527 opens a Chromium CDP session."
+    claim: |
+      Supplying a different executable cannot turn the existing Chromium-only driver or CDP assertions into a WebKit proof. The plan gives no engine-neutral harness or preflight outcome that keeps the compatibility gap visible before review.
+    remedies:
+      - "Assign an explicit engine-neutral acceptance runner over the packaged fixture. Use native click, key and focus assertions plus DOM geometry and policy observations in both engines. Keep Chromium CDP-only AX checks in its existing suite. Pin the supplied engines, verify and record their versions before the run, and carry an unavailable or failed exact-floor run into review as an explicit unresolved verification result."
+
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "Prove enlarged action text actually doubles and wraps"
+    evidence:
+      - artifact: "spec.md US2 scenario 2 requires 200% text with longer labels that wrap. quickstart.md and contracts/verification.md line 15 name the case without an oracle for the size increase and wrapping."
+      - code: "packages/tokens/src/source.ts:164–171 defines root-relative font-size tokens. packages/elements/test/app-shell-layout.test.ts:125–129 shows a fixture changing the document root font size separately."
+    claim: |
+      Scaling the body, viewport or device pixels can leave the native controls’ computed text size unchanged. Short labels may fit in both runs, so the current verification prose can pass without exercising the approved condition.
+    remedies:
+      - "At a fixed viewport compare actual native-control computed font sizes before and after a root text-size change, and assert the doubled size and a deliberately long label wrapping to multiple lines. Then verify document width, focus visibility and final-control reachability independently of the 320 CSS pixel scenario."
+
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "Prove the story hosts fail independently of story registration"
+    evidence:
+      - artifact: "plan.md line 28 makes mutation coverage for story-host logic conditional on extraction. contracts/verification.md line 10 requires pressed choice changes and exactly one host callback."
+      - code: "gates/lib/mutation/ranges.ts:22–42 deliberately excludes *.stories.ts. vitest.mutation.config.ts:29–39 excludes the built Storybook integration project. vitest.config.ts:271–276 provides the retained in-process storybook-browser project."
+    claim: |
+      An absent-story red ends before any action. When the callbacks live only in .stories.ts, ordinary Mutation also cannot establish that the interaction cases catch a registered story with a broken appearance update or Sign out action.
+    remedies:
+      - "Commit to a small shared external story host with exact retained in-process tests for exclusive pressed state, close and one callback. Preflight its route and require ordinary scoped Mutation on the changed host. Keep the built Storybook assertions for the same real host without substituting its implementation."
+
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "Give touch dismissal and narrow viewport cases a real input route"
+    evidence:
+      - artifact: "contracts/verification.md lines 7 and 15 point to ordinary element tests for exact viewport fit and mouse and touch, but name no touch test or actual viewport setup."
+      - code: "vitest.config.ts:176–212 uses a fixed 1280 × 800 mouse project and only routes packages/elements/test/*.touch.test.ts to hasTouch. packages/elements/test/commands.ts:20 describes separate Playwright mouse and touchscreen commands."
+    claim: |
+      An ordinary elements test cannot produce trusted touchscreen taps in its default mouse context, and shrinking a fixture container does not make the visible viewport 320 CSS pixels. A synthetic pointer event or container-only case can pass while missing the native dismissal and clipping behavior.
+    remedies:
+      - "Assign an exact elements-touch file and trusted touchscreen tap case that verifies the outside target activation and focus behavior against its native control. Use the built fixture with a real 320 CSS pixel page viewport for top-layer clipping proof, and keep in-process geometry and dismissal cases in their retained Mutation routes."

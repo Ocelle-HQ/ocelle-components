@@ -1,0 +1,27 @@
+# Squad round 1 — Refute
+
+| ID | Verdict | Kind | Decision | Reason |
+| --- | --- | --- | --- | --- |
+| PLAN-A11Y-SECURITY-1-001 | confirmed | fix | - | The ordinary preview deliberately retains inline scripts and is served without CSP. The existing pane action footer uses a separate strict fixture for the same recipe. Require that fixture with the real appearance and profile host modules and keep the ordinary Storybook interaction proof. |
+| PLAN-A11Y-SECURITY-1-002 | confirmed | fix | - | The independent Chromium probe reached an external button with native Tab while the open panel still owned its hit point. Keep the external focus and ensure the panel cannot hide it, including a deliberate occlusion case. Scoped Escape within the panel cannot reveal this outside stop. |
+| PLAN-A11Y-SECURITY-1-003 | confirmed | fix | - | The independent probe cleared an active populated search field on native Escape. The planned handler would consume the key before that default action. Apply the existing overlay exception and verify the next Escape closes the emptied field's surface. |
+| PLAN-A11Y-SECURITY-1-004 | confirmed | fix | - | The in-house trigger owns its target size and foreground, ground, boundary and focus token pairs. The ordinary contrast registry checks named pairs. Specify these pairs and assert the native control's real target dimensions and focus in both themes and forced colors. |
+| PLAN-CORRECTNESS-1-001 | duplicate | - | - | The separate strict fixture for the exact Storybook hosts is covered by PLAN-A11Y-SECURITY-1-001. |
+| PLAN-CORRECTNESS-1-002 | confirmed | fix | - | The current opposite-side rule can select below for a bottom-rail trigger despite usable space above. Define a usable-side threshold, honor the approved top and bottom priorities with internal scrolling, and bound the fallback and its tests. |
+| PLAN-CORRECTNESS-1-003 | confirmed | fix | - | The hosted mixed-arm workflow pins #87 source, base and a 47-line selector. Separate historical evidence from a live matched #86 sample. Compare the real full and configuration-subset selections when they exist, and record when a live arm is unavailable. |
+| PLAN-CORRECTNESS-1-004 | confirmed | fix | - | The observer requires exact common base and audited blobs. The cited squash keeps tooling content without its branch ancestry. Define the start route after tooling lands, the authoritatively pinned stacked pair, the folded branch transition and fresh required checks on the final main-bound candidate. |
+| PLAN-FRESH-1-001 | duplicate | - | - | The ordinary preview and separate strict host fixture are covered by PLAN-A11Y-SECURITY-1-001. |
+| PLAN-FRESH-1-002 | duplicate | - | - | Start and landing transitions when the tooling squash changes base ancestry are covered by PLAN-CORRECTNESS-1-004. |
+| PLAN-FRESH-1-003 | confirmed | fix | - | The app shell hides connected navigation on responsive changes. The independent Chromium probe observed a missing trigger box with the manual panel still open, then restoration without activation. Close and clean up when the open trigger loses its box, and test hide and reshow. |
+| PLAN-TESTABILITY-1-001 | confirmed | fix | - | The story test pathspec includes stories and the replay implementation-story directive excludes their implementation from historical overlays. Record the exact directive and ensure the exact built index ID fails before navigation on the base. |
+| PLAN-TESTABILITY-1-002 | duplicate | - | - | Testing the assembled host on an external-module strict fixture is covered by PLAN-A11Y-SECURITY-1-001. |
+| PLAN-TESTABILITY-1-003 | confirmed | fix | - | Existing launcher and accessibility helper are Chromium and CDP specific. Pin both exact engines and give the packaged fixture an engine-neutral acceptance flow with verifiable versions and explicit missing-engine evidence. Keep CDP assertions in their existing suite. |
+| PLAN-TESTABILITY-1-004 | confirmed | fix | - | The production typography uses root-relative tokens. Assert that the native control's computed font doubles at a fixed viewport and that a long native label wraps. Keep this independent from the 320px viewport proof. |
+| PLAN-TESTABILITY-1-005 | confirmed | fix | - | Mutation excludes story files and built Storybook integration. Put host callback logic in the shared production module already needed by the strict fixture and test the module in the retained project before scoped Mutation. |
+| PLAN-TESTABILITY-1-006 | confirmed | fix | - | The normal project is mouse-only at 1280×800 and the touch project selects the exact touch suffix. Use the native touchscreen route and a real 320px built viewport, keeping in-process coverage for regular Mutation. |
+
+## Independent checks
+
+A Chromium 156.0.8078.4 probe used a shadow-local native invoker, manual popover and slotted controls. Trusted Escape cleared the populated search field. Native Tab focused the following external button while the panel stayed open and covered its hit point. Hiding a connected ancestor gave zero trigger boxes with the panel still open, and restoring it restored the box without an activation. These probes confirm risks in the chosen mechanism. Component tests will verify the remedies.
+
+Reviewed the existing strict fixture, Storybook preview policy, overlay Escape exception, contrast token pairing, historical replay filter, touch and mutation project routing, and the exact tooling workflows at `e7658048`. The confirmed fixes implement existing acceptance requirements and need no operator fork.
