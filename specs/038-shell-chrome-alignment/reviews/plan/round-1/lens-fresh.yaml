@@ -1,0 +1,27 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 2
+    title: "Prove the opted-in rail placement in forced colours"
+    evidence:
+      - artifact: "triage/038-shell-chrome-alignment.md:61-62 calls for preserving separation in forced colours. plan.md:32-34 and quickstart.md:9-10 exercise its new geometry without specifying a forced-colours opt-in case."
+      - code: "packages/elements/test/scenarios/personal-rail.ts:630-648 mounts only a default vertical rail and a horizontal rail in the forced-colours palette loop. packages/elements/src/ocelle-personal-rail.ts:79-89 and 122-127 separate layout from the normal-colour styles."
+    claim: |
+      A placement rule accidentally scoped to normal colours can pass the new ordinary-theme geometry tests and all existing forced-colours rail cases. The Settings separator would revert to its old position in forced colours, even though the plan's other forced-colours checks pass.
+    remedies:
+      - "Extend the shared Phase 2 scenario with a populated, opted-in vertical rail at the same definite height in forced colours. Assert the same token gap above the bottom group and the separator pixels in the resolved system text colour against the canvas. Reuse the existing palette loop and driver in both runtimes."
+
+  - id: PLAN-FRESH-1-002
+    severity: 2
+    title: "Reconcile generated inventories after integrating current main"
+    evidence:
+      - artifact: "triage/038-shell-chrome-alignment.md:32 and 63-64 identifies overlapping Storybook and manifest inventories. plan.md:45-49 and quickstart.md:16-19 pin the receipt to phase bases and require final CI, but give no reconciliation step after integrating newer main."
+      - code: "Open PR #104 at 6fdbe28 adds to the shared Storybook build, Axe and Visual test inventories, fail-token-changed/plant.json, and the root and eight manifest snapshots. Open PR #108 at b787363 changes the same manifest files. tooling/speckit/README.md:219 ties the manifest preflight to the supplied base."
+    claim: |
+      Phase receipts against the older main do not reflect the new story and declaration inventory. Whole-file conflict resolution can discard another mission's registered findings or overlay updates. The missing reconciliation can first surface in expensive landing CI despite the otherwise correct scoped phase runs.
+    remedies:
+      - "Assign the landing integration owner to reconcile the built story IDs, actual Axe and Visual findings, token-change Plant expectations, generated manifest and all affected overlay diagnostics against the exact candidate with current main. Run the manifest preflight against integrated main, preserve unrelated additions and intentional Plant defects, and retain the new receipts beside the original phase evidence. Keep the phase branches and required full landing CI as designed."
