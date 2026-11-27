@@ -16,6 +16,17 @@ beforeAll(async () => {
 }, 300_000);
 
 describe("pnpm pack of @ocelle/elements", () => {
+  it("packs the standalone popover module and declaration, with a published manifest entry", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    const published = JSON.parse(await readFile(join(elements, "custom-elements.json"), "utf8")) as { modules: { path: string }[] };
+    expect({
+      module: packed.includes("dist/ocelle-anchored-popover.js"),
+      declaration: packed.includes("dist/ocelle-anchored-popover.d.ts"),
+      entry: manifest.exports?.["./ocelle-anchored-popover.js"],
+      published: published.modules.some(({ path }) => path === "src/ocelle-anchored-popover.ts"),
+    }).toEqual({ module: true, declaration: true, entry: "./dist/ocelle-anchored-popover.js", published: true });
+  });
+
   it("lists LICENSE, NOTICE, THIRD_PARTY_NOTICES, licenses/lit-BSD-3-Clause.txt, custom-elements.json and dist/browser/ocelle-elements.js beside package.json", () => {
     const wanted = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES", "licenses/lit-BSD-3-Clause.txt", "custom-elements.json", "dist/browser/ocelle-elements.js", "package.json"];
     expect(wanted.filter((path) => !packed.includes(path))).toEqual([]);

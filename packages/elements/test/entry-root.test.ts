@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { commands } from "vitest/browser";
 import * as root from "../src/index.ts";
 
 // The package root (005 FR-002, US1 scenario 17's runtime half; research.md R-02, T014, T052; 011 FR-001, T014;
@@ -14,6 +15,23 @@ import * as root from "../src/index.ts";
 // `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`; and since 020 (T006) `ocelle-disclosure` and (T026)
 // `ocelle-code-block`, and since 019 the data table, event timeline and evidence chain with their items. This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
+  it("registers OcelleAnchoredPopover at the root and exposes its native trigger name", async () => {
+    const popover = document.createElement("ocelle-anchored-popover");
+    popover.id = "root-anchored-popover";
+    popover.setAttribute("label", "Compact controls");
+    document.body.append(popover);
+    try {
+      await popover.updateComplete;
+      const trigger = popover.shadowRoot?.querySelector("button");
+      const name = trigger === null || trigger === undefined ? undefined : (await commands.axState(popover.id, "button") as { name?: string }).name;
+      const registered = customElements.get("ocelle-anchored-popover");
+      const exported = (root as Record<string, unknown>).OcelleAnchoredPopover;
+      expect({ type: typeof exported, registered, name }).toEqual({ type: "function", registered: exported, name: "Compact controls" });
+    } finally {
+      popover.remove();
+    }
+  });
+
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-notice, ocelle-form-input and ocelle-form-select as the OcelleIcon, OcelleBrandMark, OcelleNotice, OcelleFormInput and OcelleFormSelect it exports", () => {
     const exported = root as Record<string, unknown>;
     expect([exported.OcelleIcon, exported.OcelleBrandMark, exported.OcelleNotice, exported.OcelleFormInput, exported.OcelleFormSelect].map((each) => typeof each)).toEqual([
