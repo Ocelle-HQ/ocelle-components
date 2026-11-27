@@ -24,6 +24,7 @@ interface PathStep {
   readonly up?: boolean;
   readonly button?: "left" | "right" | "middle";
 }
+type ElementTarget = string | { readonly id: string; readonly inner: string };
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
@@ -38,6 +39,10 @@ interface ElementCommands {
   readonly axe: (context: BrowserCommandContext, scope?: string) => Promise<unknown>;
   readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
   readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
+  readonly animationStates: (context: BrowserCommandContext, id: string) => Promise<unknown>;
+  readonly seek: (context: BrowserCommandContext, id: string, inner: string | null, ms: number) => Promise<void>;
+  readonly settleLayout: (context: BrowserCommandContext) => Promise<unknown>;
+  readonly overflows: (context: BrowserCommandContext, target: ElementTarget) => Promise<unknown>;
   readonly axStates: (context: BrowserCommandContext, target: Target, scope?: "element" | "subtree") => Promise<unknown>;
   readonly axUpdatesStart: (context: BrowserCommandContext, target: Target) => Promise<void>;
   readonly axUpdatesStop: (context: BrowserCommandContext) => Promise<unknown>;
@@ -98,7 +103,15 @@ const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context
 const touchTap: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
   await (await elementCommands()).touchTap(context, x, y);
 };
-const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap, liveStart, liveStop, axStates, axUpdatesStart, axUpdatesStop };
+// 018 (research.md R-11; contracts/checks.md § Test harness rows 1, 2, 7 and 8): the animation record with identity and
+// iteration count, seeking an animation, the page-wide layout settle and the fractional overflow measure.
+const animationStates: BrowserCommand<[id: string]> = async (context, id) => (await elementCommands()).animationStates(context, id);
+const seek: BrowserCommand<[id: string, inner: string | null, ms: number]> = async (context, id, inner, ms) => {
+  await (await elementCommands()).seek(context, id, inner, ms);
+};
+const settleLayout: BrowserCommand = async (context) => (await elementCommands()).settleLayout(context);
+const overflows: BrowserCommand<[target: ElementTarget]> = async (context, target) => (await elementCommands()).overflows(context, target);
+const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap, liveStart, liveStop, axStates, axUpdatesStart, axUpdatesStop, animationStates, seek, settleLayout, overflows };
 
 // The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
 // device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.

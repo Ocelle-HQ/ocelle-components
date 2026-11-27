@@ -4672,6 +4672,108 @@
         {
           "attributes": [
             {
+              "description": "How the label and the value sit: `stack`, the default, the label above the value; `row`, both on one line, label first, wrapping onto two lines when there is not room. Any other value is `stack` and stays in the attribute as written.",
+              "name": "layout",
+              "type": {
+                "text": "\"stack\" | \"row\""
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The label, shown in the eyebrow style and uppercase, and read by assistive technology as written, as the term's\nname. Text only, never parsed as markup. Reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The value, a string the host has formatted: shown as given in tabular figures, as the term's definition, with no\nnumber formatting and no unit added. Text only, never parsed as markup; empty or unset shows no placeholder.\nReflected as `display-value`.",
+              "fieldName": "displayValue",
+              "name": "display-value",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The term: the label, shown uppercase in the eyebrow style and read as written.",
+              "name": "label"
+            },
+            {
+              "description": "The definition: the value, in tabular figures, shown as given.",
+              "name": "value"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A label and its value, shown as an eyebrow label above (or, in a row, before) a value in tabular figures, and exposed\nas one term and its definition.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The label, shown in the eyebrow style and uppercase, and read by assistive technology as written, as the term's\nname. Text only, never parsed as markup. Reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "display-value",
+              "default": "undefined",
+              "description": "The value, a string the host has formatted: shown as given in tabular figures, as the term's definition, with no\nnumber formatting and no unit added. Text only, never parsed as markup; empty or unset shows no placeholder.\nReflected as `display-value`.",
+              "kind": "field",
+              "name": "displayValue",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"stack\"",
+              "description": "How the label and the value sit: the `layout` attribute when it is `row`, else `stack`. Setting it writes the\nattribute as given.",
+              "kind": "field",
+              "name": "layout",
+              "type": {
+                "text": "\"stack\" | \"row\""
+              }
+            }
+          ],
+          "name": "OcelleMetric",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-metric"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-metric.ts",
+            "name": "OcelleMetric"
+          },
+          "kind": "js",
+          "name": "OcelleMetric"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-metric.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "description": "The native destination. An absent or unusable destination renders text.",
               "fieldName": "href",
               "name": "href",
@@ -5229,6 +5331,342 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-personal-rail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "The status the pill shows, in its colours: `info`, `success`, `warning`, `danger` or `neutral`. Absent, empty or any other value shows `neutral` and stays in the attribute as written.",
+              "name": "status",
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              }
+            },
+            {
+              "description": "`pill`, the default, filled with the status ground; `badge`, outlined in the status colour with no fill, its text in tabular figures. Any other value is `pill` and stays in the attribute as written.",
+              "name": "variant",
+              "type": {
+                "text": "\"pill\" | \"badge\""
+              }
+            },
+            {
+              "description": "`default` or `compact` (the extra-small text, line height `--ocelle-line-height-snug`, padding `--ocelle-space-1` / `--ocelle-space-2`). Any other value is `default` and stays in the attribute as written.",
+              "name": "density",
+              "type": {
+                "text": "\"default\" | \"compact\""
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control (the host keeps no copy): its accessible name, over `label` and the text; an empty or whitespace-only value clears it. On a static pill it stays on the host.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the ids, space-separated, of the elements that name it, resolved in the host's own tree, over `aria-label`; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the ids, space-separated, of the elements that describe it, resolved in the host's own tree; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the ids, space-separated, of the elements it controls, resolved in the host's own tree; an empty value clears it.",
+              "name": "aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control with any value; `\"false\"` or an empty value applies none. It draws no mark.",
+              "name": "aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved and held; applied to the inner button as written in button mode only (a link cannot be pressed): `\"true\"` reports pressed and gives the pressed look, `\"false\"` not pressed, `\"mixed\"` mixed; an empty value clears it.",
+              "name": "aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the browser's own tooltip and description (the README advises against it). On a static pill it stays on the host.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and a pill made static gives it back as `aria-label`.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-controls`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-current`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-pressed`, kept in link mode too; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Button mode: with it, or with a link-mode `href`, the pill is interactive; without either it is static, inert\ncontent with no role of its own. Reflected.",
+              "fieldName": "interactive",
+              "name": "interactive",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(an inner `<a>` with the `href` as written); any other value leaves it static, or in button mode with\n`interactive`. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Disabled, for an interactive pill: out of the tab order, reported disabled and not activated (no `click`, no\n`ocelle-pill-tag-activate`), a link without its `href`, in the disabled look; no effect while the pill is static.\nReflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of an interactive pill's inner control, trimmed; empty or whitespace-only counts as none, and the\nname is then the text. It changes no visible text and has no effect while the pill is static. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The visual box: the padding, the colours, the border and the radius; on an interactive pill, the inner control itself.",
+              "name": "pill"
+            },
+            {
+              "description": "The inner `<button>`, or the inner `<a>` in link mode, of an interactive pill.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "cssStates": [
+            {
+              "description": "While the pill is in button mode and its moved `aria-pressed` is `\"true\"`; never in link mode.",
+              "name": "pressed"
+            },
+            {
+              "description": "While the pill is interactive and its moved `aria-current` is set to any value other than `\"false\"`.",
+              "name": "current"
+            }
+          ],
+          "customElement": true,
+          "description": "A state pill or a count badge: its text, with an optional leading icon, on its status's colours with the pill radius;\nwith `interactive` a toggle or filter button, with a link `href` a link.",
+          "events": [
+            {
+              "description": "Dispatched from the element on each activation of an enabled interactive pill that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click, nor by a disabled or static pill.",
+              "name": "ocelle-pill-tag-activate",
+              "type": {
+                "text": "CustomEvent<Record<string, never>>"
+              }
+            },
+            {
+              "description": "The native click of an interactive pill's inner control, retargeted to the element, once per activation; a disabled pill delivers none.",
+              "name": "click",
+              "type": {
+                "text": "MouseEvent"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "interactive",
+              "default": "false",
+              "description": "Button mode: with it, or with a link-mode `href`, the pill is interactive; without either it is static, inert\ncontent with no role of its own. Reflected.",
+              "kind": "field",
+              "name": "interactive",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(an inner `<a>` with the `href` as written); any other value leaves it static, or in button mode with\n`interactive`. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Disabled, for an interactive pill: out of the tab order, reported disabled and not activated (no `click`, no\n`ocelle-pill-tag-activate`), a link without its `href`, in the disabled look; no effect while the pill is static.\nReflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of an interactive pill's inner control, trimmed; empty or whitespace-only counts as none, and the\nname is then the text. It changes no visible text and has no effect while the pill is static. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"neutral\"",
+              "description": "The status the pill shows: the `status` attribute when it is one of `info`, `success`, `warning`, `danger` and\n`neutral`, else `neutral`. Setting it writes the attribute as given.",
+              "kind": "field",
+              "name": "status",
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              }
+            },
+            {
+              "default": "\"pill\"",
+              "description": "The look: the `variant` attribute when it is `badge`, else `pill`. Setting it writes the attribute as given.",
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "\"pill\" | \"badge\""
+              }
+            },
+            {
+              "default": "\"default\"",
+              "description": "The spacing: the `density` attribute when it is `compact`, else `default`. Setting it writes the attribute as given.",
+              "kind": "field",
+              "name": "density",
+              "type": {
+                "text": "\"default\" | \"compact\""
+              }
+            },
+            {
+              "description": "Focuses the inner control of an interactive pill; a static pill, which has none, takes no focus.",
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "description": "Clicks the inner control of an interactive pill, so the click passes through it and is guarded like any other (a\ndisabled pill ignores it); on a static pill, the element's own native click.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcellePillTag",
+          "slots": [
+            {
+              "description": "The text. A static or disabled pill wraps a text that does not fit onto further lines; an enabled interactive pill truncates it with an ellipsis and shows it whole in a tooltip on hover and keyboard focus.",
+              "name": ""
+            },
+            {
+              "description": "One decorative icon before the text (the slot convention), one line tall.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-pill-tag"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-pill-tag.ts",
+            "name": "OcellePillTag"
+          },
+          "kind": "js",
+          "name": "OcellePillTag"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-pill-tag.ts"
     },
     {
       "declarations": [
@@ -5847,6 +6285,108 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-skip-link.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "description": "The status the dot shows, in its colour: `info`, `success`, `warning`, `danger` or `neutral`. Absent, empty or any other value shows `neutral` and stays in the attribute as written.",
+              "name": "tone",
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name, trimmed: a non-empty one exposes the indicator as one image with that name; empty,\nwhitespace-only or unset hides it from the accessibility tree, and the host then places text naming the state\nbeside it. The only way to name it: a host `aria-label` is not read. Reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Runs the pulse: three growing, fading rings of `--ocelle-motion-pulse` each (4.8 s by default) when set, when the\nindicator is connected or shown again with it set, and when reduced motion ends; then the dot stays solid. No\nanimation under `prefers-reduced-motion: reduce`. Reflected.",
+              "fieldName": "pulse",
+              "name": "pulse",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The solid dot, never animated.",
+              "name": "dot"
+            },
+            {
+              "description": "The pulse ring around the dot, rendered only while `pulse` is set.",
+              "name": "ring"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A status dot in the colour of its tone, with an optional pulse ring around it, named by `label` or decorative.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name, trimmed: a non-empty one exposes the indicator as one image with that name; empty,\nwhitespace-only or unset hides it from the accessibility tree, and the host then places text naming the state\nbeside it. The only way to name it: a host `aria-label` is not read. Reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "pulse",
+              "default": "undefined",
+              "description": "Runs the pulse: three growing, fading rings of `--ocelle-motion-pulse` each (4.8 s by default) when set, when the\nindicator is connected or shown again with it set, and when reduced motion ends; then the dot stays solid. No\nanimation under `prefers-reduced-motion: reduce`. Reflected.",
+              "kind": "field",
+              "name": "pulse",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "default": "\"neutral\"",
+              "description": "The status the dot shows: the `tone` attribute when it is one of `info`, `success`, `warning`, `danger` and\n`neutral`, else `neutral`. Setting it writes the attribute as given.",
+              "kind": "field",
+              "name": "tone",
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              }
+            }
+          ],
+          "name": "OcelleStatusIndicator",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-status-indicator"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-status-indicator.ts",
+            "name": "OcelleStatusIndicator"
+          },
+          "kind": "js",
+          "name": "OcelleStatusIndicator"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-status-indicator.ts"
     },
     {
       "declarations": [

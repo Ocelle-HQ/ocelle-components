@@ -1,0 +1,14 @@
+# Squad round 3: verify 2
+
+Read on `claude/007-status-elements` at `0c511ee9` (fixes 2). The changes since verify 1 are in `contracts/checks.md`
+§ US3 (US3-8 and "stretched host"), `research.md` § R-06 "Stretched hosts" and one Edge Case in `spec.md`. I re-ran the
+lens's `p2.cjs` on Chromium 153 headless (`/opt/pw-browsers/chromium-1243`) twice: once with the planned static
+`.pill` sizing, and once with `box-sizing: border-box` removed.
+
+| ID | Status | Reason |
+|----|--------|--------|
+| PLAN-FRESH-3-001 | resolved | Fixes 2 did not touch this. Everything verify 1 found still holds: research.md § R-06 "Baseline", data-model.md, plan.md decision 15, R-07, and the checks.md § US3 and § US4 "baseline" bodies with their plants. The checks.md "baseline" row is unchanged. No new contradiction. |
+| PLAN-FRESH-3-002 | resolved | The `box-sizing: border-box` plant is now listed under US3-8, and the US3-8 long-word twins assert that the `.pill` box lies inside the host and the container (inline size at most 100 px, edges within the host's, within 0.5 px). In the 150 px row beside "Name" they assert that the `.pill` box lies inside the host. Re-run of p2 with the plant: the `.pill` is 126.0 px in the 100 px grid track and the 100 px block container, and 176.0 px in the 150 px row, where the host is 150 px. Both assertions fail, so the plant is killed. With the planned sizing the `.pill` is 100.0 px and 150.0 px, so the assertions hold for the correct implementation. "Blocked" is 75.8 px in the 200 px grid track and the 200 px column either way. That is why the "stretched host" body now keeps only the `inline-size: fit-content` plant and says that US3-8 kills the `box-sizing` plant. research.md § R-06 states the 126 px and 176 px overflow and which body catches it. The spec.md Edge Case now cites § US3 "stretched host" instead of US3-8. Nothing outside `reviews/` still says the stretched-host body kills the `box-sizing` plant. No new contradiction. Constitution VIII holds. |
+| PLAN-FRESH-3-003 | resolved | Fixes 2 did not touch this. Option (b) is still applied in research.md § R-12, plan.md decision 16, phase 6, Constitution Check V, quickstart.md and the spec.md header, as verify 1 found. No new contradiction. |
+| PLAN-FRESH-3-004 | resolved | Fixes 2 did not touch this. `flex: none` on the sibling is still recommended in R-09, decision 14, the spec header and the README rule, and checks.md § US5 still pins the stretched width under `flex: 1 1 0`. No new contradiction. |
+| PLAN-FRESH-3-005 | resolved | The US3-8 150 px row still asserts that the host's right edge lies beyond the row's by the sibling's width, and that the `min-inline-size: 0` twin fits. The new assertion (the `.pill` box inside the host) does not conflict with this. Re-run of p2: the host and `.pill` are both 150.0 px, with the right edge at 192.7 px against the row's 150.0 px. The Edge Case, R-06 and the README rule are unchanged. No new contradiction. |

@@ -49,7 +49,7 @@ describe("baseline command (gates/bin/baselines.ts)", () => {
     async () => {
       const at = await root();
       const before = files(join(at, "storybook/baselines"));
-      expect(before.size).toBe(796);
+      expect(before.size).toBe(838);
       expect(await update(at)).toEqual({ code: 0, stdout: ["baselines: wrote 0 files (0 added, 0 changed, 0 removed), 0 bytes in total"], stderr: [] });
       expect(files(join(at, "storybook/baselines"))).toEqual(before);
     },

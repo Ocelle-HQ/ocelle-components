@@ -138,11 +138,12 @@ describe("used values under the six theme conditions", { timeout: 60_000 }, () =
 describe("reduced motion (FR-007, US1 scenario 7)", { timeout: 60_000 }, () => {
   // 012 (research.md R-07; tasks.md T042): every motion duration, motion-spin with them, is 0ms under reduced motion;
   // motion-turn, an angle, and the easing are unchanged. A stricter replacement of "motion-fast and motion-base".
-  it.each(["light", "dark"] as const)("motion-fast, motion-base and motion-spin are 0ms under prefers-reduced-motion: reduce in %s, motion-turn and easing unchanged", async (theme) => {
+  // 018 (research.md R-10; tasks.md T015): motion-pulse joins them, a stricter replacement of the three names.
+  it.each(["light", "dark"] as const)("motion-fast, motion-base, motion-spin and motion-pulse are 0ms under prefers-reduced-motion: reduce in %s, motion-turn and easing unchanged", async (theme) => {
     const page = await open(theme, undefined, "reduce");
     const values = await read(page, theme);
     await page.close();
-    expect(values).toEqual(expected(theme, { "motion-fast": "0s", "motion-base": "0s", "motion-spin": "0s" }));
+    expect(values).toEqual(expected(theme, { "motion-fast": "0s", "motion-base": "0s", "motion-spin": "0s", "motion-pulse": "0s" }));
     expect([values["easing-standard"], values["motion-turn"]]).toEqual(["cubic-bezier(0.22, 1, 0.36, 1)", "360deg"]);
   });
 
@@ -155,10 +156,10 @@ describe("reduced motion (FR-007, US1 scenario 7)", { timeout: 60_000 }, () => {
     expect({ delay: values["tooltip-delay"], fast: values["motion-fast"], base: values["motion-base"] }).toEqual({ delay: "0.5s", fast: "0s", base: "0s" });
   });
 
-  it("they are 120ms, 200ms and 800ms without that request", async () => {
+  it("they are 120ms, 200ms, 800ms and 1600ms without that request", async () => {
     const page = await open("light", undefined, "no-preference");
     const values = await read(page, "light");
     await page.close();
-    expect([values["motion-fast"], values["motion-base"], values["motion-spin"]]).toEqual(["0.12s", "0.2s", "0.8s"]);
+    expect([values["motion-fast"], values["motion-base"], values["motion-spin"], values["motion-pulse"]]).toEqual(["0.12s", "0.2s", "0.8s", "1.6s"]);
   });
 });
