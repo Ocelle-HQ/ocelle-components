@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  round:
+  lenses:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -14,18 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 8f73c33c9487f69f4e65f2cb0419816ba22a5d64
+          ref: a7867ad8b479718814d5d71f3f0cc116b2701c36
           fetch-depth: 0
           persist-credentials: false
-      - name: Open the first plan squad round
+      - name: Validate complete plan lens scope
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "8f73c33c9487f69f4e65f2cb0419816ba22a5d64"
+          test "$(git rev-parse HEAD)" = "a7867ad8b479718814d5d71f3f0cc116b2701c36"
           test -z "$(git status --porcelain)"
-          git config user.name "Ocelle Spec Kit proof"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          status=$(.specify/extensions/squad/scripts/round.sh)
-          echo "$status"
-          jq -e '.round == 1 and (.lenses | length) == 4' <<< "$status"
-          test "$(cat specs/038-shell-chrome-alignment/reviews/plan/round-1/base.sha)" = "8f73c33c9487f69f4e65f2cb0419816ba22a5d64"
-          test -z "$(git status --porcelain)"
+          tooling/speckit/bin/scope-check.sh lens d3f8f3feb58cf8471422abe7069b93415d0dcee1
+          grep -c '^complete: true$' specs/038-shell-chrome-alignment/reviews/plan/round-1/lens-*.yaml
