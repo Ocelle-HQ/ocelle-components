@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  spec:
+  round:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -14,16 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 494a0eaf1ecc212b4ab0300ea50f318353c9fa0e
+          ref: 8f73c33c9487f69f4e65f2cb0419816ba22a5d64
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate exact spec review and initialize plan
+      - name: Open the first plan squad round
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "494a0eaf1ecc212b4ab0300ea50f318353c9fa0e"
+          test "$(git rev-parse HEAD)" = "8f73c33c9487f69f4e65f2cb0419816ba22a5d64"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh spec-check ad51bc9ee58f0db6aa31e00451e2c8c65e942477
-          status=$(.specify/extensions/squad/scripts/spec-status.sh)
+          git config user.name "Ocelle Spec Kit proof"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          status=$(.specify/extensions/squad/scripts/round.sh)
           echo "$status"
-          jq -e '.check == 2 and .verdict == "clean" and .blocking == 0 and .operator_questions == 0' <<< "$status"
-          .specify/scripts/bash/setup-plan.sh --json
+          jq -e '.round == 1 and (.lenses | length) == 4' <<< "$status"
+          test "$(cat specs/038-shell-chrome-alignment/reviews/plan/round-1/base.sha)" = "8f73c33c9487f69f4e65f2cb0419816ba22a5d64"
+          test -z "$(git status --porcelain)"
