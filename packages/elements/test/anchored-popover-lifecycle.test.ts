@@ -171,6 +171,30 @@ it("releases native tracking when a later beforetoggle listener cancels opening"
   expect(panel.matches(":popover-open")).toBe(true);
 });
 
+it("releases canceled native tracking before a successful retry in the same task", async () => {
+  const { host, trigger, panel } = await mount(fixture());
+  panel.addEventListener("beforetoggle", (event) => { event.preventDefault(); }, { once: true });
+
+  const canceled = observeActivation(trigger);
+  const canceledStayedClosed = !panel.matches(":popover-open");
+  const retried = observeActivation(trigger);
+  const retryOpened = panel.matches(":popover-open");
+  const canceledSignalAborted = canceled.signals[0]?.aborted;
+  const retrySignalAborted = retried.signals[0]?.aborted;
+
+  host.close();
+  await nextFrame();
+
+  expect(canceledStayedClosed).toBe(true);
+  expect(retryOpened).toBe(true);
+  expect(panel.matches(":popover-open")).toBe(false);
+  expect(canceledSignalAborted, "the retry releases the canceled opening's listener").toBe(true);
+  expect(retrySignalAborted).toBe(false);
+  expect(retried.signals[0]?.aborted).toBe(true);
+  expect(canceled.scheduled).toHaveLength(1);
+  expect(canceled.ran).toEqual([]);
+});
+
 it("closes after the host disables its trigger and leaves outside focus in place", async () => {
   const root = fixture();
   const { host, trigger, panel } = await mount(root);
