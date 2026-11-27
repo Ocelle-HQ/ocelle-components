@@ -55,6 +55,7 @@ const tooltipDelay = fileURLToPath(new URL("../fixtures/tooltip-delay.css", impo
 /** The built files each page may load, by served name, and where the global setup put them. */
 const builtFiles: Readonly<Record<string, string>> = {
   "ocelle-elements.js": "dist/browser/ocelle-elements.js",
+  "anchored-popover.js": "test-host/anchored-popover.js",
   "bundle-a.js": "bundles/bundle-a.js",
   "bundle-b.js": "bundles/bundle-b.js",
   "card-bundle.js": "bundles/card-bundle.js",

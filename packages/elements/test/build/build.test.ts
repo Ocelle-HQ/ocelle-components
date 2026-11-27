@@ -60,9 +60,10 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-tooltip.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "ocelle-context-sidebar.js", "ocelle-personal-rail.js", "ocelle-button.js", "ocelle-action-row.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-anchored-popover.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-tooltip.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "ocelle-context-sidebar.js", "ocelle-personal-rail.js", "ocelle-button.js", "ocelle-action-row.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
+      rootImportsAnchoredPopover: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-anchored-popover.js"),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
       rootImportsMark: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-brand-mark.js"),
       rootImportsDialog: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-dialog.js"),
@@ -76,9 +77,10 @@ describe("the module build (dist/*.js)", () => {
       rootImportsButton: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-button.js"),
       rootImportsRow: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-action-row.js"),
     }).toEqual({
-      files: ["browser.js", "index.js", "ocelle-action-row.js", "ocelle-brand-mark.js", "ocelle-button.js", "ocelle-card.js", "ocelle-context-sidebar.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-personal-rail.js", "ocelle-section-header.js", "ocelle-tooltip.js"],
+      files: ["browser.js", "index.js", "ocelle-action-row.js", "ocelle-anchored-popover.js", "ocelle-brand-mark.js", "ocelle-button.js", "ocelle-card.js", "ocelle-context-sidebar.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-personal-rail.js", "ocelle-section-header.js", "ocelle-tooltip.js"],
       outside: [],
       litImported: true,
+      rootImportsAnchoredPopover: true,
       rootImportsIcon: true,
       rootImportsMark: true,
       rootImportsDialog: true,
@@ -379,6 +381,15 @@ describe("the module build's personal-rail module", () => {
 describe("the module build's type declarations", () => {
   const declarations = (file: string): string => (existsSync(join(dist, file)) ? readFileSync(join(dist, file), "utf8") : "");
 
+  it("emits the popover declaration with its documented host API", () => {
+    const popover = declarations("ocelle-anchored-popover.d.ts");
+    expect({
+      root: declarations("index.d.ts").includes('export { OcelleAnchoredPopover } from "./ocelle-anchored-popover.ts"'),
+      publicClass: popover.includes("export declare class OcelleAnchoredPopover"),
+      documentedClose: /\/\*\*(?:(?!\*\/)[\s\S])*\*\/\s*close\(\): void;/.test(popover),
+    }).toEqual({ root: true, publicClass: true, documentedClose: true });
+  });
+
   it("dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey", () => {
     const read = (file: string, positive: string): { readonly declares: boolean; readonly internalsKey: boolean } => {
       const text = declarations(file);
@@ -522,6 +533,7 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
     const code = text();
     expect({
       exists: code !== "",
+      definesAnchoredPopover: code.includes('"ocelle-anchored-popover"'),
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
       definesDialog: code.includes('"ocelle-dialog"'),
@@ -548,6 +560,7 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       dynamicImport: /\bimport\s*\(/.test(code),
     }).toEqual({
       exists: true,
+      definesAnchoredPopover: true,
       definesIcon: true,
       definesMark: true,
       definesDialog: true,

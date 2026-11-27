@@ -29,7 +29,7 @@
 // The directory, or the reason the builds failed, is provided to the tests, which report it: a failed build is a
 // failing test of its own, and every page then lacks the scripts it loads.
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,8 +53,8 @@ async function browserBuild(dir: string): Promise<void> {
   await build({ configFile: join(elements, "vite.browser.config.ts"), root: elements, logLevel: "error", build: { outDir: join(dir, "dist") } });
 }
 
-/** The module build into `<dir>/host/module` and two host bundles of it into `<dir>/bundles`. */
-async function moduleBundles(dir: string): Promise<void> {
+/** Emits the package modules and resolves Lit exactly as a package consumer does. */
+function moduleBuild(dir: string): string {
   const host = join(dir, "host");
   const tsc = join(repo, "node_modules", "typescript", "bin", "tsc");
   const args = [tsc, "-p", join(elements, "tsconfig.json"), "--outDir", join(host, "module"), "--declaration", "false", "--sourceMap", "false"];
@@ -62,6 +62,11 @@ async function moduleBundles(dir: string): Promise<void> {
   if (ran.status !== 0) throw new Error(`tsc exited ${String(ran.status)}: ${ran.stdout}${ran.stderr}`);
   mkdirSync(join(host, "node_modules"), { recursive: true });
   symlinkSync(realpathSync(join(elements, "node_modules", "lit")), join(host, "node_modules", "lit"), "dir");
+  return host;
+}
+
+/** Bundles the emitted module build for the mixed-copy fixtures. */
+async function moduleBundles(dir: string, host: string): Promise<void> {
   for (const name of ["a", "b"]) {
     const entry = join(host, `entry-${name}.js`);
     writeFileSync(
@@ -87,6 +92,32 @@ async function moduleBundles(dir: string): Promise<void> {
     resolve: { conditions: ["module", "browser", "production"] },
     build: { outDir: join(dir, "bundles"), emptyOutDir: false, minify: false, lib: { entry: card, formats: ["es"], fileName: () => "card-bundle.js" } },
   });
+}
+
+export const anchoredPopoverBundle = "test-host/anchored-popover.js";
+
+/** Bundles the actual emitted individual package entry and its external fixture script. */
+export async function buildAnchoredPopoverFixture(dir: string, emittedHost?: string): Promise<boolean> {
+  const host = emittedHost ?? moduleBuild(dir);
+  const entryPoint = "ocelle-anchored-popover.js";
+  // The initial phase-base replay predates this entry. Preserve the shared build for every existing fixture.
+  if (!existsSync(join(host, "module", entryPoint))) return false;
+
+  const entry = join(host, "entry-anchored-popover.js");
+  const fixture = join(elements, "test", "browser", "fixtures", "anchored-popover.ts");
+  writeFileSync(entry, `import "./module/${entryPoint}";\nimport ${JSON.stringify(fixture)};\n`);
+  await build({
+    configFile: false,
+    root: host,
+    logLevel: "error",
+    resolve: { conditions: ["module", "browser", "production"] },
+    build: {
+      outDir: join(dir, "test-host"),
+      emptyOutDir: false,
+      lib: { entry, formats: ["es"], fileName: () => "anchored-popover.js" },
+    },
+  });
+  return true;
 }
 
 /** The test host's file into `<dir>/test-host`, Lit bundled. */
@@ -164,8 +195,10 @@ export default async function setup(project: TestProject): Promise<() => void> {
   const dir = mkdtempSync(join(tmpdir(), "ocelle-elements-fixture-"));
   try {
     await browserBuild(dir);
-    await moduleBundles(dir);
+    const host = moduleBuild(dir);
+    await moduleBundles(dir, host);
     await testHost(dir);
+    await buildAnchoredPopoverFixture(dir, host);
     await plants(dir);
     await testControls(dir);
     project.provide("elementsFixture", { dir });

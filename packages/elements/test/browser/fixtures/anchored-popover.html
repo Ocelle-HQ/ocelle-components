@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Anchored popover strict-CSP fixture</title>
+<link rel="stylesheet" href="tokens.css">
+<script type="module" src="anchored-popover.js"></script>
+</head>
+<body>
+<main>
+  <h1>Compact controls</h1>
+  <div id="chrome">
+    <button id="before" type="button">Before controls</button>
+    <ocelle-anchored-popover id="appearance" label="Appearance menu">
+      <span slot="trigger" aria-hidden="true">☼</span>
+      <button id="first" type="button">Light theme</button>
+      <button id="unavailable" type="button" disabled>Unavailable theme</button>
+      <button id="last" type="button">Dark theme</button>
+    </ocelle-anchored-popover>
+    <button id="after" type="button">After controls</button>
+    <ocelle-anchored-popover id="profile" label="Profile menu">
+      <span slot="trigger" aria-hidden="true">AR</span>
+      <button id="profile-action" type="button">Account details</button>
+    </ocelle-anchored-popover>
+  </div>
+  <button id="outside" type="button">Outside action</button>
+  <span id="appearance-probe" hidden></span>
+  <span id="panel-probe" hidden></span>
+</main>
+</body>
+</html>

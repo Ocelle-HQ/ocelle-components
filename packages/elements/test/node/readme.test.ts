@@ -807,6 +807,7 @@ const fragments = [
 /** The entry points (FR-002): specifier, file and what it defines, exactly, in the README's table. */
 const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-anchored-popover.js` | `dist/ocelle-anchored-popover.js` | `ocelle-anchored-popover` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |",
@@ -1061,9 +1062,10 @@ describe("packages/elements/README.md", () => {
 
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
-    expect(tableRows(read("README.md"), "Entry points")).toStrictEqual(entryRows);
+    expect(tableRows(read("README.md"), "Entry points"), "the entry table covers the popover alongside the existing exports").toStrictEqual(entryRows);
     expect(Object.keys(manifest.exports ?? {})).toEqual([
       ".",
+      "./ocelle-anchored-popover.js",
       "./ocelle-icon.js",
       "./ocelle-brand-mark.js",
       "./ocelle-notice.js",
@@ -1735,6 +1737,21 @@ describe("packages/elements/README.md overview (014 T110)", () => {
 
   it("points to the examples of each use", () => {
     expect(overview).toContain("Examples shows each selection and input element built into a screen");
+  });
+});
+
+describe("the anchored popover documentation", () => {
+  it("explains the named trigger, positioning, surface and host close API", () => {
+    const section = flat(read("README.md").split(/^## `ocelle-anchored-popover`$/m)[1]?.split(/^## /m)[0] ?? "").toLowerCase();
+    const required = ["nonmodal", "`label`", "`placement`", "`below`", "`above`", "`trigger`", "default slot", "`surface`", "`close()`", "focus"];
+    expect(required.filter((part) => !section.includes(part)), "missing popover API documentation").toEqual([]);
+  });
+
+  it("records the anchored popover and its standalone entry as a minor addition", () => {
+    const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("CHANGELOG.md"))?.[1] ?? "";
+    const paragraphs = unreleased.split(/\n\s*\n/).map(flat);
+    expect(paragraphs.some((paragraph) => paragraph.includes("`ocelle-anchored-popover`") &&
+      paragraph.includes("`@ocelle/elements/ocelle-anchored-popover.js`") && /\bminor\b/i.test(paragraph))).toBe(true);
   });
 });
 
