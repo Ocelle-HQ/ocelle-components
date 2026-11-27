@@ -204,13 +204,12 @@ export class OcelleAnchoredPopover extends LitElement {
       return;
     }
     if (event.defaultPrevented) return;
-    const view = this.ownerDocument.defaultView;
+    const { defaultView: view } = this.ownerDocument;
     if (view === null) return;
     this.#trigger?.setAttribute("aria-expanded", "true");
-    const listeners = new AbortController();
-    const open: OpenSurface = { view, listeners, frame: 0, outsidePointer: undefined };
+    const open: OpenSurface = { view, listeners: new AbortController(), frame: 0, outsidePointer: undefined };
     this.#open = open;
-    const options = { capture: true, signal: listeners.signal };
+    const options = { capture: true, signal: open.listeners.signal };
     this.ownerDocument.addEventListener("pointerdown", this.#onPointerDown, options);
     this.ownerDocument.addEventListener("pointerup", this.#onPointerUp, options);
     this.ownerDocument.addEventListener("pointercancel", this.#onPointerCancel, options);
