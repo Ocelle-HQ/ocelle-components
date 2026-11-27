@@ -22,8 +22,8 @@
 
 - [x] Each user story maps to measured outcomes.
 - [x] Documentation, manifest, pinned light and dark baselines, forced colours, and strict-CSP evidence are in scope.
-- [ ] Independent specification review and recorded verdict.
+- [x] Independent specification review and recorded verdict.
 
 ## Notes
 
-The two blocking findings from [spec check 1](../reviews/spec/check-1.md) are addressed in the updated spec. The independent recheck is pending.
+The two blocking findings from [spec check 1](../reviews/spec/check-1.md) are addressed in the updated spec. [Independent spec check 2](../reviews/spec/check-2.md) verified the corrections and is clean.
