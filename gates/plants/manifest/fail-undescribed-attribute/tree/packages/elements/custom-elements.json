@@ -382,6 +382,118 @@
         {
           "attributes": [
             {
+              "default": "\"\"",
+              "description": "The accessible name of the native trigger. A blank name disables it.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"below\"",
+              "description": "The preferred vertical placement relative to the trigger.",
+              "fieldName": "placement",
+              "name": "placement",
+              "type": {
+                "text": "\"below\" | \"above\""
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native trigger button.",
+              "name": "trigger"
+            },
+            {
+              "description": "The nonmodal popover surface.",
+              "name": "surface"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A compact, nonmodal surface opened by a named native button.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The accessible name of the native trigger. A blank name disables it.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "placement",
+              "default": "\"below\"",
+              "description": "The preferred vertical placement relative to the trigger.",
+              "kind": "field",
+              "name": "placement",
+              "privacy": "public",
+              "type": {
+                "text": "\"below\" | \"above\""
+              }
+            },
+            {
+              "description": "Close the surface and return focus to the enabled trigger when focus is still inside.",
+              "kind": "method",
+              "name": "close",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleAnchoredPopover",
+          "slots": [
+            {
+              "description": "The native controls presented in the popover.",
+              "name": ""
+            },
+            {
+              "description": "Decorative icon or initials for the named trigger.",
+              "name": "trigger"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-anchored-popover"
+        },
+        {
+          "kind": "variable",
+          "name": "view"
+        },
+        {
+          "default": "new AbortController()",
+          "kind": "variable",
+          "name": "listeners"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-anchored-popover.ts",
+            "name": "OcelleAnchoredPopover"
+          },
+          "kind": "js",
+          "name": "OcelleAnchoredPopover"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-anchored-popover.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "description": "Mission, project or personal. Mission is the default for missing or unsupported values.",
               "fieldName": "layout",
               "name": "layout",
