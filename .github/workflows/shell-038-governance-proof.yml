@@ -5,22 +5,24 @@ on:
 permissions:
   contents: read
 jobs:
-  lenses:
+  proof:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       SPECIFY_FEATURE_DIRECTORY: specs/038-shell-chrome-alignment
-      SPECIFY_FEATURE_NO_PERSIST: '1'
+      SPECIFY_FEATURE_NO_PERSIST: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: a7867ad8b479718814d5d71f3f0cc116b2701c36
+          ref: 89ff9b749d72707006cf0aaa9d86f26e97cc72ad
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate complete plan lens scope
+      - name: Verify refute scope and read squad status
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "a7867ad8b479718814d5d71f3f0cc116b2701c36"
+          test "$(git rev-parse HEAD)" = "89ff9b749d72707006cf0aaa9d86f26e97cc72ad"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh lens d3f8f3feb58cf8471422abe7069b93415d0dcee1
-          grep -c '^complete: true$' specs/038-shell-chrome-alignment/reviews/plan/round-1/lens-*.yaml
+          tooling/speckit/bin/scope-check.sh refute d3f8f3feb58cf8471422abe7069b93415d0dcee1
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 1 and .lens_files == 4 and .confirmed == 7 and .fixes == 7 and .forks == 0 and .undecided == 0' <<< "$status"
