@@ -14,15 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 89ff9b749d72707006cf0aaa9d86f26e97cc72ad
+          ref: d60640d51ac70e8c3190a071c19e180cb686fa17
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify refute scope and read squad status
+      - name: Verify the planner fix scope
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "89ff9b749d72707006cf0aaa9d86f26e97cc72ad"
+          test "$(git rev-parse HEAD)" = "d60640d51ac70e8c3190a071c19e180cb686fa17"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh refute d3f8f3feb58cf8471422abe7069b93415d0dcee1
-          status=$(.specify/extensions/squad/scripts/status.sh)
-          echo "$status"
-          jq -e '.round == 1 and .lens_files == 4 and .confirmed == 7 and .fixes == 7 and .forks == 0 and .undecided == 0' <<< "$status"
+          tooling/speckit/bin/scope-check.sh planner 89ff9b749d72707006cf0aaa9d86f26e97cc72ad
