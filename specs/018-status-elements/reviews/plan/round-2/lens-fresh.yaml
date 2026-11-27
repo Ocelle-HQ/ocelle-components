@@ -1,0 +1,113 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/*.md, quickstart.md at 101545f3; round 1 refute,
+# fixes-1/-2 and verify-1/-2 (settled findings not repeated). Dependency code read with git show:
+# origin/claude/007-actions-status control.ts (linkHref, MovedAttributes, guardHost, controlStyles), ocelle-button.ts
+# (render 504-511, label 116-117), icon-slot.ts 45-59, storybook/stories/button.stories.ts; origin/claude/016-overlays
+# ocelle-tooltip.ts 1-8, 233-234, 255-282, 328-394. On main: gates/stylelint/token-only.ts (every R-04/R-05/R-06/R-07
+# declaration re-classified: opacity, -0.5 in calc, 1lh, calc(100% - 2 * ...), system colours all pass),
+# gates/lib/capture-plan.ts 48-59, packages/tokens/src/source.ts 122-137, 225-227, naming.ts.
+# Probes: Chromium 153.0.8010.12 headless (/opt/pw-browsers/chromium-1243) via playwright-core, scripts in the session
+# scratchpad (probe1..probe8.cjs). The descender-clipping candidate (overflow: hidden at line-height 1.15/1.2 with
+# Schibsted Grotesk) was probed and dropped: no clipping, only a 1 px baseline shift.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "A closed `<details>` does not cancel the ring's animation in Chromium, so FR-012 (d) cannot hold by CSS alone, and the fix R-04 defers to the spike needs script the plan rules out"
+    evidence:
+      - artifact: "research.md § R-04 (d): 'if `<details>` does not restart natively the phase-2 tasks add the smallest fix the spike shows (**recheck**)'; § R-04 Rationale: 'no timers, no `animationend` listener and no JS state'; plan.md Technical Context, Performance Goals: 'no script work while idle; ... none for static pills, indicators or metrics'; data-model.md: 'No script state.'; spec.md FR-012 (d) and US1-4 list a `<details>` opened as a start case; SC-004 counts runs started by (d)"
+      - code: "probe1.cjs, Chromium 153: a ring with `animation-duration: 1600ms; animation-iteration-count: 3` in a shadow root inside `<details open>`. After `open = false` the same Animation is still running (currentTime 500 -> 800). After 5 s closed it has ended; after `open = true` `getAnimations()` is `[]`: no run starts. The control case probe5.cjs (`hidden` on the parent div) cancels the animation and, on reveal, starts a new one at 100 ms, as R-04 says."
+      - code: "probe2.cjs: the only signal the indicator itself gets on close/open is an IntersectionObserver on the ring (`io false` on close, `io true` on open; no ResizeObserver record). An IntersectionObserver also fires on scrolling out of view and back, which FR-012 says must not start a run, so it needs a `checkVisibility()` test as well."
+    claim: |
+      The spike's outcome is already known: in the engine the tests run on, the `<details>` case of FR-012 (d) does not
+      happen natively. The "smallest fix" is therefore certain to be needed. It is not small. It needs a per-indicator
+      observer while `pulse` is set, a visibility test so that scrolling does not count, and a way to restart the ring
+      (re-creating or keying it). That puts script state and an observer on every pulsing indicator. It contradicts
+      the Performance Goals, the data model's "no script state", the "CSS only, no Timeout mutants" basis of the
+      mutation plan, and decision 9's story and plant arithmetic for phase 2. Leaving it to a phase-2 task means the
+      operator approves a design that cannot be built as written. Also, a `<details>` closed for less than one run
+      keeps the run going rather than starting a new one; FR-012 does not cover that case either.
+    remedies:
+      - "Design the fix now: while connected with `pulse` set, one IntersectionObserver on the ring; on an `isIntersecting` change from false to true with `checkVisibility()` false before and true after, re-create the ring (keyed render). Update R-04, data-model.md (script state, observer lifecycle), Performance Goals, contracts/checks.md (a `<details>` body with its plant, and a scroll-out-and-back twin that starts no run) and the mutation notes."
+      - "Operator amends FR-012 (d), US1-4 and SC-004 so that a `<details>` opened is not a start case, as was done for `hidden=\"until-found\"` (PLAN-CORRECTNESS-1-013 (a)). Add a README rule and a scenario that pins what Chromium does. The pulse stays CSS-only."
+
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "The round-1 shrink fix applied to static pills, together with `overflow-wrap: anywhere`, breaks a one-word state pill such as 'Blocked' into single letters beside a mission name in a flex row"
+    evidence:
+      - artifact: "research.md § R-06: host `display: inline-grid; min-inline-size: 0; max-inline-size: 100%` 'in every mode', `min-inline-size: 0` on a static `.pill`, `.icon-row` and text span; text `white-space: normal; overflow-wrap: anywhere`; 'a static pill in a flex row or grid track shrinks and wraps, FR-027'. research.md § R-05: `overflow-wrap: anywhere` on the metric's `dt` and `dd`"
+      - code: "probe6.cjs / probe7.cjs, Chromium 153: `<div style=\"display:flex;width:220px;gap:8px\"><span>Refactor the mission scheduler pipeline</span><x-pill>Blocked</x-pill></div>`, with the pill built on R-06's box (14px text, 4/12 padding). Plan's box: host 45 px wide, text box 19 px wide and 64 px high (four lines of 'Blocked'). The same box with `overflow-wrap: anywhere` and only the host at `min-inline-size: auto`: still 45 px and four lines, because the inner `min-inline-size: 0` chain and `anywhere` both lower the min-content. With no `min-inline-size: 0` chain and `overflow-wrap: break-word`: host 76 px, text one line."
+    claim: |
+      The static pill accounts for most consumer use (32 kitty-mission-ui uses, state marks beside names in card headers
+      and rows). Round 1 added `min-inline-size: 0` so that the interactive pill could truncate (PLAN-FRESH-1-006). R-06
+      applies it to every mode, and `overflow-wrap: anywhere` brings the min-content down to one character. As a result
+      a flex row shrinks a short state pill to a few pixels and breaks its word letter by letter, while the long name
+      beside it keeps its whole words. This is not FR-027's "wraps a full text that does not fit": the text would fit
+      if the pill were not shrunk below its own word. The metric's `overflow-wrap: anywhere` gives the same collapse to
+      a metric in a host's flex strip of metrics. No planned fixture catches it: the US3 wrap scenarios use a
+      fixed-width block.
+    remedies:
+      - "Static pill and metric: drop the `min-inline-size: 0` chain outside the enabled interactive mode (move it into the interactive host sheet), and use `overflow-wrap: break-word`, which does not lower min-content. A very long unbroken word in a block container still breaks inside the box, but in a flex row it then sets the pill's minimum. Amend the edge case to say so and add a README rule (a host that must allow it sets `min-inline-size: 0`). Add US3 and US2 scenarios: a one-word pill or metric beside a long name in a narrow flex row keeps its word on one line."
+      - "Keep R-06 as designed. The README tells hosts to give a static pill `flex: none` (or `flex-shrink: 0`) in a flex row. A scenario pins the letter-by-letter break without it and the whole word with it, and the operator records that the pill breaks inside words in flex rows by design."
+
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "The 'sibling keeps its size' assertion for truncation in a flex row is false for the planned box: flex shrink divides the overflow between the pill and the name, so the name wraps"
+    evidence:
+      - artifact: "contracts/checks.md § US5 bodies, 'flex row and grid track': 'the pill shrinks to the room left and truncates; the sibling keeps its size'"
+      - code: "probe3.cjs, Chromium 153, R-06/R-07/R-09 box (inline-grid host with `min-inline-size: 0`, interactive cap and 5 px margins, a `display: contents` tooltip host around an inline-flex control, a nowrap ellipsis text span) in `display:flex; width:200px; gap:8px` with a `<span>Mission name</span>` sibling: the pill truncates (host 130 px, scrollWidth 226 > clientWidth 104), but the sibling is 51.6 px wide and 36 px high (two lines) against its natural 90.2 x 17 px."
+    claim: |
+      Flex shrink is weighted by flex-basis, so the name, whose basis is its max-content, also shrinks down to its
+      longest word. The body as written goes red and stays red, or is quietly fixed with `flex: none` on the fixture's
+      sibling. Neither the README nor the contract tells consumers what kitty-mission-ui will see: a mission name that
+      wraps or is squeezed next to a filter pill. The interactive host's inline margins (decision 11) add 10 px to the
+      overflow that is shared out.
+    remedies:
+      - "Contract and README: in a flex row the sibling keeps its size only if it is `flex: none` (or the pill gets the remaining room through the host's own `flex: 1 1 0` / `min-inline-size: 0`). checks.md: the fixture sets this explicitly, with a twin row without it that pins the shared shrink."
+      - "Give the interactive host `flex-shrink` large enough (a unitless value, which token-only allows for `flex-shrink`) that it absorbs the overflow first. State it in R-07, data-model.md and the contract, and keep the assertion."
+
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "The hover and active looks of decision 6 have no story, against FR-004's 'a story per variant and per state' and 012's precedent"
+    evidence:
+      - artifact: "research.md § R-12: the 17 stories list no hover or active story; § R-07 Looks / plan.md decision 6 define distinct hover (pill border to the status colour, badge filled with the status ground) and active (inset `bar-width` cue) looks; spec.md FR-004 'a story per variant and per state'; SC-002"
+      - code: "git show origin/claude/007-actions-status:storybook/stories/button.stories.ts lines 3, 65-87: `PrimaryHovered`, `SecondaryHovered`, `FlushHovered`, `SecondaryPressed`, declared 'with 006's pointer parameter'. 018 reuses that pattern for nothing."
+    claim: |
+      The states with the most consumer-visible styling (an interactive pill's hover border and a badge's hover fill,
+      the active cue) get no light/dark baseline. A regression in them, for example the box-stability rule of
+      PLAN-A11Y-SECURITY-1-005 or a contrast pair on the badge's hover ground, would pass `gate:visual` and story axe.
+      The story count was kept low on purpose (decision 9), but FR-004 grants no exception. The plan should either add
+      the stories or ask for one.
+    remedies:
+      - "Add `Hovered` (pill and badge) and `Active` stories with 006's pointer parameter (19 stories; carry the new total into R-12, decision 9, Scale/Scope and quickstart.md)."
+      - "Operator records an FR-004 exception for hover and active, with the scenarios in contracts/checks.md § US4 bodies as the only evidence, and plan.md Complexity Tracking lists it."
+
+  - id: PLAN-FRESH-2-005
+    severity: 1
+    title: "The `Truncated` story's focused pill opens its tooltip at once, so the baseline captures 008's top-layer bubble, which the plan does not mention"
+    evidence:
+      - artifact: "research.md § R-12: '`Truncated` (with a focused truncated pill in a clipping container, R-07)'; quickstart.md Expected outcomes: 'a truncated pill, focused inside a clipping container with its ring whole'"
+      - code: "git show origin/claude/016-overlays:packages/elements/src/ocelle-tooltip.ts lines 4-5: the bubble shows 'at once when keyboard focus (`:focus-visible`) arrives on the trigger'; 280: `#focused = ... active.matches(':focus-visible')`; 012 button.stories.ts 3-4: a story wrapper's plain `focus()` shows `:focus-visible` in 006's capture. So the focused truncated pill is a tooltip trigger with focus-visible at capture time."
+    claim: |
+      The baseline will include the bubble, placed by the tooltip's per-frame loop. It can overlap the other pills in
+      the story, and it ties 018's baseline to 008's bubble styling. The planned outcome describes only the ring. This
+      is not wrong in itself, but the reviewer of the phase-6 baselines has nothing to judge the image against, and a
+      later change to 008's bubble would turn 018's baseline red.
+    remedies:
+      - "R-12 and quickstart.md: state that the `Truncated` baseline shows the open tooltip, and lay the story out so that the bubble covers no other example; or show the focused pill in its own story whose purpose is the ring and the open tooltip."
+
+  - id: PLAN-FRESH-2-006
+    severity: 1
+    title: "The metric's visually hidden written copy is a second, invisible find-in-page match"
+    evidence:
+      - artifact: "research.md § R-05: `<span class=\"eyebrow\" aria-hidden=\"true\">${label}</span><span class=\"written\">${label}</span>`, the copy hidden by zero size and `overflow: hidden`"
+      - code: "probe4.cjs, Chromium 153: the tree is right (term \"Open missions\", definition \"12\", no extra node), but `window.find('Open missions')` matches twice in one metric: the uppercase visible span (case-insensitive) and the zero-size copy, which cannot be seen when it is highlighted."
+    claim: |
+      Operator decision PLAN-A11Y-SECURITY-1-001 (a) settled the accessibility tree. It did not consider the side
+      effect: browser find reports two matches per metric label, and stepping to the second highlights nothing visible.
+      This is minor, but it is observable and nothing records it.
+    remedies:
+      - "Record it as a known limitation in R-05 and the README (and pin it in metric.ts), or choose a hiding that find-in-page skips, if the T001 probe shows one that keeps the term's name."

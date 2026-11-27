@@ -1,0 +1,183 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The plan tests against \"012's driver\", but its scenarios need 008's driver methods too, the two drivers conflict, and the plan has no harness work or harness self-tests"
+    evidence:
+      - artifact: "research.md § R-11 \"scenarios ... against 012's driver (as merged)\"; plan.md Technical Context \"012's test driver and recorder (R-11)\"; plan.md Phase 1 T001 recheck list (012, 008, op 016, 011, control.ts exports, tooltip properties, rule (f), plant split, disabled-ink). The test harness is not on that list"
+      - artifact: "research.md § R-04 Tests \"`shadowRoot.getAnimations()` / `ring.getAnimations()` ..., `effect.getComputedTiming()` for `iterations` (3) and `endTime` (≤ 5000), and frames sampled by setting `currentTime`\"; research.md § R-08 needs a focus-visible read; contracts/checks.md US5 \"tooltip open state through `ocelle-tooltip`'s public behaviour only\""
+      - code: "git show origin/claude/007-actions-status:packages/elements/test/scenarios/driver.ts: lines 252, 257, 264, 281, 289 are `press(key, modifiers?)`, `click(id, options?: ClickOptions)`, `hover(id, options?: Target)`, `events(id, types)`/`takeEvents()`, `reducedMotion(mode: Motion)`. It has no animation, top-layer or focus-visible method (grep -i anim: no match)"
+      - code: "git show origin/claude/016-overlays:packages/elements/test/scenarios/driver.ts: lines 227, 229, 231, 245, 253, 257 are `press(key, { shift? })`, `hover(id | null, inner?)`, `click(id, inner?, options?)`, `reducedMotion(on: boolean)`, `record`/`recorded`, `animations(id, inner?)`, plus `topLayer()` and `focusVisible(id, inner?)`. The two branches have the same method names with different signatures"
+      - code: "008 driver.ts 115-121: `AnimationRecord` is { duration, easing, playState, keyframes }. It has no iterations, endTime, currentTime or startTime, and no way to seek, so neither driver can express R-04's assertions"
+      - code: "012 specs/012-button-action-row/contracts/checks.md line 7 \"## Test harness (phase 1, red first)\" and line 18 `test/harness/*.test.ts`; 008 contracts/checks.md line 27 \"### Harness self-tests (Phase 1, before any element)\". Both missions proved each new driver method first. 018's contracts/checks.md has no harness section"
+    claim: |
+      Every scenario row in contracts/checks.md assumes driver methods that do not exist on either dependency branch as
+      read, or that exist twice with different signatures. After 012 and 008 both land, `driver.ts`, `in-process.ts`,
+      `browser/driver.ts` and `commands.ts` hold a reconciled driver that this plan has not read. The scenarios also need
+      new methods that neither branch has: an animation read with iterations, endTime, currentTime and an identity, a
+      seek, a text-node `data` edit for the characterData path (R-09), and a nested shadow read of the tooltip bubble
+      inside the pill's shadow root. Without a planned harness step, these methods arrive in the same red commit as
+      the element scenarios, with no self-test on a stand-in. A driver method that always returns "no animation" or
+      "tooltip closed" would make the US1-5, US5-1 and US5-6 negatives pass vacuously, and the per-phase red run would
+      still be red because other tests fail. That is the vacuous-test path Principle VIII forbids.
+    remedies:
+      - "Add a '## Test harness' section to contracts/checks.md and a harness step in phase 1 (red first, after T001), modelled on 012's and 008's: name each new or extended driver method (an animation record with iterations, endTime, currentTime and a stable id; `seek(id, inner, ms)`; `editText(id, data)` for characterData; the tooltip's open state through 008's `topLayer()` or a nested-shadow read; `focusVisible` as merged). Give each a self-test on a plain stand-in page in both harnesses, with each 'does not' paired with a positive. Add 'the merged driver's signatures (012 and 008 reconciled)' to T001's recheck list in plan.md and research.md § R-01, with a stop on a difference."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Truncation state is set by a ResizeObserver, but the driver's settle() returns before ResizeObserver callbacks run, so truncation and tooltip assertions read stale state and the negatives pass vacuously"
+    evidence:
+      - artifact: "research.md § R-09 \"`truncated` (internal reactive state) is `!disabled && text.scrollWidth > text.clientWidth`, re-evaluated by: a `ResizeObserver` on the text span ...\"; contracts/checks.md US5 row \"width changes, text edits, `disabled` toggles\""
+      - code: "packages/elements/test/in-process.ts:35-39 (main), the same on 012 (in-process.ts:43-47) and 008 (53-61): settle() awaits each element's updateComplete and then one requestAnimationFrame. In the HTML event loop, rAF callbacks run before style, layout and ResizeObserver delivery in the same rendering step, so the promise resolves (and the test continues as a microtask) before the observer has fired. The `truncated` change it causes then needs another Lit update that settle() never awaits"
+      - code: "008 test/fixtures/tooltip-delay.css: the tooltip's test delay is 300 ms, so 'no tooltip is shown' read immediately after a hover is true whatever the pill does"
+      - artifact: "spec.md US5-1 \"no tooltip is shown\", US5-5 \"the tooltip is disabled without a reload\", US5-6 \"the tooltip stays disabled\""
+    claim: |
+      Truncation only changes when layout runs and the observer fires: at first render, after a width change and after
+      a text change. A scenario that mounts, resizes or edits and then reads the tooltip's `disabled` or open state goes
+      through settle(), and that state is not yet final at that point. A positive (a truncated pill shows its tooltip)
+      fails or flakes. A negative (a fitting or disabled pill shows none, US5-1, US5-6) passes before the observer has a
+      chance to make it wrong. A plant that inverts the truncation test would then not be caught. Tooltip negatives also
+      depend on time: reading 'not shown' before the 300 ms delay has passed proves nothing.
+    remedies:
+      - "State in research.md § R-11 / contracts/checks.md that the truncation scenarios settle through a second frame plus updateComplete after any layout-changing step (or that settle() gains a ResizeObserver-aware wait, self-tested per PLAN-TESTABILITY-1-001). State that every 'no tooltip' assertion is read after hover or focus held for longer than the test tooltip delay, in the same body as a twin pill whose tooltip does show under the same wait. Name the plant: truncated forced to false."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "Several truncation re-evaluation triggers in R-09 cannot be reached by any planned scenario, so their mutants survive under a 100 % break threshold"
+    evidence:
+      - artifact: "research.md § R-09: triggers are ResizeObserver, `slotchange`, a MutationObserver (`characterData`, `childList`, `subtree`), `updated()` when `disabled`, `density`, `variant` or the mode changed, and `document.fonts` `loadingdone`; observers 'disconnected in `disconnectedCallback` or when the pill becomes static'"
+      - artifact: "contracts/checks.md US5 row covers only \"width changes, text edits, `disabled` toggles\"; spec.md US5 Independent Test 'change the container width, the text and `disabled`'"
+      - code: "packages/elements/test/in-process.ts:25 `css(source).replace(/@font-face\\s*\\{[^}]*\\}/g, \"\")`. The in-process (mutated) project loads no font, so `loadingdone` never fires there. Same on 008 in-process.ts:33"
+      - code: "stryker.elements.config.json `\"thresholds\": { \"high\": 100, \"low\": 100, \"break\": 100 }`. Constitution VIII: 'A surviving mutant in new or changed code is a blocking review finding unless the review records it as an equivalent mutant with the reason.'"
+    claim: |
+      Under the elements config, each trigger is mutated: the `loadingdone` listener is removed, `characterData`,
+      `subtree` and `childList` become false, the `slotchange` listener is removed, and `density` and `variant` are
+      dropped from the `updated()` condition. The observer `disconnect()` calls are removed too. No planned scenario
+      fails on any of these mutants:
+      - No font loads in process, so the `loadingdone` listener can never fire there.
+      - The `slotchange` listener duplicates the MutationObserver's childList on the host. Only a slot reassignment
+        (a child's `slot` attribute changed) tells them apart.
+      - A `characterData` edit of a Text node is not something the driver can do.
+      - Changing `variant` alters only `font-variant-numeric`.
+      - The observer teardown has no public effect.
+      These mutants are either not equivalent and untested (blocking), or they get recorded as equivalent when they are
+      not. The plan should decide at design time which triggers are required and how each is proven.
+    remedies:
+      - "Give each trigger a row in contracts/checks.md § Scenarios that changes truncation through that trigger alone: a Text node's data edited (characterData + subtree), a nested element's text replaced (subtree childList), a child's `slot` attribute changed (slotchange only), `density` switched in a fixed-width container (no resize of the span), and a pill made interactive after connection. Either prove `loadingdone` with a FontFace from a bundled test font on both harnesses or drop that trigger and state why the ResizeObserver covers a late font. Drop `variant` from the `updated()` condition, or name the case that proves it. For observer teardown, either state the observable (for example no callback work after static, read through a counter the driver exposes) or record the expected equivalent mutants in research.md now."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "Truncation after a mode change is untested, and R-09's observer lifecycle conflicts with data-model.md: a button-to-link switch replaces the observed text span"
+    evidence:
+      - artifact: "research.md § R-09 \"The observers are created in `connectedCallback` only while interactive and disconnected ... when the pill becomes static\". data-model.md Mode transitions: \"static → button / link ... truncation observers created\", \"button ↔ link ... Observers: kept\""
+      - artifact: "research.md § R-07 \"in button and link mode the visual box *is* the inner control: `<button ...>` or `<a ...>`\". A switch renders a different element, so the text span inside it is a new node"
+      - artifact: "contracts/checks.md US5 row and Edge cases: no row exercises truncation on a pill that became interactive after connection (US4-9) or after a button ↔ link switch (US4-10)"
+    claim: |
+      By R-09 as written, a pill that is static at connection and later becomes interactive gets no observers, because
+      `connectedCallback` has already run. A pill that switches between button and link keeps a ResizeObserver on the
+      detached old span. In both cases truncation stops following width and text, yet every US5 scenario starts with an
+      interactive pill and never switches mode, so all of them pass. This is a real defect path, and the planned tests
+      cannot catch it.
+    remedies:
+      - "Make R-09 agree with data-model.md: create observers on every entry to an interactive mode and re-observe the new text span after each button ↔ link render. Add US5 rows to contracts/checks.md: a pill made interactive (`interactive` set, and a link-mode `href` set) after connection, then narrowed until it truncates, shows the tooltip; a truncated button-mode pill switched to link mode and widened until it fits disables the tooltip."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The element's own reduced-motion `animation: none` rule cannot be proven: the token's 0 ms value under reduced motion hides its removal"
+    evidence:
+      - artifact: "research.md § R-04 \"`@media (prefers-reduced-motion: reduce) { .ring { animation: none; } }` ... `motion-pulse` is a duration and joins [rule (f)] ... The element's own `animation: none` under reduced motion does not rely on the 0ms duration.\""
+      - code: "git show origin/claude/007-actions-status:gates/bin/brand-rules.ts:192-222: rule (f) sets every motion token whose value is a duration to 0ms under reduced motion, so `--ocelle-motion-pulse` is 0ms in the in-process token sheet (in-process.ts adopts `css(source)`)"
+      - code: "012 test/scenarios/busy.ts:31 records the same kind of negative with its plant ('plant: the `animation: none` rule removed'), which 018's 'every \"does not\" ... paired ... and a measured plant' (R-11) inherits"
+    claim: |
+      With the element's `animation: none` removed, a ring under reduced motion runs three 0 ms iterations. Those finish
+      at once and leave the ring at rest at opacity 0, so 'no animation runs and the dot is shown solid' (US1-5, FR-013,
+      SC-004) still holds. Or it holds most of the time: whether a finished zero-duration animation still appears in
+      `getAnimations()` in the first frame is timing-dependent. So the plant for US1-5 is either not caught or caught
+      only by flaky timing. The spec's intent, which R-04 states explicitly, is that the element does not rely on the
+      token. No planned test checks that.
+    remedies:
+      - "In contracts/checks.md US1-5, add a body that runs under `reduce` with a host rule restoring `--ocelle-motion-pulse: 1600ms` (driver.rules) and asserts no animation on the ring. Pair it with the same host rule under `no-preference` showing one run, and record the plant 'the element's `animation: none` rule removed'."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "'No other change starts or restarts a run' is proven by a CSS proxy, not by the behaviour"
+    evidence:
+      - artifact: "research.md § R-04 \"The CSS keeps every `animation-*` longhand independent of tone and theme, and a test pins that.\""
+      - artifact: "spec.md FR-012 \"No other change starts or restarts a run: not a change of `tone`, `label` or any other attribute, the theme, the element's size or position, `visibility` or opacity, or scrolling it out of view and back\"; SC-004"
+    claim: |
+      Pinning the computed `animation-*` longhands per tone shows that two static styles are equal. It does not show
+      that the running animation was not restarted. A re-render could replace the ring span (a keyed template, or a
+      class binding that recreates the node), and that would restart the run with identical longhands. The same holds
+      for a theme, size, visibility or label change. Each listed change is a 'does not' with no positive twin and no
+      plant. Contracts/checks.md names none of them.
+    remedies:
+      - "For each change FR-012 lists (tone, label, theme, inline size, position, visibility, opacity, scroll out and back), add a body to contracts/checks.md US1-4 that seeks the run to a known time (for example 1000 ms), applies the change, and asserts the same animation (stable id) at a current time ≥ the seek. Pair it with a positive twin: removing and re-setting `pulse` gives a new animation at time ≈ 0. Plant: the ring re-created on every render."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "SC-001's consumers scenario sits in phase 4 but checks indicator and metric attributes that phases 2 and 3 have already made pass, and its assertions are not stated"
+    evidence:
+      - artifact: "plan.md Phases, 4. US3: \"SC-001's consumers scenario\"; contracts/checks.md \"SC-001 | `scenarios/consumers.ts` | in process | each Consumers attribute and slot rendered with no consumer CSS\""
+      - artifact: "spec.md SC-001 lists the indicator's `tone` and the metric's `label` and `display-value` beside the pill's attributes"
+      - code: ".specify/extensions/story/scripts/red.sh:20-22: a red commit is accepted when the whole test command exits non-zero, so a test that passes inside a red commit is not detected by the script"
+    claim: |
+      In phase 4 the indicator and metric parts of the consumers scenario are green against the phase's base. They can
+      never be seen failing, which breaks Principle VIII 'Proven against the old code', and red.sh's whole-suite exit
+      code does not notice. 'Rendered with no consumer CSS' also states no observable outcome, which invites a
+      mount-only test.
+    remedies:
+      - "Split the SC-001 rows by element: the indicator's `tone` row in phase 2, the metric's `label` / `display-value` row in phase 3, and the pill's rows in phase 4. In contracts/checks.md, state each row's assertion: computed fill per tone from expected.ts, term and definition in the accessibility tree, a status ground and text from tokens, a badge border, `title` kept on the host, slotted text in the tree."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "FR-027's 'ARIA attributes on a static pill's host are left where they are' is proven only by a README test, so the static guard in attributeChangedCallback is unprotected for six of the seven names"
+    evidence:
+      - artifact: "contracts/checks.md Edge cases \"ARIA states left on a static pill | `readme.test.ts` (the rule); no story\"; US3-7 covers `title` only"
+      - artifact: "research.md § R-08 \"While static, `attributeChangedCallback` for the seven names does nothing ...\" and \"`release()` ... the host observes the write-back as an ordinary attribute change, which the pill (now static) ignores\""
+    claim: |
+      The guard has observable outcomes: the attribute stays on the host, no mirror appears and no custom state is
+      exposed. Mutants that drop the guard, or that let `release()`'s write-back be re-moved, are killed only for
+      `title` (US3-7) and only for the pill's state at upgrade. No scenario sets or changes `aria-label`,
+      `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current` or `aria-pressed` on a pill that is already
+      static. No scenario checks that the write-back after US4-8 stays on the host across a later attribute change.
+      A README-string test cannot fail for that behaviour.
+    remedies:
+      - "Add a scenario row in contracts/checks.md (pill-tag.ts): for each of the seven names, set the attribute on an upgraded static pill, then change it. Assert it stays on the host with no `data-ocelle-moved-*` mirror, no inner control and no custom state. Pair it with the same steps on an interactive twin, where the attribute is moved. Extend US4-8 with a change of one written-back attribute after the pill is static. Plant: the static guard removed."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "Plan decision 4 adds untested and unspecified behaviour to the indicator: a host `aria-label` decides its name, and a blank one hides a labelled indicator"
+    evidence:
+      - artifact: "research.md § R-03 \"005's `accessibleName(label, hostAriaLabel)` lets a present host `aria-label` decide, which is kept for consistency with `ocelle-icon`: **plan decision 4**\"; spec.md Assumptions \"`label` on the indicator is the one way to name it\"; FR-014 \"With a non-empty (after trimming) `label`, the element exposes exactly one accessibility node of role `img` named by the label\""
+      - code: "packages/elements/src/naming.ts:13 `if (hostAriaLabel !== null) return hostAriaLabel.trim() === \"\" ? undefined : hostAriaLabel;`. With `label=\"Running\" aria-label=\"\"` the indicator is hidden, which contradicts FR-014"
+      - artifact: "contracts/checks.md has no row for a host `aria-label` on the indicator; ocelle-icon.ts:43-45 shows the extra `aria-label` observedAttributes entry this design needs"
+    claim: |
+      The design adds a branch (observing `aria-label` and passing it to accessibleName) whose behaviour no acceptance
+      scenario defines and no planned test exercises. Its mutants (passing null, dropping the observed attribute)
+      would survive, or they would be killed only by a test the implementer invents that pins behaviour the spec never
+      stated. One of those behaviours (a blank host `aria-label` hides a labelled indicator) contradicts FR-014 as
+      written.
+    remedies:
+      - "Pass `null` for the host `aria-label` (label is the one way, as the spec's Assumptions say), observe no `aria-label`, and add a contracts/checks.md US1-3 body: a host `aria-label` does not change the name given by `label`."
+      - "Keep plan decision 4, but first add a spec scenario for host `aria-label` (present, blank, with and without `label`) and the matching contracts/checks.md rows, reconciling the blank case with FR-014."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 1
+    title: "The pointer-target scenario (US4-7) does not say how 'the area that takes a pointer click' is measured"
+    evidence:
+      - artifact: "spec.md US4-7 \"the area that takes a pointer click is at least 24 px by 24 px\"; contracts/checks.md US4 row names only the event recorder and mode switches"
+      - code: "012 driver.ts `ClickOptions.position` exists for clicks at a chosen point (git show origin/claude/007-actions-status:packages/elements/test/scenarios/driver.ts:96-100)"
+    claim: |
+      A test that measures only the inner control's box passes even if a host-level wrapper or the tooltip's
+      `display: contents` host leaves part of that box without click handling. The spec's wording asks for the clickable
+      area.
+    remedies:
+      - "In contracts/checks.md US4-7, add: the control's box is ≥ 24 × 24 px (the token value from expected.ts), and a click at each corner inset 1 px, on a one-character compact badge, delivers one `click` and one `ocelle-pill-tag-activate`. Pair it with a click 1 px outside the box that delivers none."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 1
+    title: "The `Pulse` story's baseline is captured with animations disabled under reduced motion, so it shows nothing `Tones` does not, while adding to the plant shard pressure"
+    evidence:
+      - artifact: "research.md § R-12 \"`Pulse` (captured under reduced motion with animations disabled by 006's capture plan, so the baseline is the solid dot)\"; plan decision 9 (19 stories exceed the plant split headroom)"
+      - code: "gates/lib/capture-plan.ts:48 `reducedMotion: \"reduce\"`, :59 `animations: \"disabled\"`"
+    claim: |
+      Under reduced motion the ring has `animation: none` and opacity 0, so the `Pulse` baseline cannot differ from a
+      non-pulsing dot. A #498-style defect, such as an animation on the dot, would not show in it. The story counts as
+      visual evidence for the pulse without being any, and it adds two baselines to the count that decision 9 already
+      flags as over budget.
+    remedies:
+      - "State in research.md § R-12 that the `Pulse` story carries only axe and the FR-004 state coverage, and that its visual baseline is not evidence for FR-011 or FR-012 (which the US1-4 scenarios prove). Or fold `pulse` into the `Tones` story as a second row and drop the separate story."

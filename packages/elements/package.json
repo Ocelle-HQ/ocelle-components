@@ -54,6 +54,9 @@
     "./ocelle-skip-link.js": "./dist/ocelle-skip-link.js",
     "./ocelle-disclosure.js": "./dist/ocelle-disclosure.js",
     "./ocelle-code-block.js": "./dist/ocelle-code-block.js",
+    "./ocelle-status-indicator.js": "./dist/ocelle-status-indicator.js",
+    "./ocelle-metric.js": "./dist/ocelle-metric.js",
+    "./ocelle-pill-tag.js": "./dist/ocelle-pill-tag.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

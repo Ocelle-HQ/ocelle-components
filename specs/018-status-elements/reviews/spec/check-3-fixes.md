@@ -1,0 +1,16 @@
+# Spec check 3, fixes
+
+Operator answers applied (human:jeroennouwsdev, 2026-11-15): SPEC-3-03 (b); the reconnection reading of FR-012 (b)
+confirmed; spec gate "approve after a final fix" (this fix). Recorded under "Operator decisions after spec check 3"
+in the spec.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| SPEC-3-01 | fixed: a pulse run starts in exactly four cases, and the list is stated to be complete: (a) `pulse` set while connected and rendered; (b) each connection with `pulse` set (a fresh render, no state kept, operator-confirmed); (c) the motion preference changing from `reduce` to no preference; (d) each time the connected indicator starts being rendered again (it or an ancestor stops being `display: none`, the `hidden` attribute included, or a closed `<details>` opens), keeping no state. A case that occurs while not rendered starts its run at (d). No other change starts one, with examples (attributes, theme, size or position, `visibility`, opacity, scrolling) | FR-012; US1-4; US1 Independent Test; SC-004 |
+| SPEC-3-02 | fixed: FR-035 (d): at a button/link switch, focus on the old inner control moves to the new one, and the focus ring shows on it only if it showed before (WCAG 2.4.3); a pill that becomes static while focused loses focus as for a removed node, the pill does not move it, and the README tells hosts to move it; a pill that becomes interactive does not take focus | FR-035 (d); US4-10, US4-11 (new); US4 Independent Test; Edge Cases |
+| SPEC-3-03 | answered: (b) match `ocelle-button`. `aria-pressed` is moved and mirrored in both modes and applied in button mode only; in link mode it gives no `:state(pressed)`; FR-035 (c) drops its `aria-pressed` clause (all moved values stay moved at a switch). `mixed` reaches the inner button as written, with no pressed look and no `:state(pressed)` | Operator decisions after spec check 3; FR-030, FR-031, FR-035 (c); US4-4, US4-10; Edge Cases |
+| SPEC-3-04 | fixed (note): FR-005 declares `pressed` (button mode, `aria-pressed="true"`) and `current` (button and link mode) | FR-005 |
+| SPEC-3-05 | fixed (note): FR-030 says the plan extends 012's helpers where FR-035 needs more (write-back to a static host) so that `ocelle-button` and `ocelle-action-row` keep their behaviour and their passthrough tests pass unchanged; with SPEC-3-03 (b) no per-mode name set is needed | FR-030 |
+| SPEC-3-06 | fixed (note): new edge case: ARIA states on a static pill, written back or set by the host, stay on the host, may be flagged by axe and are the host's to clear (`removeAttribute` once static, or clear before); no story shows that state; FR-035 points to it | Edge Cases; FR-035 |
+| SPEC-3-07 | fixed (note): FR-035 (e): a pill static at upgrade writes each `data-ocelle-moved-*` mirror back as its host attribute unless the host already sets it (the host's value wins) and removes the mirror | FR-035 (e); US4-12 (new); Edge Cases |
+| SPEC-3-08 | fixed (note): the README states that each connection and each re-show starts a run, so re-inserting, moving, re-rendering or re-showing an indicator more often than every 5 s keeps it pulsing, and the host should keep `pulse` off between changes or keep the element in place; the 5 s limit is per run | FR-012; Operator decisions after spec check 3 |

@@ -1655,6 +1655,412 @@ describe("the ocelle-progress stories in the built Storybook (013 US3, I3)", { t
   }
 });
 
+// 018 phase 2 (I3; research.md R-12; tasks.md T017): the `ocelle-status-indicator` stories, `Tones` (every tone, a row
+// without `pulse` and a row with it, each indicator beside text naming its state) and `Labelled` (every tone named by
+// `label`, the success one pulsing). Each renders its indicators in light and dark, defined, each with the story's
+// `tone`, `label` and `pulse` and its 8 px dot drawn, with base.css applied and no request outside the origin.
+
+/** What one story's indicator must show: its attributes, and its dot's drawn size. */
+interface Indicator {
+  readonly tone: string;
+  readonly label: string | null;
+  readonly pulse: boolean;
+  readonly dot: readonly [number, number];
+}
+
+const indicatorTones = ["info", "success", "warning", "danger", "neutral"] as const;
+const indicatorOf = (tone: string, pulse: boolean, label: string | null = null): Indicator => ({ tone, label, pulse, dot: [8, 8] });
+const indicatorLabels: Readonly<Record<string, string>> = { info: "Queued", success: "Running", warning: "Blocked", danger: "Failed", neutral: "Draft" };
+
+const indicatorStories: readonly { readonly id: string; readonly indicators: readonly Indicator[] }[] = [
+  { id: "elements-ocelle-status-indicator--tones", indicators: [...indicatorTones.map((tone) => indicatorOf(tone, false)), ...indicatorTones.map((tone) => indicatorOf(tone, true))] },
+  { id: "elements-ocelle-status-indicator--labelled", indicators: indicatorTones.map((tone) => indicatorOf(tone, tone === "success", indicatorLabels[tone] ?? null)) },
+];
+
+/** What a status indicator story's page shows: its theme, the base stylesheet and its indicators. */
+function observeIndicators(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-status-indicator") !== undefined,
+    indicators: [...document.querySelectorAll("#storybook-root ocelle-status-indicator")].map((indicator) => {
+      const dot = indicator.shadowRoot?.querySelector('[part="dot"]')?.getBoundingClientRect();
+      return { tone: indicator.getAttribute("tone"), label: indicator.getAttribute("label"), pulse: indicator.hasAttribute("pulse"), dot: [dot?.width ?? 0, dot?.height ?? 0] };
+    }),
+  }));
+}
+
+describe("the ocelle-status-indicator stories in the built Storybook (018 US1, I3)", { timeout: 60_000 }, () => {
+  for (const { id, indicators } of indicatorStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its indicators with the story's tone, label and pulse and their dots drawn, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-status-indicator");
+        expect({ ...((await observeIndicators(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, indicators, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+// 018 phase 3 (I3; research.md R-12; tasks.md T029): the `ocelle-metric` stories, `Stack` (three metrics, label above
+// value), `Row` (the same three with `layout="row"`, label and value on one line) and `EmptyValue` (a metric with no
+// `display-value` and one with an empty one, stacked and in a row). Each renders its metrics in light and dark,
+// defined, each with the story's `label`, `display-value` and `layout`, its value shown as given and its label and
+// value arranged as its layout says, with base.css applied and no request outside the origin.
+
+/** What one story's metric must show: its attributes, its value's text and how its label and value sit. */
+interface Metric {
+  readonly label: string;
+  readonly displayValue: string | null;
+  readonly layout: string | null;
+  readonly value: string;
+  readonly arrangement: "stacked" | "row";
+}
+
+const metricFigures = [
+  ["Open missions", "12"],
+  ["Merged this week", "1,204"],
+  ["Median review time", "3 h 20 min"],
+] as const;
+
+const metricStories: readonly { readonly id: string; readonly metrics: readonly Metric[] }[] = [
+  { id: "elements-ocelle-metric--stack", metrics: metricFigures.map(([label, value]) => ({ label, displayValue: value, layout: null, value, arrangement: "stacked" })) },
+  { id: "elements-ocelle-metric--row", metrics: metricFigures.map(([label, value]) => ({ label, displayValue: value, layout: "row", value, arrangement: "row" })) },
+  {
+    id: "elements-ocelle-metric--empty-value",
+    metrics: [
+      { label: "Open missions", displayValue: null, layout: null, value: "", arrangement: "stacked" },
+      { label: "Open missions", displayValue: "", layout: "row", value: "", arrangement: "row" },
+    ],
+  },
+];
+
+/** What a metric story's page shows: its theme, the base stylesheet and its metrics. */
+function observeMetrics(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-metric") !== undefined,
+    metrics: [...document.querySelectorAll("#storybook-root ocelle-metric")].map((metric) => {
+      const term = metric.shadowRoot?.querySelector('[part="label"]')?.getBoundingClientRect();
+      const definition = metric.shadowRoot?.querySelector('[part="value"]');
+      const box = definition?.getBoundingClientRect();
+      const stacked = term !== undefined && box !== undefined && box.top >= term.bottom - 0.5 && Math.abs(box.left - term.left) <= 0.5;
+      const row = term !== undefined && box !== undefined && box.top < term.bottom && term.top < box.bottom && term.right <= box.left + 0.5;
+      return {
+        label: metric.getAttribute("label"),
+        displayValue: metric.getAttribute("display-value"),
+        layout: metric.getAttribute("layout"),
+        value: definition?.textContent ?? "missing",
+        arrangement: stacked ? "stacked" : row ? "row" : "other",
+      };
+    }),
+  }));
+}
+
+describe("the ocelle-metric stories in the built Storybook (018 US2, I3)", { timeout: 60_000 }, () => {
+  for (const { id, metrics } of metricStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its metrics with the story's label, display-value and layout, the value as given and the label and value arranged by the layout, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-metric");
+        expect({ ...((await observeMetrics(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, metrics, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+// 018 phase 4 (I3; research.md R-12; tasks.md T039): the static `ocelle-pill-tag` stories, `Statuses` (one pill per
+// status of the vocabulary), `Badge` (one count badge per status), `Compact` (the five pills and the five badges in the
+// compact density), `WithIcon` (pills with a leading icon, a compact one and a badge among them) and `LongTextWraps`
+// (a long pill and a long compact badge in a narrow block, each wrapping onto further lines). Each renders its pills
+// in light and dark, defined, each with the story's `status`, `variant` and `density`, its text, its icon where the
+// story gives one, its `pill` part, and its text on one line or wrapped as the story says, none focusable, with
+// base.css applied and no request outside the origin.
+
+/** What one story's pill must show: its attributes, its text, whether it has an icon and how its text is laid out. */
+interface Pill {
+  readonly status: string;
+  readonly variant: string | null;
+  readonly density: string | null;
+  readonly text: string;
+  readonly icon: boolean;
+  readonly lines: "one" | "wrapped";
+}
+
+const pillLabels = [
+  ["info", "Running"],
+  ["success", "Done"],
+  ["warning", "Blocked"],
+  ["danger", "Failed"],
+  ["neutral", "Draft"],
+] as const;
+
+const badgeCounts = [
+  ["info", "3"],
+  ["success", "12"],
+  ["warning", "1"],
+  ["danger", "7"],
+  ["neutral", "128"],
+] as const;
+
+const pillOf = (status: string, text: string, rest: Partial<Pill> = {}): Pill => ({ status, variant: null, density: null, text, icon: false, lines: "one", ...rest });
+
+const pillStories: readonly { readonly id: string; readonly pills: readonly Pill[] }[] = [
+  { id: "elements-ocelle-pill-tag--statuses", pills: pillLabels.map(([status, text]) => pillOf(status, text)) },
+  { id: "elements-ocelle-pill-tag--badge", pills: badgeCounts.map(([status, text]) => pillOf(status, text, { variant: "badge" })) },
+  {
+    id: "elements-ocelle-pill-tag--compact",
+    pills: [...pillLabels.map(([status, text]) => pillOf(status, text, { density: "compact" })), ...badgeCounts.map(([status, text]) => pillOf(status, text, { variant: "badge", density: "compact" }))],
+  },
+  {
+    id: "elements-ocelle-pill-tag--with-icon",
+    pills: [...pillLabels.map(([status, text]) => pillOf(status, text, { icon: true })), pillOf("info", "Running", { density: "compact", icon: true }), pillOf("success", "12", { variant: "badge", icon: true })],
+  },
+  {
+    id: "elements-ocelle-pill-tag--long-text-wraps",
+    pills: [pillOf("warning", "Blocked by the review of the scheduler pipeline", { lines: "wrapped" }), pillOf("info", "Waiting for the nightly integration run", { variant: "badge", density: "compact", lines: "wrapped" })],
+  },
+];
+
+/** What a pill story's page shows: its theme, the base stylesheet, its pills and whether any of them takes focus. */
+function observePills(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-pill-tag") !== undefined,
+    pills: [...document.querySelectorAll("#storybook-root ocelle-pill-tag")].map((pill) => {
+      const texts = [...pill.childNodes].filter((node): node is Text => node.nodeType === Node.TEXT_NODE && (node as Text).data.trim() !== "");
+      const range = document.createRange();
+      if (texts[0] !== undefined) range.selectNodeContents(texts[0]);
+      const lines = texts[0] === undefined ? 0 : new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+      return {
+        status: pill.getAttribute("status"),
+        variant: pill.getAttribute("variant"),
+        density: pill.getAttribute("density"),
+        text: texts.map((node) => node.data.trim()).join(" "),
+        icon: pill.querySelector('[slot="icon"]') !== null,
+        lines: lines === 1 ? "one" : lines > 1 ? "wrapped" : "none",
+        part: pill.shadowRoot?.querySelector('[part="pill"]') !== null && pill.shadowRoot !== null,
+      };
+    }),
+    focusable: [...document.querySelectorAll("#storybook-root ocelle-pill-tag")].some((pill) => {
+      (pill as HTMLElement).focus();
+      return document.activeElement === pill;
+    }),
+  }));
+}
+
+describe("the ocelle-pill-tag stories in the built Storybook (018 US3, I3)", { timeout: 60_000 }, () => {
+  for (const { id, pills } of pillStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its pills with the story's status, variant, density, text and icon, each with its pill part and its text on one line or wrapped as the story says, none focusable, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-pill-tag");
+        expect({ ...((await observePills(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          pills: pills.map((pill) => ({ ...pill, part: true })),
+          focusable: false,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
+
+// 018 phase 5 (I3; research.md R-12; plan decision 9; tasks.md T049): the interactive `ocelle-pill-tag` stories, `Button`
+// (one interactive pill per status and an interactive badge), `Pressed` (a pill and a badge with aria-pressed "true",
+// beside their "false" twins), `Link` (a link-mode pill and badge), `Disabled` (a disabled button-mode pill, link-mode
+// pill and badge), `Focus` (one pill focused by a wrapper that calls its plain `focus()` once it has rendered, as 012's
+// `Focused` does), and `PillHovered`, `BadgeHovered`, `PillActive` and `BadgeActive` (one pill each, hovered or pressed
+// by 006's pointer parameter). Each renders its pills in light and dark, defined, each with the story's attributes,
+// its inner control (`button`, or `a` in link mode) with the moved `aria-pressed` on it, its `pill` and `control` part,
+// with base.css applied and no request outside the origin; the focus story's one pill holds focus in its control.
+
+/** What one interactive story's pill must show: its attributes, its text and its inner control. */
+interface InteractivePill {
+  readonly status: string | null;
+  readonly variant: string | null;
+  readonly interactive: boolean;
+  readonly href: string | null;
+  readonly disabled: boolean;
+  readonly text: string;
+  readonly tag: string;
+  readonly pressed: string | null;
+}
+
+const interactivePill = (status: string, text: string, rest: Partial<InteractivePill> = {}): InteractivePill => ({ status, variant: null, interactive: true, href: null, disabled: false, text, tag: "button", pressed: null, ...rest });
+
+const interactivePillStories: readonly { readonly id: string; readonly pills: readonly InteractivePill[]; readonly focused?: number }[] = [
+  { id: "elements-ocelle-pill-tag--button", pills: [...pillLabels.map(([status, text]) => interactivePill(status, text)), interactivePill("info", "3", { variant: "badge" })] },
+  {
+    id: "elements-ocelle-pill-tag--pressed",
+    pills: [interactivePill("info", "Mine", { pressed: "true" }), interactivePill("info", "Mine", { pressed: "false" }), interactivePill("info", "3", { variant: "badge", pressed: "true" }), interactivePill("info", "3", { variant: "badge", pressed: "false" })],
+  },
+  { id: "elements-ocelle-pill-tag--link", pills: [interactivePill("warning", "Blocked", { interactive: false, href: "#blocked", tag: "a" }), interactivePill("warning", "1", { variant: "badge", interactive: false, href: "#blocked", tag: "a" })] },
+  {
+    id: "elements-ocelle-pill-tag--disabled",
+    pills: [interactivePill("info", "Mine", { disabled: true }), interactivePill("warning", "Blocked", { interactive: false, href: "#blocked", tag: "a", disabled: true }), interactivePill("info", "3", { variant: "badge", disabled: true })],
+  },
+  { id: "elements-ocelle-pill-tag--focus", pills: [interactivePill("info", "Mine")], focused: 1 },
+  { id: "elements-ocelle-pill-tag--pill-hovered", pills: [interactivePill("info", "Mine")] },
+  { id: "elements-ocelle-pill-tag--badge-hovered", pills: [interactivePill("info", "3", { variant: "badge" })] },
+  { id: "elements-ocelle-pill-tag--pill-active", pills: [interactivePill("info", "Mine")] },
+  { id: "elements-ocelle-pill-tag--badge-active", pills: [interactivePill("info", "3", { variant: "badge" })] },
+];
+
+/** What an interactive pill story's page shows: its theme, the base stylesheet, its pills and how many hold focus. */
+function observeInteractivePills(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-pill-tag") !== undefined,
+    pills: [...document.querySelectorAll("#storybook-root ocelle-pill-tag")].map((pill) => {
+      const inner = pill.shadowRoot?.querySelectorAll('[part~="control"]') ?? [];
+      return {
+        status: pill.getAttribute("status"),
+        variant: pill.getAttribute("variant"),
+        interactive: pill.hasAttribute("interactive"),
+        href: pill.getAttribute("href"),
+        disabled: pill.hasAttribute("disabled"),
+        text: pill.textContent.trim(),
+        tag: inner.length === 1 && inner[0]?.getAttribute("part") === "pill control" ? inner[0].localName : `${String(inner.length)} controls`,
+        pressed: inner[0]?.getAttribute("aria-pressed") ?? null,
+      };
+    }),
+    focused: [...document.querySelectorAll("#storybook-root ocelle-pill-tag")].filter((pill) => pill.shadowRoot?.activeElement?.classList.contains("control") === true).length,
+  }));
+}
+
+describe("the interactive ocelle-pill-tag stories in the built Storybook (018 US4, I3)", { timeout: 60_000 }, () => {
+  for (const { id, pills, focused } of interactivePillStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its pills with the story's status, variant, mode, disabled state and text, each with one inner control carrying the parts pill and control and the moved aria-pressed, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-pill-tag");
+        expect({ ...((await observeInteractivePills(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          pills,
+          focused: focused ?? 0,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
+
+// 018 phase 6 (I3; research.md R-12; plan decision 16; tasks.md T058): the truncation stories of `ocelle-pill-tag`,
+// `Truncated` (in a narrow block, enabled interactive pills in button and link mode, truncated and fitting, none
+// focused, and below them one truncated pill alone in a container that clips, focused by a wrapper that calls its plain
+// `focus()` once it has rendered) and `DisabledWraps` (a disabled button-mode pill and a disabled link-mode pill in the
+// narrow block, each wrapping its long text). Each renders its pills in light and dark, defined, with the story's
+// attributes and text, its inner control, its text truncated (passing its text span's inline end on one line) or not, on
+// one line or wrapped as the story says, with base.css applied and no request outside the origin. In `Truncated` the
+// focused pill's control matches `:focus-visible`, and neither theme shows an open `ocelle-tooltip` bubble once the
+// page has settled as 006's capture settles it (fonts, two frames) and a further 700 ms past the tooltip's delay: the
+// baseline shows the ring and no bubble (plan decision 16).
+
+/** What one truncation story's pill must show. */
+interface TruncationPill {
+  readonly status: string;
+  readonly href: string | null;
+  readonly disabled: boolean;
+  readonly text: string;
+  readonly tag: string;
+  readonly truncated: boolean;
+  readonly lines: "one" | "wrapped";
+}
+
+const truncationPill = (status: string, text: string, rest: Partial<TruncationPill> = {}): TruncationPill => ({ status, href: null, disabled: false, text, tag: "button", truncated: false, lines: "one", ...rest });
+
+const truncationStories: readonly { readonly id: string; readonly pills: readonly TruncationPill[]; readonly focused: number }[] = [
+  {
+    id: "elements-ocelle-pill-tag--truncated",
+    pills: [
+      truncationPill("warning", "Blocked by the review of the scheduler pipeline", { truncated: true }),
+      truncationPill("info", "Waiting for the nightly integration run", { href: "#waiting", tag: "a", truncated: true }),
+      truncationPill("success", "Done"),
+      truncationPill("danger", "Failed in the nightly integration run", { truncated: true }),
+    ],
+    focused: 1,
+  },
+  {
+    id: "elements-ocelle-pill-tag--disabled-wraps",
+    pills: [
+      truncationPill("info", "Waiting for the nightly integration run", { disabled: true, lines: "wrapped" }),
+      truncationPill("warning", "Blocked by the review of the scheduler pipeline", { href: "#blocked", tag: "a", disabled: true, lines: "wrapped" }),
+    ],
+    focused: 0,
+  },
+];
+
+/** What a truncation story's page shows once settled: its theme, the base stylesheet, its pills, focus and open bubbles. */
+async function observeTruncation(page: Page): Promise<unknown> {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    for (let frame = 0; frame < 2; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+  });
+  return page.evaluate(() => {
+    const pills = [...document.querySelectorAll("#storybook-root ocelle-pill-tag")];
+    return {
+      theme: document.documentElement.dataset.theme,
+      base: {
+        linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+        scheme: getComputedStyle(document.documentElement).colorScheme,
+      },
+      defined: customElements.get("ocelle-pill-tag") !== undefined && customElements.get("ocelle-tooltip") !== undefined,
+      pills: pills.map((pill) => {
+        const inner = pill.shadowRoot?.querySelectorAll('[part~="control"]') ?? [];
+        const span = pill.shadowRoot?.querySelector(".label");
+        const texts = [...pill.childNodes].filter((node): node is Text => node.nodeType === Node.TEXT_NODE && (node as Text).data.trim() !== "");
+        const range = document.createRange();
+        if (texts[0] !== undefined) range.selectNodeContents(texts[0]);
+        const lines = new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+        return {
+          status: pill.getAttribute("status"),
+          href: pill.getAttribute("href"),
+          disabled: pill.hasAttribute("disabled"),
+          text: texts.map((node) => node.data.trim()).join(" "),
+          tag: inner.length === 1 ? (inner[0]?.localName ?? "none") : `${String(inner.length)} controls`,
+          truncated: span !== null && span !== undefined && range.getBoundingClientRect().right - span.getBoundingClientRect().right > 0,
+          lines: lines === 1 ? "one" : lines > 1 ? "wrapped" : "none",
+        };
+      }),
+      focused: pills.filter((pill) => pill.shadowRoot?.activeElement?.matches(".control:focus-visible") === true).length,
+      bubbles: pills.flatMap((pill) => [...(pill.shadowRoot?.querySelectorAll("ocelle-tooltip") ?? [])]).filter((tooltip) => tooltip.shadowRoot?.querySelector(":popover-open") !== null && tooltip.shadowRoot !== null).length,
+    };
+  });
+}
+
+describe("the ocelle-pill-tag truncation stories in the built Storybook (018 US5, I3)", { timeout: 60_000 }, () => {
+  for (const { id, pills, focused } of truncationStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its pills with the story's attributes, text and inner control, each truncated or not and on one line or wrapped as the story says, ${String(focused)} focused with the focus ring, and no open tooltip bubble, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-pill-tag");
+        expect({ ...((await observeTruncation(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, pills, focused, bubbles: 0, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
 /** A file of the repository, relative to storybook/, or "" when it does not exist. */
 function repositoryFile(path: string): string {
   const url = new URL(`../../${path}`, import.meta.url);

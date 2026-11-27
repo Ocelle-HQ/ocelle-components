@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-button.ts";
 import "../src/ocelle-icon.ts";
+import { MovedAttributes, guardHost } from "../src/control.ts";
 import { inProcessDriver } from "./in-process.ts";
 
 // The control conventions of src/control.ts in button mode (012 research.md R-01, R-05, R-06; data-model.md § Shared:
@@ -554,5 +555,176 @@ describe("src/control.ts: the name order (FR-006; research.md R-05)", () => {
       found[name] = (await driver.axState("b", '[part="control"]')).name;
     }
     expect(found).toEqual(Object.fromEntries(order.map(({ case: name, name: expected }) => [name, expected])));
+  });
+});
+
+// 018 phase 5 (tasks.md T045; research.md R-08; plan decision 10; contracts/checks.md § Scenarios): the additive
+// `MovedAttributes` methods `capture()`, `release()` and `adoptMirrors()` and `guardHost`'s defaulted `active` parameter,
+// on a stand-in host that is not an `ocelle-*` element. The stand-in hands a change of its listed attributes and their
+// mirrors to `handle()` only while it is `routing`, as `ocelle-pill-tag` does only while it is interactive, so each case
+// can put a value on the host with nothing moved, as a static pill holds it. 012's cases above are unchanged. Each
+// "does not" outcome shares its test with the positive outcome it guards; the plants are recorded in
+// reviews/phase-5/notes.md: `capture()` reading no mirror back; `release()` writing a cleared value back, or leaving a
+// mirror; `adoptMirrors()` overwriting the host's own attribute, or leaving a mirror; the `active` check dropped.
+const standInNames = ["aria-label", "aria-pressed", "title"] as const;
+
+/** A stand-in control host for the additive `MovedAttributes` methods (no shadow root, no rendering). */
+class MovedStandIn extends HTMLElement {
+  static readonly observedAttributes = MovedAttributes.observed(standInNames);
+  /** Whether attribute changes reach `handle()`, as on an interactive pill. */
+  routing = false;
+  /** The names `changed` was told of, in order. */
+  readonly told: string[] = [];
+  readonly moved = new MovedAttributes(this, standInNames, (name) => {
+    this.told.push(name);
+  });
+
+  attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
+    if (this.routing) this.moved.handle(name, value);
+  }
+}
+customElements.define("x-moved-stand-in", MovedStandIn);
+
+/** A stand-in host, connected, with `attributes` set while it does not route them. */
+function standIn(attributes: Readonly<Record<string, string>> = {}): MovedStandIn {
+  const host = document.createElement("x-moved-stand-in") as MovedStandIn;
+  for (const [name, value] of Object.entries(attributes)) host.setAttribute(name, value);
+  document.body.append(host);
+  return host;
+}
+
+/** The host's attributes as `name=value`, sorted. */
+function attributesOf(host: Element): string[] {
+  return [...host.attributes].map((attribute) => `${attribute.name}=${attribute.value}`).sort();
+}
+
+/** The values the stand-in holds for its listed names. */
+function heldBy(host: MovedStandIn): Record<string, string | undefined> {
+  return Object.fromEntries(standInNames.map((name) => [name, host.moved.get(name)]));
+}
+
+describe("src/control.ts: MovedAttributes.capture(), on becoming interactive (018 FR-035 (b); research.md R-08)", () => {
+  it("moves and mirrors each listed attribute the host set while nothing routed it, off values included, tells changed of each, and leaves an unlisted attribute; a second call after a release moves the host's new values again", async () => {
+    await driver.mount('<div id="spot"></div>');
+    const host = standIn({ title: "Blocked since Monday", "aria-pressed": "false", "aria-describedby": "hint" });
+    const before = { attributes: attributesOf(host), held: heldBy(host) };
+    host.routing = true;
+    host.moved.capture();
+    const first = { attributes: attributesOf(host), held: heldBy(host), told: [...host.told].sort() };
+    host.routing = false;
+    host.moved.release();
+    host.setAttribute("aria-label", "Mine");
+    host.routing = true;
+    host.moved.capture();
+    expect({ before, first, second: { attributes: attributesOf(host), held: heldBy(host) } }).toEqual({
+      before: { attributes: ["aria-describedby=hint", "aria-pressed=false", "title=Blocked since Monday"], held: { "aria-label": undefined, "aria-pressed": undefined, title: undefined } },
+      first: {
+        attributes: ["aria-describedby=hint", "data-ocelle-moved-aria-pressed=false", "data-ocelle-moved-title=Blocked since Monday"],
+        held: { "aria-label": undefined, "aria-pressed": "false", title: "Blocked since Monday" },
+        told: ["aria-pressed", "title"],
+      },
+      second: {
+        attributes: ["aria-describedby=hint", "data-ocelle-moved-aria-label=Mine", "data-ocelle-moved-aria-pressed=false", "data-ocelle-moved-title=Blocked since Monday"],
+        held: { "aria-label": "Mine", "aria-pressed": "false", title: "Blocked since Monday" },
+      },
+    });
+  });
+
+  it("then reads back the mirror of each name the host does not set, telling changed of it, while a host attribute wins over its mirror", async () => {
+    await driver.mount('<div id="spot"></div>');
+    const host = standIn({ "data-ocelle-moved-aria-label": "Copied name", title: "New", "data-ocelle-moved-title": "Old" });
+    host.routing = true;
+    host.moved.capture();
+    expect({ attributes: attributesOf(host), held: heldBy(host), told: [...host.told].sort() }).toEqual({
+      attributes: ["data-ocelle-moved-aria-label=Copied name", "data-ocelle-moved-title=New"],
+      held: { "aria-label": "Copied name", "aria-pressed": undefined, title: "New" },
+      told: ["aria-label", "title"],
+    });
+  });
+});
+
+describe("src/control.ts: MovedAttributes.release(), on becoming static (018 FR-035 (a); research.md R-08)", () => {
+  it("writes each held value back to the host as last set, an off value included and a cleared one not, removes every mirror synchronously and holds nothing after; changed is told of each released name", async () => {
+    await driver.mount('<div id="spot"></div>');
+    const host = standIn({ title: "Blocked since Monday", "aria-pressed": "true", "aria-label": "Mine" });
+    host.routing = true;
+    host.moved.capture();
+    host.setAttribute("aria-pressed", "false");
+    host.setAttribute("aria-label", "");
+    const held = { attributes: attributesOf(host), held: heldBy(host) };
+    host.told.length = 0;
+    host.routing = false;
+    host.moved.release();
+    expect({ held, released: { attributes: attributesOf(host), held: heldBy(host), told: [...host.told].sort() } }).toEqual({
+      held: { attributes: ["data-ocelle-moved-aria-pressed=false", "data-ocelle-moved-title=Blocked since Monday"], held: { "aria-label": undefined, "aria-pressed": "false", title: "Blocked since Monday" } },
+      released: { attributes: ["aria-pressed=false", "title=Blocked since Monday"], held: { "aria-label": undefined, "aria-pressed": undefined, title: undefined }, told: ["aria-pressed", "title"] },
+    });
+  });
+});
+
+describe("src/control.ts: MovedAttributes.adoptMirrors(), static at upgrade (018 FR-035 (e); research.md R-08)", () => {
+  it("writes each mirror back as its attribute unless the host sets that attribute, removes every mirror and holds nothing", async () => {
+    await driver.mount('<div id="spot"></div>');
+    const host = standIn({ "data-ocelle-moved-title": "Copied title", "data-ocelle-moved-aria-label": "Copied name", "aria-label": "Own name", "data-ocelle-moved-aria-pressed": "false" });
+    host.moved.adoptMirrors();
+    expect({ attributes: attributesOf(host), held: heldBy(host) }).toEqual({
+      attributes: ["aria-label=Own name", "aria-pressed=false", "title=Copied title"],
+      held: { "aria-label": undefined, "aria-pressed": undefined, title: undefined },
+    });
+  });
+});
+
+describe("src/control.ts: guardHost's active parameter (018 research.md R-08; plan decision 10)", () => {
+  /** A guarded stand-in with no inner control; `active` read through the returned flag. */
+  function guarded(): { readonly host: HTMLElement; readonly flag: { active: boolean } } {
+    const flag = { active: false };
+    const host = document.createElement("span");
+    guardHost(host, () => null, () => true, () => flag.active);
+    document.body.append(host);
+    return { host, flag };
+  }
+
+  it("while active() is false lets a click and an auxclick on the host through untouched, to a host listener and document, not prevented; while it is true stops and prevents them as before", async () => {
+    await driver.mount('<div id="spot"></div>');
+    const { host, flag } = guarded();
+    const atHost: string[] = [];
+    for (const type of ["click", "auxclick"]) {
+      host.addEventListener(type, (event) => {
+        atHost.push(event.type);
+      });
+    }
+    const dispatchBoth = (): MouseEvent[] => {
+      const events = ["click", "auxclick"].map((type) => new MouseEvent(type, { bubbles: true, composed: true, cancelable: true }));
+      for (const event of events) host.dispatchEvent(event);
+      return events;
+    };
+    let passed: MouseEvent[] = [];
+    const through = atDocument(["click", "auxclick"], () => {
+      passed = dispatchBoth();
+    });
+    const throughAtHost = atHost.splice(0);
+    flag.active = true;
+    let stopped: MouseEvent[] = [];
+    const guardedOnes = atDocument(["click", "auxclick"], () => {
+      stopped = dispatchBoth();
+    });
+    expect({
+      through,
+      throughAtHost,
+      passedPrevented: passed.map((event) => event.defaultPrevented),
+      guarded: guardedOnes,
+      guardedAtHost: atHost,
+      stoppedPrevented: stopped.map((event) => event.defaultPrevented),
+    }).toEqual({
+      through: [
+        { type: "click", target: "span", prevented: false },
+        { type: "auxclick", target: "span", prevented: false },
+      ],
+      throughAtHost: ["click", "auxclick"],
+      passedPrevented: [false, false],
+      guarded: [],
+      guardedAtHost: [],
+      stoppedPrevented: [true, true],
+    });
   });
 });

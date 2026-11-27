@@ -1,7 +1,7 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has forty-nine elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has fifty-two elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
@@ -16,7 +16,9 @@ modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip 
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
 and `ocelle-personal-rail`, two controls that follow the control conventions below, `ocelle-button` and
 `ocelle-action-row`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an
-empty or loading panel, `ocelle-progress`, a progress bar, `ocelle-listbox` with its `ocelle-option` children,
+empty or loading panel, `ocelle-progress`, a progress bar, and the three status elements, `ocelle-status-indicator`, a
+status dot, `ocelle-metric`, a label and its value, and `ocelle-pill-tag`, a state pill or a count badge that can also
+be a toggle button or a link. It also has `ocelle-listbox` with its `ocelle-option` children,
 `ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children, `ocelle-segmented-choice` with its
 `ocelle-segment` children, `ocelle-copy-field`, `ocelle-link`, `ocelle-disclosure`, `ocelle-code-block`, and the
 app-frame elements `ocelle-app-shell`,
@@ -85,6 +87,9 @@ of the host's own.
 | `@ocelle/elements/ocelle-skip-link.js` | `dist/ocelle-skip-link.js` | `ocelle-skip-link` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-code-block.js` | `dist/ocelle-code-block.js` | `ocelle-code-block` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` and the `ocelle-tooltip` it renders; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -1293,7 +1298,8 @@ colours the text and the border are `ButtonText` (`LinkText` in link mode), the 
 ## Control conventions
 
 Every control of this library (`ocelle-button`, and the action row, navigation items, copy control and form controls
-after it) follows these rules.
+after it) follows these rules. An interactive `ocelle-pill-tag`, in button mode and in link mode, follows them as
+`ocelle-button` does, with the moved attributes, custom states and limits its own section lists (see `ocelle-pill-tag`).
 
 1. **One inner control.** Each control renders exactly one native `<button type="button">` (button mode) or `<a>`
    (link mode) in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex.
@@ -2354,6 +2360,225 @@ colours the markers, connectors and chip outlines are drawn in `CanvasText` and 
 `--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-figures`,
 `--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-ink-muted` and
 `--ocelle-color-rule-strong`; the step reads none.
+
+## `ocelle-status-indicator`
+
+```html
+<ocelle-status-indicator tone="success" label="Running" pulse></ocelle-status-indicator>
+<ocelle-status-indicator tone="warning"></ocelle-status-indicator> Blocked
+```
+
+`ocelle-status-indicator` is a status dot: a solid circle in the colour of its `tone`, `info`, `success`, `warning`,
+`danger` or `neutral` (the default). The dot is `--ocelle-size-indicator` (8 px) square, round with the pill radius,
+and never transparent, empty or only outlined. An absent, empty or unknown `tone` shows `neutral`; the attribute keeps
+the value as written and the `tone` property reads `"neutral"`. Setting the property writes the attribute as given.
+The five tones are the status vocabulary that `ocelle-pill-tag`'s `status` shares; to show a state as text, in a pill
+or a count badge, use `ocelle-pill-tag` (see `ocelle-pill-tag`). `ocelle-status-indicator` emits no event and adds no
+tab stop.
+
+**Naming.** Without a `label` the indicator is hidden from the accessibility tree: place text naming the state next to
+it, since a state is never shown by colour alone. `label` is the one way to name the indicator: with a non-empty
+`label` it is one image with that name. A host `aria-label` is not supported, and the indicator does not read it. The
+label is trimmed, and an empty or whitespace-only label counts as none. The indicator is not a busy or progress
+signal: it sets no `aria-busy` and no live region. For progress, use `ocelle-progress`.
+
+**Pulse.** With `pulse`, a ring around the dot grows and fades three times, each `--ocelle-motion-pulse` long (4.8 s by
+default), and then only the solid dot is shown; the dot itself never fades, moves or changes size. The pulse ends by
+itself within 5 s (WCAG 2.2.2) and does not come back while `pulse` stays set. A host that overrides
+`--ocelle-motion-pulse` keeps the token's value times three, the fixed iteration count, at or below 5 s: at most
+`1666ms`. Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown solid;
+a change to `reduce` stops a run at once, and the change back starts one.
+
+**When a run starts.** A run starts when `pulse` is set on a rendered indicator, when the indicator is connected with
+`pulse` set, when it is shown again with `pulse` set, and when reduced motion ends; nothing else starts or restarts
+it, not a change of `tone`, `label`, the theme, its size or position, `visibility` or opacity, nor scrolling it out of
+view and back. Each connection, and each time the indicator is shown again after `display: none` or `hidden`, starts a
+run, so a host that re-inserts, moves, re-renders or re-shows an indicator more often than every 5 s keeps it pulsing:
+keep `pulse` off between changes, or keep the element in place. Removing `pulse` and setting it again within one task
+starts no run; set it again in a later task. A state-preserving move (`moveBefore()`) and a reveal from
+`hidden="until-found"` start no run. Opening a `<details>` around a pulsing indicator starts no run: a run under way
+when it closed goes on while it is closed and may end unseen.
+
+**Forced colours.** In forced colours the dot is drawn in `CanvasText`, and so is the ring, so it stays visible on the
+system background.
+
+**Tokens.** `ocelle-status-indicator` reads the tokens `--ocelle-color-info`, `--ocelle-color-success`,
+`--ocelle-color-warning`, `--ocelle-color-danger`, `--ocelle-color-neutral`, `--ocelle-size-indicator`,
+`--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-motion-pulse` and `--ocelle-easing-standard`.
+
+## `ocelle-metric`
+
+```html
+<ocelle-metric label="Open missions" display-value="12"></ocelle-metric>
+<ocelle-metric label="Merged this week" display-value="1,204" layout="row"></ocelle-metric>
+```
+
+`ocelle-metric` shows a label and its value: `<ocelle-metric label="Open missions" display-value="12"></ocelle-metric>`.
+The label is set in the eyebrow style, `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
+`--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`, and shown uppercase by style only, so assistive technology
+reads it as written. The value is shown in tabular figures (`--ocelle-figures`) in Schibsted Grotesk
+(`--ocelle-font-sans`). The element formats nothing: `display-value` is a pre-formatted string, shown as given, with no
+number formatting and no unit added. `label` and `display-value` are text, never parsed as markup; both reflect.
+`ocelle-metric` emits no event and adds no tab stop.
+
+**Layout.** With `layout="row"` the label and the value share one line, label first, `--ocelle-space-2` apart, and wrap
+onto two lines rather than overflow; with no `layout`, or any other value, they are stacked, the label above the value.
+An unknown `layout` stays in the attribute as written and the `layout` property reads `"stack"`. An empty or absent
+`display-value` adds no placeholder, and the metric keeps the height it has with a one-line value. A long unbroken
+word breaks inside the metric rather than overflow it.
+
+**Accessibility.** The metric is one term and its definition: assistive technology reads the label, then the value, in
+both layouts. The browser's find in page matches a metric's label twice: the visible uppercase label and an invisible
+copy of the label as written, which names the term. The second match's highlight cannot be seen; this is a known
+limitation. In forced colours the label and the value are drawn in the system text colour.
+
+**In a flex row.** In a flex row a metric is not shrunk below its longest word, so a one-word label or value stays on
+one line; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words then break inside it.
+
+**Parts.** The parts `label` (the term) and `value` (the definition) can be styled with `::part()`.
+
+**Beside a state.** A metric shows a value, not a state: show a state beside it with `ocelle-status-indicator` and the
+text that names it, or with `ocelle-pill-tag` (see those sections).
+
+## `ocelle-pill-tag`
+
+```html
+<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>
+<ocelle-pill-tag variant="badge" density="compact">3</ocelle-pill-tag>
+<ocelle-pill-tag interactive status="info" aria-pressed="true">Mine</ocelle-pill-tag>
+<ocelle-pill-tag href="/missions?state=blocked" status="warning">Blocked</ocelle-pill-tag>
+```
+
+`ocelle-pill-tag` is a state pill or a count badge: `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>`,
+`<ocelle-pill-tag variant="badge">3</ocelle-pill-tag>`. `status` is one of `info`, `success`, `warning`, `danger` and
+`neutral` (the default); an absent, empty or unknown `status` shows `neutral`, the attribute keeps the value as written
+and the `status` property reads `"neutral"`. The vocabulary and its colour pairs are those of the notice's tone; the
+default is the pill's own. `ocelle-status-indicator`'s `tone` takes the same five values, for a state shown as a dot
+(see `ocelle-status-indicator`).
+
+**Looks.** `variant="pill"`, the default, fills the pill with `--ocelle-color-<status>-bg` and sets its text in
+`--ocelle-color-<status>`; `variant="badge"` has no fill, a `--ocelle-border-width` border in `--ocelle-color-<status>`
+and its text in tabular figures (`--ocelle-figures`); both are set in Schibsted Grotesk (`--ocelle-font-sans`), never in
+a monospace family. Every `ocelle-pill-tag`, in either variant and in every mode, a count badge and a filter toggle
+included, is a state pill, so its corners take `--ocelle-radius-pill`. In forced colours the pill and the badge keep a
+visible border. The status colours are checked for contrast on the main grounds; a badge placed on a state ground
+(inside a notice, say) is outside that check.
+
+**Densities.** `density="compact"` sets the text in `--ocelle-font-size-xs` at `--ocelle-line-height-snug` (1.2), with a
+block padding of exactly `--ocelle-space-1` and an inline padding of `--ocelle-space-2`; the default density sets it in
+`--ocelle-font-size-sm` at `--ocelle-line-height-tight`, padded `--ocelle-space-1` and `--ocelle-space-3`. An unknown
+`variant` or `density` shows the default and stays in the attribute as written.
+
+**Content.** The default slot holds the text; the `icon` slot takes one decorative icon before the text, one line tall,
+following the slot convention, so a pill has the same height with and without an icon. A pill with no text renders an
+empty pill. The part `pill` (the visual box) can be styled with `::part()`.
+
+**A static pill.** A static pill, one with neither `interactive` nor a link `href`, is not focusable, has no role of its
+own and exposes its text as plain text; a click on it reaches the elements around it as a click on its text would (an
+enclosing link follows, a focusable ancestor takes focus). A static pill wraps a text that does not fit onto further
+lines; it never truncates it. `label` and `disabled` have no effect on a static pill. `title` and ARIA attributes on a
+static pill stay on the element as written; the element does not move or change them, and `title` keeps the browser's
+own tooltip. ARIA states and names on a static pill (`aria-pressed`, `aria-label`, `aria-labelledby` and the others)
+stay on an element with no role, where axe may report them: remove them (`removeAttribute`) once a pill is static, or
+clear them before making it static. An `href` that is empty, whitespace only, does not parse as a URL or is a
+`javascript:` URL is no link: the pill stays static. The interactive pill, with `interactive` or a link `href`, is
+described below.
+
+**Layout.** In a flex row a static pill is not shrunk below its longest word, so a one-word pill such as "Blocked" stays
+on one line beside a long name; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words
+then break inside the pill. A static pill's longest word is capped at its container's whole inline size, beyond which
+it breaks inside the pill; beside a sibling in a flex row such a word can make the row overflow by the sibling's
+width, unless the host sets `min-inline-size: 0` on the pill. In a grid track or a flex column that stretches its items
+a short static pill keeps the width of its text; only its host is stretched. A one-line pill sits on the baseline of
+the text around it, inline in text and in a flex row aligned by baseline, with and without an icon; a pill that wraps
+fills its line, its first line on that line's baseline.
+
+`ocelle-pill-tag` reads the tokens `--ocelle-color-<status>` and `--ocelle-color-<status>-bg` of the five statuses,
+`--ocelle-border-width`, `--ocelle-radius-pill`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-font-size-sm`,
+`--ocelle-font-size-xs`, `--ocelle-line-height-tight`, `--ocelle-line-height-snug`, `--ocelle-space-1`,
+`--ocelle-space-2` and `--ocelle-space-3`. A static pill emits no event of its own.
+
+**An interactive pill.** With `interactive` the pill is a toggle or filter button, one native `<button type="button">`
+in its shadow root: `<ocelle-pill-tag interactive status="info" aria-pressed="true">Mine</ocelle-pill-tag>`. With an
+`href` that is a link (not empty, not whitespace only, parsed as a URL and not a `javascript:` URL) the pill is one
+native `<a>` with that `href`, whether or not `interactive` is set: `<ocelle-pill-tag href="/missions?state=blocked"
+status="warning">Blocked</ocelle-pill-tag>`. The element itself is never focusable and has no role; the inner control is
+its one tab stop, and the element's `focus()` and `click()` reach it. The part `control` is the inner `<button>` or `<a>`
+of an interactive pill, which is also its `pill` part. The control conventions it follows are those of `ocelle-button`
+(see Control conventions).
+
+**Passthrough and names.** `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`,
+`aria-pressed` and `title` set on an interactive pill are moved to the inner control, each with an element-owned
+`data-ocelle-moved-*` mirror, as on `ocelle-button`; `aria-labelledby`, `aria-describedby` and `aria-controls` name
+elements by id in the element's own tree. The inner control is named by `aria-labelledby`, then `aria-label`, then
+`label` (trimmed; empty or whitespace only counts as none), then the pill's text. An interactive pill with no text (an
+icon only, or nothing) has no accessible name of its own: name it with `aria-label`, `aria-labelledby` or `label`; the
+element does not invent a name, and axe reports an unnamed one. Do not set `title` on an interactive pill: it is moved
+to the inner control as the browser's own tooltip and description.
+
+**Activation.** Each activation of an enabled interactive pill (a pointer click, Enter, Space in button mode, the
+element's `click()`) dispatches `ocelle-pill-tag-activate` from the element (`bubbles`, `composed`, `cancelable`,
+`detail` `{}`) before its `click` reaches any bubble-phase listener on the element or its ancestors. Calling
+`preventDefault()` on `ocelle-pill-tag-activate` cancels the click's default action: a link does not navigate, and a
+button still delivers its `click`, with `defaultPrevented` true. A link-mode click with Ctrl, Meta, Shift or Alt held
+delivers its `click` and no `ocelle-pill-tag-activate`, and the browser's own handling of the modifier applies; a middle
+click dispatches neither; a disabled or static pill dispatches no `ocelle-pill-tag-activate`. `disabled` takes an
+interactive pill out of the tab order, reports it disabled and stops every activation; a disabled link has no `href`.
+
+**States.** `:state(pressed)` matches a button-mode pill whose moved `aria-pressed` is `"true"`, which also gives the
+pressed look; `"false"`, `"mixed"` and any other value reach the button as written with neither. `aria-pressed` has no
+effect on a link: on a link-mode pill it is moved and mirrored but not applied, and gives no `:state(pressed)`; it
+applies again if the pill returns to button mode. `:state(current)` matches an interactive pill whose moved
+`aria-current` is set to anything but `"false"`; it draws no mark of its own.
+
+**Interactive looks.** An interactive pill has a `--ocelle-color-accent-strong` border on its status ground (a badge
+keeps its status-colour border); hover takes the status colour on a pill's border and the status ground as a badge's
+fill; pressing and the pressed state add an inset `--ocelle-bar-width` cue in the status colour; no state changes the
+pill's box. A disabled interactive pill is set in `--ocelle-color-disabled-ink` on `--ocelle-color-disabled-bg`, border
+included, whatever its status and variant. In forced colours a pressed pill fills with `Highlight` and sets its text in
+`HighlightText`, so it stays distinct from an unpressed one, and a disabled pill is `GrayText`. Keyboard focus shows the
+token focus ring on the inner control (`--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`). An
+interactive pill is at least `--ocelle-target-small` (24 px) in block size and in inline size in either density,
+whatever its text and its font size; in `compact` density its block padding is then at least `--ocelle-space-1`. An
+interactive pill keeps one focus-ring extent (`--ocelle-focus-offset` plus `--ocelle-focus-width`, 5 px) of inline margin
+on each side and caps its inline size at its container's less two such extents, so its ring stays inside a container
+that clips; a container that clips in the block direction keeps that much unclipped space above and below it.
+
+**Changing the mode.** The mode follows `interactive` and `href` whenever either changes: when a pill becomes static
+each moved attribute is written back to the element with the value it last had (an off value such as
+`aria-pressed="false"` included) and its mirror removed; when it becomes interactive they are moved again; a switch
+between button and link mode keeps them moved. A static pill that carries `data-ocelle-moved-*` mirrors when it upgrades
+(copied markup) writes each back as its attribute, unless the element already sets that attribute, and removes the
+mirror. If the inner control has focus when a pill switches between button and link mode, the new inner control has
+focus afterwards, with the focus ring only if it showed before; a pill made static while its inner control has focus
+loses focus as a removed element does, so move focus yourself before making a focused pill static; a pill that becomes
+interactive does not take focus. ARIA states written back to a pill made static (such as `aria-pressed`) stay on an
+element with no role: clear them (`removeAttribute`) once the pill is static, or before making it static.
+
+**Truncation and the full text.** An enabled interactive pill shows its text on one line; a text that does not fit is
+truncated with an ellipsis at the inline end, and `ocelle-tooltip` shows the full text (the default slot's text, trimmed
+and with its whitespace collapsed) on hover and on keyboard focus, with the tooltip's own delay, persistence and
+Escape. The inner control's accessible name stays the full text, or the name `aria-labelledby`, `aria-label` or `label`
+gives it, and the tooltip adds nothing to the accessibility tree. A pill whose text fits shows no tooltip; truncation
+follows the pill's inline size, its text and `disabled` whenever they change. A disabled interactive pill is never
+truncated: it wraps its text onto further lines inside the pill, breaking a long word anywhere, and shows no tooltip.
+Truncation needs a definite inline size: a flex or grid parent, a fixed table layout, or a cell or column width; in an
+auto-layout table cell the pill grows to its text instead. In a flex row a truncating pill shares the shrink with its
+siblings by their flex bases, so a sibling such as a mission name shrinks too, down to its longest word: give the
+sibling `flex: none` (or `flex-shrink: 0`) to keep its size. `flex: 1 1 0` on the pill also keeps the sibling's size,
+but it stretches the pill's visible box to the whole room left, a fitting pill included, since the inner control fills
+its host. On a touch screen a truncated pill shows no tooltip, as `ocelle-tooltip` shows none for touch; its full text
+stays its accessible name. A pill that becomes truncated while its inner control has keyboard focus shows its tooltip
+only once focus leaves it and comes back, or when the pointer rests on it. A late font load that turns an exactly
+fitting text into an overflowing one is seen at the next change of the pill's inline size or text. A truncated pill
+with a `title` shows the browser's own tooltip beside its own, which already shows its full text. In button and link
+mode, where `ocelle-tooltip` wraps the inner control, a `slotchange` of the pill's slots stops at the pill, a forwarded
+slot's included: a host that forwards its own `<slot>` into an interactive pill hears that `slotchange` on the forwarded
+`<slot>` itself, not on an element or shadow root above the pill. A static pill lets it bubble on.
+
+An interactive pill also reads `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`,
+`--ocelle-color-disabled-bg`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
+`--ocelle-bar-width` and `--ocelle-target-small`.
 
 ## Mapping from kitty-mission-ui
 

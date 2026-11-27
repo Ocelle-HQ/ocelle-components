@@ -1,0 +1,15 @@
+# gate:mutation on packages/elements/src/ocelle-pill-tag.ts:751-780 (L-03), at c19eb084
+# PATH=/opt/node26/bin:$PATH OCELLE_CHROMIUM_PATH=<chromium> pnpm run gate:mutation -- --base 1d599fd4f5be62f4f1257cd6dab4a764c3e3b785 --files packages/elements/src/ocelle-pill-tag.ts:751-780
+# (pnpm's install preamble omitted; no sandbox path appeared in the output)
+$ node gates/bin/mutation.ts -- --base 1d599fd4f5be62f4f1257cd6dab4a764c3e3b785 --files packages/elements/src/ocelle-pill-tag.ts:751-780
+packages/elements/src/ocelle-pill-tag.ts:756: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/ocelle-pill-tag.ts:756: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:757: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/ocelle-pill-tag.ts:760: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:765: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:766: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:767: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:767: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:772: mutation: compile-error: OptionalChaining: replaced by this.#control().focus
+mutation: 58 mutants on the changed lines of 1 file, none survived; 0 timeouts, 9 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0

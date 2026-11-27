@@ -76,6 +76,26 @@ internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
 `--data-table-box-size` and `--data-table-end-fade` are additions to the public surface: a minor change. None of them
 dispatches an event, and no token is added.
 
+`ocelle-status-indicator`, its attributes `tone`, `label` and `pulse` (reflected), its parts `dot` and `ring` and its
+entry point `@ocelle/elements/ocelle-status-indicator.js` are additions to the public surface: a minor change.
+
+`ocelle-metric`, its attributes `label` and `display-value` (reflected) and `layout`, its parts `label` and `value` and
+its entry point `@ocelle/elements/ocelle-metric.js` are additions to the public surface: a minor change.
+
+`ocelle-pill-tag`, its attributes `status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected)
+and `label`, its default and `icon` slots, its part `pill` and its entry point `@ocelle/elements/ocelle-pill-tag.js`
+are additions to the public surface: a minor change.
+
+The interactive `ocelle-pill-tag`, in button mode with `interactive` and in link mode with an `href`, its moved
+attributes `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`, `aria-pressed` and
+`title` with their `data-ocelle-moved-*` mirrors, its methods `focus()` and `click()`, its event
+`ocelle-pill-tag-activate`, its custom states `pressed` and `current` and its part `control` are additions to the public
+surface: a minor change.
+
+An enabled interactive `ocelle-pill-tag` truncates a text that does not fit with an ellipsis and shows its full text in
+`ocelle-tooltip` on hover and keyboard focus, a disabled one wraps it, and the entry point
+`@ocelle/elements/ocelle-pill-tag.js` also defines `ocelle-tooltip`: a minor change.
+
 ### Added
 
 - **Selectable workflow steps (#72).** `ocelle-workflow-node` shows the supplied title, accountable role and
@@ -199,6 +219,30 @@ dispatches an event, and no token is added.
   and `digest` (reflected; a prefix to the last colon and groups of four code points with a gap, copied and read
   unbroken), its parts `block` and `code`; no slot, the text is the light DOM's text content. Entry point
   `@ocelle/elements/ocelle-code-block.js` (defines `ocelle-code-block` only).
+- `ocelle-status-indicator`, a status dot in the colour of its `tone` (`info`, `success`, `warning`, `danger` or
+  `neutral`, the default and the fallback for an unknown value), named by `label` as one image or hidden from the
+  accessibility tree without one; with `pulse` a ring around the dot grows and fades three times, 4.8 s in all, and
+  then only the solid dot shows, with no animation under reduced motion; its attributes `tone`, `label` and `pulse`
+  (reflected); its parts `dot` and `ring`. Entry point `@ocelle/elements/ocelle-status-indicator.js` (defines
+  `ocelle-status-indicator` only). It reads the new tokens `--ocelle-size-indicator` and `--ocelle-motion-pulse` of
+  `@ocelle/tokens`.
+- `ocelle-metric`, a label and its value shown as one term and its definition: the label in the eyebrow style, shown
+  uppercase and read as written, the value in tabular figures, stacked or with `layout="row"` on one line; its
+  attributes `label` and `display-value` (reflected) and `layout`; its parts `label` and `value`. Entry point
+  `@ocelle/elements/ocelle-metric.js` (defines `ocelle-metric` only). It reads 011's eyebrow tokens and adds none.
+- `ocelle-pill-tag`, a state pill or a count badge with the pill radius: its text, with an optional leading icon, on
+  its status's ground in the status colour, or outlined in it with `variant="badge"` and tabular figures; the compact
+  density; a static pill is inert content that wraps a long text and is never shrunk below its longest word in a flex
+  row. Its attributes `status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected) and `label`
+  (with `interactive`, a toggle or filter button; with a link `href`, a link); its default and `icon` slots; its parts
+  `pill` and `control`. The interactive pill follows the control conventions of `ocelle-button`: one native inner
+  `<button type="button">` or `<a>`, the moved attributes `aria-label`, `aria-labelledby`, `aria-describedby`,
+  `aria-controls`, `aria-current`, `aria-pressed` (applied on the button only) and `title` with their
+  `data-ocelle-moved-*` mirrors, given back to the element when it becomes static; its methods `focus()` and `click()`;
+  its event `ocelle-pill-tag-activate` (`detail` `{}`) before each activation's `click`; its custom states `pressed`
+  and `current`; the token focus ring; a 24 px minimum target. Entry point `@ocelle/elements/ocelle-pill-tag.js`
+  (defines `ocelle-pill-tag`, and the `ocelle-tooltip` an interactive pill renders). It reads the new tokens
+  `--ocelle-line-height-snug` and `--ocelle-target-small` of `@ocelle/tokens`.
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer

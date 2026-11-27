@@ -1,0 +1,12 @@
+# Spec check 2, fixes
+
+No operator questions in check 2; no operator answers applied.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| SPEC-2-01 | fixed: new FR-035 states mode changes: a passthrough value is on the inner control (mirrored) while the mode moves it and on the host (no mirror) while it does not; becoming static writes each held value back to the host as last set (off values included, cleared values not) and removes the mirrors; becoming interactive moves as at upgrade; on a button/link switch the shared attributes stay moved and `aria-pressed` returns to the host in link mode and is moved again in button mode. Aligned with 012 FR-009: `aria-current` moved in both interactive modes, `aria-pressed` on a link-mode pill unsupported (stays on host, axe flags it, README). Custom states follow applied (moved) values only | FR-030, FR-031, FR-035 (new); US3-7, US4-8, US4-9, US4-10 (new); US4 Independent Test; Edge Cases (two new items); Key Entities |
+| SPEC-2-02 | fixed: a pulse run starts in exactly three cases: `pulse` absent to present while connected; each connection with `pulse` set (first render and every reconnection, no state kept across disconnection); the motion preference changing from `reduce` to no preference while `pulse` is set. A change to `reduce` stops a run at once. No other change (tone, label, other attributes, theme) starts or restarts one. Reconnection is read as a new render, consistent with SPEC-1-02's "restarts only when `pulse` is set again" | FR-012, FR-013; US1-4, US1-5; US1 Independent Test; SC-004 |
+| SPEC-2-03 | fixed (note): an interactive pill in either density has a minimum inline size as well as block size from the same 24 px token, so a one-character compact badge meets 24 px | FR-029, FR-043; US4-7 |
+| SPEC-2-04 | fixed (note): the 5 s limit holds for the default token values; a host override keeps the product at or below 5 s (README), as 012 FR-017; the plan confirms the validator accepts a unitless iteration-count motion token | FR-012, FR-041; US1-4; SC-004 |
+| SPEC-2-05 | fixed (note): `aria-pressed="mixed"` reaches the inner button as written (reported mixed) and gives the pressed look and `:state(pressed)` as `true` does; `false` or cleared gives neither | FR-031; US4-4 |
+| SPEC-2-06 | fixed (note): op 016 added to Dependencies with what it supplies (`gate:plants --affected`, `reviews/phase-<N>/plants.md`), its branch and state; it changes no behaviour of this spec | Dependencies; Assumptions |

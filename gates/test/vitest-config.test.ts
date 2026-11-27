@@ -76,16 +76,17 @@ describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (0
     expect(keptElements.map((project) => project.name)).toEqual(["elements", "elements-touch"]);
   });
 
-  // 008 plan decision 25 (research.md R-15) gave the elements configuration a separate dry-run budget. The #89
-  // probe ended without a report just past 30 minutes, so the elements initial run now has a 40-minute budget.
+  // 008 plan decision 25, research.md R-15 (operator decision 2026-11-15): the elements configuration alone raises
+  // Stryker's dry-run limit, now 45 minutes (specs/018-status-elements/reviews/operator-landing.md L-01); the
+  // per-mutant limits and stryker.config.json stay at Stryker's defaults.
   it("is stryker.config.json with its own Vitest config and its own report file", () => {
     const read = (path: string): Record<string, unknown> => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8")) as Record<string, unknown>;
     const general = read("stryker.config.json");
-    expect(read("stryker.elements.config.json"), "elements retain their mutation configuration with a 40-minute initial-run budget").toEqual({
+    expect(read("stryker.elements.config.json")).toEqual({
       ...general,
       vitest: { configFile: "vitest.mutation.elements.config.ts", related: false },
       jsonReporter: { fileName: "reports/mutation/mutation-elements.json" },
-      dryRunTimeoutMinutes: 40,
+      dryRunTimeoutMinutes: 45,
     });
     expect(general.vitest).toEqual({ configFile: "vitest.mutation.config.ts", related: false });
     expect(Object.keys(general)).not.toContain("dryRunTimeoutMinutes");
@@ -150,8 +151,9 @@ describe("the Vitest projects", () => {
   // device and elements-touch in a context with hasTouch; both register the same commands, 011's document readers
   // (research.md R-13) and 012's press, hover, pointer, axState and axe (012 research.md R-11) among them, and the
   // live-region capture's liveStart and liveStop (specs/010-feedback-forms contracts/testing.md § Live-region capture;
-  // the landing's second merge of main), and since 014 (research.md R-07, R-11) axStates, axUpdatesStart and
-  // axUpdatesStop.
+  // the landing's second merge of main), since 014 (research.md R-07, R-11) axStates, axUpdatesStart and
+  // axUpdatesStop, and since 018 (research.md R-11, contracts/checks.md § Test harness) animationStates, seek,
+  // settleLayout and overflows.
   it("run elements and elements-touch in browser mode at 1280 × 800, only elements-touch with hasTouch, with the same commands", () => {
     const browser = (name: string) => {
       const project = (base.test?.projects ?? []).find((each) => (each as { test?: { name?: unknown } }).test?.name === name) as
@@ -165,7 +167,7 @@ describe("the Vitest projects", () => {
         commands: Object.keys(options?.commands ?? {}).sort(),
       };
     };
-    const commands = ["activeElement", "axState", "axStates", "axTree", "axUpdatesStart", "axUpdatesStop", "axe", "emulateForcedColors", "emulateReducedMotion", "hover", "liveStart", "liveStop", "pointer", "pointerPath", "press", "scrollWidth", "textBoxes", "touchTap"];
+    const commands = ["activeElement", "animationStates", "axState", "axStates", "axTree", "axUpdatesStart", "axUpdatesStop", "axe", "emulateForcedColors", "emulateReducedMotion", "hover", "liveStart", "liveStop", "overflows", "pointer", "pointerPath", "press", "scrollWidth", "seek", "settleLayout", "textBoxes", "touchTap"];
     expect({ elements: browser("elements"), touch: browser("elements-touch") }).toEqual({
       elements: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: false, commands },
       touch: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: true, commands },
