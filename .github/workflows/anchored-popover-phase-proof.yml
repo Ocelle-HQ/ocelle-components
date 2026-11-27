@@ -8,14 +8,14 @@ permissions:
   contents: read
 
 env:
-  OCELLE_PROOF_HEAD: 7ce080de55bf064a6afa75168ab85ec3833dea2e
+  OCELLE_PROOF_HEAD: db6c685d5c87adf0b61ccf317c2e0439bb50f4db
   OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
   OCELLE_PROOF_PHASE: '1'
 
 jobs:
-  red:
+  replay:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -23,31 +23,37 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Run and record the canonical phase red
+      - name: Replay the exact phase
         env:
           SPECIFY_FEATURE_DIRECTORY: specs/036-anchored-popover
           SPECIFY_FEATURE_NO_PERSIST: '1'
-          OCELLE_RED_LABEL: 'fix-2'
         run: |
           set -euo pipefail
-          receipt="$RUNNER_TEMP/ocelle-red-proof"
+          receipt="$RUNNER_TEMP/ocelle-proof"
           mkdir "$receipt"
-          folder="specs/036-anchored-popover/reviews/phase-$OCELLE_PROOF_PHASE"
           test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
-          test "$(cat "$folder/base.sha")" = "$OCELLE_PROOF_BASE"
           git merge-base --is-ancestor "$OCELLE_PROOF_BASE" HEAD
+          folder="specs/036-anchored-popover/reviews/phase-$OCELLE_PROOF_PHASE"
+          test "$(cat "$folder/base.sha")" = "$OCELLE_PROOF_BASE"
           printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\n' \
             "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
             "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" | tee "$receipt/identity.txt"
-          .specify/extensions/story/scripts/red.sh "$OCELLE_PROOF_PHASE" "$OCELLE_RED_LABEL" | tee "$receipt/red.json"
-          cp "$folder/red-$OCELLE_RED_LABEL.log" "$receipt/"
-          test -f "$folder/red-commits" && cp "$folder/red-commits" "$receipt/"
-          jq -e --arg head "$OCELLE_PROOF_HEAD" \
-            '.sha == $head and .tests_only and .red and .recorded and .exit_code == 1' "$receipt/red.json"
+          code=0
+          .specify/extensions/story/scripts/tdd-check.sh "$OCELLE_PROOF_PHASE" \
+            > "$receipt/replay.json" 2> "$receipt/replay.stderr" || code=$?
+          cat "$receipt/replay.stderr"
+          if test -f "$folder/tdd-check.json"; then
+            cp "$folder/tdd-check.json" "$receipt/"
+          fi
+          find "$folder" -maxdepth 1 -name 'check-*.log' -exec cp '{}' "$receipt/" \;
+          jq -c '{status,head,problems,head_exit,final_tests_on_base_exit,final_tests_on_scaffold_exit}' "$receipt/replay.json"
+          test "$code" = 0
+          jq -e --arg head "$OCELLE_PROOF_HEAD" --arg base "$OCELLE_PROOF_BASE" \
+            '.head == $head and .base == $base and .status == "pass"' "$receipt/replay.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: ocelle-phase-red-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ocelle-red-proof
+          name: ocelle-phase-replay-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-proof
           if-no-files-found: error
 
