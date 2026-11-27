@@ -8,12 +8,14 @@ import {
   editBaseline,
   exceptionPlans,
   expandMarkers,
+  licenceCopies,
   mayBeAbsent,
   moduleLinks,
   nodeModulesLinks,
   overridesText,
   parseCommits,
   parseDelta,
+  parseOmit,
   rootExceptions,
   treeProblems,
 } from "../lib/plant-repo.ts";
@@ -21,8 +23,11 @@ import {
 // The pure parts of gates/lib/plant-repo.ts (research.md R-10, contracts/plants.md): the configuration set copied
 // into every temporary repository, the configuration a plant must not carry, and the records of commits.txt.
 describe("configurationSet", () => {
-  it("lists the root configuration, each package's manifest and tsconfig, the modules the configurations import, and the token source, its overrides, the generator and the pair list (002 contracts/gates.md § Configuration set)", () => {
-    expect(configurationSet(["packages/tokens", "packages/elements"])).toEqual([
+  // Replaced by 030 (T006; research.md R-17, PLAN-TESTABILITY-1-003 (a)): the configuration set gains the release
+  // inputs the pack-tree, readiness and workflow plants read, so the exact list of 002 and 006 grew; this test asserts
+  // the whole new list, with the spec directories and the styles sheets the builder passes, instead of the old one.
+  it("lists the root configuration, each package's manifest and tsconfig, the modules the configurations import, the token source, its overrides, the generator and the pair list (002 contracts/gates.md § Configuration set), the Storybook inputs (006), and the release inputs of 030 (research.md R-17)", () => {
+    expect(configurationSet(["packages/tokens", "packages/elements"], ["specs/001-a", "specs/030-release-v1"], ["base.css", "prose.css"])).toEqual([
       "package.json",
       "pnpm-workspace.yaml",
       "tsconfig.base.json",
@@ -61,7 +66,32 @@ describe("configurationSet", () => {
       "storybook/stories",
       "storybook/baselines",
       "storybook/visual/container.json",
+      // 030 (research.md R-17): the workflows and the shared action, gates/release/, the gap-table source, the root
+      // licence files, the font licence the tokens identical entry names, each package's changelog, every stylesheet
+      // of packages/styles/src/ (base.css once) and each spec's verification.md.
+      ".github/workflows",
+      ".github/actions",
+      "gates/release",
+      "specs/030-release-v1/sources/issue-1-gap-table.md",
+      "LICENSE",
+      "NOTICE",
+      "THIRD_PARTY_NOTICES",
+      "packages/tokens/fonts/OFL.txt",
+      "packages/tokens/CHANGELOG.md",
+      "packages/elements/CHANGELOG.md",
+      "packages/styles/src/prose.css",
+      "specs/001-a/verification.md",
+      "specs/030-release-v1/verification.md",
     ]);
+  });
+
+  // 030 (research.md R-17): a spec directory may hold no verification.md (specs/003-base-styles has none), so it is
+  // copied when present; every other release input must be in the repository.
+  it("lets a spec's verification.md be absent, and no other release input of 030", () => {
+    const set = configurationSet(["packages/tokens", "packages/styles"], ["specs/003-base-styles"], ["base.css"]);
+    expect(set.filter((path) => mayBeAbsent(path)).slice(4)).toEqual(["specs/003-base-styles/verification.md"]);
+    expect([".github/workflows", "gates/release", "LICENSE", "packages/styles/CHANGELOG.md", "specs/030-release-v1/sources/issue-1-gap-table.md"].filter((path) => set.includes(path) && !mayBeAbsent(path))).toHaveLength(5);
+    expect([mayBeAbsent("specs/verification.md"), mayBeAbsent("specs/a/b/verification.md"), mayBeAbsent("specs/a/verification.mdx"), mayBeAbsent("xspecs/a/verification.md")]).toEqual([false, false, false, false]);
   });
 
   it("holds no built, generated, cached or installed Storybook directory, and not the exceptions file (made per root)", () => {
@@ -83,6 +113,41 @@ describe("configurationSet", () => {
       "storybook/baselines",
     ]);
     expect([mayBeAbsent("packages/elements/src"), mayBeAbsent("packages/elements/package.json"), mayBeAbsent("custom-elements.json")]).toEqual([false, false, false]);
+  });
+});
+
+// 030 (research.md R-17, analysis C2): the pack-tree builder copies the root LICENSE and NOTICE into every package tree
+// of a plant, and THIRD_PARTY_NOTICES into tokens and elements (the packages that ship it, R-04), unless the tree ships
+// the file itself or the plant's omit.txt lists its tree path; so a plant holds no copy of a root file.
+describe("licenceCopies and parseOmit (030 R-17)", () => {
+  it("copies LICENSE and NOTICE into every package tree and THIRD_PARTY_NOTICES into tokens and elements, in package order", () => {
+    expect(licenceCopies(["elements", "styles", "tokens", "other"], [], [])).toEqual([
+      { from: "LICENSE", to: "packages/elements/LICENSE" },
+      { from: "NOTICE", to: "packages/elements/NOTICE" },
+      { from: "THIRD_PARTY_NOTICES", to: "packages/elements/THIRD_PARTY_NOTICES" },
+      { from: "LICENSE", to: "packages/styles/LICENSE" },
+      { from: "NOTICE", to: "packages/styles/NOTICE" },
+      { from: "LICENSE", to: "packages/tokens/LICENSE" },
+      { from: "NOTICE", to: "packages/tokens/NOTICE" },
+      { from: "THIRD_PARTY_NOTICES", to: "packages/tokens/THIRD_PARTY_NOTICES" },
+      { from: "LICENSE", to: "packages/other/LICENSE" },
+      { from: "NOTICE", to: "packages/other/NOTICE" },
+    ]);
+  });
+
+  it("copies no file the tree ships itself and none that omit.txt lists, by tree path", () => {
+    expect(licenceCopies(["elements", "styles"], ["packages/elements/NOTICE", "packages/elements/dist/index.js", "packages/styles/LICENSE.md"], ["packages/styles/LICENSE", "packages/tokens/NOTICE", "LICENSE"])).toEqual([
+      { from: "LICENSE", to: "packages/elements/LICENSE" },
+      { from: "THIRD_PARTY_NOTICES", to: "packages/elements/THIRD_PARTY_NOTICES" },
+      { from: "NOTICE", to: "packages/styles/NOTICE" },
+    ]);
+  });
+
+  it("reads omit.txt as one tree path per line, trimmed, without blank lines and # comments; none without the file", () => {
+    expect({ listed: parseOmit("packages/styles/LICENSE\n\n  # the tree leaves it out\n  packages/tokens/NOTICE  \r\n"), none: parseOmit(undefined) }).toEqual({
+      listed: ["packages/styles/LICENSE", "packages/tokens/NOTICE"],
+      none: [],
+    });
   });
 });
 

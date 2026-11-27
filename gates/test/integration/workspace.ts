@@ -1,7 +1,7 @@
 // Helpers for the gates-integration tests: temporary workspaces built from fixture trees, and gate runs as child
 // processes. The tests never run a gate in place in gates/test/fixtures/ (research.md R-03, R-04, R-10).
 import { spawn } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,6 +43,22 @@ export const storybookInputs: readonly string[] = [
   "storybook/stories",
   "storybook/visual/container.json",
 ];
+
+/**
+ * The release inputs of a plant root's configuration set (030 research.md R-17) that the repository holds, for tests
+ * that build a repository root of their own for the plant job: the workflows and the shared action, gates/release/
+ * (which arrives with the pack-contents gate), the gap-table source, the root licence files and each changelog.
+ */
+export const releaseInputs: readonly string[] = [
+  ".github/workflows",
+  ".github/actions",
+  "gates/release",
+  "specs/030-release-v1/sources/issue-1-gap-table.md",
+  "LICENSE",
+  "NOTICE",
+  "THIRD_PARTY_NOTICES",
+  ...["tokens", "styles", "elements"].map((name) => `packages/${name}/CHANGELOG.md`),
+].filter((path) => existsSync(join(repo, path)));
 
 export function cleanUp(): void {
   for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });

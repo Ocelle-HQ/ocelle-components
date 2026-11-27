@@ -58,12 +58,34 @@ describe("node scripts/build.ts <out>, the package build's second step", () => {
     await run(process.execPath, [join(packageDir, "scripts", "build.ts"), out], { cwd: packageDir });
     expect(existsSync(join(out, "base.css"))).toBe(true);
     expect(readFileSync(join(out, "base.css")).equals(readFileSync(join(packageDir, "src", "base.css")))).toBe(true);
+    // Replaced by 030 (T009): the first release replaces the internal `0.0.0` state: FR-001, FR-002, FR-003, FR-042. The
+    // package publishes LICENSE and NOTICE, copied from the root by its build, names the tokens peer as a caret range of
+    // the tokens version (workspace:^<v> in source, ^<v> packed; 030 research R-03), carries the public-release metadata
+    // and shares the tokens version; <v> is read from packages/tokens/package.json, never written as a literal.
     const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")) as Record<string, unknown>;
-    expect({ exports: manifest.exports, files: manifest.files, scripts: manifest.scripts, peerDependencies: manifest.peerDependencies }).toEqual({
+    const tokens = (JSON.parse(readFileSync(join(packageDir, "../tokens/package.json"), "utf8")) as { version: string }).version;
+    expect({
+      exports: manifest.exports,
+      files: manifest.files,
+      scripts: manifest.scripts,
+      peerDependencies: manifest.peerDependencies,
+      private: "private" in manifest,
+      license: manifest.license,
+      repository: manifest.repository,
+      publishConfig: manifest.publishConfig,
+      version: manifest.version,
+      release: /^[1-9]\d*\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(tokens),
+    }).toEqual({
       exports: { ".": "./dist/index.js", "./base.css": "./dist/base.css" },
-      files: ["dist", "CHANGELOG.md", "README.md"],
-      scripts: { build: "tsc -p tsconfig.json && node scripts/build.ts" },
-      peerDependencies: { "@ocelle/tokens": "workspace:0.0.0" },
+      files: ["dist", "CHANGELOG.md", "README.md", "LICENSE", "NOTICE"],
+      scripts: { build: "tsc -p tsconfig.json && node scripts/build.ts && cp ../../LICENSE ../../NOTICE ." },
+      peerDependencies: { "@ocelle/tokens": `workspace:^${tokens}` },
+      private: false,
+      license: "Apache-2.0",
+      repository: { type: "git", url: "git+https://github.com/Ocelle-HQ/ocelle-components.git", directory: "packages/styles" },
+      publishConfig: { access: "public", registry: "https://registry.npmjs.org/" },
+      version: tokens,
+      release: true,
     });
   });
 });

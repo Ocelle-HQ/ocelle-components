@@ -98,6 +98,10 @@ jobs:
     name: Sandbox paths
     steps:
       - run: pnpm run gate:sandbox-paths
+  pack-contents:
+    name: Pack contents
+    steps:
+      - run: pnpm run gate:pack-contents
   plants:
     name: Plants
     steps:

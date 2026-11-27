@@ -1,0 +1,27 @@
+# 030 phase 1 (US1): the tests this phase changes, and the gates-integration tests that build plant roots from
+# the configuration set it extends (buildRepoTree). The changed support files (gates/test/fixtures/registry/,
+# gates/test/integration/workspace.ts releaseInputs) are read only by changed tests: plants.test.ts, plants-job.test.ts,
+# plant-runner.test.ts, registry.test.ts, and the two plant-job integration tests.
+gates/test/ci-workflow.test.ts
+gates/test/evidence-reuse-shadow.test.ts
+gates/test/gates-readme.test.ts
+gates/test/integration/evidence-reuse-observe.test.ts
+gates/test/integration/pack-contents.test.ts
+gates/test/integration/plant-repo.test.ts
+gates/test/integration/plants-robustness.test.ts
+gates/test/integration/plants.test.ts
+gates/test/pack-contents.test.ts
+gates/test/pins-rules.test.ts
+gates/test/plant-repo.test.ts
+gates/test/plant-runner.test.ts
+gates/test/plants-job.test.ts
+gates/test/plants.test.ts
+gates/test/registry-parts.test.ts
+gates/test/registry.test.ts
+packages/elements/test/node/readme.test.ts
+packages/styles/test/build.test.ts
+packages/styles/test/readme.test.ts
+packages/tokens/test/build.test.ts
+gates/test/integration/manifest.test.ts
+gates/test/integration/storybook-build.test.ts
+gates/test/integration/axe.test.ts

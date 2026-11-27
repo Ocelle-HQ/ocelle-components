@@ -146,5 +146,13 @@
     "plantCommand": "node gates/bin/sandbox-paths.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "pack-contents",
+    "check": "Pack contents",
+    "command": "pnpm run gate:pack-contents",
+    "plantCommand": "node gates/bin/pack-contents.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]

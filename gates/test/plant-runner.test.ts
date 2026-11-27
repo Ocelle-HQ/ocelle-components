@@ -37,7 +37,7 @@ function recorder(built: BuiltRepo, ran: ToolRun | Error, buildError?: Error): R
       calls.push(`removeDir ${dir}`);
       return Promise.resolve();
     },
-    build: { "repo-tree": build("repo-tree"), "commit-repo": build("commit-repo"), "mutation-repo": build("mutation-repo"), "tracked-tree": build("tracked-tree"), workspace: build("workspace") },
+    build: { "repo-tree": build("repo-tree"), "commit-repo": build("commit-repo"), "mutation-repo": build("mutation-repo"), "tracked-tree": build("tracked-tree"), "pack-tree": build("pack-tree"), workspace: build("workspace") },
     run: (command, args) => {
       calls.push(`run ${command} ${args.join(" ")}`);
       return ran instanceof Error ? Promise.reject(ran) : Promise.resolve(ran);
@@ -754,7 +754,8 @@ describe("plantShards and shardSize (plan decision 23)", () => {
       visualAndAxe: shards.slice(otherShards),
     };
     expect(dealt).toEqual({
-      counts: { visual: 48, axe: 25, others: 253 },
+      // 030: the eighteen pack-contents plants join the others (253 before), still four shards of at most 80.
+      counts: { visual: 48, axe: 25, others: 271 },
       shards: 4 + 48 + 25,
       otherSizes: [true, true, true, true],
       visualAndAxe: [...visualAndAxe.filter((plant) => plant.startsWith("visual/")).sort(), ...visualAndAxe.filter((plant) => plant.startsWith("axe/")).sort()].map((plant) => [plant]),

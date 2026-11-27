@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 // The package documentation (003 research.md R-14, contracts/styles-package.md § Host contract; spec FR-004, US1
 // scenario 6's documentation half): the README states the host contract and the CHANGELOG's Unreleased section names
 // what is added. The statements grow red first with the phases; phase 2 checks the link order, the CSP, the tokens
-// version (and that the workspace:0.0.0 pin becomes meaningful at the first release, #11), the base layer and its
+// version (since 030 T009: a caret peer of the shared release version; it was the workspace:0.0.0 pin), the base layer and its
 // specificity, the custom-element hosts (plan decision 16) and the CHANGELOG entry naming base.css; phase 3 adds the
 // density and value hooks (their values, that any other value does nothing, what the compact-scale family styles and
 // its tokens, the main-grounds limit) and the CHANGELOG entries naming both attributes; phase 4 adds the prose hook
@@ -35,8 +35,7 @@ const fragments = [
   "`base.css` needs no `img-src`; a host page that shows its own images adds `img-src 'self'`",
   // tokens version (FR-001, plan decision 11)
   "`base.css` needs the `@ocelle/tokens` version that adds `line-height-compact`, `line-height-prose`, `font-size-subhead`, `measure-reading`, `measure-cell` and `measure-container`",
-  "The package declares it as an exact peer dependency, `\"@ocelle/tokens\": \"workspace:0.0.0\"`",
-  "Both packages stay at 0.0.0 until the first release (#11), so the pin becomes meaningful at that release",
+  // The two sentences of the tokens version that pinned workspace:0.0.0 are replaced by 030 (T009); see the 030 case below.
   // base layer (FR-006 to FR-011, FR-026, FR-025)
   "The base layer applies with no hook: the reset, the body, the root `color-scheme`, the focus ring, code elements in Schibsted Grotesk with tabular figures, and forced colours",
   "It adds no motion",
@@ -161,11 +160,26 @@ describe("packages/styles/README.md", () => {
     expect(tableRows(read("README.md"), "Replacing kitty-mission-ui's stand-ins")).toEqual(standInRows);
   });
 
-  it("names the tokens version of package.json's peer dependency", () => {
+  // Replaced by 030 (T009): the first release replaces the internal `0.0.0` state: FR-001, FR-002, FR-003, FR-042. The
+  // fragments "The package declares it as an exact peer dependency, `"@ocelle/tokens": "workspace:0.0.0"`" and "Both
+  // packages stay at 0.0.0 until the first release (#11), so the pin becomes meaningful at that release" give way to
+  // these two.
+  it("states the tokens version as a caret peer of the shared release version (030)", () => {
+    const sentences = ["The package declares it as a peer dependency at a caret range of the same version", "The three packages share one version and are released together"];
+    expect(sentences.filter((sentence) => !readme.includes(flat(sentence)))).toEqual([]);
+  });
+
+  // Replaced by 030 (T009): the first release replaces the internal `0.0.0` state: FR-001, FR-002, FR-003, FR-042. The
+  // manifest's peer is workspace:^<v> (<v> the tokens version) and the README states the packed range, ^<v>, with no
+  // workspace: specifier left (a consumer never sees one).
+  it("names the tokens version of package.json's peer dependency as the packed range, with no workspace: specifier", () => {
     const manifest = JSON.parse(read("package.json")) as { peerDependencies?: Record<string, string> };
-    const pin = manifest.peerDependencies?.["@ocelle/tokens"];
-    expect(pin).toBe("workspace:0.0.0");
-    expect(readme).toContain(`"@ocelle/tokens": "${String(pin)}"`);
+    const tokens = (JSON.parse(read("../tokens/package.json")) as { version: string }).version;
+    expect({ pin: manifest.peerDependencies?.["@ocelle/tokens"], range: readme.includes(`"@ocelle/tokens": "^${tokens}"`), workspace: readme.includes("workspace:") }).toEqual({
+      pin: `workspace:^${tokens}`,
+      range: true,
+      workspace: false,
+    });
   });
 });
 

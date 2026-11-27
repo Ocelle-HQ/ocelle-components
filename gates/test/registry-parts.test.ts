@@ -36,8 +36,8 @@ describe("parseRegistry: entries", () => {
 });
 
 describe("fr020", () => {
-  it("is the eighteen gates of FR-020, in the order of the spec, with 002's contrast and brand-rules, 005's manifest, then 006's storybook-build, visual and axe, then op 023's sandbox-paths", () => {
-    expect(fr020).toEqual(["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe", "sandbox-paths"]);
+  it("is the nineteen gates of FR-020, in the order of the spec, with 002's contrast and brand-rules, 005's manifest, then 006's storybook-build, visual and axe, then op 023's sandbox-paths, then 030's pack-contents", () => {
+    expect(fr020).toEqual(["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe", "sandbox-paths", "pack-contents"]);
   });
 });
 

@@ -52,6 +52,49 @@ describe("dependencyFindings", () => {
     expect(check("workspace:10.20.30x")).toEqual([finding("e/package.json", "range", 'dependencies.@ocelle/tokens is "workspace:10.20.30x", not an exact version')]);
   });
 
+  // 030 T004 (research.md R-03, plan decision D2; the constitution amendment of 030 US5): a peer range is a statement
+  // to consumers, so peerDependencies alone may name a workspace package as workspace:^<its own version>, which pnpm
+  // pack writes as ^<version>; dependencies and devDependencies keep the exact pin, and workspace:<version> stays
+  // accepted everywhere.
+  describe("workspace:^<own version> in peerDependencies only (030 R-03)", () => {
+    const released = new Map([["@ocelle/tokens", "1.0.0"]]);
+    const check = (field: string, spec: string): Finding[] => dependencyFindings("packages/styles/package.json", { [field]: { "@ocelle/tokens": spec } }, released);
+
+    it("accepts workspace:^1.0.0 for a workspace package at 1.0.0 in peerDependencies, reports it in dependencies, devDependencies and optionalDependencies, and still accepts workspace:1.0.0 in all four", () => {
+      const fields = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
+      expect({
+        caret: fields.map((field) => check(field, "workspace:^1.0.0")),
+        exact: fields.map((field) => check(field, "workspace:1.0.0")),
+      }).toEqual({
+        caret: [
+          [finding("packages/styles/package.json", "range", 'dependencies.@ocelle/tokens is "workspace:^1.0.0", not an exact version')],
+          [finding("packages/styles/package.json", "range", 'devDependencies.@ocelle/tokens is "workspace:^1.0.0", not an exact version')],
+          [finding("packages/styles/package.json", "range", 'optionalDependencies.@ocelle/tokens is "workspace:^1.0.0", not an exact version')],
+          [],
+        ],
+        exact: [[], [], [], []],
+      });
+    });
+
+    it("reports workspace:^1.0.1, not the package's own version, in peerDependencies, naming the range to write; a caret without an exact version or on a package outside the workspace stays a range", () => {
+      expect({
+        other: check("peerDependencies", "workspace:^1.0.1"),
+        bare: check("peerDependencies", "workspace:^"),
+        short: check("peerDependencies", "workspace:^1.0"),
+        tilde: check("peerDependencies", "workspace:~1.0.0"),
+        inner: check("peerDependencies", "workspace:x^1.0.0"),
+        outside: dependencyFindings("package.json", { peerDependencies: { jiti: "workspace:^2.7.0" } }, released),
+      }).toEqual({
+        other: [finding("packages/styles/package.json", "workspace", 'peerDependencies.@ocelle/tokens is "workspace:^1.0.1", but @ocelle/tokens is at 1.0.0; write "workspace:^1.0.0"')],
+        bare: [finding("packages/styles/package.json", "range", 'peerDependencies.@ocelle/tokens is "workspace:^", not an exact version')],
+        short: [finding("packages/styles/package.json", "range", 'peerDependencies.@ocelle/tokens is "workspace:^1.0", not an exact version')],
+        tilde: [finding("packages/styles/package.json", "range", 'peerDependencies.@ocelle/tokens is "workspace:~1.0.0", not an exact version')],
+        inner: [finding("packages/styles/package.json", "range", 'peerDependencies.@ocelle/tokens is "workspace:x^1.0.0", not an exact version')],
+        outside: [finding("package.json", "range", 'peerDependencies.jiti is "workspace:^2.7.0", not an exact version')],
+      });
+    });
+  });
+
   it("reports workspace: on a package outside the workspace even when its version is exact", () => {
     expect(dependencyFindings("package.json", { devDependencies: { jiti: "workspace:2.7.0" } }, siblings)).toEqual([
       finding("package.json", "workspace", 'devDependencies.jiti is "workspace:2.7.0", but jiti is not a workspace package'),

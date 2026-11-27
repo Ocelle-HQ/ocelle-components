@@ -125,6 +125,28 @@ describe("ci.yml sandbox-paths job (op 023)", () => {
   });
 });
 
+// 030 T008 (FR-006; contracts/pack-contents-gate.md): the job `pack-contents`, named "Pack contents", has the shape of
+// sandbox-paths: it checks out without persisted credentials, sets up and runs the gate, which builds and packs itself.
+// The header comment counts the required check names, twenty with it (reviews/recheck.md item 2a).
+describe("ci.yml pack-contents job (030)", () => {
+  it("is named Pack contents and runs pnpm run gate:pack-contents after checkout and setup, and the header counts twenty required checks", () => {
+    expect({ job: job("pack-contents"), header: workflow.split("\n").slice(0, 4).join(" ").includes("requires the twenty check names") }).toEqual({
+      job: [
+        "  pack-contents:",
+        "    name: Pack contents",
+        "    runs-on: ubuntu-24.04",
+        "    steps:",
+        "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+        "        with:",
+        "          persist-credentials: false",
+        "      - uses: ./.github/actions/setup",
+        "      - run: pnpm run gate:pack-contents",
+      ],
+      header: true,
+    });
+  });
+});
+
 // 006 FR-017, FR-018, FR-026 and US2 scenario 12 (contracts/gates.md § `visual`, § The registry; research.md R-07, R-11):
 // the job `visual`, named "Visual regression", runs the gate under both engines, records the runner's free disk after
 // both pulls, and uploads storybook/.visual/ (the captures in baseline layout among it) when it fails; the Plants job

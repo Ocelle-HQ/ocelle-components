@@ -100,17 +100,35 @@ describe("node scripts/build.ts <out> on the package with its vendored font (pha
 });
 
 describe("package.json", () => {
-  it("exports the entry, the stylesheet, the JSON and the fonts, publishes dist, the changelog and the README, and builds both (R-11)", () => {
+  // Replaced by 030 (T009): the first release replaces the internal `0.0.0` state: FR-001, FR-002, FR-003, FR-042. The
+  // package publishes its licence files too, copied from the repository root by its build (as @ocelle/elements does),
+  // and carries the public-release metadata of 030 data-model.md § Package manifest fields; the version is checked as a
+  // release version of major 1 or higher, never as a literal, so a version bump needs no test edit (030 research R-15).
+  it("exports the entry, the stylesheet, the JSON and the fonts, publishes dist, the changelog, the README and the licence files, builds both and copies the root licence files, and carries the public-release metadata (R-11; 030 FR-001, FR-002)", () => {
     const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")) as Record<string, unknown>;
-    expect({ exports: manifest.exports, files: manifest.files, scripts: manifest.scripts }).toEqual({
+    expect({
+      exports: manifest.exports,
+      files: manifest.files,
+      scripts: manifest.scripts,
+      private: "private" in manifest,
+      license: manifest.license,
+      repository: manifest.repository,
+      publishConfig: manifest.publishConfig,
+      release: /^[1-9]\d*\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(String(manifest.version)),
+    }).toEqual({
       exports: {
         ".": "./dist/index.js",
         "./tokens.css": "./dist/tokens.css",
         "./tokens.json": "./dist/tokens.json",
         "./fonts/*": "./dist/fonts/*",
       },
-      files: ["dist", "CHANGELOG.md", "README.md"],
-      scripts: { build: "tsc -p tsconfig.json && node scripts/build.ts" },
+      files: ["dist", "CHANGELOG.md", "README.md", "LICENSE", "NOTICE", "THIRD_PARTY_NOTICES"],
+      scripts: { build: "tsc -p tsconfig.json && node scripts/build.ts && cp ../../LICENSE ../../NOTICE ../../THIRD_PARTY_NOTICES ." },
+      private: false,
+      license: "Apache-2.0",
+      repository: { type: "git", url: "git+https://github.com/Ocelle-HQ/ocelle-components.git", directory: "packages/tokens" },
+      publishConfig: { access: "public", registry: "https://registry.npmjs.org/" },
+      release: true,
     });
   });
 });

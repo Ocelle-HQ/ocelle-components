@@ -9,7 +9,7 @@ const requiredJobs = [
   "Typecheck", "Code lint", "Style lint", "Unit tests", "Test lint", "Mutation testing",
   "Content security", "Prefix", "Story config copies", "Install and pins", "Sign-off",
   "Contrast", "Brand rules", "Custom-elements manifest", "Storybook build", "Visual regression",
-  "Accessibility", "Sandbox paths", "Plants",
+  "Accessibility", "Sandbox paths", "Pack contents", "Plants",
 ];
 const mutationJob = "Mutation shard (packages/elements/src/ocelle-pane.ts:12-18, 1)";
 const helperJobs = [
@@ -436,6 +436,18 @@ describe("evidence reuse shadow eligibility", () => {
     const input = observation();
     changeJobs(input.current.evidence, (rows) => rows.filter(({ name }) => name !== "Sandbox paths"));
     expect(await assess(input)).toMatchObject({ eligible: false, reason: "safeguards" });
+  });
+
+  // 030 T008 (operator decision on reviews/recheck.md item 2b, option (a)): Pack contents is a required check of
+  // ci.yml, so a run holding its job is complete and a run lacking it is not.
+  it.each(["prior", "current"] as const)("rejects a %s run without the Pack contents job, which a complete run holds", async (which) => {
+    const complete = observation();
+    const input = observation();
+    changeJobs(input[which].evidence, (rows) => rows.filter(({ name }) => name !== "Pack contents"));
+    expect({ complete: await assess(complete), lacking: await assess(input) }).toMatchObject({
+      complete: { eligible: true, reason: "matched" },
+      lacking: { eligible: false, reason: "jobs" },
+    });
   });
 
   it("rejects a failed current Visual regression despite a successful prior result", async () => {

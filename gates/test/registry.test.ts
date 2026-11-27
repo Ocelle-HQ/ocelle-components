@@ -9,15 +9,15 @@ import type { Gate } from "../lib/registry.ts";
 // set; each id missing from one of them is one finding. Inputs: gates/test/fixtures/registry/.
 const registryText = readFileSync(new URL("fixtures/registry/gates.json", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("fixtures/registry/ci.yml", import.meta.url), "utf8");
-const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe", "sandbox-paths"];
+const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe", "sandbox-paths", "pack-contents"];
 
 function finding(path: string, rule: string, message: string): Finding {
   return { location: { path }, gate: "plants", rule, message };
 }
 
 describe("fr020 and plantJob", () => {
-  it("lists the eighteen gates of FR-020 (002 FR-020: contrast and brand-rules added; 005 FR-009: manifest; 006 FR-017: storybook-build, visual and axe; op 023: sandbox-paths), and names the plant job plants", () => {
-    expect({ fr020, plantJob }).toEqual({ fr020: ids, plantJob: "plants" });
+  it("lists the nineteen gates of FR-020 (002 FR-020: contrast and brand-rules added; 005 FR-009: manifest; 006 FR-017: storybook-build, visual and axe; op 023: sandbox-paths; 030 FR-006: pack-contents), and names the plant job plants", () => {
+    expect({ fr020, plantJob, last: fr020.at(-1) }).toEqual({ fr020: ids, plantJob: "plants", last: "pack-contents" });
   });
 });
 
@@ -47,7 +47,6 @@ describe("parseRegistry", () => {
     { text: JSON.stringify([{ ...entry, command: undefined }]), problem: /^gate 1 of gates\.json: command must be a non-empty string$/ },
     { text: JSON.stringify([{ ...entry, plantCommand: "" }]), problem: /^gate 1 of gates\.json: plantCommand must be a non-empty string$/ },
     { text: JSON.stringify([{ ...entry, scope: null }]), problem: /^gate 1 of gates\.json: scope must be a non-empty string$/ },
-    { text: JSON.stringify([entry, { ...entry, id: "b", plantForm: "tree" }]), problem: /^gate 2 of gates\.json: plantForm must be repo-tree, commit-repo, mutation-repo, tracked-tree or workspace$/ },
     { text: JSON.stringify([{ ...entry, helperJobs: "x" }]), problem: /^gate 1 of gates\.json: helperJobs must be a list of job ids$/ },
     { text: JSON.stringify([{ ...entry, helperJobs: [""] }]), problem: /^gate 1 of gates\.json: helperJobs must be a list of job ids$/ },
     { text: JSON.stringify([entry, entry]), problem: /^gate 2 of gates\.json: id a is listed twice$/ },
@@ -55,10 +54,16 @@ describe("parseRegistry", () => {
     expect(() => parseRegistry(text)).toThrow(problem);
   });
 
-  it("accepts each plant form", () => {
-    const forms = ["repo-tree", "commit-repo", "mutation-repo", "tracked-tree", "workspace"];
+  // Replaced by 030 (research.md R-17): the pack-tree form of the pack-contents gate is accepted, and named in the
+  // error for a form that is none of the six (the case moved here from the table above).
+  it("accepts each plant form, pack-tree among them, and names the six in the error for another", () => {
+    const forms = ["repo-tree", "commit-repo", "mutation-repo", "tracked-tree", "pack-tree", "workspace"];
     const text = JSON.stringify(forms.map((plantForm, i) => ({ ...entry, id: String(i), plantForm })));
+    expect(() => parseRegistry(text)).not.toThrow();
     expect(parseRegistry(text).map((gate) => gate.plantForm)).toEqual(forms);
+    expect(() => parseRegistry(JSON.stringify([entry, { ...entry, id: "b", plantForm: "tree" }]))).toThrow(
+      /^gate 2 of gates\.json: plantForm must be repo-tree, commit-repo, mutation-repo, tracked-tree, pack-tree or workspace$/,
+    );
   });
 });
 
@@ -127,8 +132,10 @@ describe("checkRegistry", () => {
     expect(checkRegistry({ registry, jobs: [...jobs, "plants-plan", "plants-shard"], ...paths })).toEqual([]);
   });
 
-  it("reports every gate when the registry and the workflow are empty", () => {
-    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(36);
+  // Replaced by 030 (T008, FR-006): the FR-020 list holds nineteen gates with pack-contents, so an empty registry and
+  // workflow miss each of them twice (it was eighteen, 36 findings).
+  it("reports every gate when the registry and the workflow are empty, each of the nineteen twice", () => {
+    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(38);
   });
 });
 
@@ -152,7 +159,7 @@ describe("the repository's registry (002 FR-020)", () => {
     ]);
   });
 
-  it("matches the workflow's gate jobs and the FR-020 list, eighteen gates", () => {
+  it("matches the workflow's gate jobs and the FR-020 list, nineteen gates (030: pack-contents)", () => {
     expect(checkRegistry({ registry: real, registryPath: "gates/gates.json", jobs: ciJobs(realWorkflow), workflowPath: ".github/workflows/ci.yml" })).toEqual([]);
     expect(real.map((gate) => gate.id)).toEqual(ids);
   });
@@ -209,6 +216,19 @@ describe("the repository's registry (002 FR-020)", () => {
     });
   });
 
+  // 030 T008 (FR-006; contracts/pack-contents-gate.md; research.md R-17): the pack-contents gate is a pack-tree gate with
+  // the check "Pack contents"; its plant command runs the gate on the plant's root and the tarballs the builder made.
+  it("registers pack-contents as a pack-tree gate with the check Pack contents, its plant command reading {root}/tarballs", () => {
+    const gate = real.find((g) => g.id === "pack-contents");
+    expect(gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm }).toEqual({
+      id: "pack-contents",
+      check: "Pack contents",
+      command: "pnpm run gate:pack-contents",
+      plantCommand: "node gates/bin/pack-contents.ts --root {root} --tarballs {root}/tarballs",
+      plantForm: "pack-tree",
+    });
+  });
+
   it("gives each new gate a CI job named after its check that runs its command, like the other gate jobs", () => {
     const job = (id: string): string[] => {
       const lines = realWorkflow.split("\n");
@@ -234,6 +254,7 @@ describe("the repository's registry (002 FR-020)", () => {
     expect(job("storybook-build")).toEqual(shape("storybook-build", "Storybook build", "pnpm run gate:storybook-build"));
     expect(job("axe")).toEqual(shape("axe", "Accessibility", "pnpm run gate:axe"));
     expect(job("sandbox-paths")).toEqual(shape("sandbox-paths", "Sandbox paths", "pnpm run gate:sandbox-paths"));
+    expect(job("pack-contents")).toEqual(shape("pack-contents", "Pack contents", "pnpm run gate:pack-contents"));
   });
 });
 

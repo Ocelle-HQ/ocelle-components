@@ -82,9 +82,11 @@ describe("gates/README.md (002 FR-022)", () => {
     expect(plants.filter((plant) => !(row?.[4] ?? "").includes(plant))).toEqual([]);
   });
 
-  it("requires nineteen checks on main: main's fifteen, Storybook build, Visual regression and Accessibility (006 FR-023, plan decision 31), and Sandbox paths before Plants (op 023)", () => {
+  // Replaced by 030 (T008, FR-006): the pack-contents gate joins the required checks, as op 023's Sandbox paths did, so
+  // the list has twenty names with Pack contents before Plants (the operator adds it to the ruleset, O6).
+  it("requires twenty checks on main: main's fifteen, Storybook build, Visual regression and Accessibility (006 FR-023, plan decision 31), Sandbox paths (op 023) and Pack contents (030) before Plants", () => {
     const required = section("Required checks on `main`");
-    expect(required).toContain("requires exactly these nineteen checks");
+    expect(required).toContain("requires exactly these twenty checks");
     const listed = required.split("\n").filter((line) => /^\d+\. /.test(line)).map((line) => line.replace(/^\d+\. /, ""));
     expect(listed).toEqual([
       "Typecheck",
@@ -105,6 +107,7 @@ describe("gates/README.md (002 FR-022)", () => {
       "Visual regression",
       "Accessibility",
       "Sandbox paths",
+      "Pack contents",
       "Plants",
     ]);
   });
@@ -230,6 +233,40 @@ describe("gates/README.md (op 023)", () => {
         "pass-allowed-files",
         "pass-binary-file",
         "pass-near-misses",
+      ],
+      unlisted: [],
+    });
+  });
+});
+
+// 030 T008 (FR-006; contracts/pack-contents-gate.md): the pack-contents gate in "The gates", with its check, its command
+// and the eighteen plants of gates/plants/pack-contents/ (fail, pass and breaking).
+describe("gates/README.md (030)", () => {
+  it("lists pack-contents in The gates with its check, its command and its eighteen plants", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`pack-contents`");
+    const dir = new URL("../plants/pack-contents/", import.meta.url);
+    const plants = existsSync(dir) ? readdirSync(dir).sort() : [];
+    expect({ cells: row?.slice(0, 3), plants, unlisted: plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``)) }).toEqual({
+      cells: ["`pack-contents`", "Pack contents", "`pnpm run gate:pack-contents`"],
+      plants: [
+        "break-manifest-invalid",
+        "break-tarball-unreadable",
+        "fail-export-missing",
+        "fail-extra-file",
+        "fail-license-missing",
+        "fail-notice-differs",
+        "fail-npmrc",
+        "fail-ofl-differs",
+        "fail-ofl-missing",
+        "fail-peer-exact",
+        "fail-private",
+        "fail-repository-directory",
+        "fail-sandbox-path",
+        "fail-test-file",
+        "fail-version-skew",
+        "fail-workspace-peer",
+        "pass-minimal",
+        "pass-star-export",
       ],
       unlisted: [],
     });

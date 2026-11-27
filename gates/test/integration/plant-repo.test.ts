@@ -3,7 +3,7 @@ import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, re
 import { join, relative } from "node:path";
 import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildCommitRepo, buildMutationRepo, buildRepoTree, buildTrackedTree } from "../../lib/plant-repo.ts";
+import { buildCommitRepo, buildMutationRepo, buildPackTree, buildRepoTree, buildTrackedTree } from "../../lib/plant-repo.ts";
 import { baseEnv, cleanUp, repo, storybookInputs, tempDir } from "./workspace.ts";
 
 // gates/lib/plant-repo.ts builds the temporary repositories of the plant job (research.md R-10, contracts/plants.md)
@@ -45,6 +45,28 @@ const configuration = [
 ];
 
 /**
+ * The release inputs of 030 (research.md R-17): the workflows and the shared action, gates/release/, the gap-table
+ * source, the root licence files, the font licence, each package's changelog, the stylesheets of packages/styles/src/
+ * and each spec's verification.md (two of them named here).
+ */
+const releaseConfiguration = [
+  ".github/workflows/ci.yml",
+  ".github/actions/setup/action.yml",
+  "gates/release/pack-manifest.json",
+  "specs/030-release-v1/sources/issue-1-gap-table.md",
+  "LICENSE",
+  "NOTICE",
+  "THIRD_PARTY_NOTICES",
+  "packages/tokens/fonts/OFL.txt",
+  "packages/tokens/CHANGELOG.md",
+  "packages/styles/CHANGELOG.md",
+  "packages/elements/CHANGELOG.md",
+  "packages/styles/src/base.css",
+  "specs/001-repository-foundation/verification.md",
+  "specs/033-pane-step-indicator/verification.md",
+];
+
+/**
  * The element files of the configuration set that may be absent until the manifest generator lands (005 research.md
  * R-12): each is in the temporary repository unchanged when the repository has it, and absent when it does not.
  */
@@ -72,12 +94,12 @@ function git(dir: string, args: readonly string[]): string {
   return execFileSync("git", args, { cwd: dir, env: baseEnv(), encoding: "utf8" }).trim();
 }
 
-/** For each configuration file: whether the temporary repository holds it unchanged. */
-function copiedUnchanged(dir: string): Record<string, boolean> {
+/** For each file: whether the temporary repository holds it unchanged (false when the repository lacks it). */
+function copiedUnchanged(dir: string, files: readonly string[] = configuration): Record<string, boolean> {
   return Object.fromEntries(
-    configuration.map((file) => [
+    files.map((file) => [
       file,
-      existsSync(join(dir, file)) && readFileSync(join(dir, file), "utf8") === readFileSync(join(repo, file), "utf8"),
+      existsSync(join(repo, file)) && existsSync(join(dir, file)) && readFileSync(join(dir, file), "utf8") === readFileSync(join(repo, file), "utf8"),
     ]),
   );
 }
@@ -92,8 +114,9 @@ const allTrue = Object.fromEntries(configuration.map((file) => [file, true]));
 function sourceRoot(without: readonly string[] = []): string {
   const root = tempDir("source-root");
   // The Storybook workspace inputs too, which the configuration set holds since 006 (research.md R-16).
-  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint", ...storybookInputs];
-  for (const entry of entries.filter((path) => !without.includes(path))) cpSync(join(repo, entry), join(root, entry), { recursive: true });
+  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint", ...storybookInputs, ...releaseConfiguration];
+  // Only the entries the repository holds (030: gates/release/ arrives with the pack-contents gate).
+  for (const entry of entries.filter((path) => !without.includes(path) && existsSync(join(repo, path)))) cpSync(join(repo, entry), join(root, entry), { recursive: true });
   for (const file of mayBeAbsent.filter((path) => existsSync(join(repo, path)))) cpSync(join(repo, file), join(root, file));
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
   mkdirSync(join(root, "packages/styles/node_modules"));
@@ -115,6 +138,15 @@ const required = ["stryker.elements.config.json", "vitest.mutation.elements.conf
 const timeout = 60_000;
 
 afterEach(cleanUp);
+
+// 030 T006 (research.md R-17): the configuration set holds the release inputs, so every plant root built from it does.
+describe("buildRepoTree: the release inputs (030)", () => {
+  it("copies the release inputs of 030 unchanged into a plant root", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "tree-plant"), into);
+    expect(copiedUnchanged(into, releaseConfiguration)).toEqual(Object.fromEntries(releaseConfiguration.map((file) => [file, true])));
+  }, timeout);
+});
 
 describe("buildRepoTree", () => {
   it("copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules", async () => {
@@ -567,6 +599,121 @@ describe("buildTrackedTree (op 023)", () => {
         files: "",
         entries: [".git"],
       });
+    },
+    timeout,
+  );
+});
+
+// 030 T006 (research.md R-17, analysis C2; contracts/pack-contents-gate.md): a pack-tree plant's tree/ is laid over the
+// configuration set, and each tree/packages/<name>/ is archived alone under package/ with plain tar into
+// <root>/tarballs/<name>.tgz, as the plant holds it (a workspace: specifier and a stray file survive, markers expanded),
+// after the root LICENSE and NOTICE are copied into every package tree and THIRD_PARTY_NOTICES into tokens and
+// elements, unless the tree ships the file or omit.txt lists it. The plant is made here.
+describe("buildPackTree (030)", () => {
+  const home = "/" + "home/user";
+
+  /** A pack-tree plant directory with a plant.json, the tree/ files given and, if given, an omit.txt. */
+  function packPlant(tree: Readonly<Record<string, string>>, omit?: string): string {
+    const plant = tempDir("pack-plant");
+    writeFileSync(join(plant, "plant.json"), JSON.stringify({ expect: "pass", why: "w" }));
+    if (omit !== undefined) writeFileSync(join(plant, "omit.txt"), omit);
+    for (const [path, content] of Object.entries(tree)) {
+      mkdirSync(join(plant, "tree", path, ".."), { recursive: true });
+      writeFileSync(join(plant, "tree", path), content);
+    }
+    return plant;
+  }
+
+  /** The file entries of a tarball, sorted, without directory entries. */
+  function listed(tgz: string): string[] {
+    return execFileSync("tar", ["-tzf", tgz], { encoding: "utf8" }).split("\n").filter((entry) => entry !== "" && !entry.endsWith("/")).sort();
+  }
+
+  /** One file of a tarball, as bytes. */
+  function member(tgz: string, path: string): Buffer {
+    return execFileSync("tar", ["-xzOf", tgz, path]);
+  }
+
+  const styles = '{\n  "name": "@ocelle/styles",\n  "peerDependencies": { "@ocelle/tokens": "workspace:^1.0.0" }\n}\n';
+
+  it(
+    "archives each package tree alone under package/, with the root licence files copied in but where the tree ships one or omit.txt lists it, and lays tree/ over the configuration set",
+    async () => {
+      const plant = packPlant(
+        {
+          "packages/tokens/package.json": '{"name":"@ocelle/tokens","version":"1.0.0"}\n',
+          "packages/tokens/dist/index.js": "export {};\n",
+          "packages/styles/package.json": styles,
+          "packages/styles/notes.txt": "stray\n",
+          "packages/styles/.npmrc": "save-exact=true\n",
+          "packages/elements/package.json": '{"name":"@ocelle/elements"}\n',
+          "packages/elements/NOTICE": "the plant's own notice\n",
+          "packages/elements/README.md": "built at @SANDBOX_HOME_USER@/ocelle-components\n",
+          "notes/root.md": "laid over the root\n",
+        },
+        "# leave the styles licence out\npackages/styles/LICENSE\n",
+      );
+      const into = tempDir("pack-tree");
+      expect(await buildPackTree(repo, plant, into).then(() => "built", (error: unknown) => String(error))).toBe("built");
+      const tarballs = join(into, "tarballs");
+      expect({
+        tarballs: readdirSync(tarballs).sort(),
+        tokens: listed(join(tarballs, "tokens.tgz")),
+        styles: listed(join(tarballs, "styles.tgz")),
+        elements: listed(join(tarballs, "elements.tgz")),
+      }).toEqual({
+        tarballs: ["elements.tgz", "styles.tgz", "tokens.tgz"],
+        tokens: ["package/LICENSE", "package/NOTICE", "package/THIRD_PARTY_NOTICES", "package/dist/index.js", "package/package.json"],
+        styles: ["package/.npmrc", "package/NOTICE", "package/notes.txt", "package/package.json"],
+        elements: ["package/LICENSE", "package/NOTICE", "package/README.md", "package/THIRD_PARTY_NOTICES", "package/package.json"],
+      });
+      expect({
+        licence: member(join(tarballs, "tokens.tgz"), "package/LICENSE").equals(readFileSync(join(repo, "LICENSE"))),
+        notice: member(join(tarballs, "styles.tgz"), "package/NOTICE").equals(readFileSync(join(repo, "NOTICE"))),
+        thirdParty: member(join(tarballs, "elements.tgz"), "package/THIRD_PARTY_NOTICES").equals(readFileSync(join(repo, "THIRD_PARTY_NOTICES"))),
+        ownNotice: member(join(tarballs, "elements.tgz"), "package/NOTICE").toString(),
+        workspace: member(join(tarballs, "styles.tgz"), "package/package.json").toString(),
+        stray: member(join(tarballs, "styles.tgz"), "package/notes.txt").toString(),
+        expanded: member(join(tarballs, "elements.tgz"), "package/README.md").toString(),
+      }).toEqual({
+        licence: true,
+        notice: true,
+        thirdParty: true,
+        ownNotice: "the plant's own notice\n",
+        workspace: styles,
+        stray: "stray\n",
+        expanded: `built at ${home}/ocelle-components\n`,
+      });
+      expect({
+        laid: readFileSync(join(into, "notes/root.md"), "utf8"),
+        configuration: readFileSync(join(into, "package.json"), "utf8") === readFileSync(join(repo, "package.json"), "utf8"),
+        rootLicence: readFileSync(join(into, "LICENSE")).equals(readFileSync(join(repo, "LICENSE"))),
+        tokensManifest: readFileSync(join(into, "packages/tokens/package.json"), "utf8"),
+        entries: readdirSync(into).filter((entry) => entry.startsWith(".") && entry !== ".github" && entry !== ".node-version"),
+      }).toEqual({
+        laid: "laid over the root\n",
+        configuration: true,
+        rootLicence: true,
+        tokensManifest: '{"name":"@ocelle/tokens","version":"1.0.0"}\n',
+        entries: [],
+      });
+    },
+    timeout,
+  );
+
+  it(
+    "keeps a tarball the tree places in tarballs/ beside the built ones, and builds none without package trees",
+    async () => {
+      const into = tempDir("pack-tree");
+      expect(await buildPackTree(repo, packPlant({ "tarballs/broken.tgz": "not a tarball\n", "packages/tokens/package.json": '{"name":"@ocelle/tokens"}\n' }), into).then(() => "built", (error: unknown) => String(error))).toBe("built");
+      const empty = tempDir("pack-tree");
+      expect(await buildPackTree(repo, packPlant({ "gates/release/pack-manifest.json": "{" }), empty).then(() => "built", (error: unknown) => String(error))).toBe("built");
+      expect({
+        kept: readdirSync(join(into, "tarballs")).sort(),
+        broken: readFileSync(join(into, "tarballs/broken.tgz"), "utf8"),
+        none: readdirSync(join(empty, "tarballs")),
+        manifest: readFileSync(join(empty, "gates/release/pack-manifest.json"), "utf8"),
+      }).toEqual({ kept: ["broken.tgz", "tokens.tgz"], broken: "not a tarball\n", none: [], manifest: "{" });
     },
     timeout,
   );

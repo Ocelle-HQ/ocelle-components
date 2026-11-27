@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { applyOverrides, resolve } from "../../../packages/tokens/src/generate.ts";
 import { records } from "../../../packages/tokens/src/source.ts";
 import { contrastRatio } from "../../lib/wcag.ts";
-import { baseEnv, cleanUp, repo, runGate, storybookInputs, tempDir } from "./workspace.ts";
+import { baseEnv, cleanUp, releaseInputs, repo, runGate, storybookInputs, tempDir } from "./workspace.ts";
 
 // The contrast and brand-rules plants are robust to neighbouring changes (002 contracts/gates.md § Configuration set,
 // *Plant deltas* and *Keyed locations*; PLAN-FRESH-3-003): a copy of the repository's token source and pair list is
@@ -49,6 +49,8 @@ const copied = [
   "packages/elements/src",
   // The Storybook workspace inputs of the configuration set (006 research.md R-16).
   ...storybookInputs,
+  // The release inputs of the configuration set (030 research.md R-17).
+  ...releaseInputs,
 ];
 
 interface Entry {
@@ -176,7 +178,8 @@ afterEach(cleanUp);
 
 describe("contrast and brand-rules plants under neighbouring changes", () => {
   it("has the two gates' plants and the registry's", () => {
-    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 16, plants: 39 });
+    // 030: the pack-contents gate is one other gate more (16 before).
+    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 17, plants: 39 });
   });
 
   it.each([

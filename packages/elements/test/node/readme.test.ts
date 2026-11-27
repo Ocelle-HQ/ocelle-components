@@ -1212,11 +1212,17 @@ describe("packages/elements/README.md", () => {
     expect({ intro: flat(text.split(/^## /m)[0] ?? "").includes("`ocelle-event-timeline`, an event history"), section: /^## `ocelle-event-timeline`$/m.test(text) }).toEqual({ intro: true, section: true });
   });
 
-  it("names the @ocelle/tokens peer dependency of package.json", () => {
+  // Replaced by 030 (T009): the first release replaces the internal `0.0.0` state: FR-001, FR-002, FR-003, FR-042. The
+  // manifest's peer is workspace:^<v> (<v> the tokens version) and the README states the packed range, ^<v>, with no
+  // workspace: specifier left.
+  it("names the @ocelle/tokens peer dependency of package.json as the packed range, with no workspace: specifier", () => {
     const manifest = JSON.parse(read("package.json")) as { peerDependencies?: Record<string, string> };
-    const pin = manifest.peerDependencies?.["@ocelle/tokens"];
-    expect(pin).toBe("workspace:0.0.0");
-    expect(readme).toContain(`"@ocelle/tokens": "${String(pin)}"`);
+    const tokens = (JSON.parse(read("../tokens/package.json")) as { version: string }).version;
+    expect({ pin: manifest.peerDependencies?.["@ocelle/tokens"], range: readme.includes(`"@ocelle/tokens": "^${tokens}"`), workspace: readme.includes("workspace:") }).toEqual({
+      pin: `workspace:^${tokens}`,
+      range: true,
+      workspace: false,
+    });
   });
 });
 
@@ -2180,6 +2186,13 @@ describe("NOTICE: the repository's Apache-2.0 notice with the trademark note (FR
     "Third-party assets and their licences are listed in THIRD_PARTY_NOTICES",
   ])("states: %s", (statement) => {
     expect(notice).toContain(flat(statement));
+  });
+
+  // 030 T009, T011 (research R-04): the identical rule ships the NOTICE in all three packages, so it says so, and where
+  // THIRD_PARTY_NOTICES is.
+  it("says that each published @ocelle package holds a copy and where THIRD_PARTY_NOTICES is (030)", () => {
+    const statements = ["Each published @ocelle package holds a copy", "in this repository and in the @ocelle/tokens and @ocelle/elements packages"];
+    expect(statements.filter((statement) => !notice.includes(flat(statement)))).toEqual([]);
   });
 });
 

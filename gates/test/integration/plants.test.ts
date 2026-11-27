@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { baseEnv, cleanUp, repo, runGate, storybookInputs, tempDir } from "./workspace.ts";
+import { baseEnv, cleanUp, releaseInputs, repo, runGate, storybookInputs, tempDir } from "./workspace.ts";
 
 // The plant job end to end (research.md R-08 kind 3, R-10; phase 4 review round 1, R1-09 and R1-11):
 // `gates/bin/plants.ts --root <tmp>` from a different working directory, on a temporary repository that holds the
@@ -42,6 +42,8 @@ const copied = [
   "packages/elements/src",
   // The Storybook workspace inputs of the configuration set (006 research.md R-16).
   ...storybookInputs,
+  // The release inputs of the configuration set (030 research.md R-17).
+  ...releaseInputs,
 ];
 const kinds = ["fail", "pass", "error"] as const;
 
@@ -113,7 +115,9 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("visual", []),
           ...missing("axe", []),
           ...missing("sandbox-paths", []),
-          "plants: 50 problems in 6 plants",
+          // 030: the pack-contents gate, a gate of the registry whose plants this root does not hold.
+          ...missing("pack-contents", []),
+          "plants: 53 problems in 6 plants",
         ],
         stderr: rootPlants.map((plant) => `note: plant time: ${plant}: <s> s`),
       });
@@ -202,7 +206,9 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("visual", []),
           ...missing("axe", []),
           ...missing("sandbox-paths", []),
-          "plants: 50 problems in 1 plant (affected since HEAD; not the Plants check)",
+          // 030: the pack-contents gate, a gate of the registry whose plants this root does not hold.
+          ...missing("pack-contents", []),
+          "plants: 53 problems in 1 plant (affected since HEAD; not the Plants check)",
         ],
         stderr: [`note: affected: config-copies/pass-equal-copies, by ${plant}`, "note: plant time: config-copies/pass-equal-copies: <s> s"],
       });
@@ -251,7 +257,9 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("visual", []),
           ...missing("axe", []),
           ...missing("sandbox-paths", []),
-          "plants: 50 problems in 2 plants (affected since HEAD; not the Plants check)",
+          // 030: the pack-contents gate, a gate of the registry whose plants this root does not hold.
+          ...missing("pack-contents", []),
+          "plants: 53 problems in 2 plants (affected since HEAD; not the Plants check)",
         ],
         notes: [`note: affected: mutation/error-unresolvable-base, by ${String(untracked[0])}`, `note: affected: signoff/fail-no-trailer, by ${String(untracked[1])}`],
         times: ["note: plant time: mutation/error-unresolvable-base: <s> s", "note: plant time: signoff/fail-no-trailer: <s> s"],
