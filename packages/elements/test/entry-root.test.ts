@@ -12,7 +12,8 @@ import * as root from "../src/index.ts";
 // since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; since 014 (research.md R-16,
 // T017) `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`,
 // `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`; and since 020 (T006) `ocelle-disclosure` and (T026)
-// `ocelle-code-block`, and since 019 the data table, event timeline and evidence chain with their items. This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
+// `ocelle-code-block`, since 019 the data table, event timeline and evidence chain with their items, and since 018
+// `ocelle-status-indicator`, `ocelle-metric` (tasks.md T025) and `ocelle-pill-tag` (tasks.md T036). This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-notice, ocelle-form-input and ocelle-form-select as the OcelleIcon, OcelleBrandMark, OcelleNotice, OcelleFormInput and OcelleFormSelect it exports", () => {
     const exported = root as Record<string, unknown>;
@@ -200,5 +201,42 @@ describe("importing src/index.ts", () => {
       codeBlock: customElements.get("ocelle-code-block"),
       text: document.getElementById("c")?.shadowRoot?.querySelector('[part="code"]')?.textContent ?? null,
     }).toEqual({ type: "function", codeBlock: exported.OcelleCodeBlock, text: "git push origin main" });
+  });
+
+  it("defines ocelle-status-indicator as the OcelleStatusIndicator it exports, and an indicator renders its dot (018)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-status-indicator id="s" tone="success"></ocelle-status-indicator>';
+    await (document.getElementById("s") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleStatusIndicator,
+      indicator: customElements.get("ocelle-status-indicator"),
+      dot: document.getElementById("s")?.shadowRoot?.querySelector('[part="dot"]')?.localName,
+    }).toEqual({ type: "function", indicator: exported.OcelleStatusIndicator, dot: "span" });
+  });
+
+  it("defines ocelle-metric as the OcelleMetric it exports, and a metric renders its term and definition (018)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-metric id="m" label="Open missions" display-value="12"></ocelle-metric>';
+    await (document.getElementById("m") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    const shadow = document.getElementById("m")?.shadowRoot;
+    expect({
+      type: typeof exported.OcelleMetric,
+      metric: customElements.get("ocelle-metric"),
+      label: shadow?.querySelector('[part="label"]')?.localName,
+      value: shadow?.querySelector('[part="value"]')?.textContent,
+    }).toEqual({ type: "function", metric: exported.OcelleMetric, label: "dt", value: "12" });
+  });
+
+  it("defines ocelle-pill-tag as the OcellePillTag it exports, and a static pill renders its pill part around its text (018)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-pill-tag id="t" status="warning">Blocked</ocelle-pill-tag>';
+    await (document.getElementById("t") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    const shadow = document.getElementById("t")?.shadowRoot;
+    expect({
+      type: typeof exported.OcellePillTag,
+      pill: customElements.get("ocelle-pill-tag"),
+      part: shadow?.querySelector('[part="pill"]')?.localName,
+      text: shadow?.querySelector<HTMLSlotElement>(".label slot")?.assignedNodes().map((node) => node.textContent),
+    }).toEqual({ type: "function", pill: exported.OcellePillTag, part: "span", text: ["Blocked"] });
   });
 });

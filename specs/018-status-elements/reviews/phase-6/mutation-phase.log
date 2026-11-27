@@ -1,0 +1,42 @@
+$ node gates/bin/mutation.ts -- --base c2731a36106984d8f27d29b9b0a0af52c15f70e3
+packages/elements/src/ocelle-pill-tag.ts:456: mutation: record: StringLiteral: equivalent, the first updated() measures before any focus or hover can reach the tooltip and replaces the value whatever it was (the tooltip shows no bubble while it is disabled, as it is until then unless the mutant of #truncated below is also applied)
+packages/elements/src/ocelle-pill-tag.ts:460: mutation: record: BooleanLiteral: equivalent, the first updated() measures and replaces it before any focus or hover can reach the tooltip, and until then the tooltip's text is the empty initial full text, with which it shows no bubble
+packages/elements/src/ocelle-pill-tag.ts:577: mutation: record: BlockStatement: equivalent, observer teardown has no public observable (contracts/checks.md § US5, R-09): a removed pill's observers see no layout, and kept ones measure correctly after a reconnection
+packages/elements/src/ocelle-pill-tag.ts:579: mutation: record: CallExpression: equivalent, Lit's own disconnection serves reactive controllers and async directives; the pill uses neither (as ocelle-tooltip's record, reviews/phase-4/notes.md)
+packages/elements/src/ocelle-pill-tag.ts:581: mutation: record: CallExpression: equivalent, observer teardown has no public observable (contracts/checks.md § US5, R-09)
+packages/elements/src/ocelle-pill-tag.ts:627: mutation: record: ConditionalExpression: equivalent, the false mutant renders again on every text change, which re-renders the same template and re-measures what the truncation observers already measure; the true mutant (never rendering) is killed by the bare-row bodies
+packages/elements/src/ocelle-pill-tag.ts:672: mutation: record: ConditionalExpression: equivalent, the true mutant observes the same span again, which only adds an initial notification and a measure that changes nothing; the false mutant is a compile error
+packages/elements/src/ocelle-pill-tag.ts:674: mutation: record: CallExpression: equivalent, observer teardown (R-09): a replaced span left observed is detached, and its one notification measures the current span, which changes nothing
+packages/elements/src/ocelle-pill-tag.ts:683: mutation: record: BlockStatement: equivalent, observer teardown has no public observable (contracts/checks.md § US5, R-09): observers left running keep measuring the same span correctly, and a static pill ignores the result; ending the observers but keeping #span is killed by the reconnection body
+packages/elements/src/ocelle-pill-tag.ts:652: mutation: timeout: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-pill-tag.ts:652: mutation: timeout: EqualityOperator: replaced by fullText !== this.#fullText
+packages/elements/src/ocelle-pill-tag.ts:652: mutation: timeout: EqualityOperator: replaced by truncated !== this.#truncated
+packages/elements/src/ocelle-pill-tag.ts:124: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-pill-tag.ts:127: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-pill-tag.ts:127: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-pill-tag.ts:127: mutation: compile-error: LogicalOperator: replaced by first === undefined && last === undefined
+packages/elements/src/ocelle-pill-tag.ts:127: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-pill-tag.ts:127: mutation: compile-error: EqualityOperator: replaced by first !== undefined
+packages/elements/src/ocelle-pill-tag.ts:127: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-pill-tag.ts:127: mutation: compile-error: EqualityOperator: replaced by last !== undefined
+packages/elements/src/ocelle-pill-tag.ts:626: mutation: compile-error: LogicalOperator: replaced by slot?.assignedNodes({ flatten: true }) && []
+packages/elements/src/ocelle-pill-tag.ts:626: mutation: compile-error: OptionalChaining: replaced by slot.assignedNodes
+packages/elements/src/ocelle-pill-tag.ts:626: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/ocelle-pill-tag.ts:649: mutation: compile-error: LogicalOperator: replaced by span?.querySelector("slot")?.assignedNodes({ flatten: true }) && []
+packages/elements/src/ocelle-pill-tag.ts:649: mutation: compile-error: OptionalChaining: replaced by span?.querySelector("slot").assignedNodes
+packages/elements/src/ocelle-pill-tag.ts:649: mutation: compile-error: OptionalChaining: replaced by span.querySelector
+packages/elements/src/ocelle-pill-tag.ts:649: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:649: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/ocelle-pill-tag.ts:651: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-pill-tag.ts:651: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-pill-tag.ts:651: mutation: compile-error: EqualityOperator: replaced by span !== null
+packages/elements/src/ocelle-pill-tag.ts:665: mutation: compile-error: AssignmentOperator: replaced by this.#changes &&= new MutationObserver(() => { this.#measure(); })
+packages/elements/src/ocelle-pill-tag.ts:669: mutation: compile-error: AssignmentOperator: replaced by this.#resize &&= new ResizeObserver(() => { this.#measure(); })
+packages/elements/src/ocelle-pill-tag.ts:673: mutation: compile-error: LogicalOperator: replaced by span !== null || span !== this.#span
+packages/elements/src/ocelle-pill-tag.ts:673: mutation: compile-error: EqualityOperator: replaced by span === null
+packages/elements/src/ocelle-pill-tag.ts:685: mutation: compile-error: OptionalChaining: replaced by this.#resize.disconnect
+packages/elements/src/ocelle-pill-tag.ts:686: mutation: compile-error: OptionalChaining: replaced by this.#changes.disconnect
+packages/elements/src/ocelle-pill-tag.ts:763: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:763: mutation: compile-error: CallExpression: replaced by ;
+mutation: 126 mutants on the changed lines of 1 file, none survived; 3 timeouts, 27 compile errors, 0 zero-mutant entries; 9 equivalent records
+exit 0

@@ -1,0 +1,149 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "R-08 relies on MovedAttributes.connected() to move host attributes when a pill becomes interactive, but connected() is one-shot and reads mirrors only"
+    evidence:
+      - artifact: "research.md § R-08: 'On becoming interactive, `connected()` is called again (it reads the host attributes and mirrors as at upgrade, FR-035 (b))'; also 'While static, `attributeChangedCallback` for the seven names does nothing'"
+      - code: "git show origin/claude/007-actions-status:packages/elements/src/control.ts lines 97-105: `connected(): void { if (this.#upgraded) return; this.#upgraded = true; for (...) { const mirror = this.#host.getAttribute(mirrorOf(name)); if (mirror !== null && !this.#values.has(name)) this.#values.set(name, mirror); } }`. It returns at once on every call after the first, and it never reads or moves a host attribute; host attributes are moved only by `handle()` from `attributeChangedCallback` (ocelle-button.ts 442-443)."
+      - code: "Custom element upgrade delivers attributeChangedCallback in the host's attribute order before connectedCallback, so for `<ocelle-pill-tag aria-label=\"Mine\" href=\"/x\">` (or `aria-pressed` written before `interactive`) the passthrough attribute arrives while `href`/`interactive` are still unset, i.e. while the plan treats the pill as static and ignores it."
+    claim: |
+      FR-035 (b) and US4-9 (static pill with `title`, `aria-label`, `aria-current` becomes interactive; they must be moved and
+      mirrored) cannot work as R-08 describes: calling connected() again does nothing, and even its first call only
+      restores mirrors. Because the static pill ignores the seven names in attributeChangedCallback, every attribute the
+      host set while the pill was static stays on the host after the pill becomes interactive, so the inner control is
+      unnamed and `:state(current)` never matches. The same hole hits a pill that is interactive from the start whenever
+      a passthrough attribute precedes `interactive`/`href` in the markup (upgrade order), which is ordinary server markup.
+      The plan's claim "two additive methods, no existing method changes" is therefore built on a misread helper.
+    remedies:
+      - "R-08 and data-model.md § Mode transitions: on every transition to button or link mode (and once at connection when the pill is interactive, after all attributes are known) the pill calls `moved.handle(name, host.getAttribute(name))` for each of the seven names (or a third additive method, e.g. `capture()`, that does this), and calls `connected()` only for the mirror read-back; state the order relative to `adoptMirrors()`. Add a US4-9 scenario variant with the passthrough attribute written before `interactive` and before `href` in the markup."
+
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "guardHost registered in the constructor swallows every click on a static pill, breaking the enclosing link card or clickable row"
+    evidence:
+      - artifact: "research.md § R-07: 'Reused from 012's `control.ts` as merged: ... `guardHost` registered in the constructor'; R-06 gives the static pill no inner control"
+      - code: "git show origin/claude/007-actions-status:packages/elements/src/control.ts lines 142-151: `const inner = control(); if (inner !== null && available() && event.composedPath().includes(inner)) return; event.preventDefault(); event.stopImmediatePropagation();` on host `click` and `auxclick`; the listener cannot be removed (guardHost returns void). With no inner control (static mode) every click is cancelled and stopped."
+    claim: |
+      The static pill is the bulk of the consumer use (32 uses: state marks in rows, cards and lists). With the guard
+      installed from the constructor, a click on a static pill inside `<a href>` (a mission card) has its default
+      cancelled, so the card does not navigate where the pill is, and stopImmediatePropagation keeps the click from any
+      delegated row or list handler. The spec says a static pill has no role and is not focusable (FR-027), i.e. it is
+      inert content, not a click sink; no scenario in contracts/checks.md tests a click through a static pill, so the
+      tests would not catch it. A mode switch can also not uninstall the guard.
+    remedies:
+      - "R-07: install the guard so that it acts only while the pill is interactive (e.g. the pill's own constructor listener that returns at once in static mode and otherwise applies 012's guard logic, or an additive `guardHost` option), and add US3 scenarios: a static pill inside `<a href>` and inside a row with a click listener; a click on the pill navigates / reaches the row with `defaultPrevented` false; `pill.click()` on a static pill reaches a host listener."
+
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "delegatesFocus on the pill's shadow root makes a click on a static pill blur to the body instead of focusing the focusable ancestor"
+    evidence:
+      - artifact: "research.md § R-07: '`delegatesFocus: true`; `focus()` and `click()` forward as in `ocelle-button`' (shadow root options are fixed per class, so they apply to static pills too)"
+      - code: "Probe, Chromium 153.0.8010.12 headless (/opt/pw-browsers/chromium-1243): `<div id=row tabindex=0>row <x-pill>Pill</x-pill></div>`, x-pill with an open shadow root `<span><slot></slot></span>`. With delegatesFocus: true, clicking the pill leaves document.activeElement = BODY; with delegatesFocus: false, activeElement = the row."
+    claim: |
+      A static pill inside a focusable row, card link or listbox option drops focus to the body when clicked, which loses
+      the user's place in a keyboard-and-pointer workflow and breaks roving-focus containers. The shadow root option
+      cannot follow the mode change because it is set once at attachShadow. Nothing in the plan or checks.md looks at
+      focus after clicking a static pill.
+    remedies:
+      - "Attach the shadow root without delegatesFocus and forward `focus()` to the inner control in interactive modes (the host box equals the control box, so clicks land on the control); add a US3 scenario: clicking a static pill inside a focusable ancestor focuses the ancestor."
+      - "Keep delegatesFocus and state the behaviour as a known limitation in the README and the spec's Edge Cases, with a scenario pinning it."
+
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "`scrollWidth > clientWidth` misses sub-pixel overflow: the ellipsis shows while `truncated` is false and the tooltip stays disabled"
+    evidence:
+      - artifact: "research.md § R-09: '`truncated` (internal reactive state) is `!disabled && text.scrollWidth > text.clientWidth`'"
+      - code: "Probe, Chromium 153 (scratchpad probe2.cjs): a nowrap/overflow:hidden/text-overflow:ellipsis span in an inline-flex control, container sized so the text overflows by 0.1 px: scrollWidth 107, clientWidth 107 (span 106.52 px, text 106.625 px); a 4x screenshot of the span shows 'Subpixel test t…' with the ellipsis drawn. At 0.3 px and more the integers differ."
+    claim: |
+      With fractional font metrics, an overflow below about 0.5 px is common (any width in a flexible column passes
+      through it). In that range the pill shows an ellipsis but the plan reports it as not truncated, so the tooltip is
+      disabled and a keyboard or pointer user cannot read the hidden text: US5-3 and SC-005 fail for a real class of
+      widths, and US5-1/US5-2's measured fixtures (integer widths) will not catch it.
+    remedies:
+      - "R-09: compute truncation from fractional geometry, e.g. a Range over the slotted text (`range.getBoundingClientRect().width`) compared with the text span's content-box width from `getBoundingClientRect()`, or `scrollWidth > clientWidth || measured > box`; add a US5 scenario that sets the container to the fitting width minus 0.1 px and asserts the tooltip shows."
+
+  - id: PLAN-FRESH-1-005
+    severity: 3
+    title: "`text-transform: uppercase` reaches Chromium's accessibility tree, so the metric label is reported uppercased, contradicting US2-2 and FR-022"
+    evidence:
+      - artifact: "spec.md US2-2: 'the label's text is reported as written, not uppercased'; FR-022 'shown uppercase by style only, so assistive technology reads the label as written'; research.md § R-05: '`text-transform: uppercase` (the accessibility tree keeps the written text)'"
+      - code: "Probe, Chromium 153 via CDP Accessibility.getFullAXTree: `<dl><div><dt style=\"text-transform:uppercase\">Open missions</dt><dd>12</dd></div></dl>` gives role term name \"OPEN MISSIONS\" and StaticText \"OPEN MISSIONS\"."
+      - code: "git show origin/claude/008-layout-headers:specs/011-layout-headers/research.md line 80-81: \"`text-transform` on a slotted heading gives the upper-cased name (already probed for spec check 1)\" (mission 011 recorded the same Chromium behaviour)."
+    claim: |
+      The plan's design produces exactly what US2-2 forbids, so the US2-2 scenario will fail red and stay red, or will be
+      written to read the DOM text instead of the accessibility tree (a vacuous test). Screen readers may spell
+      an all-caps label letter by letter. The repository already knows this from mission 011, which the plan cites for
+      the eyebrow tokens but not for this fact.
+    remedies:
+      - "Keep the visible uppercased text `aria-hidden` and expose the label as written through a second, visually hidden text node (or ElementInternals/aria-label on the term), with a token-only visually-hidden rule; US2-2 tested on the Chromium accessibility tree."
+      - "Operator amends US2-2 and FR-022 to accept the uppercased name, as 011 did for its headers, and the README says so."
+
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "Truncation only works in a block container of definite width: in a flex row the pill takes the whole row, in a table cell it never truncates"
+    evidence:
+      - artifact: "research.md § R-06/R-09: host `display: inline-block; max-inline-size: 100%`, control `max-inline-size: 100%`, text `min-inline-size: 0`; spec.md US5 'an interactive pill a long name inside a narrow column'"
+      - code: "Probe, Chromium 153 (probe.cjs) with the plan's box model: block container 120 px: truncates (scrollWidth 156, clientWidth 94). Flex row 160 px with a sibling 'Mission name': the pill host is 160 px wide (100% of the row) and the sibling is squeezed; with `min-inline-size: 0` on the host it is 97.8 px and truncates. Table 160 px wide with the pill in a cell: no truncation (clientWidth = scrollWidth = 156), the table grows to 245.9 px."
+    claim: |
+      The consumers put pills next to names in flex rows and in dense tables (US3 'a dense table'). There the interactive
+      pill does not truncate to the space left: it pushes or overflows its neighbours, so FR-033's 'when the full text does
+      not fit, it is truncated' fails in the consumer's layout while the planned fixtures (a fixed-width block) pass.
+    remedies:
+      - "Add `min-inline-size: 0` to the interactive pill's `:host` (so a flex or grid parent can shrink it), state in FR-033 / README the layout contexts in which truncation applies (table cells need the consumer's fixed table layout or a max width), and add US5 scenarios in a flex row and a grid track."
+
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "release() writes held values back unconditionally, so a host value set in the same task as the mode change is overwritten by a stale one"
+    evidence:
+      - artifact: "research.md § R-08: '`release(): void` — for each held value, write it back to the host as that attribute (the last value ...)'; 'While static, `attributeChangedCallback` for the seven names does nothing'; when release() runs (attributeChangedCallback or Lit's async update) is not stated. Contrast `adoptMirrors()`, which keeps the host's value."
+      - code: "Lit applies `interactive`/`href` to properties synchronously but renders in a microtask; a host doing `pill.removeAttribute('interactive'); pill.setAttribute('aria-label', 'New')` in one task sees aria-label arrive while the property already reads static (ignored, stays on host as 'New'), then release() in the update writes the held 'Old' over it."
+    claim: |
+      FR-035 says no passthrough value is lost; here the host's newest value is lost, silently, with frameworks that set
+      several attributes in one render (the common case). The reverse order (attribute first) behaves differently, so the
+      outcome depends on attribute write order.
+    remedies:
+      - "R-08: define release() to skip a name the host currently sets (host wins, as adoptMirrors), or call it synchronously from attributeChangedCallback of `interactive`/`href` when the computed mode becomes static; add a US4-8 variant that changes mode and a passthrough attribute in one task, in both orders."
+
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "Removing and re-adding `pulse` in one task is coalesced by Lit, so no new run starts although US1-4 / FR-012 (a) require one"
+    evidence:
+      - artifact: "spec.md US1-4: 'When `pulse` is set again (removed, then added), Then the animation runs again'; FR-012 (a); research.md § R-04 (a): 'the ring element is created, so its animation starts'"
+      - code: "Lit batches property changes into one update per microtask; `pulse` true → false → true before the update renders the same template, so the ring span is reused, no new CSS animation is created, and an ended run stays ended."
+    claim: |
+      'Toggle it off and on to restart' is how hosts restart a pulse (for example on each status poll), and frameworks
+      often write both in one render. The plan only creates a ring on a rendered change, so this host gets no pulse,
+      contrary to case (a), and a scenario that toggles with an `await` between the steps would not show it.
+    remedies:
+      - "Either key the ring on a counter bumped in the `pulse` setter/attributeChangedCallback on each absent→present change (Lit `keyed`), with a scenario toggling within one task; or amend FR-012 (a) to say changes within one task coalesce and add that to the README."
+
+  - id: PLAN-FRESH-1-009
+    severity: 1
+    title: "A move with `moveBefore()` keeps the running animation, so FR-012 (b)'s 'every reconnection after ... a move' is not what Chromium does"
+    evidence:
+      - artifact: "spec.md FR-012 (b): 'every reconnection after a removal or a move, which is a fresh render'; research.md § R-04 (b): 'an element inserted into a document gets a fresh style, and CSS animations start'"
+      - code: "Probe, Chromium 153: `typeof Element.prototype.moveBefore` is 'function'; after `moveBefore(ring, null)` the ring's Animation object is the same and currentTime unchanged (300 ms); after `appendChild` it is a new animation at 16.7 ms."
+    claim: |
+      The spec lists the four start cases as complete and names 'a move, a re-sort' as one; state-preserving moves
+      (which morphing swap libraries use when available) keep the run instead. The behaviour is harmless but the spec,
+      R-04 and the README text would be wrong, and the tests (insertBefore only) would not reveal it.
+    remedies:
+      - "FR-012 (b) and R-04: state that a state-preserving move (`moveBefore`) is not a reconnection and keeps the run; add a scenario pinning it."
+
+  - id: PLAN-FRESH-1-010
+    severity: 2
+    title: "The pill's `label` is planned as property-only, while 012's `ocelle-button` has a `label` attribute; server-rendered hosts cannot name a pill by `label`"
+    evidence:
+      - artifact: "data-model.md § ocelle-pill-tag: '`label` | property only (not reflected)'; contracts/elements-status.md: 'property | `label`'; spec.md FR-025 says only 'not reflected'"
+      - code: "git show origin/claude/007-actions-status:packages/elements/src/ocelle-button.ts line 116-117: '`label: { type: String }` ... (attribute \"label\", the default converter, not reflected)'"
+    claim: |
+      'Not reflected' was read as 'no attribute'. The Thymeleaf/htmx console writes markup, not properties, so an
+      icon-only or count pill could only be named with `aria-label`, unlike the button whose conventions FR-030 says the
+      pill follows; the manifest would also lack the attribute.
+    remedies:
+      - "data-model.md and the contract: `label` is an attribute and property, not reflected, as on `ocelle-button`; manifest and a scenario cover the attribute."

@@ -170,6 +170,7 @@ export const records = tokenRecords([
   { name: "font-size-xl", group: "type", value: "1.5rem" },
   { name: "font-size-2xl", group: "type", value: "1.875rem" },
   { name: "line-height-tight", group: "type", value: "1.15" },
+  { name: "line-height-snug", group: "type", value: "1.2" }, // the compact pill tag's line height (018 research.md R-06, R-10)
   { name: "line-height-normal", group: "type", value: "1.45" },
   { name: "line-height-relaxed", group: "type", value: "1.55" },
   { name: "line-height-compact", group: "type", value: "1.5" },
@@ -212,6 +213,8 @@ export const records = tokenRecords([
   { name: "target-min", group: "size", value: "2.75rem" }, // 44px minimum target (spec-kitty-design#532)
   { name: "icon-size", group: "size", value: "1.25rem" },
   { name: "size-dot", group: "size", value: "0.45rem" },
+  { name: "size-indicator", group: "size", value: "0.5rem" }, // the status indicator's dot, 8px (018 research.md R-03)
+  { name: "target-small", group: "size", value: "1.5rem" }, // the interactive pill tag's 24px minimum target (018 research.md R-07)
   { name: "size-step", group: "size", value: "1.4rem" },
   { name: "size-avatar", group: "size", value: "1.6rem" },
   { name: "size-rail-item", group: "size", value: "2.5rem" },
@@ -283,6 +286,8 @@ export const records = tokenRecords([
   { name: "motion-base", group: "motion", value: "200ms" }, // 0ms under reduced motion
   { name: "motion-spin", group: "motion", value: "800ms" }, // one turn of the busy spinner (012); 0ms under reduced motion
   { name: "motion-turn", group: "motion", value: "1turn" }, // the spinner's angle of one turn (012); not a duration
+  // one iteration of the status indicator's pulse, which runs three (018 research.md R-04); 0ms under reduced motion
+  { name: "motion-pulse", group: "motion", value: "1600ms" },
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
   // the tooltip's hover delay; not 0ms under reduced motion, because a delay is not motion (008 research.md R-09)
   // marked as a delay (operator decision C1), so the reduced-motion block leaves it

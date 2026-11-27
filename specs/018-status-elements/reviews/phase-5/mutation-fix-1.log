@@ -1,0 +1,42 @@
+# gate:mutation on the fix-1 lines, run 1 (before the no-mode-change body)
+$ node gates/bin/mutation.ts -- --base 4e8728e483683935a884cb24b9299926f1adc0bb --files packages/elements/src/ocelle-pill-tag.ts:495-540
+packages/elements/src/ocelle-pill-tag.ts:498: mutation: record: ConditionalExpression: equivalent, on an interactive pill adoptMirrors() writes each mirror back as its attribute and the passthrough callback moves and mirrors it again at once, so the held values and mirrors end as connected() leaves them
+packages/elements/src/ocelle-pill-tag.ts:495: mutation: timeout: BlockStatement: replaced by {}
+packages/elements/src/ocelle-pill-tag.ts:504: mutation: timeout: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:499: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:499: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:508: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-pill-tag.ts:509: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:510: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:510: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:523: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:523: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:524: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:524: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:526: mutation: compile-error: OptionalChaining: replaced by this.#control().matches
+packages/elements/src/ocelle-pill-tag.ts:539: mutation: compile-error: LogicalOperator: replaced by this.shadowRoot?.querySelector<HTMLElement>(".control") && null
+packages/elements/src/ocelle-pill-tag.ts:539: mutation: compile-error: OptionalChaining: replaced by this.shadowRoot.querySelector
+packages/elements/src/ocelle-pill-tag.ts:522: mutation: ConditionalExpression: Survived: replaced by false
+mutation: 1 finding in 1 changed file (48 mutants on changed lines; 2 timeouts, 13 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+
+# gate:mutation on the fix-1 lines, run 2 (with the no-mode-change body)
+$ node gates/bin/mutation.ts -- --base 4e8728e483683935a884cb24b9299926f1adc0bb --files packages/elements/src/ocelle-pill-tag.ts:495-540
+packages/elements/src/ocelle-pill-tag.ts:498: mutation: record: ConditionalExpression: equivalent, on an interactive pill adoptMirrors() writes each mirror back as its attribute and the passthrough callback moves and mirrors it again at once, so the held values and mirrors end as connected() leaves them
+packages/elements/src/ocelle-pill-tag.ts:495: mutation: timeout: BlockStatement: replaced by {}
+packages/elements/src/ocelle-pill-tag.ts:504: mutation: timeout: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:499: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:499: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:508: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-pill-tag.ts:509: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:510: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:510: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:523: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:523: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:524: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-pill-tag.ts:524: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-pill-tag.ts:526: mutation: compile-error: OptionalChaining: replaced by this.#control().matches
+packages/elements/src/ocelle-pill-tag.ts:539: mutation: compile-error: LogicalOperator: replaced by this.shadowRoot?.querySelector<HTMLElement>(".control") && null
+packages/elements/src/ocelle-pill-tag.ts:539: mutation: compile-error: OptionalChaining: replaced by this.shadowRoot.querySelector
+mutation: 48 mutants on the changed lines of 1 file, none survived; 2 timeouts, 13 compile errors, 0 zero-mutant entries; 1 equivalent record
+exit 0

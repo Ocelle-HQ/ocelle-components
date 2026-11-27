@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { css } from "../../packages/tokens/src/generate.ts";
+import { source as repositorySource } from "../../packages/tokens/src/source.ts";
 import type { TokenRecord } from "../../packages/tokens/src/generate.ts";
 import { run } from "../bin/brand-rules.ts";
 import { cleanTrees, lineOf, repoRoot, runGate, tree } from "./token-tree.ts";
@@ -257,6 +260,22 @@ describe("brand-rules (f) reduced-motion", () => {
     expect(await brandRules({ records: withSpin })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
     const dropped = await brandRules({ records: withSpin, wrapper: wrapper('text.replace("    --ocelle-motion-spin: 0ms;\\n", "")') });
     expect(findings(dropped)).toEqual([`${cssPath}:${String(lineOf(sheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-spin to 0ms`]);
+  });
+
+  // 018 (research.md R-04, R-10; tasks.md T015): on the repository's own token source, overrides and pair list, rule
+  // (f) as generalised accepts the generator's block, which sets --ocelle-motion-pulse to 0ms, and rejects the same
+  // block without it at the block's line. Red against the source before the status indicator's tokens: a source with
+  // no motion-pulse has nothing to drop, so the gate passes where the finding is expected.
+  it("accepts --ocelle-motion-pulse: 0ms from the generator on the repository's source, and rejects the same block without it at the block's line (018)", async () => {
+    const read = (path: string): string => readFileSync(join(repoRoot, path), "utf8");
+    const spec = { sourceText: read(sourcePath), overrides: read(overridesPath), pairs: read(pairsPath) };
+    const sheet = css(repositorySource);
+    const accepted = await runGate(run, ["--root", tree(spec)]);
+    const dropped = await runGate(run, ["--root", tree({ ...spec, wrapper: wrapper('text.replace("    --ocelle-motion-pulse: 0ms;\\n", "")') })]);
+    expect({ accepted, dropped: findings(dropped) }).toEqual({
+      accepted: { code: 0, out: ["brand-rules: 7 rules checked"], err: [] },
+      dropped: [`${cssPath}:${String(lineOf(sheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-pulse to 0ms`],
+    });
   });
 
   it("rejects --ocelle-motion-spin in the block when the source has no motion-spin, since only the source's durations belong there", async () => {

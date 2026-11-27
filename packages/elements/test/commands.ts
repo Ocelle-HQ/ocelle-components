@@ -20,12 +20,20 @@
 // them; `pointerPath(steps)`, which drives `page.mouse`, and `touchTap(x, y)`, which drives `page.touchscreen`, both at
 // points of the test's frame with the frame's offset and scale in the runner page added. Reduced motion is 013's
 // `emulateReducedMotion(mode)`, which forced colours leave alone, so each test file's reset helper ends both.
+//
+// 018 adds (research.md R-11; contracts/checks.md § Test harness rows 1, 2, 7 and 8) the readers `readAnimationStates`,
+// `seekIn`, `settleLayoutIn` and `readOverflows`, each a frame `evaluate` of a self-contained function
+// (animations.ts, layout-wait.ts, overflow.ts), so both harnesses use the same code: in process through the browser
+// commands `animationStates`, `seek`, `settleLayout` and `overflows`, the fixture driver on its page's main frame.
 import { createRequire } from "node:module";
 import type { CDPSession, Frame, Locator, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
 import { ruleMeta, ruleOptions } from "../../../gates/lib/axe-rules.ts";
 import type { AxeRule } from "../../../gates/lib/axe-rules.ts";
-import type { AxeResult, AxState, ClickOptions, Modifier } from "./scenarios/driver.ts";
+import { animationStatesOf, seekOf } from "./animations.ts";
+import { layoutSettle } from "./layout-wait.ts";
+import { overflowOf } from "./overflow.ts";
+import type { AnimationState, AxeResult, AxState, ClickOptions, ElementTarget, Modifier } from "./scenarios/driver.ts";
 
 /**
  * One unignored accessibility node: its role and its computed name, for a heading its level (011 research.md R-13;
@@ -843,6 +851,46 @@ export async function touchTap(context: BrowserCommandContext, x: number, y: num
   await context.page.touchscreen.tap(point.x, point.y);
 }
 
+/** The animations of the element with `id` and its shadow root in `frame`, with identity and iteration count (018 row 1). */
+export function readAnimationStates(frame: Frame, id: string): Promise<AnimationState[]> {
+  return frame.evaluate(animationStatesOf, id);
+}
+
+/** Pauses the animations of the target in `frame` at `ms` (018 row 2); rejects when it has none. */
+export async function seekIn(frame: Frame, id: string, inner: string | null, ms: number): Promise<void> {
+  await frame.evaluate(seekOf, { id, inner, ms });
+}
+
+/** Waits in `frame` until its layout holds still (018 row 7), after `settle()`; resolves with the frames waited. */
+export function settleLayoutIn(frame: Frame): Promise<number> {
+  return frame.evaluate(layoutSettle);
+}
+
+/** The fractional overflow measure of the target in `frame` (018 row 8). */
+export function readOverflows(frame: Frame, target: ElementTarget): Promise<boolean> {
+  return frame.evaluate(overflowOf, target);
+}
+
+/** The `animationStates(id)` browser command (registered in vitest.config.ts): `readAnimationStates` on the test's frame. */
+export async function animationStates(context: BrowserCommandContext, id: string): Promise<AnimationState[]> {
+  return readAnimationStates(await context.frame(), id);
+}
+
+/** The `seek(id, inner, ms)` browser command (registered in vitest.config.ts): `seekIn` on the test's frame. */
+export async function seek(context: BrowserCommandContext, id: string, inner: string | null, ms: number): Promise<void> {
+  await seekIn(await context.frame(), id, inner, ms);
+}
+
+/** The `settleLayout()` browser command (registered in vitest.config.ts): `settleLayoutIn` on the test's frame. */
+export async function settleLayout(context: BrowserCommandContext): Promise<number> {
+  return settleLayoutIn(await context.frame());
+}
+
+/** The `overflows(target)` browser command (registered in vitest.config.ts): `readOverflows` on the test's frame. */
+export async function overflows(context: BrowserCommandContext, target: ElementTarget): Promise<boolean> {
+  return readOverflows(await context.frame(), target);
+}
+
 declare module "vitest/browser" {
   interface BrowserCommands {
     /**
@@ -880,5 +928,13 @@ declare module "vitest/browser" {
     pointerPath: (steps: readonly PathStep[]) => Promise<void>;
     /** A real touch tap at a point of this frame (a context with `hasTouch` only). */
     touchTap: (x: number, y: number) => Promise<void>;
+    /** The animations of the element with `id` and its shadow root, with identity and iteration count (018). */
+    animationStates: (id: string) => Promise<AnimationState[]>;
+    /** Pauses the animations of the target at `ms` (018); rejects when it has none. */
+    seek: (id: string, inner: string | null, ms: number) => Promise<void>;
+    /** Waits until the test frame's layout holds still (018); resolves with the frames waited. */
+    settleLayout: () => Promise<number>;
+    /** The fractional overflow measure of the target (018). */
+    overflows: (target: ElementTarget) => Promise<boolean>;
   }
 }

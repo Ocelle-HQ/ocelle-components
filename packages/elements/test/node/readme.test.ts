@@ -35,7 +35,13 @@ import { compositions } from "../scenarios/link.ts";
 // trigger, and a pass or `remeasure()` on an element that is not rendered writing nothing, in both places. Since 009 phase 5 (T062): the four frames as the tested screen sizes, WebKit
 // not measured for the layout elements' focus behaviour, the print note and the states that do not apply.
 // 013 phase 3 adds `ocelle-progress` (T043, T043a): its statements, its entry point, its mapping rows by role name and its
-// CHANGELOG names.
+// CHANGELOG names. 018 phase 2 adds `ocelle-status-indicator` (T016): its section, its README rules (i) to (viii), its
+// entry point and its CHANGELOG names. 018 phase 3 adds `ocelle-metric` (T027): its section, the find-in-page limitation,
+// the `min-inline-size: 0` host rule for shrinking, its entry point and its CHANGELOG names. 018 phase 4 adds the static
+// `ocelle-pill-tag` (T038): its section, the state-pill radius reading, the static rules, clearing ARIA states from a
+// static pill, the `min-inline-size: 0` host rule, its entry point and its CHANGELOG names. 018 phase 7 (T063) adds the
+// status elements together: the intro names the three, their sections link to each other and § Control conventions
+// names the interactive pill; and it pins the pill's `slotchange` stop sentence (operator decision Q-F1 (c)).
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -858,6 +864,9 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |",
   // 020 phase 2 (T027, T031): the code block's entry point.
   "| `@ocelle/elements/ocelle-code-block.js` | `dist/ocelle-code-block.js` | `ocelle-code-block` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` and the `ocelle-tooltip` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -1113,6 +1122,9 @@ describe("packages/elements/README.md", () => {
       "./ocelle-skip-link.js",
       "./ocelle-disclosure.js",
       "./ocelle-code-block.js",
+      "./ocelle-status-indicator.js",
+      "./ocelle-metric.js",
+      "./ocelle-pill-tag.js",
       "./browser.js",
       "./custom-elements.json",
     ]);
@@ -1205,6 +1217,288 @@ describe("packages/elements/README.md", () => {
     const pin = manifest.peerDependencies?.["@ocelle/tokens"];
     expect(pin).toBe("workspace:0.0.0");
     expect(readme).toContain(`"@ocelle/tokens": "${String(pin)}"`);
+  });
+});
+
+/**
+ * The `ocelle-status-indicator` section (018 FR-007, FR-010 to FR-016, FR-041; contracts/elements-status.md; tasks.md
+ * T016): what it is, its tone and its fallback, the pulse and reduced motion, forced colours, the tokens it reads, no
+ * event and no tab stop, and each of the indicator's README rules (i) to (viii) of spec.md FR-012, their single source,
+ * one assertion each, read in that section.
+ */
+const indicatorFragments = [
+  "`ocelle-status-indicator` is a status dot: a solid circle in the colour of its `tone`, `info`, `success`, `warning`, `danger` or `neutral` (the default)",
+  "An absent, empty or unknown `tone` shows `neutral`; the attribute keeps the value as written and the `tone` property reads `\"neutral\"`",
+  "With `pulse`, a ring around the dot grows and fades three times, each `--ocelle-motion-pulse` long (4.8 s by default), and then only the solid dot is shown; the dot itself never fades, moves or changes size",
+  "Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown solid",
+  "In forced colours the dot is drawn in `CanvasText`",
+  "`ocelle-status-indicator` reads the tokens `--ocelle-color-info`, `--ocelle-color-success`, `--ocelle-color-warning`, `--ocelle-color-danger`, `--ocelle-color-neutral`, `--ocelle-size-indicator`, `--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-motion-pulse` and `--ocelle-easing-standard`",
+  "`ocelle-status-indicator` emits no event and adds no tab stop",
+];
+
+/** The indicator's README rules (i) to (viii) of spec.md FR-012, in order, one statement each. */
+const indicatorRules = [
+  // (i)
+  "Without a `label` the indicator is hidden from the accessibility tree: place text naming the state next to it, since a state is never shown by colour alone",
+  // (ii)
+  "`label` is the one way to name the indicator: with a non-empty `label` it is one image with that name. A host `aria-label` is not supported, and the indicator does not read it",
+  // (iii)
+  "The indicator is not a busy or progress signal: it sets no `aria-busy` and no live region. For progress, use `ocelle-progress`",
+  // (iv)
+  "A host that overrides `--ocelle-motion-pulse` keeps the token's value times three, the fixed iteration count, at or below 5 s: at most `1666ms`",
+  // (v)
+  "Each connection, and each time the indicator is shown again after `display: none` or `hidden`, starts a run, so a host that re-inserts, moves, re-renders or re-shows an indicator more often than every 5 s keeps it pulsing: keep `pulse` off between changes, or keep the element in place",
+  // (vi)
+  "Removing `pulse` and setting it again within one task starts no run; set it again in a later task",
+  // (vii)
+  "A state-preserving move (`moveBefore()`) and a reveal from `hidden=\"until-found\"` start no run",
+  // (viii)
+  "Opening a `<details>` around a pulsing indicator starts no run: a run under way when it closed goes on while it is closed and may end unseen",
+];
+
+describe("packages/elements/README.md: ocelle-status-indicator (018)", () => {
+  const section = flat(/^## `ocelle-status-indicator`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(indicatorFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(indicatorRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The `ocelle-metric` section (018 FR-007, FR-020 to FR-024, FR-042; contracts/elements-status.md § `ocelle-metric`;
+ * research.md R-05; tasks.md T027): what it is, its attributes, the eyebrow and figures tokens it reads, the row and
+ * stacked layouts, the term and its definition, the empty value, the parts, no event and no tab stop, and the two
+ * consumer-facing rules the contract names: the find-in-page limitation and the `min-inline-size: 0` host rule for
+ * shrinking in a flex row, one assertion each, read in that section.
+ */
+const metricFragments = [
+  "`ocelle-metric` shows a label and its value: `<ocelle-metric label=\"Open missions\" display-value=\"12\"></ocelle-metric>`",
+  "The label is set in the eyebrow style, `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`, and shown uppercase by style only, so assistive technology reads it as written",
+  "The value is shown in tabular figures (`--ocelle-figures`) in Schibsted Grotesk (`--ocelle-font-sans`). The element formats nothing: `display-value` is a pre-formatted string, shown as given, with no number formatting and no unit added",
+  "`label` and `display-value` are text, never parsed as markup",
+  "With `layout=\"row\"` the label and the value share one line, label first, `--ocelle-space-2` apart, and wrap onto two lines rather than overflow; with no `layout`, or any other value, they are stacked, the label above the value",
+  "The metric is one term and its definition: assistive technology reads the label, then the value, in both layouts",
+  "An empty or absent `display-value` adds no placeholder, and the metric keeps the height it has with a one-line value",
+  "The parts `label` (the term) and `value` (the definition) can be styled with `::part()`",
+  "`ocelle-metric` emits no event and adds no tab stop",
+];
+
+/** The two consumer-facing rules of contracts/elements-status.md § `ocelle-metric`. */
+const metricRules = [
+  // the find-in-page limitation (R-05)
+  "The browser's find in page matches a metric's label twice: the visible uppercase label and an invisible copy of the label as written, which names the term. The second match's highlight cannot be seen; this is a known limitation",
+  // the host rule for shrinking (PLAN-FRESH-2-002)
+  "In a flex row a metric is not shrunk below its longest word, so a one-word label or value stays on one line; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words then break inside it",
+];
+
+describe("packages/elements/README.md: ocelle-metric (018)", () => {
+  const section = flat(/^## `ocelle-metric`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(metricFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(metricRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The `ocelle-pill-tag` section, static part (018 FR-007, FR-025 to FR-029; contracts/elements-status.md
+ * § `ocelle-pill-tag`; research.md R-06; tasks.md T038): what it is, its attributes, the looks of the two variants and
+ * the two densities, the tokens it reads, the slots and the part, and the consumer-facing rules of the static pill the
+ * spec and the contract name, one assertion each, read in that section: the state-pill radius reading (SPEC-1-04), the
+ * static rules (not focusable, no role, plain text, wraps and never truncates, `label` and `disabled` without effect,
+ * `title` and ARIA attributes left on the host), clearing ARIA states from a static pill, the `min-inline-size: 0` host
+ * rule for shrinking in a flex row (PLAN-FRESH-2-002), the long word's cap beside a sibling (PLAN-FRESH-3-005), the
+ * stretched host and the baseline (PLAN-FRESH-3-001, -002).
+ */
+const pillFragments = [
+  "`ocelle-pill-tag` is a state pill or a count badge: `<ocelle-pill-tag status=\"warning\">Blocked</ocelle-pill-tag>`, `<ocelle-pill-tag variant=\"badge\">3</ocelle-pill-tag>`",
+  "`status` is one of `info`, `success`, `warning`, `danger` and `neutral` (the default); an absent, empty or unknown `status` shows `neutral`, the attribute keeps the value as written and the `status` property reads `\"neutral\"`",
+  "`variant=\"pill\"`, the default, fills the pill with `--ocelle-color-<status>-bg` and sets its text in `--ocelle-color-<status>`; `variant=\"badge\"` has no fill, a `--ocelle-border-width` border in `--ocelle-color-<status>` and its text in tabular figures (`--ocelle-figures`); both are set in Schibsted Grotesk (`--ocelle-font-sans`), never in a monospace family",
+  "`density=\"compact\"` sets the text in `--ocelle-font-size-xs` at `--ocelle-line-height-snug` (1.2), with a block padding of exactly `--ocelle-space-1` and an inline padding of `--ocelle-space-2`; the default density sets it in `--ocelle-font-size-sm` at `--ocelle-line-height-tight`, padded `--ocelle-space-1` and `--ocelle-space-3`",
+  "An unknown `variant` or `density` shows the default and stays in the attribute as written",
+  "The default slot holds the text; the `icon` slot takes one decorative icon before the text, one line tall, following the slot convention, so a pill has the same height with and without an icon",
+  "The part `pill` (the visual box) can be styled with `::part()`",
+  "In forced colours the pill and the badge keep a visible border",
+];
+
+/** The consumer-facing rules of the static pill (contracts/elements-status.md § `ocelle-pill-tag`; FR-027). */
+const pillRules = [
+  // the state-pill radius reading (SPEC-1-04, constitution II)
+  "Every `ocelle-pill-tag`, in either variant and in every mode, a count badge and a filter toggle included, is a state pill, so its corners take `--ocelle-radius-pill`",
+  // the static rules (FR-027)
+  "A static pill, one with neither `interactive` nor a link `href`, is not focusable, has no role of its own and exposes its text as plain text; a click on it reaches the elements around it as a click on its text would",
+  "A static pill wraps a text that does not fit onto further lines; it never truncates it",
+  "`label` and `disabled` have no effect on a static pill",
+  "`title` and ARIA attributes on a static pill stay on the element as written; the element does not move or change them",
+  // clearing ARIA states (FR-004, FR-035; Edge Cases)
+  "ARIA states and names on a static pill (`aria-pressed`, `aria-label`, `aria-labelledby` and the others) stay on an element with no role, where axe may report them: remove them (`removeAttribute`) once a pill is static, or clear them before making it static",
+  // the min-inline-size: 0 host rule (PLAN-FRESH-2-002)
+  "In a flex row a static pill is not shrunk below its longest word, so a one-word pill such as \"Blocked\" stays on one line beside a long name; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words then break inside the pill",
+  // the long word's cap (PLAN-FRESH-3-005)
+  "A static pill's longest word is capped at its container's whole inline size, beyond which it breaks inside the pill; beside a sibling in a flex row such a word can make the row overflow by the sibling's width, unless the host sets `min-inline-size: 0` on the pill",
+  // the stretched host and the baseline (PLAN-FRESH-3-001, -002)
+  "In a grid track or a flex column that stretches its items a short static pill keeps the width of its text; only its host is stretched",
+  "A one-line pill sits on the baseline of the text around it, inline in text and in a flex row aligned by baseline, with and without an icon",
+];
+
+describe("packages/elements/README.md: ocelle-pill-tag (018)", () => {
+  const section = flat(/^## `ocelle-pill-tag`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(pillFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(pillRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The `ocelle-pill-tag` section, interactive part (018 FR-007, FR-029 to FR-032, FR-035, FR-043; contracts/elements-status.md
+ * § `ocelle-pill-tag`; research.md R-07, R-08; plan decisions 6, 7, 11 and 12; tasks.md T048): the two interactive
+ * modes, what moves to the inner control, the activate event's terms, the custom states, the looks, the target and the
+ * focus ring, and the consumer-facing rules the spec and the contract name for an interactive pill, one assertion each,
+ * read in that section.
+ */
+const interactivePillFragments = [
+  "With `interactive` the pill is a toggle or filter button, one native `<button type=\"button\">` in its shadow root: `<ocelle-pill-tag interactive status=\"info\" aria-pressed=\"true\">Mine</ocelle-pill-tag>`",
+  "With an `href` that is a link (not empty, not whitespace only, parsed as a URL and not a `javascript:` URL) the pill is one native `<a>` with that `href`, whether or not `interactive` is set: `<ocelle-pill-tag href=\"/missions?state=blocked\" status=\"warning\">Blocked</ocelle-pill-tag>`",
+  "The element itself is never focusable and has no role; the inner control is its one tab stop, and the element's `focus()` and `click()` reach it",
+  "`aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`, `aria-pressed` and `title` set on an interactive pill are moved to the inner control, each with an element-owned `data-ocelle-moved-*` mirror, as on `ocelle-button`; `aria-labelledby`, `aria-describedby` and `aria-controls` name elements by id in the element's own tree",
+  "The inner control is named by `aria-labelledby`, then `aria-label`, then `label` (trimmed; empty or whitespace only counts as none), then the pill's text",
+  "`disabled` takes an interactive pill out of the tab order, reports it disabled and stops every activation; a disabled link has no `href`",
+  "Each activation of an enabled interactive pill (a pointer click, Enter, Space in button mode, the element's `click()`) dispatches `ocelle-pill-tag-activate` from the element (`bubbles`, `composed`, `cancelable`, `detail` `{}`) before its `click` reaches any bubble-phase listener on the element or its ancestors",
+  "Calling `preventDefault()` on `ocelle-pill-tag-activate` cancels the click's default action: a link does not navigate, and a button still delivers its `click`, with `defaultPrevented` true",
+  "A link-mode click with Ctrl, Meta, Shift or Alt held delivers its `click` and no `ocelle-pill-tag-activate`, and the browser's own handling of the modifier applies; a middle click dispatches neither; a disabled or static pill dispatches no `ocelle-pill-tag-activate`",
+  "`:state(pressed)` matches a button-mode pill whose moved `aria-pressed` is `\"true\"`, which also gives the pressed look; `\"false\"`, `\"mixed\"` and any other value reach the button as written with neither",
+  "`:state(current)` matches an interactive pill whose moved `aria-current` is set to anything but `\"false\"`; it draws no mark of its own",
+  "An interactive pill has a `--ocelle-color-accent-strong` border on its status ground (a badge keeps its status-colour border); hover takes the status colour on a pill's border and the status ground as a badge's fill; pressing and the pressed state add an inset `--ocelle-bar-width` cue in the status colour; no state changes the pill's box",
+  "A disabled interactive pill is set in `--ocelle-color-disabled-ink` on `--ocelle-color-disabled-bg`, border included, whatever its status and variant",
+  "In forced colours a pressed pill fills with `Highlight` and sets its text in `HighlightText`, so it stays distinct from an unpressed one, and a disabled pill is `GrayText`",
+  "An interactive pill is at least `--ocelle-target-small` (24 px) in block size and in inline size in either density, whatever its text and its font size; in `compact` density its block padding is then at least `--ocelle-space-1`",
+  "Keyboard focus shows the token focus ring on the inner control (`--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`)",
+  "The part `control` is the inner `<button>` or `<a>` of an interactive pill, which is also its `pill` part",
+];
+
+/** The consumer-facing rules of the interactive pill (contracts/elements-status.md § `ocelle-pill-tag`; FR-030 to FR-035). */
+const interactivePillRules = [
+  // name a pill with no text (Edge Cases)
+  "An interactive pill with no text (an icon only, or nothing) has no accessible name of its own: name it with `aria-label`, `aria-labelledby` or `label`; the element does not invent a name, and axe reports an unnamed one",
+  // no title on an interactive pill (plan decision 8)
+  "Do not set `title` on an interactive pill: it is moved to the inner control as the browser's own tooltip and description",
+  // aria-pressed on a link (plan decision 12)
+  "`aria-pressed` has no effect on a link: on a link-mode pill it is moved and mirrored but not applied, and gives no `:state(pressed)`; it applies again if the pill returns to button mode",
+  // mode changes (FR-035)
+  "The mode follows `interactive` and `href` whenever either changes: when a pill becomes static each moved attribute is written back to the element with the value it last had (an off value such as `aria-pressed=\"false\"` included) and its mirror removed; when it becomes interactive they are moved again; a switch between button and link mode keeps them moved",
+  "A static pill that carries `data-ocelle-moved-*` mirrors when it upgrades (copied markup) writes each back as its attribute, unless the element already sets that attribute, and removes the mirror",
+  // move focus when making a focused pill static (FR-035 (d), US4-11)
+  "If the inner control has focus when a pill switches between button and link mode, the new inner control has focus afterwards, with the focus ring only if it showed before; a pill made static while its inner control has focus loses focus as a removed element does, so move focus yourself before making a focused pill static; a pill that becomes interactive does not take focus",
+  // clear ARIA states from a pill made static (FR-035, Edge Cases)
+  "ARIA states written back to a pill made static (such as `aria-pressed`) stay on an element with no role: clear them (`removeAttribute`) once the pill is static, or before making it static",
+  // the focus-ring clearance (plan decision 11)
+  "An interactive pill keeps one focus-ring extent (`--ocelle-focus-offset` plus `--ocelle-focus-width`, 5 px) of inline margin on each side and caps its inline size at its container's less two such extents, so its ring stays inside a container that clips; a container that clips in the block direction keeps that much unclipped space above and below it",
+];
+
+describe("packages/elements/README.md: ocelle-pill-tag, interactive (018 phase 5)", () => {
+  const section = flat(/^## `ocelle-pill-tag`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(interactivePillFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(interactivePillRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The `ocelle-pill-tag` section, truncation (018 FR-007, FR-033, FR-034; contracts/elements-status.md § `ocelle-pill-tag`;
+ * research.md R-09; plan decision 14; reviews/phase-1/spikes.md § R-09; tasks.md T057): what an enabled interactive
+ * pill does with a text that does not fit and what a disabled one does, and the README rules the spec, the contract and
+ * the spike name, one assertion each: the sibling `flex: none` rule and the `flex: 1 1 0` route's cost, a definite inline
+ * size, the touch limitation of 008's tooltip, a pill that becomes truncated while focused (as T002 measured: shown only
+ * when focus comes back), a late font load, and `title` beside the pill's own tooltip.
+ */
+const truncationPillFragments = [
+  "An enabled interactive pill shows its text on one line; a text that does not fit is truncated with an ellipsis at the inline end, and `ocelle-tooltip` shows the full text (the default slot's text, trimmed and with its whitespace collapsed) on hover and on keyboard focus, with the tooltip's own delay, persistence and Escape",
+  "The inner control's accessible name stays the full text, or the name `aria-labelledby`, `aria-label` or `label` gives it, and the tooltip adds nothing to the accessibility tree",
+  "A pill whose text fits shows no tooltip; truncation follows the pill's inline size, its text and `disabled` whenever they change",
+  "A disabled interactive pill is never truncated: it wraps its text onto further lines inside the pill, breaking a long word anywhere, and shows no tooltip",
+];
+
+/** The consumer-facing rules of truncation (contracts/elements-status.md § `ocelle-pill-tag`; R-09; plan decision 14). */
+const truncationPillRules = [
+  // a definite inline size (R-09)
+  "Truncation needs a definite inline size: a flex or grid parent, a fixed table layout, or a cell or column width; in an auto-layout table cell the pill grows to its text instead",
+  // the sibling rule and its cost (plan decision 14; PLAN-FRESH-2-003 (a), PLAN-FRESH-3-004)
+  "In a flex row a truncating pill shares the shrink with its siblings by their flex bases, so a sibling such as a mission name shrinks too, down to its longest word: give the sibling `flex: none` (or `flex-shrink: 0`) to keep its size",
+  "`flex: 1 1 0` on the pill also keeps the sibling's size, but it stretches the pill's visible box to the whole room left, a fitting pill included, since the inner control fills its host",
+  // the touch limitation of 008's tooltip
+  "On a touch screen a truncated pill shows no tooltip, as `ocelle-tooltip` shows none for touch; its full text stays its accessible name",
+  // becoming truncated while focused (T002, reviews/phase-1/spikes.md § R-09)
+  "A pill that becomes truncated while its inner control has keyboard focus shows its tooltip only once focus leaves it and comes back, or when the pointer rests on it",
+  // a late font load (R-09)
+  "A late font load that turns an exactly fitting text into an overflowing one is seen at the next change of the pill's inline size or text",
+  // title beside the tooltip (plan decision 8)
+  "A truncated pill with a `title` shows the browser's own tooltip beside its own, which already shows its full text",
+];
+
+describe("packages/elements/README.md: ocelle-pill-tag, truncation (018 phase 6)", () => {
+  const section = flat(/^## `ocelle-pill-tag`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(truncationPillFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(truncationPillRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The status elements together (018 tasks.md T063, phase 7): the intro names the three, their sections link to each
+ * other (the status vocabulary the indicator's `tone` and the pill's `status` share, FR-002; a metric beside a state)
+ * and § Control conventions names the interactive pill, which its section already links back to; and the README
+ * sentence of the pill's `slotchange` stop (phase-6 R1-05, R-09), which phase 6 wrote without a pin (operator decision
+ * Q-F1 (c), reviews/phase-6/operator-decisions.md; phase-6 round-2 note R2-01). One assertion each, read in the section
+ * named.
+ */
+const statusIntroFragments = [
+  "This release has fifty-two elements:",
+  "`ocelle-progress`, a progress bar, and the three status elements, `ocelle-status-indicator`, a status dot, `ocelle-metric`, a label and its value, and `ocelle-pill-tag`, a state pill or a count badge that can also be a toggle button or a link",
+];
+const statusCrossLinks: [heading: string, fragment: string][] = [
+  ["`ocelle-status-indicator`", "The five tones are the status vocabulary that `ocelle-pill-tag`'s `status` shares; to show a state as text, in a pill or a count badge, use `ocelle-pill-tag` (see `ocelle-pill-tag`)"],
+  ["`ocelle-metric`", "**Beside a state.** A metric shows a value, not a state: show a state beside it with `ocelle-status-indicator` and the text that names it, or with `ocelle-pill-tag` (see those sections)"],
+  ["`ocelle-pill-tag`", "`ocelle-status-indicator`'s `tone` takes the same five values, for a state shown as a dot (see `ocelle-status-indicator`)"],
+  ["`ocelle-pill-tag`", "The control conventions it follows are those of `ocelle-button` (see Control conventions)"],
+  ["Control conventions", "An interactive `ocelle-pill-tag`, in button mode and in link mode, follows them as `ocelle-button` does, with the moved attributes, custom states and limits its own section lists (see `ocelle-pill-tag`)"],
+  // the pill's slotchange stop (phase-6 R1-05; Q-F1 (c))
+  ["`ocelle-pill-tag`", "In button and link mode, where `ocelle-tooltip` wraps the inner control, a `slotchange` of the pill's slots stops at the pill, a forwarded slot's included: a host that forwards its own `<slot>` into an interactive pill hears that `slotchange` on the forwarded `<slot>` itself, not on an element or shadow root above the pill. A static pill lets it bubble on"],
+];
+
+/** A `##` section of the README by its heading as written, flattened; empty while it does not exist. */
+function readmeSection(heading: string): string {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return flat(new RegExp(`^## ${escaped}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(read("README.md"))?.[1] ?? "");
+}
+
+describe("packages/elements/README.md: the status elements together (018 phase 7)", () => {
+  const intro = flat(read("README.md").split(/^## /m)[0] ?? "");
+
+  it.each(statusIntroFragments)("states in its intro, before the first section: %s", (fragment) => {
+    expect(intro).toContain(flat(fragment));
+  });
+
+  it.each(statusCrossLinks)("states in its %s section: %s", (heading, fragment) => {
+    expect(readmeSection(heading)).toContain(flat(fragment));
   });
 });
 
@@ -1679,6 +1973,20 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-code-block.js`",
     "`overflow`",
     "`digest`",
+    // 018 (tasks.md T016): the status indicator, its entry point and its attributes
+    "`ocelle-status-indicator`",
+    "`@ocelle/elements/ocelle-status-indicator.js`",
+    "`tone`, `label` and `pulse` (reflected)",
+    // 018 (tasks.md T027): the metric, its entry point and its attributes
+    "`ocelle-metric`",
+    "`@ocelle/elements/ocelle-metric.js`",
+    "`label` and `display-value` (reflected) and `layout`",
+    // 018 (tasks.md T038): the pill tag, its entry point and its attributes
+    "`ocelle-pill-tag`",
+    "`@ocelle/elements/ocelle-pill-tag.js`",
+    "`status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected) and `label`",
+    // 018 phase 5 (tasks.md T048): the interactive pill's event and states
+    "`ocelle-pill-tag-activate`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
@@ -1716,11 +2024,12 @@ const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "oc
 describe("packages/elements/README.md overview (014 T110)", () => {
   const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
 
-  it("counts and names all forty-nine released elements", () => {
-    expect(overview).toContain("forty-nine elements");
+  it("counts and names all fifty-two released elements", () => {
+    expect(overview).toContain("fifty-two elements");
     const tags = ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, ...frameElements,
       "ocelle-disclosure", "ocelle-code-block", "ocelle-form-textarea", "ocelle-workflow-node", "ocelle-workflow-canvas", "ocelle-step-indicator", "ocelle-data-table",
-      "ocelle-event-timeline", "ocelle-timeline-event", "ocelle-evidence-chain", "ocelle-evidence-step"];
+      "ocelle-event-timeline", "ocelle-timeline-event", "ocelle-evidence-chain", "ocelle-evidence-step",
+      "ocelle-status-indicator", "ocelle-metric", "ocelle-pill-tag"];
     for (const tag of tags) expect(overview).toContain(`\`${tag}\``);
   });
 
