@@ -32,7 +32,7 @@ A user can reach the same controls from a trigger at the top or bottom of a narr
 
 A contributor can use the component in two isolated, executable Storybook examples.
 
-**Independent test** Run the built stories under the repository’s strict CSP. Use keyboard and pointer to change the selected appearance and request Sign out. Use fictional host state.
+**Independent test** Exercise the built Storybook stories with fictional host state. Build and mount the same appearance and profile host modules in a separate fixture under the package’s strict CSP. Use keyboard and pointer to change the selected appearance and request Sign out in both fixtures.
 
 1. Given the host fixture starts with Light pressed, when the user selects Dark, the host updates its choice and the surface closes. When the user reopens it, only Dark is pressed. Selecting Light closes the surface and restores Light as the sole pressed choice on reopening. The host fixture owns the choice and the component does not persist it.
 2. Given the profile story is closed and the host’s Sign out callback has not run, when the user opens the surface with its named initials trigger and activates the native Sign out action, the fictional host callback runs exactly once. The component never fetches account data or executes sign-out.
