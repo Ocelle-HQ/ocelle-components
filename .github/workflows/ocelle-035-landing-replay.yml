@@ -1,0 +1,91 @@
+name: Copy-field landing replay
+on:
+  push:
+    branches: [ci/035-landing-replay]
+permissions:
+  contents: read
+jobs:
+  replay:
+    name: Read-only copy-field landing replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      LANDING_INPUT: 784add6f3daf6cbe02b4be4dff0560727c81fea5
+      LANDING_TREE: dec6c4b1632e318ea2ee0c2c71458f68a439b574
+      LANDING_MAIN: d45efd57402395999fcd7ab8fc29fba2c14a4e88
+      ORIGINAL_HEAD: 6fdbe28fba6adc8dd25f38d6a97fd850da1c000f
+      SPECIFY_FEATURE_DIRECTORY: specs/035-copy-identifier-groups
+      SPECIFY_FEATURE_NO_PERSIST: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.LANDING_INPUT }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the exact integration object
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$LANDING_INPUT"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$LANDING_TREE"
+          test "$(git show -s --format=%P HEAD)" = "$ORIGINAL_HEAD $LANDING_MAIN"
+          test "$(git merge-base --all HEAD refs/remotes/origin/main)" = "$LANDING_MAIN"
+          git diff --quiet HEAD --
+          printf 'Candidate %s\nTree %s\nMain %s\n' "$LANDING_INPUT" "$LANDING_TREE" "$LANDING_MAIN"
+      - uses: ./.github/actions/setup
+      - name: Check the original phase approvals and sign-offs
+        shell: bash
+        run: |
+          set -euo pipefail
+          story=.specify/extensions/story/scripts
+          report="$RUNNER_TEMP/landing-replay"
+          mkdir -p "$report"
+          "$story/units.sh" | tee "$report/units.json"
+          jq -e 'type == "array" and length == 0' "$report/units.json"
+          for phase in 1 2; do
+            "$story/verdict.sh" "$phase" | tee "$report/verdict-$phase.json"
+            jq -e --arg phase "$phase" '.phase == $phase and .verdict == "approved"' "$report/verdict-$phase.json"
+          done
+          pnpm run gate:signoff -- --range "$LANDING_MAIN..HEAD" | tee "$report/sign-off.txt"
+      - name: Print the governed summary from a disposable checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          summary_checkout="$RUNNER_TEMP/landing-summary"
+          git worktree add --detach "$summary_checkout" "$LANDING_INPUT"
+          trap 'git worktree remove --force "$summary_checkout"' EXIT
+          (
+            cd "$summary_checkout"
+            .specify/extensions/story/scripts/summary.sh
+            cp knowledge/speckit-flows/runs/035-copy-identifier-groups.md "$RUNNER_TEMP/landing-replay/summary.md"
+          )
+          git diff --quiet HEAD --
+      - name: Run both canonical red and green replays against the pinned main
+        shell: bash
+        run: |
+          set -euo pipefail
+          story=.specify/extensions/story/scripts
+          report="$RUNNER_TEMP/landing-replay"
+          failed=0
+          for phase in 1 2; do
+            echo "::group::Phase $phase"
+            if "$story/base.sh" "$phase" --with-main "$LANDING_MAIN" \
+                | tee "$report/base-$phase.json" \
+                && "$story/tdd-check.sh" "$phase" | tee "$report/replay-$phase.json" \
+                && jq -e --arg head "$LANDING_INPUT" '.status == "pass" and .head == $head' "$report/replay-$phase.json"
+            then
+              echo "Phase $phase passed"
+            else
+              echo "::error::Phase $phase canonical replay failed"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          test "$failed" -eq 0
+      - name: Upload read-only landing evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: copy-field-landing-replay
+          path: ${{ runner.temp }}/landing-replay/
+          if-no-files-found: warn
