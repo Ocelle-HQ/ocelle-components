@@ -6,7 +6,7 @@ The default `ocelle-top-bar` bar has no lower separator in light, dark or forced
 
 ## Personal rail
 
-`divider-at-end` is the boolean markup spelling of `OcellePersonalRail.dividerAtEnd`. It defaults to false and reflects changes set via the property. It only changes a populated vertical layout. With measurable spare block size, measure the divider's lower edge to the first bottom item. The result is one `--ocelle-space-1` gap, within the existing pixel helper's tolerance. The same extra height previously between the divider and lower group is before the divider. A focused destination keeps focus when the orientation prop updates in place. Existing horizontal, default, label, navigation and empty-group contracts still apply.
+`divider-at-end` is the boolean markup spelling of `OcellePersonalRail.dividerAtEnd`. It defaults to false and reflects changes set via the property. It changes placement when both groups are populated and the layout is effectively vertical. The exact `orientation="horizontal"` value selects the existing horizontal layout. An omitted, empty or other orientation value remains vertical and keeps its original attribute state. With measurable spare block size, the default vertical divider follows the primary group by one `--ocelle-space-1` gap and spare height follows the divider. In the opted-in vertical rail the same spare height precedes the divider, and the divider's lower edge is one `--ocelle-space-1` gap from the first bottom item, within the existing pixel helper's tolerance. A focused destination keeps focus when the orientation prop updates in place. Existing horizontal, default, label, navigation and empty-group contracts still apply.
 
 ## Brand accessory
 
@@ -14,4 +14,4 @@ Both `ocelle-top-bar` and `ocelle-app-shell` accept optional host-child content 
 
 ## Public record
 
-Document the public slot and attribute/property in the element manifest, README and changelog. Source story exports map to the concrete IDs and captures listed in the plan. Verify real rendered examples in light and dark. Build and serve the external-fixture path under the repository strict CSP with the same native interactions and clean fixture violation collection.
+Document the public slot and attribute/property in the element manifest, README and changelog. Source story exports map to the concrete IDs and captures listed in the plan. Verify real rendered examples in light and dark and verify the opted-in rail and 320 px badge composition separately in forced colours. Build and serve the external shell fixture under the repository strict CSP. Verify one composed and accessible badge and use the keyboard to operate the real menu and Settings action before collecting the clean runtime record.

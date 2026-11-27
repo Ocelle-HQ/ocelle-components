@@ -3,7 +3,7 @@
 | Concept | Representation | Rules |
 | --- | --- | --- |
 | Top-bar chrome | Existing shadow part `bar` | Default bar has no block-end border. App pane boundaries are owned by the host. |
-| Rail placement | Reflected `dividerAtEnd` boolean, existing orientation and slot presence | Opt-in vertical placement applies when both groups contain destinations. Default and horizontal retain their geometry. The divider stays decorative. |
+| Rail placement | Reflected `dividerAtEnd` boolean, existing orientation and slot presence | Opt-in placement applies when both groups contain destinations and the effective orientation is vertical. Only `orientation="horizontal"` selects horizontal. Absent, empty and other values stay vertical without an attribute rewrite. Default and horizontal retain their geometry. The divider stays decorative. |
 | Brand accessory | Assigned children of the `brand-accessory` slot | The host supplies content. The app shell forwards the named slot into the top bar. One supplied badge is rendered and exposed once beside the same product text. Empty assignment takes up no layout space. |
 
 ## Transitions
