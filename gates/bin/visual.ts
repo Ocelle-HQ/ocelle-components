@@ -128,11 +128,17 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming both engines when --remove-docker-image comes with docker alone, and runs no docker command"
   const argument = parseUpdateArgs(context.args.filter((arg) => arg !== "--remove-docker-image"));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
-  const cause = "cause" in argument ? argument.cause : argument.plant === undefined ? undefined : "--plant is an option of visual:update, not of the gate";
+  const cause = "cause" in argument ? argument.cause : updateOnlyOption(argument);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const result = cause !== undefined || "cause" in argument ? { exit: 2 as const, cause: `visual: could not run: ${String(cause)}` } : await visual({ root: context.root, engine: argument.engine, removeDockerImage: context.args.includes("--remove-docker-image"), env: io.env, note: io.err });
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   return emit(result, io.out, io.err);
+}
+
+function updateOnlyOption(argument: { readonly plant?: string; readonly stories?: readonly string[] }): string | undefined {
+  if (argument.plant !== undefined) return "--plant is an option of visual:update, not of the gate";
+  if (argument.stories !== undefined) return "--stories is an option of visual:update, not of the gate";
+  return undefined;
 }
 
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"

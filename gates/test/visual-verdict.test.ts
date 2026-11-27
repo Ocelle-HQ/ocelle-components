@@ -1,5 +1,12 @@
+import { appendFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PNG } from "pngjs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { run as updateBaselines } from "../bin/baselines.ts";
+import { run as verifyBaselines } from "../bin/visual.ts";
+import type { Io } from "../lib/cli.ts";
+import type { Pin, Resolved } from "../lib/container.ts";
 import type { Plant } from "../lib/plant-judge.ts";
 import {
   baselineName,
@@ -20,7 +27,7 @@ import {
   visualFindings,
   visualResult,
 } from "../lib/visual-verdict.ts";
-import type { Capture, CaptureEntry, CaptureStatus, Theme, Verdict } from "../lib/visual-verdict.ts";
+import type { Capture, CaptureEntry, CaptureRequest, CaptureStatus, Theme, Verdict } from "../lib/visual-verdict.ts";
 
 // The visual gate's verdicts and the baseline command's update plan (FR-003 to FR-005, FR-008, FR-026 to FR-028,
 // FR-030, FR-031; contracts/gates.md § `visual`, § `visual:update`; data-model.md § Baseline, § Verdict per
@@ -288,6 +295,275 @@ describe("parseUpdateArgs", () => {
     expect(parseUpdateArgs(["--engine"])).toEqual({ cause: "--engine needs a value" });
     expect(parseUpdateArgs(["--plant", "--story", "x"])).toEqual({ cause: "--plant needs a value" });
     expect(parseUpdateArgs(["--story", "x--y"])).toEqual({ cause: "--story needs --plant" });
+  });
+
+  it("reads an exact list of scoped Storybook IDs", () => {
+    expect(parseUpdateArgs(["--", "--engine", "both", "--stories", "a--b,c-d--e-f"])).toEqual({
+      engine: "both",
+      stories: ["a--b", "c-d--e-f"],
+    });
+  });
+
+  it.each([
+    ["", ""], ["a--b,", ""], ["a--b,,c--d", ""], ["../a--b", "../a--b"], ["a--b/", "a--b/"],
+    ["a--b, c--d", " c--d"], ["a---b", "a---b"], ["a--b--c", "a--b--c"], ["A--b", "A--b"],
+  ])(
+    "rejects a malformed story ID in %j",
+    (selection, invalid) => {
+      expect(parseUpdateArgs(["--engine", "both", "--stories", selection])).toEqual({
+        cause: `--stories has an invalid story ID: ${JSON.stringify(invalid)}`,
+      });
+    },
+  );
+
+  it("rejects repeated selections and duplicate IDs, while retaining existing engine flag behavior", () => {
+    expect(parseUpdateArgs(["--engine", "both", "--stories", "a--b,a--b"])).toEqual({ cause: "--stories contains duplicate story IDs" });
+    expect(parseUpdateArgs(["--engine", "both", "--stories", "a--b", "--stories", "c--d"])).toEqual({ cause: "duplicate --stories option" });
+    expect(parseUpdateArgs(["--engine", "both", "--engine", "docker"])).toEqual({ engine: "docker" });
+  });
+
+  it.each(["--plant", "--story"])("keeps --stories separate from %s", (option) => {
+    expect(parseUpdateArgs(["--engine", "both", "--stories", "a--b", option, "x--y"])).toMatchObject({
+      cause: expect.stringMatching(/--stories.*--(?:plant|story)/) as unknown,
+    });
+  });
+
+  it("rejects a single capture engine for scoped updates", () => {
+    expect(parseUpdateArgs(["--engine", "docker", "--stories", "a--b"])).toMatchObject({ cause: expect.stringMatching(/--stories.*both/) as unknown });
+  });
+});
+
+// Use the real update command and filesystem with deterministic fakes for the built index and capture engines.
+async function traceCapture(env: Io["env"], line: string): Promise<void> {
+  const trace = env.OCELLE_TEST_CAPTURE_TRACE;
+  if (trace !== undefined) await appendFile(trace, `${line}\n`);
+}
+
+vi.mock(import("../lib/visual-host.ts"), async (importOriginal) => ({
+  ...await importOriginal(),
+  buildStories: () => Promise.resolve({ value: ["a--b", "c--d", "e--f"].map((id) => ({ id, title: id, name: id, importPath: "./scope.stories.ts" })) }),
+  engines: (choice: string): Promise<Resolved> => Promise.resolve(choice === "both"
+    ? { kind: "engines", engines: ["docker", "podman"] }
+    : { kind: "error", cause: "the test requires both engines" }),
+  readPin: () => Promise.resolve({ value: { image: "test-image", tag: "test-tag", digest: "test-digest", platform: "linux/amd64", node: "test-node", browser: "test-browser" } satisfies Pin }),
+  pinCheck: async (names: readonly string[], _pin: Pin, env: Io["env"]) => {
+    await traceCapture(env, `pin ${names.join(",")}`);
+    return names.includes("podman") ? env.OCELLE_TEST_PODMAN_PIN_FAILURE : undefined;
+  },
+  removeDockerCopy: async (_pin: Pin, env: Io["env"]) => {
+    await traceCapture(env, "remove docker");
+    return undefined;
+  },
+  captureRun: async (_root: string, _run: 1 | 2, engine: string, _pin: Pin, requests: readonly CaptureRequest[], env: Io["env"]) => {
+    await traceCapture(env, `capture ${engine}`);
+    return { value: requests.flatMap(storyThemes).map(({ story, theme }) => cap(story, theme, "captured", {}, B)) };
+  },
+  captureRuns: async (_root: string, _engines: Resolved, _pin: Pin, requests: readonly CaptureRequest[], env: Io["env"], beforeSecond?: () => Promise<string | undefined>) => {
+    const first = requests.flatMap(storyThemes).map(({ story, theme }) => cap(story, theme, "captured", {}, B));
+    await traceCapture(env, "capture docker");
+    const cause = await beforeSecond?.();
+    if (cause !== undefined) return { cause };
+    await traceCapture(env, "capture podman");
+    const second = requests.flatMap(storyThemes).map(({ story, theme }) =>
+      cap(story, theme, "captured", {}, story === "e--f" && env.OCELLE_TEST_STABLE_CAPTURE !== "true" ? A : B));
+    return { value: [first, second] as const };
+  },
+}));
+
+describe("scoped baseline updates", () => {
+  it("updates both themes of each selected story, even if the unselected story would fail capture", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ocelle-baseline-scope-"));
+    const baselines = join(root, "storybook/baselines");
+    try {
+      await mkdir(baselines, { recursive: true });
+      await writeFile(join(baselines, "a--b.light.png"), A);
+      await writeFile(join(baselines, "e--f.light.png"), A);
+      await writeFile(join(baselines, "old--story.dark.png"), A);
+      const out: string[] = [];
+      const err: string[] = [];
+      const code = await updateBaselines(["--engine", "both", "--stories", "a--b,c--d"], {
+        cwd: root,
+        env: {},
+        out: (line) => out.push(line),
+        err: (line) => err.push(line),
+      });
+      expect({ code, out, err }).toEqual({
+        code: 0,
+        out: ["baselines: wrote 4 files (3 added, 1 changed, 0 removed), 12 bytes in total"],
+        err: [],
+      });
+      const names = (await readdir(baselines)).sort();
+      expect(names).toEqual(["a--b.dark.png", "a--b.light.png", "c--d.dark.png", "c--d.light.png", "e--f.light.png", "old--story.dark.png"]);
+      expect(await Promise.all(names.map(async (name) => Uint8Array.from(await readFile(join(baselines, name)))))).toEqual([B, B, B, B, A, A]);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("rejects a list with a valid-looking ID absent from the built index", async () => {
+    const err: string[] = [];
+    const code = await updateBaselines(["--engine", "both", "--stories", "a--b,missing--story"], {
+      cwd: process.cwd(),
+      env: {},
+      out: () => undefined,
+      err: (line) => err.push(line),
+    });
+    expect(code).toBe(2);
+    expect(err).toEqual([expect.stringMatching(/missing--story.*(?:index|unknown)|(?:index|unknown).*missing--story/)]);
+  });
+
+  it("reports every unknown selection in order before capturing", async () => {
+    const err: string[] = [];
+    const code = await updateBaselines(["--engine", "both", "--stories", "missing--first,a--b,missing--second"], {
+      cwd: process.cwd(),
+      env: {},
+      out: () => undefined,
+      err: (line) => err.push(line),
+    });
+    expect({ code, err }).toEqual({
+      code: 2,
+      err: ["baselines: could not run: stories missing from the built index: missing--first, missing--second"],
+    });
+  });
+
+  it.each([
+    ["both pins together without asking to remove Docker", [], "pin docker,podman\ncapture docker\ncapture podman\n"],
+    ["Podman only after the Docker capture and cleanup", ["--remove-docker-image"], "pin docker\ncapture docker\nremove docker\npin podman\ncapture podman\n"],
+  ] as const)("verifies %s before writing the requested baselines", async (_description, options, expectedTrace) => {
+    const root = await mkdtemp(join(tmpdir(), "ocelle-baseline-pins-"));
+    const baselines = join(root, "storybook/baselines");
+    const trace = join(root, "engines.txt");
+    try {
+      await mkdir(baselines, { recursive: true });
+      const err: string[] = [];
+      const code = await updateBaselines(["--engine", "both", "--stories", "a--b", ...options], {
+        cwd: root,
+        env: { OCELLE_TEST_CAPTURE_TRACE: trace },
+        out: () => undefined,
+        err: (line) => err.push(line),
+      });
+      expect({ code, err }).toEqual({ code: 0, err: [] });
+      expect(await readFile(trace, "utf8")).toBe(expectedTrace);
+      expect((await readdir(baselines)).sort()).toEqual(["a--b.dark.png", "a--b.light.png"]);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("writes no baseline when the Podman pin fails after Docker cleanup", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ocelle-baseline-pins-"));
+    const baselines = join(root, "storybook/baselines");
+    const trace = join(root, "engines.txt");
+    try {
+      await mkdir(baselines, { recursive: true });
+      const err: string[] = [];
+      const code = await updateBaselines(["--engine", "both", "--stories", "a--b", "--remove-docker-image"], {
+        cwd: root,
+        env: { OCELLE_TEST_CAPTURE_TRACE: trace, OCELLE_TEST_PODMAN_PIN_FAILURE: "Podman image pin did not match" },
+        out: () => undefined,
+        err: (line) => err.push(line),
+      });
+      expect({ code, err }).toEqual({ code: 2, err: ["baselines: could not run: Podman image pin did not match"] });
+      expect(await readFile(trace, "utf8")).toBe("pin docker\ncapture docker\nremove docker\npin podman\n");
+      expect(await readdir(baselines)).toEqual([]);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("removes stray files from a full update while preserving Docker without a cleanup request", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ocelle-baseline-full-"));
+    const baselines = join(root, "storybook/baselines");
+    const trace = join(root, "engines.txt");
+    try {
+      await mkdir(baselines, { recursive: true });
+      await writeFile(join(baselines, "old--story.dark.png"), A);
+      const out: string[] = [];
+      const err: string[] = [];
+      const code = await updateBaselines(["--engine", "both"], {
+        cwd: root,
+        env: { OCELLE_TEST_CAPTURE_TRACE: trace, OCELLE_TEST_STABLE_CAPTURE: "true" },
+        out: (line) => out.push(line),
+        err: (line) => err.push(line),
+      });
+      expect({ code, out, err }).toEqual({
+        code: 0,
+        out: ["baselines: wrote 6 files (6 added, 0 changed, 1 removed), 18 bytes in total"],
+        err: [],
+      });
+      expect(await readFile(trace, "utf8")).toBe("pin docker,podman\ncapture docker\ncapture podman\n");
+      expect((await readdir(baselines)).sort()).toEqual(["a--b.dark.png", "a--b.light.png", "c--d.dark.png", "c--d.light.png", "e--f.dark.png", "e--f.light.png"]);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("reserves --stories for visual:update and keeps required Visual verification full", async () => {
+    const err: string[] = [];
+    const code = await verifyBaselines(["--engine", "both", "--stories", "a--b"], {
+      cwd: process.cwd(),
+      env: {},
+      out: () => undefined,
+      err: (line) => err.push(line),
+    });
+    expect(code).toBe(2);
+    expect(err).toEqual(["visual: could not run: --stories is an option of visual:update, not of the gate"]);
+  });
+
+  it("reserves --plant for visual:update with its own diagnostic", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ocelle-visual-plant-flag-"));
+    try {
+      const err: string[] = [];
+      const code = await verifyBaselines(["--engine", "both", "--plant", "visual/pass-x"], {
+        cwd: root,
+        env: {},
+        out: () => undefined,
+        err: (line) => err.push(line),
+      });
+      expect({ code, err }).toEqual({
+        code: 2,
+        err: ["visual: could not run: --plant is an option of visual:update, not of the gate"],
+      });
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("runs the required Visual command on every story with standard unscoped flags", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ocelle-visual-full-"));
+    const baselines = join(root, "storybook/baselines");
+    const trace = join(root, "engines.txt");
+    try {
+      await mkdir(baselines, { recursive: true });
+      for (const story of ["a--b", "c--d", "e--f"]) {
+        await writeFile(join(baselines, `${story}.light.png`), B);
+        await writeFile(join(baselines, `${story}.dark.png`), B);
+      }
+      const out: string[] = [];
+      const err: string[] = [];
+      const code = await verifyBaselines(["--engine", "both", "--remove-docker-image"], {
+        cwd: root,
+        env: { OCELLE_TEST_CAPTURE_TRACE: trace },
+        out: (line) => out.push(line),
+        err: (line) => err.push(line),
+      });
+      expect({ code, out, err }).toEqual({ code: 0, out: ["visual: 6 captures match their baselines (docker+podman)"], err: [] });
+      expect(await readFile(trace, "utf8")).toBe("pin docker\ncapture docker\nremove docker\npin podman\ncapture podman\n");
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("refuses explicit Docker cleanup outside a scoped baseline update", async () => {
+    const err: string[] = [];
+    const code = await updateBaselines(["--engine", "both", "--remove-docker-image"], {
+      cwd: process.cwd(),
+      env: {},
+      out: () => undefined,
+      err: (line) => err.push(line),
+    });
+    expect(code).toBe(2);
+    expect(err).toEqual(["baselines: could not run: --remove-docker-image needs --stories"]);
   });
 });
 

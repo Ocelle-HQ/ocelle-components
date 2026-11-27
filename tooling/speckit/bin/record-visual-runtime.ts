@@ -1,8 +1,9 @@
 // Record selected local tool identities without recording CLI configuration, raw output or environment values.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { accessSync, constants, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { delimiter, isAbsolute, join } from "node:path";
+import { accessSync, constants, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 
 class ObservationError extends Error {}
 
@@ -12,9 +13,9 @@ function requireObservation(condition: unknown, problem: string): asserts condit
 
 const exactVersion = /^\d+\.\d+\.\d+(?:[.+~:-][\w.+~:-]+)?$/;
 
-function command(name: string, args: readonly [string, ...string[]], { file = name, timeout = 8_000 } = {}): string {
+function command(name: string, args: readonly [string, ...string[]], { file = name, timeout = 8_000, cwd = process.cwd() } = {}): string {
   try {
-    return execFileSync(file, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout, killSignal: "SIGKILL", maxBuffer: 128 * 1024 }).trim();
+    return execFileSync(file, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout, killSignal: "SIGKILL", maxBuffer: 128 * 1024 }).trim();
   } catch (error: unknown) {
     const stage = `${name} ${args[0]}`;
     if (error instanceof Error && "code" in error && error.code === "ETIMEDOUT") {
@@ -38,8 +39,68 @@ function executable(name: string, path: string): string {
   throw new ObservationError(`could not resolve the selected ${name} executable`);
 }
 
+function digest(bytes: Buffer): string {
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
 function executableHash(path: string): string {
-  return `sha256:${createHash("sha256").update(readFileSync(path)).digest("hex")}`;
+  return digest(readFileSync(path));
+}
+
+// Git object 666c35e95c17f1a36414adc28bc25a73a8f1f67f, pnpm/crates/cmd-shim/src/shim.rs,
+// SH_SHIM_HEADER in the pinned pnpm release. Only the native exec target can vary.
+const pnpmShimHeader = "sha256:97b4d68b1d6d04f0dd481c1219136a8a3c55e43614a13bcb7c0a477b1ecd3127";
+const nativePnpmShim = /exec "(\$basedir\/\.\.\/global\/v11\/[\w-]+\/node_modules\/pnpm\/pnpm)"[ ]{2}"\$@"\nexit \$\?\n# cmd-shim-target=(\/[\w./@+-]+)\n$/;
+
+function nativeLinuxAmd64(bytes: Buffer): boolean {
+  return bytes.length >= 64 && bytes.subarray(0, 7).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1])) &&
+    [2, 3].includes(bytes.readUInt16LE(16)) && bytes.readUInt16LE(18) === 62 && bytes.readUInt32LE(20) === 1;
+}
+
+export function pnpmIdentity(path: string): {
+  readonly executablePath: string;
+  readonly executableDigest: string;
+  readonly launcherDigest: string;
+  readonly launcherKind: "native" | "pinned-cmd-shim";
+} {
+  const launcher = realpathSync(path);
+  accessSync(launcher, constants.X_OK);
+  requireObservation(statSync(launcher).isFile(), "the selected pnpm launcher is not a regular executable file");
+  const bytes = readFileSync(launcher);
+  const launcherDigest = digest(bytes);
+  if (nativeLinuxAmd64(bytes)) {
+    return { executablePath: launcher, executableDigest: launcherDigest, launcherDigest, launcherKind: "native" };
+  }
+  const match = nativePnpmShim.exec(bytes.toString("utf8"));
+  requireObservation(match !== null && digest(bytes.subarray(0, match.index)) === pnpmShimHeader,
+    "the selected pnpm launcher is not the pinned native cmd-shim");
+  const target = match[1];
+  const marker = match[2];
+  requireObservation(target !== undefined && marker !== undefined, "the selected pnpm launcher has no verified executable target");
+  const relativePrefix = "$basedir/";
+  const resolved = resolve(dirname(launcher), target.slice(relativePrefix.length));
+  requireObservation(resolved === marker && resolved.endsWith("/pnpm"), "the selected pnpm launcher's executable target differs from its marker");
+  let executablePath: string;
+  try {
+    executablePath = realpathSync(resolved);
+    accessSync(executablePath, constants.X_OK);
+    requireObservation(statSync(executablePath).isFile(), "the selected pnpm target is not a regular executable file");
+  } catch {
+    throw new ObservationError("could not resolve an executable file for the selected pnpm launcher");
+  }
+  const nativeBytes = readFileSync(executablePath);
+  requireObservation(nativeLinuxAmd64(nativeBytes), "the selected pnpm target is not a native linux/amd64 executable");
+  return { executablePath, executableDigest: digest(nativeBytes), launcherDigest, launcherKind: "pinned-cmd-shim" };
+}
+
+// Probe without the checkout's package-manager pin, which can cause an older binary to delegate.
+function nativePnpmVersion(path: string): string {
+  const directory = mkdtempSync(join(tmpdir(), "ocelle-visual-pnpm-"));
+  try {
+    return command("native pnpm", ["--version"], { file: path, cwd: directory });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 function positive(value: string | undefined): number {
@@ -67,6 +128,7 @@ function record(env: NodeJS.ProcessEnv): object {
   const invokingPnpm = env.VISUAL_RUNTIME_PNPM;
   requireObservation(invokingPnpm !== undefined && isAbsolute(invokingPnpm) && realpathSync(invokingPnpm) === pnpmPath,
     "the workspace PATH selected a different pnpm executable than the Visual job");
+  const pnpmProof = pnpmIdentity(pnpmPath);
   const dockerContext = command("docker", ["context", "show"]);
   const dockerEndpoint = command("docker", ["context", "inspect", "default", "--format", '{{(index .Endpoints "docker").Host}}']);
   requireObservation(dockerContext === "default" && dockerEndpoint === "unix:///var/run/docker.sock",
@@ -100,16 +162,19 @@ function record(env: NodeJS.ProcessEnv): object {
   const skopeo = /^skopeo version (\S+)$/.exec(command("skopeo", ["--version"]))?.[1];
   const node = /^v(\S+)$/.exec(command("node", ["--version"]))?.[1];
   const pnpm = command("pnpm", ["--version"]);
+  requireObservation(pnpm === nativePnpmVersion(pnpmProof.executablePath),
+    "the executed pnpm version differs from the verified native executable");
   requireObservation(node !== undefined && node === process.versions.node && skopeo !== undefined &&
     [node, pnpm, dockerClient, dockerServer, dockerBuildx, skopeo].every((version) => exactVersion.test(version)),
   "missing an exact executed tool version in the Visual job");
 
   return {
-    schema: 1, repository, event, job, runId, attempt, testedMerge, platform: "linux/amd64",
+    schema: 2, repository, event, job, runId, attempt, testedMerge, platform: "linux/amd64",
     dockerContext, dockerEndpoint, podmanLocal,
     versions: { node, pnpm, dockerClient, dockerServer, dockerClientCommit, dockerServerCommit, dockerBuildx, podman, skopeo },
+    pnpmLauncher: { kind: pnpmProof.launcherKind, digest: pnpmProof.launcherDigest },
     executables: {
-      node: executableHash(nodePath), pnpm: executableHash(pnpmPath), docker: executableHash(executable("docker", path)),
+      node: executableHash(nodePath), pnpm: pnpmProof.executableDigest, docker: executableHash(executable("docker", path)),
       dockerBuildx: executableHash(realpathSync(buildx.Path)), podman: executableHash(podmanPath), skopeo: executableHash(executable("skopeo", path)),
     },
   };

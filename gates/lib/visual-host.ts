@@ -185,10 +185,11 @@ export async function clearRuns(root: string): Promise<void> {
 
 /**
  * The two runs of the requests: run 1 under the first engine, run 2 under the second (the host engine runs once and
- * is refused); the run directories are removed afterwards. No pin check (the caller's, before it).
+ * is refused); the run directories are removed afterwards. The caller verifies both engine pins, either before
+ * the captures or with a callback that prepares the second engine after the first capture.
  */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
-export async function captureRuns(root: string, resolved: Resolved, pin: Pin, requests: readonly CaptureRequest[], env: Io["env"]): Promise<Outcome<readonly [Capture[], Capture[]]>> {
+export async function captureRuns(root: string, resolved: Resolved, pin: Pin, requests: readonly CaptureRequest[], env: Io["env"], beforeSecond?: () => Promise<string | undefined>): Promise<Outcome<readonly [Capture[], Capture[]]>> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)"
   if (resolved.kind === "error") return { cause: resolved.cause };
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
@@ -199,6 +200,10 @@ export async function captureRuns(root: string, resolved: Resolved, pin: Pin, re
     const run1 = await captureRun(root, 1, engineOf(1), pin, requests, env);
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
     if ("cause" in run1) return run1;
+    // Stryker disable next-line all: process boundary, scoped pinned capture on the hosted runner frees the Docker copy before verifying Podman
+    const cause = await beforeSecond?.();
+    // Stryker disable next-line all: process boundary, scoped pinned capture on the hosted runner frees the Docker copy before verifying Podman
+    if (cause !== undefined) return { cause };
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     const run2 = await captureRun(root, 2, engineOf(2), pin, requests, env);
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"

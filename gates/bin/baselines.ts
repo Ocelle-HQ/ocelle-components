@@ -2,8 +2,9 @@
 // the visual gate's engine resolution, pin check, build and two runs, then the update plan: it writes nothing and
 // exits 1 when any story-theme ends at a refusing step, else writes every new or changed baseline, removes the stray
 // ones and prints the summary line. With `--plant visual/<name> [--story <id>]` it materialises the plant's root as
-// the plant job does and writes that plant's own stories' baselines into its tree/storybook/baselines/. The decisions
-// are gates/lib/visual-verdict.ts; this entry and gates/lib/visual-host.ts only run the engines and move files (the
+// the plant job does and writes that plant's own stories' baselines into its tree/storybook/baselines/. With
+// `--engine both --stories <id>,<id>` it updates only the named stories and leaves other baselines alone. The
+// decisions are gates/lib/visual-verdict.ts; this entry and gates/lib/visual-host.ts only run the engines and move files (the
 // process boundary, tested by gates/test/integration/visual.test.ts).
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -15,7 +16,7 @@ import { filePaths } from "../lib/entries.ts";
 import { parsePlant } from "../lib/plant-judge.ts";
 import type { Plant } from "../lib/plant-judge.ts";
 import { buildRepoTree } from "../lib/plant-repo.ts";
-import { buildStories, captureRuns, engines, pinCheck, readBaselines, readPin } from "../lib/visual-host.ts";
+import { buildStories, captureRuns, engines, pinCheck, readBaselines, readPin, removeDockerCopy } from "../lib/visual-host.ts";
 import { judge, ownStories, parseUpdateArgs, plantBaselinesDir, plantModeProblem, plantRequests, storyThemes, strayBaselines, themes, updatePlan, updateSummary } from "../lib/visual-verdict.ts";
 import type { CaptureRequest, UpdateArgs } from "../lib/visual-verdict.ts";
 
@@ -24,7 +25,9 @@ interface Target {
   readonly root: string;
   readonly requests: readonly CaptureRequest[];
   readonly dir: string;
-  readonly known: readonly string[];
+  /** When absent, this update is scoped and may not remove any baseline. */
+  readonly known?: readonly string[];
+  readonly removeDockerImage?: boolean;
 }
 
 /** Applies the update plan of a target; the exit code. */
@@ -39,11 +42,23 @@ async function update(target: Target, engine: string, io: Io, fail: (cause: stri
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   if ("cause" in pin) return fail(pin.cause);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
-  const pinned = resolved.kind === "engines" ? await pinCheck(resolved.engines, pin.value, io.env) : undefined;
+  const pinned = resolved.kind === "engines"
+    // Stryker disable next-line all: process boundary, exercises two pinned engines with disk cleanup in visual-capture.yml
+    ? await pinCheck(target.removeDockerImage === true ? [resolved.engines[0]] : resolved.engines, pin.value, io.env)
+    : undefined;
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   if (pinned !== undefined) return fail(pinned);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
-  const runs = await captureRuns(target.root, resolved, pin.value, target.requests, io.env);
+  const runs = await captureRuns(target.root, resolved, pin.value, target.requests, io.env,
+    // Stryker disable next-line all: process boundary, exercises two pinned engines with disk cleanup in visual-capture.yml
+    target.removeDockerImage === true && resolved.kind === "engines" ? async () => {
+      // Stryker disable next-line all: process boundary, exercises two pinned engines with disk cleanup in visual-capture.yml
+      const note = await removeDockerCopy(pin.value, io.env);
+      // Stryker disable next-line all: process boundary, exercises two pinned engines with disk cleanup in visual-capture.yml
+      if (note !== undefined) io.err(note);
+      // Stryker disable next-line all: process boundary, exercises two pinned engines with disk cleanup in visual-capture.yml
+      return pinCheck([resolved.engines[1]], pin.value, io.env);
+    } : undefined);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   if ("cause" in runs) return fail(runs.cause);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
@@ -52,8 +67,7 @@ async function update(target: Target, engine: string, io: Io, fail: (cause: stri
   const baselines = await readBaselines(target.dir);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   const verdicts = judge(target.requests.flatMap((request) => storyThemes(request)), run1, run2, baselines);
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
-  const stray = strayBaselines([...baselines.keys()], storyThemes({ stories: target.known, themes }));
+  const stray = target.known === undefined ? [] : strayBaselines([...baselines.keys()], storyThemes({ stories: target.known, themes }));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   const plan = updatePlan(verdicts, run1, stray, target.dir);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
@@ -129,9 +143,11 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
     return 2;
   };
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
-  const args = parseUpdateArgs(context.args);
+  const args = parseUpdateArgs(context.args.filter((arg) => arg !== "--remove-docker-image"));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   if ("cause" in args) return fail(args.cause);
+  const removeDockerImage = context.args.includes("--remove-docker-image");
+  if (removeDockerImage && args.stories === undefined) return fail("--remove-docker-image needs --stories");
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
   if (args.plant !== undefined) return plantMode(context.root, { ...args, plant: args.plant }, io, fail);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
@@ -140,6 +156,12 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   if ("cause" in stories) return fail(stories.cause);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   const ids = stories.value.map((story) => story.id);
+  const selection = args.stories;
+  if (selection !== undefined) {
+    const unknown = selection.filter((id) => !ids.includes(id));
+    if (unknown.length > 0) return fail(`stories missing from the built index: ${unknown.join(", ")}`);
+    return update({ root: context.root, requests: [{ stories: selection, themes }], dir: join(context.root, "storybook/baselines"), removeDockerImage }, args.engine, io, fail);
+  }
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"
   return update({ root: context.root, requests: [{ stories: ids, themes }], dir: join(context.root, "storybook/baselines"), known: ids }, args.engine, io, fail);
 }

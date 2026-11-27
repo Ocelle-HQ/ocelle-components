@@ -60,8 +60,8 @@ function output(command: string, args: readonly string[], cause: string, maxBuff
   }
 }
 
-function gh(endpoint: string, cause: string, flags: readonly string[] = []): Buffer {
-  return output("gh", ["api", "--hostname", "github.com", "-H", "X-GitHub-Api-Version: 2022-11-28", ...flags, endpoint], cause);
+function gh(endpoint: string, cause: string, flags: readonly string[] = [], maxBuffer?: number): Buffer {
+  return output("gh", ["api", "--hostname", "github.com", "-H", "X-GitHub-Api-Version: 2022-11-28", ...flags, endpoint], cause, maxBuffer);
 }
 
 function api(endpoint: string): Json {
@@ -124,6 +124,52 @@ function jobsFor(repo: string, { runId, attempt }: Attempt): { rows: Job[]; raw:
 
 function logLines(log: string): string[] {
   return log.split(/\r?\n/).map((line) => line.replace(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z /, ""));
+}
+
+function visualAttemptArchive(repo: string, runId: number, attempt: number): string[] | undefined {
+  let archive: Buffer;
+  try {
+    archive = gh(`repos/${repo}/actions/runs/${String(runId)}/attempts/${String(attempt)}/logs`,
+      "could not download the exact Visual attempt archive", [], 32 * 1024 * 1024);
+  } catch {
+    return undefined;
+  }
+  if (archive.length === 0) return undefined;
+  const directory = mkdtempSync(join(tmpdir(), "ocelle-visual-logs-"));
+  try {
+    const path = join(directory, "logs.zip");
+    writeFileSync(path, archive, { flag: "wx" });
+    const names = output("unzip", ["-Z1", path], "could not list the exact Visual attempt archive").toString().split(/\r?\n/);
+    const suffix = `_${visualJob}.txt`;
+    const entries = names.filter((name) => name.endsWith(suffix) && /^\d+$/.test(name.slice(0, -suffix.length)));
+    const entry = entries[0];
+    requireEvidence(entries.length === 1 && entry !== undefined, "the exact attempt archive does not contain a unique full Visual regression log");
+    return logLines(output("unzip", ["-p", path, entry], "could not read the exact Visual attempt log").toString());
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+function visualLog(repo: string, runId: number, attempt: number, jobId: number): string[] {
+  try {
+    const direct = gh(`repos/${repo}/actions/jobs/${String(jobId)}/logs`, "could not read the exact Visual job log").toString();
+    if (direct.trim() !== "") return logLines(direct);
+  } catch {
+    // The job endpoint and its temporary redirect may fail independently of the attempt archive.
+  }
+  const exact = visualAttemptArchive(repo, runId, attempt);
+  if (exact !== undefined) return exact;
+  const archive = output("gh", ["run", "view", String(runId), "--repo", `github.com/${repo}`,
+    "--attempt", String(attempt), "--job", String(jobId), "--log"], "could not read the exact Visual job log or its attempt archive");
+  const lines = archive.toString().split(/\r?\n/).filter((line) => line !== "");
+  const prefix = `${visualJob}\t`;
+  const stripPrefix = (line: string): string => {
+    const stepEnd = line.indexOf("\t", prefix.length);
+    requireEvidence(line.startsWith(prefix) && stepEnd > prefix.length, "the attempt archive does not identify the exact Visual regression job");
+    return line.slice(stepEnd + 1);
+  };
+  requireEvidence(lines.length > 0, "the exact Visual regression job has no log in its attempt archive");
+  return logLines(lines.map(stripPrefix).join("\n"));
 }
 
 function testedMerge(lines: readonly string[], pr: number): string {
@@ -329,12 +375,14 @@ function observedTools(pin: PinRecord, lines: readonly string[], run: HostedRun,
   readonly tools: Omit<VisualRuntime["tools"], "jobId">;
   readonly recordDigest: string;
   readonly executables: Record<string, string>;
+  readonly pnpmLauncher: { readonly kind: string; readonly digest: string };
 } {
   requireEvidence(pin.executedTools !== null, "the Visual pin-record has no executed tool observation");
   const recordDigest = hash(pin.executedTools);
   requireEvidence(recordDigest === executedToolsDigest(lines), "the executed tool record does not match the exact Visual job log");
   const record = parse(pin.executedTools.toString());
-  requireEvidence(record.schema === 1 && record.repository === run.repository && record.event === run.event && record.job === "visual" &&
+  requireEvidence(record.schema === 2, "the Visual runtime record does not attest a native pnpm executable");
+  requireEvidence(record.repository === run.repository && record.event === run.event && record.job === "visual" &&
     record.runId === run.id && record.attempt === run.attempt && record.testedMerge === run.testedMerge,
   "the executed tool record is from a different Visual run, attempt or tested merge");
   requireEvidence(record.platform === pin.platform && record.dockerContext === "default" &&
@@ -354,13 +402,19 @@ function observedTools(pin: PinRecord, lines: readonly string[], run: HostedRun,
   const executables = Object.fromEntries(executableNames.map((name) => [name, string(binaryDigests[name])]));
   requireEvidence(Object.keys(binaryDigests).length === executableNames.length && Object.values(executables).every((value) => digest.test(value)),
     "the executed tool record has unknown or unreadable executable identities");
-  const fingerprint = hash(Buffer.from(JSON.stringify([expectedVersions, dockerCommits, executables])));
+  const launcher = object(record.pnpmLauncher);
+  const pnpmLauncher = { kind: string(launcher.kind), digest: string(launcher.digest) };
+  requireEvidence(Object.keys(launcher).length === 2 && digest.test(pnpmLauncher.digest) &&
+    (pnpmLauncher.kind === "pinned-cmd-shim" || (pnpmLauncher.kind === "native" && pnpmLauncher.digest === executables.pnpm)),
+  "the Visual runtime record does not attest the audited pnpm launcher");
+  // The before/after recorder compares raw launcher bytes within each run; installation paths can differ across runs.
+  const fingerprint = hash(Buffer.from(JSON.stringify([expectedVersions, dockerCommits, executables, pnpmLauncher.kind])));
   return {
     tools: {
       node: string(versions.node), pnpm: string(versions.pnpm), docker: string(versions.dockerServer), podman: string(versions.podman),
       observed: { runId: run.id, attempt: run.attempt, testedMerge: run.testedMerge, fingerprint },
     },
-    recordDigest, executables,
+    recordDigest, executables, pnpmLauncher,
   };
 }
 
@@ -390,6 +444,7 @@ interface AttemptReceipt {
     artifactDigest?: string;
     executedToolsDigest?: string;
     executables?: Record<string, string>;
+    pnpmLauncher?: { readonly kind: string; readonly digest: string };
     containerImage?: string;
     browser?: string;
     containerNode?: string;
@@ -407,7 +462,7 @@ function visualRuntime(context: Context, job: Job, rawJob: Json, run: HostedRun,
   const runtimeRecorderBlob = git(["rev-parse", `${tree}:${recorderPath}`]).toString().trim();
   requireEvidence(workflowBlob === "6eb0ec30c806e0c7d578c70cbc8beff48e8af534" &&
     setupBlob === "3c8211a282364e46895d9bdc0d173f85402fddbf" &&
-    runtimeRecorderBlob === "a7a2b1459ddb2ba50b7b30f05f64c4ef9bde09ff" &&
+    runtimeRecorderBlob === "647183c3be8748956dae31357b7268be5503bf8c" &&
     git(["rev-parse", `${baseTree}:${ciWorkflow}`]).toString().trim() === workflowBlob &&
     git(["rev-parse", `${baseTree}:.github/actions/setup/action.yml`]).toString().trim() === setupBlob &&
     git(["rev-parse", `${baseTree}:${recorderPath}`]).toString().trim() === runtimeRecorderBlob,
@@ -437,6 +492,7 @@ function visualRuntime(context: Context, job: Job, rawJob: Json, run: HostedRun,
   const observed = observedTools(pin, lines, run, runner, node, pnpm);
   receipt.runtimeSources.executedToolsDigest = observed.recordDigest;
   receipt.runtimeSources.executables = observed.executables;
+  receipt.runtimeSources.pnpmLauncher = observed.pnpmLauncher;
   return {
     pinRecord: { jobId: job.id, artifactId: pin.artifactId, manifestDigest: pin.manifestDigest, platform: pin.platform, skopeoVersion: pin.skopeoVersion },
     runnerSetup: { jobId: job.id, image: runner.image, version: runner.version, architecture: runner.architecture },
@@ -477,7 +533,7 @@ function collect(context: Context, receipt: AttemptReceipt, known?: Candidate): 
   requireEvidence(visual.length === 1 && job !== undefined && rawJob !== undefined &&
     job.runId === runId && job.attempt === attempt && job.head === head && job.status === "completed" && rawJob.workflow_name === "CI",
   "the exact attempt has a missing or ambiguous Visual regression job");
-  const lines = logLines(gh(`repos/${repo}/actions/jobs/${String(job.id)}/logs`, "could not read the exact Visual job log").toString());
+  const lines = visualLog(repo, runId, attempt, job.id);
   const merge = testedMerge(lines, pull.number);
   receipt.merge = merge;
   const mergeCommit = verifiedCommit(repo, merge);

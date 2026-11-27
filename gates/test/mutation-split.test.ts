@@ -119,6 +119,72 @@ describe("mutation gate: shadow receipt and controls", () => {
   });
 });
 
+describe("mutation gate: advisory related element tests", () => {
+  const grouped = "--shadow-grouped";
+  const related = "--shadow-related-elements";
+  const selectors = `${elementFile}:1-2`;
+  const files = ["--files", selectors];
+
+  it("changes only test selection and preserves the exact element range and surviving mutant verdict", async () => {
+    const fixture = tools({ [elementFile]: 4 }, survives);
+    const runStryker = vi.fn(fixture.stryker);
+    const control = await gate({ ...fixture, stryker: runStryker }, [grouped, ...files]);
+    const advisory = await gate({ ...fixture, stryker: runStryker }, [grouped, related, ...files]);
+
+    expect(control.code).toBe(1);
+    expect(advisory.code).toBe(1);
+    expect(advisory.out).toEqual(control.out);
+    expect(runStryker.mock.calls).toEqual([
+      [[selectors], "stryker.elements.config.json"],
+      [[selectors], "stryker.elements.config.json", { related: true }],
+    ]);
+    expect(shadowReceipt(control.err)).toMatchObject({
+      testSelection: "full",
+      ranges: [selectors],
+      mutants: [{ path: elementFile, status: "Survived" }],
+    });
+    expect(shadowReceipt(advisory.err)).toMatchObject({
+      testSelection: "related",
+      ranges: [selectors],
+      mutants: [{ path: elementFile, status: "Survived" }],
+    });
+  });
+
+  it.each([
+    [[related, ...files], /needs --shadow-grouped and --files without --plan/],
+    [[grouped, related], /needs --shadow-grouped and --files without --plan/],
+    [[grouped, related, "--plan", ...files], /needs --shadow-grouped and --files without --plan/],
+    [[grouped, related, "--files", gateFile], /needs element source only/],
+    [[grouped, related, "--files", `${selectors},${gateFile}`], /needs element source only/],
+  ] as const)("rejects out-of-scope advisory arguments %j before Stryker", async (args, diagnostic) => {
+    const fixture = tools({ [elementFile]: 4, [gateFile]: 2 }, killed);
+    const runStryker = vi.fn(fixture.stryker);
+    const result = await gate({ ...fixture, stryker: runStryker }, args);
+    expect(result.code).toBe(2);
+    expect(result.err[0]).toMatch(diagnostic);
+    expect(runStryker).not.toHaveBeenCalled();
+  });
+
+  it.each([",", "   "])("rejects an empty advisory selection %j before Stryker", async (selection) => {
+    const fixture = tools({ [elementFile]: 4 }, killed);
+    const runStryker = vi.fn(fixture.stryker);
+    const result = await gate({ ...fixture, stryker: runStryker }, [grouped, related, "--files", selection]);
+    expect(result.code).toBe(2);
+    // The phase base rejects the whole flag before advisory mode exists.
+    expect(result.err[0]).toMatch(/unknown argument --shadow-related-elements|--files to select at least one changed element source file/);
+    expect(runStryker).not.toHaveBeenCalled();
+  });
+
+  it("keeps the full required invocation and does not emit a shadow receipt by default", async () => {
+    const fixture = tools({ [elementFile]: 4 }, killed);
+    const runStryker = vi.fn(fixture.stryker);
+    const result = await gate({ ...fixture, stryker: runStryker }, files);
+    expect(result.code).toBe(0);
+    expect(result.err).toEqual([]);
+    expect(runStryker.mock.calls).toEqual([[[selectors], "stryker.elements.config.json"]]);
+  });
+});
+
 describe("mutation gate: a grouped element invocation", () => {
   it("reports a survivor in a paired bucket and excludes a mutant beyond the selected lines", async () => {
     const writesMutants: FakeStryker = (selected, files, configuration) => {
