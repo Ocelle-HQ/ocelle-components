@@ -7,7 +7,9 @@ in_scope: [91]
 out_of_scope: [1, 5, 7, 8, 12, 17, 56, 57, 69, 70, 76, 86, 87, 88, 89, 90, 92, 93, 109]
 semver: minor
 spec_prompt: "Specify #91 and triage/040-chrome-glyphs-initials.md: extend the shared icon set for five chrome actions and provide an accessible token-based initials trigger on existing controls, with isolated stories, bottom-rail fit and focused test-first browser verification."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-28T01:53:51Z
 ---
 
 # Triage 040 — Shared chrome glyphs and an initials button treatment
