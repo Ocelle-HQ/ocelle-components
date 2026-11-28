@@ -296,16 +296,15 @@ export class OcelleAnchoredPopover extends LitElement {
   };
 
   #place(open: OpenSurface, trigger: HTMLButtonElement, surface: HTMLElement): boolean {
-    const view = open.view;
-    const triggerStyle = view.getComputedStyle(trigger);
-    const surfaceStyle = view.getComputedStyle(surface);
+    const triggerStyle = open.view.getComputedStyle(trigger);
+    const surfaceStyle = open.view.getComputedStyle(surface);
     const gutter = pixels(surfaceStyle.scrollMarginTop);
     const gap = pixels(surfaceStyle.scrollMarginRight);
     const minimumWidth = pixels(triggerStyle.minInlineSize) + pixels(surfaceStyle.paddingLeft) + pixels(surfaceStyle.paddingRight)
       + pixels(surfaceStyle.borderLeftWidth) + pixels(surfaceStyle.borderRightWidth);
     const minimumHeight = pixels(triggerStyle.minBlockSize) + pixels(surfaceStyle.paddingTop) + pixels(surfaceStyle.paddingBottom)
       + pixels(surfaceStyle.borderTopWidth) + pixels(surfaceStyle.borderBottomWidth);
-    const bounds = viewportBounds(view, gutter);
+    const bounds = viewportBounds(open.view, gutter);
     const maxWidth = bounds.right - bounds.left;
     if (maxWidth < minimumWidth || bounds.bottom - bounds.top < minimumHeight) return false;
 
