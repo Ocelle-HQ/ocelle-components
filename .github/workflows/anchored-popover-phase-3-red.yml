@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 400e8ffb6a0dcf33a29427c24def9ed402897d88
+          ref: 05c793e9e7657fa04104cafc614f9c4c311eea2b
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "400e8ffb6a0dcf33a29427c24def9ed402897d88"
+          test "$(git rev-parse HEAD)" = "05c793e9e7657fa04104cafc614f9c4c311eea2b"
           test -z "$(git status --porcelain)"
           out="$RUNNER_TEMP/ocelle-popover-phase-3-red"
           mkdir "$out"
@@ -33,7 +33,7 @@ jobs:
           b="$RUNNER_TEMP/ocelle-popover-package"
           c="$RUNNER_TEMP/ocelle-popover-retained"
           pin="cc68c81d82b05b29c740d15130ad1090f9c51442"
-          git worktree add --detach "$a" "a9923e36e744fdd02e06649b3fe55a54d0b1fd95"
+          git worktree add --detach "$a" "a2b0597c04c37d0dda4ff5551b005623cb53e472"
           git worktree add --detach "$b" "4a8d59b404cb51c2fcbdfedf4a95b6b38bb3a912"
           git worktree add --detach "$c" "3d7608080d187b940f0511a458157e526938dc89"
           tooling/speckit/bin/worktree-return-check.sh "$root" "$pin" "$a" storybook/test/integration/anchored-popover.test.ts --worker "$b" packages/elements/test/browser/anchored-popover-stories.test.ts packages/elements/test/browser/fixtures/anchored-popover-stories.html --worker "$c" storybook/test/unit/browser/anchored-popover.test.ts | tee "$out/worktrees.json"
@@ -54,8 +54,8 @@ jobs:
               wc -c "$out/$key"
             fi
           done
-          jq -e --arg head "400e8ffb6a0dcf33a29427c24def9ed402897d88" '.sha == $head and .tests_only and .red and .recorded' "$out/red.json"
-          test "$(cat "$dir/red-commits")" = "phase 400e8ffb6a0dcf33a29427c24def9ed402897d88"
+          jq -e --arg head "05c793e9e7657fa04104cafc614f9c4c311eea2b" '.sha == $head and .tests_only and .red and .recorded' "$out/red.json"
+          test "$(cat "$dir/red-commits")" = "phase 05c793e9e7657fa04104cafc614f9c4c311eea2b"
           cp "$dir/red-commits" "$out/"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
@@ -68,7 +68,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 400e8ffb6a0dcf33a29427c24def9ed402897d88
+          ref: 05c793e9e7657fa04104cafc614f9c4c311eea2b
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
