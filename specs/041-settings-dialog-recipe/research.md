@@ -10,7 +10,7 @@ Use the nav item for destinations and the disclosure for expansion. The disclosu
 
 ## Scroll axes
 
-Use the named library scroller for supplementary inline choices after the first panel action within the detail pane. It is an inline-axis control and gets a Tab stop while it overflows. Choose wrapping based on available inline space relative to text size for narrow and enlarged-text cases. A separate named content region after the first action owns vertical overflow in the split layout and becomes keyboard-focusable while scrollable.
+Use the named library scroller for supplementary inline choices after the first panel action within the detail pane. It is an inline-axis control and gets a Tab stop while it overflows. Choose wrapping based on available inline space relative to text size for narrow and enlarged-text cases. The scroller’s intrinsic max-content track gives wrapping children room to stay on one line. Derive the slotted group’s size limit from the full-width recipe wrapper outside the track and subtract the two token-based focus clearances the track adds. Use a border-box limit so the group’s own padding is included. A separate named content region after the first action owns vertical overflow in the split layout and becomes keyboard-focusable while scrollable.
 
 ## Recipe fixture
 
