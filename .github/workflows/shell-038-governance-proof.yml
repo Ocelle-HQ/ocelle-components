@@ -14,18 +14,19 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: d3b6cec7a34388d3e891c27f6c6dee06e4708318
+          ref: 4d964d422a509869583a05d657879977a1641597
           fetch-depth: 0
           persist-credentials: false
-      - name: Confirm the clean plan round and task setup paths
+      - name: Check task review, analysis and exact phase list
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "d3b6cec7a34388d3e891c27f6c6dee06e4708318"
+          test "$(git rev-parse HEAD)" = "4d964d422a509869583a05d657879977a1641597"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh refute f4b24d7cd272bd38d26a5f32ce40e9c0146d6e96
-          status=$(.specify/extensions/squad/scripts/status.sh)
-          echo "$status"
-          jq -e '.round == 2 and .lens_files == 1 and .confirmed == 0 and .forks == 0 and .unresolved == 0' <<< "$status"
-          task_setup=$(.specify/scripts/bash/setup-tasks.sh --json)
-          jq '{FEATURE_DIR, TASKS_TEMPLATE, AVAILABLE_DOCS}' <<< "$task_setup"
-          test -z "$(git status --porcelain)"
+          tooling/speckit/bin/scope-check.sh analyze 2fceb5dd95b699b31ba826b44ae2caf8df87a417
+          tooling/speckit/bin/scope-check.sh planner d9df4474cca1d39dbfe7c4069b20655ba117d2b4
+          result=$(.specify/extensions/squad/scripts/analysis-status.sh)
+          echo "$result"
+          jq -e '.present and .critical == 0 and .high == 0 and .coverage == "100"' <<< "$result"
+          units=$(.specify/extensions/story/scripts/units.sh)
+          echo "$units"
+          jq -e 'map(.phase) == [1,2,3] and (map(.total)|add) == 15' <<< "$units"
