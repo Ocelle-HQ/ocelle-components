@@ -46,6 +46,7 @@ Test the following inputs (JavaScript string escapes denote actual characters), 
 | `"👩‍💻"` | `"👩‍💻"` (one joined grapheme) |
 | `"   "`, `"ABC"`, `"A B"` | ordinary |
 | `"\u200B"`, `"\u2060"`, `"A\u200B"` | ordinary because at least one cluster is entirely default-ignorable |
+| `"\u2800"`, `"\u2800\uFE0F"`, `"A\u2800"` | ordinary because one cluster contains only Braille Pattern Blank or default-ignorable code points |
 | `"\u0007"`, `"A\u0000"` | ordinary because the trimmed value contains a Cc character |
 
 The standalone fixture and example do not implement account content or popup behavior.
