@@ -1,0 +1,36 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The planned browser fixtures cannot kill mutations in recipe logic"
+    evidence:
+      - artifact: "plan.md § Project Structure assigns host-facing transitions to storybook/stories/settings-dialog.ts and places behavior coverage in the browser test suite."
+      - code: "gates/lib/mutation/ranges.ts:27-45 includes render modules under storybook/stories. vitest.mutation.config.ts:1-11 and its excluded set omit elements-browser and storybook-integration; vitest.config.ts:275-288 defines the in-process Storybook projects."
+    claim: |
+      Covering the recipe through the cited strict-CSP and built Storybook fixtures alone leaves the new transition and rendering code outside the tests run on active mutants. Mutation coverage then fails even when the real-browser scenarios pass.
+    remedies:
+      - "Plan in-process tests that import and exercise the actual recipe module and its state transitions in a mutation-enabled Storybook project, while retaining the strict-CSP and built Storybook browser checks. Verify the gate selects the module and kills mutations in the changed source."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 2
+    title: "Visual and axe gates can pass against a closed dialog"
+    evidence:
+      - artifact: "plan.md § Constitution Check calls for pinned light and dark baselines, and quickstart.md steps 1–3 describe opening the recipe and then navigating or dismissing it."
+      - code: "gates/bin/axe.ts:48-74 loads and settles the initial story with optional pointer handling before it audits. storybook/stories/dialog.stories.ts:2-18 renders the modal open for top-layer capture."
+    claim: |
+      The plan does not pin an initially open story state for the capture or audit. A closed story showing only its opener can pass both gates without exposing the panel, disclosures, or detail to either one. An interactive opener story alone would leave the essential content outside these checks.
+    remedies:
+      - "Specify initially open landing and representative long-detail states for light and dark captures and axe inspection, including an expanded category so child navigation is exposed. Keep a user-opened path in the interaction coverage and assert the modal is present in the audited examples."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 2
+    title: "The first runnable red fixture needs a recorded scaffold"
+    evidence:
+      - artifact: "plan.md § Design starts test-first with the stable shell and landing-to-detail navigation and § Project Structure puts the composition and stylesheet in new files."
+      - code: "packages/elements/test/browser/pane-action-footer.test.ts:13-16 and :26-52 build assets from the recipe sources referenced by URL. .claude/skills/speckit-story-implement/SKILL.md:36-50 requires red failure on missing behavior rather than missing modules, syntax or setup."
+    claim: |
+      Following the referenced browser fixture directly requires the recipe module and stylesheet before the first red run. A nonexistent build input, story index entry, or loaded fixture prevents any behavior assertion from running. The plan does not identify how to get a valid mount and asset pipeline at the first red checkpoint.
+    remedies:
+      - "Schedule a recorded neutral scaffold for the new recipe assets before the first red commit. Pin runnable test fixtures and focused selectors in the plan, and require the initial and replayed red logs to reach the intended assertions on the mounted fixture, rather than fail at build, load, or missing story lookup."

@@ -1,0 +1,15 @@
+# Squad round 1: refute
+
+| ID | Verdict | Kind | Decision | Reason |
+|----|---------|------|----------|--------|
+| PLAN-A11Y-SECURITY-1-001 | confirmed | fix | - | The navigation item places its current state on the internal anchor. The disclosure hides that anchor with the child list. The contract retains the detail but gives no persistent visible or accessible indication. Keep category and section context in the detail and verify it with the list collapsed. |
+| PLAN-A11Y-SECURITY-1-002 | confirmed | fix | - | The inline scroller's public label supplies a group name only while it overflows. The same overflow adds its own Tab stop. Name the scroller, place it after the first detail action in sequential focus order, and verify its labeled keyboard behavior when it overflows. |
+| PLAN-A11Y-SECURITY-1-003 | confirmed | fix | - | The overlay measures its own body and the inline scroller operates on a different axis. The desktop detail pane has no planned keyboard access for its independent vertical overflow. Define and verify a keyboard route to scroll long detail while preserving the first-action Tab order and access to Close. |
+| PLAN-CORRECTNESS-1-001 | duplicate | - | - | PLAN-A11Y-SECURITY-1-001 covers the hidden current indicator and the required persistent detail context. |
+| PLAN-CORRECTNESS-1-002 | confirmed | fix | - | Overlay panel and body styles allow vertical overflow, and the plan bounds only the desktop content pane. Bound both columns in the split layout, let the long navigation scroll independently, and verify destination reachability and fixed header geometry in a wide, shallow viewport. |
+| PLAN-CORRECTNESS-1-003 | confirmed | fix | - | The quickstart checks the page and dialog bounds, so internally clipped choices would go undetected. SC-004 requires reaching panel content without horizontal scrolling. Make the inline choices reflow in the specified cases and verify all choices are reachable. |
+| PLAN-FRESH-1-001 | duplicate | - | - | PLAN-A11Y-SECURITY-1-001 covers the hidden current indicator, including opening a detail while its category is already collapsed. |
+| PLAN-FRESH-1-002 | duplicate | - | - | PLAN-CORRECTNESS-1-002 covers independent navigation overflow and access to the last destination. |
+| PLAN-TESTABILITY-1-001 | confirmed | fix | - | The recipe source is within the mutation ranges. The proposed browser projects are excluded from the mutation configuration. Add tests in a mutation-enabled project that exercise the shared module, and verify changed recipe code is selected by the applicable mutation gate. |
+| PLAN-TESTABILITY-1-002 | confirmed | fix | - | The axe gate audits the settled initial story and does not navigate through an opener. Plan open landing and detail examples with an expanded category for axe and pinned visual captures. Retain the user-opened flow for interaction verification. |
+| PLAN-TESTABILITY-1-003 | confirmed | fix | - | The cited browser fixture bundles an existing recipe before it can mount. Plan and record a neutral fixture scaffold before red so the first run and replay reach assertions on missing behavior with all source assets available. |

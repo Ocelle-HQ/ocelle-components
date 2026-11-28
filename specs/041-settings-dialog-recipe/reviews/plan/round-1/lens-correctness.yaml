@@ -1,0 +1,36 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "Collapsed navigation can hide the only current-destination indicator"
+    evidence:
+      - artifact: "spec.md FR-005 and Edge Cases require an indicated current destination that stays selected when its category collapses. plan.md Design puts children inside the disclosure and says only to keep destination separate from expansion."
+      - code: "packages/elements/src/ocelle-nav-item.ts:105 and :156-165 apply the visible and programmatic current state to the link itself. packages/elements/src/ocelle-disclosure.ts:266-268 puts the default-slot links inside a native details panel which is hidden when collapsed."
+    claim: |
+      After the user selects a section and collapses its category, the plan can keep the destination in state while hiding the only current indicator. A destination record by itself does not preserve an observable current state in this allowed combination.
+    remedies:
+      - "Specify a persistent visible and programmatic current-destination indication in the detail panel that stays available when its navigation link is hidden. Add a check that selects a section, collapses its category and verifies both the retained panel and the observable current indication."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "A wide viewport with tall host navigation can scroll the entire dialog"
+    evidence:
+      - artifact: "spec.md FR-002 requires stable dialog geometry and a reachable Close while the content pane scrolls, and FR-007 requires reachability with enlarged text. plan.md Design bounds the content pane but addresses navigation-driven overflow only on the narrow stacked path."
+      - code: "packages/elements/src/overlay.ts:116-145 caps the native panel, allows its own vertical overflow and gives the header a nonshrinking flex size. Lines 194-200 give the body a nonzero minimum and vertical overflow."
+    claim: |
+      A wide layout can still have short available block space or tall navigation from expanded categories and wrapped labels. The content pane's bound alone does not constrain the navigation column or isolate its scrolling. Inherited body or panel scrolling can move the split layout, and when panel scrolling occurs Close can leave the viewport.
+    remedies:
+      - "Define the split grid's bounded block size and the navigation column's own vertical overflow behavior, keeping the outer frame and Close stationary. Add a browser scenario at wide inline size with constrained block size or enlarged text, expanded navigation and long detail to verify both pane scroll owners and the fixed frame."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "Inline scroller behavior at 320 CSS pixels conflicts with the reflow criterion"
+    evidence:
+      - artifact: "spec.md SC-004 calls for reaching navigation, panel contents and Close without horizontal scrolling. plan.md Design and research.md Scroll axes use the inline scroller for settings choices. quickstart.md step 4 checks only page and dialog horizontal overflow."
+      - code: "packages/elements/src/ocelle-scroller.ts:1-4 and :13-17 describe a horizontal overflow region and overflow-dependent tab stop."
+    claim: |
+      The verification can pass while settings choices are clipped inside the scroller and reachable only through horizontal movement. This would leave SC-004 unproved, especially with enlarged labels.
+    remedies:
+      - "Specify a reflowing presentation for all settings choices at narrow widths and enlarged text, keeping the scroller as the wide-layout example. Verify that every choice is reachable without horizontal scrolling in those reflow cases, including inside the scroller or its replacement."
