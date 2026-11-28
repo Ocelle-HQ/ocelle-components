@@ -14,17 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 4d964d422a509869583a05d657879977a1641597
+          ref: 1451b45ba68a5780693d69935e8a87f9c7419fc6
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify exact task status and phase inventory
+      - name: Pin the first implementation phase
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "4d964d422a509869583a05d657879977a1641597"
+          test "$(git rev-parse HEAD)" = "1451b45ba68a5780693d69935e8a87f9c7419fc6"
           test -z "$(git status --porcelain)"
-          result=$(.specify/extensions/squad/scripts/analysis-status.sh)
+          .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
+          result=$(.specify/extensions/story/scripts/base.sh 1)
           echo "$result"
-          jq -e '.present and .critical == 0 and .high == 0 and .coverage == 100' <<< "$result"
-          units=$(.specify/extensions/story/scripts/units.sh)
-          echo "$units"
-          jq -e 'map(.phase) == [1,2,3] and (map(.total)|add) == 15' <<< "$units"
+          jq -e --arg sha '1451b45ba68a5780693d69935e8a87f9c7419fc6' '.phase == "1" and .base == $sha' <<< "$result"
+          test "$(cat specs/038-shell-chrome-alignment/reviews/phase-1/base.sha)" = "1451b45ba68a5780693d69935e8a87f9c7419fc6"
