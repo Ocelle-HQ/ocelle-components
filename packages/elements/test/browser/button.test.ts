@@ -1,7 +1,7 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { busyNavigationScenarios, busyScenarios } from "../scenarios/busy.ts";
-import { chromeActionScenarios, initialsScenarios, buttonScenarios } from "../scenarios/button.ts";
+import { chromeActionScenarios, initialsScenarios, initialsAfterWhitespaceUpdate, initialsWhitespaceCases, buttonScenarios } from "../scenarios/button.ts";
 import { linkNavigationScenarios, linkScenarios } from "../scenarios/link.ts";
 import type { Navigation, Outcome } from "../scenarios/link.ts";
 import { fixtureDriver } from "./driver.ts";
@@ -119,6 +119,17 @@ describe("Initials account button on the strict-CSP fixture", { timeout: 60_000 
     const observed = await run(fixtureDriver(page.page, page.log));
     const recorded = await page.finish();
     expect(observed, "named button and visible initials").toEqual(expected);
+    expect(recorded).toEqual(clean);
+  });
+});
+
+describe("Unicode whitespace boundaries of initials on the strict-CSP fixture", { timeout: 60_000 }, () => {
+  it.each(initialsWhitespaceCases)("$name", async ({ inputs, expectedText }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "button.html", ["ocelle-elements.js", "axe.js"]);
+    const observed = await initialsAfterWhitespaceUpdate(fixtureDriver(page.page, page.log), inputs);
+    const recorded = await page.finish();
+    expect(observed, "Unicode White_Space trimming and full-cluster visibility").toEqual(inputs.map(() => ({ before: "W", text: expectedText, plate: expectedText !== null, name: "Account actions" })));
     expect(recorded).toEqual(clean);
   });
 });
