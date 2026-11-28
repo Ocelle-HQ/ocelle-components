@@ -36,24 +36,15 @@ export function choosePopoverRegion(bounds: PopoverRect, anchor: PopoverRect, op
   }) ?? { ...bounds, side: "viewport" };
 }
 
-/** Clamp the actual rendered box after the selected region's size cap has been applied. */
+/** Clamp the measured box inside the selected region, aligning to the anchor's logical start. */
 export function positionPopover(
-  region: PlacementRegion,
+  region: PopoverRect,
   anchor: PopoverRect,
   { width, height }: { readonly width: number; readonly height: number },
-  { preferred, rtl, gap }: Pick<PlacementOptions, "preferred" | "rtl" | "gap">,
+  rtl: boolean,
 ): { readonly left: number; readonly top: number } {
-  let left = rtl ? anchor.right - width : anchor.left;
-  let top = anchor.top;
-  switch (region.side) {
-    case "above": top = region.bottom - height; break;
-    case "below": top = region.top; break;
-    case "left": left = region.right - width; break;
-    case "right": left = region.left; break;
-    case "viewport": top = preferred === "above" ? anchor.top - gap - height : anchor.bottom + gap; break;
-  }
   return {
-    left: clamp(left, region.left, region.right - width),
-    top: clamp(top, region.top, region.bottom - height),
+    left: clamp(rtl ? anchor.right - width : anchor.left, region.left, region.right - width),
+    top: clamp(anchor.top, region.top, region.bottom - height),
   };
 }

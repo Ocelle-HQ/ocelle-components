@@ -24,17 +24,16 @@ function pixels(value: string): number {
 function viewportBounds(view: Window, gutter: number): PopoverRect {
   const { clientWidth, clientHeight } = view.document.documentElement;
   const visible = view.visualViewport;
-  if (visible !== null) {
-    const { offsetLeft, offsetTop, width, height } = visible;
-    const left = Math.max(0, offsetLeft);
-    const top = Math.max(0, offsetTop);
-    const right = Math.min(clientWidth, offsetLeft + width);
-    const bottom = Math.min(clientHeight, offsetTop + height);
-    if ([offsetLeft, offsetTop, width, height].every(Number.isFinite) && right > left && bottom > top) {
-      return { left: left + gutter, top: top + gutter, right: right - gutter, bottom: bottom - gutter };
-    }
-  }
-  return { left: gutter, top: gutter, right: clientWidth - gutter, bottom: clientHeight - gutter };
+  const offsetLeft = visible?.offsetLeft ?? 0;
+  const offsetTop = visible?.offsetTop ?? 0;
+  const width = visible?.width ?? clientWidth;
+  const height = visible?.height ?? clientHeight;
+  return {
+    left: Math.max(0, offsetLeft) + gutter,
+    top: Math.max(0, offsetTop) + gutter,
+    right: Math.min(clientWidth, offsetLeft + width) - gutter,
+    bottom: Math.min(clientHeight, offsetTop + height) - gutter,
+  };
 }
 
 function flatParent(element: Element): Element | null {
@@ -115,6 +114,9 @@ export class OcelleAnchoredPopover extends LitElement {
       display: none;
       box-sizing: border-box;
       position: fixed;
+      inset: auto;
+      margin: 0;
+      width: max-content;
       max-inline-size: calc(100% - 2 * var(--ocelle-gutter));
       max-block-size: calc(100% - 2 * var(--ocelle-gutter));
       scroll-margin-top: var(--ocelle-gutter);
@@ -273,6 +275,7 @@ export class OcelleAnchoredPopover extends LitElement {
     if (open !== undefined) {
       open.listeners.abort();
       open.view.cancelAnimationFrame(open.frame);
+      // Stryker disable next-line StringLiteral: equivalent. Both the empty value and the invalid generated declaration clear this CSSOM rule.
       open.geometry.cssText = "";
     }
   }
@@ -308,16 +311,9 @@ export class OcelleAnchoredPopover extends LitElement {
     const maxWidth = bounds.right - bounds.left;
     if (maxWidth < minimumWidth || bounds.bottom - bounds.top < minimumHeight) return false;
 
-    // Reset native centering once before writing anchored coordinates.
-    if (open.maxWidth === undefined) {
-      open.geometry.inset = "auto";
-      open.geometry.margin = "0";
-      open.geometry.width = "max-content";
-    }
-
     // All sides share the viewport's inline cap, so the previous side cannot change which adjacent side fits.
     if (open.maxWidth !== maxWidth) {
-      open.geometry.maxWidth = `${String(maxWidth)}px`;
+      open.geometry.setProperty("max-width", `${String(maxWidth)}px`);
       open.maxWidth = maxWidth;
     }
     const anchor = trigger.getBoundingClientRect();
@@ -326,16 +322,16 @@ export class OcelleAnchoredPopover extends LitElement {
     const region = choosePopoverRegion(bounds, anchor, options);
     const maxHeight = region.bottom - region.top;
     if (open.maxHeight !== maxHeight) {
-      open.geometry.maxHeight = `${String(maxHeight)}px`;
+      open.geometry.setProperty("max-height", `${String(maxHeight)}px`);
       open.maxHeight = maxHeight;
     }
-    const position = positionPopover(region, anchor, surface.getBoundingClientRect(), options);
+    const position = positionPopover(region, anchor, surface.getBoundingClientRect(), options.rtl);
     if (open.left !== position.left) {
-      open.geometry.left = `${String(position.left)}px`;
+      open.geometry.setProperty("left", `${String(position.left)}px`);
       open.left = position.left;
     }
     if (open.top !== position.top) {
-      open.geometry.top = `${String(position.top)}px`;
+      open.geometry.setProperty("top", `${String(position.top)}px`);
       open.top = position.top;
     }
     return true;
@@ -349,13 +345,6 @@ export class OcelleAnchoredPopover extends LitElement {
     if (path.slice(0, boundary).some(ownsCloseRequest)) return;
 
     if (event.key === "Tab") {
-      // An immediate Tab still enters the panel if it arrives before the first animation frame.
-      const surface = this.#surface;
-      const trigger = this.#trigger;
-      if (open.left === undefined && surface?.matches(":popover-open") === true && trigger !== null && !this.#place(open, trigger, surface)) {
-        this.#hide(false);
-        return;
-      }
       open.tab = event;
       return;
     }
