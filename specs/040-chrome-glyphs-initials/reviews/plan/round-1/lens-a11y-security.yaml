@@ -1,0 +1,16 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 2
+    title: "The initials contrast check does not bind the rendered ink and SVG fill to the audited pair"
+    evidence:
+      - artifact: "plan.md § Phase 2 asks for 'font-size, weight and colour tokens' and quickstart.md § Initials trigger asks to inspect the themes. Neither identifies the expected ink/fill pair or requires a measured contrast assertion."
+      - code: "packages/tokens/src/source.ts:84–92 defines color-accent and color-on-accent and declares the latter's text contrast on the former. The token declaration cannot establish which colours the component actually renders."
+    claim: |
+      An implementation can use the theme-dependent body ink for the decorative text. It will look dark in light mode but become light in dark mode. Token validation still checks the declared on-accent pair, and checking the accessible name of the enclosing button does not exercise the painted initials. Principle III requires automated text contrast verification.
+    remedies:
+      - "Specify color-on-accent for enabled initials and color-accent for the SVG circle. In each normal theme assert the computed HTML text color and SVG fill match those resolved tokens and run gate:contrast for their declared pair. Retain separate system-colour assertions for forced colours."

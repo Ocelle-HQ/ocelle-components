@@ -36,6 +36,7 @@
 //   beside the labelled cases above, an icon-only button's icon (default, compact, busy) has the block-centre of a
 //   native `<button>`'s svg in the same line; plant: the unscoped `.icon-row > .label { align-self: baseline }` in
 //   place of the scoped `.icon-row:not(.bare) > .label` rule.
+import { expectedDrawing } from "../icons-expected.ts";
 import { tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
 import type { Box, Driver, EventRecord, Palette } from "./driver.ts";
@@ -424,6 +425,56 @@ const flushCases = [
 export async function meaningful(driver: Driver, id: string): Promise<unknown[]> {
   return (await driver.ax(id)).filter((node) => node.role !== "generic" || node.name !== "");
 }
+
+const chromeActions = ["Inbox", "History", "Settings", "Notifications", "Appearance"] as const;
+
+export const chromeActionScenarios: readonly Scenario[] = chromeActions.map((label) => ({
+  name: `Chrome action ${label} has a decorative drawing, keyboard focus and one intent per gesture across palettes and at twice the root size`,
+  async run(driver) {
+    const name = label.toLowerCase();
+    const original = await driver.viewportSize();
+    const observations = [];
+    try {
+      await driver.viewport(320, 800);
+      for (const mode of ["light", "dark", "forced"] as const) {
+        await driver.mount(`<div class="on-chrome"><ocelle-icon id="known" name="close"></ocelle-icon><button id="start">Start</button>
+          <ocelle-button id="action" flush ground="chrome" label="${label}"><ocelle-icon id="glyph" slot="icon" name="${name}"></ocelle-icon></ocelle-button></div>`);
+        await driver.rules(groundRules + " html { font-size: 200%; }");
+        await driver.theme(mode === "dark" ? "dark" : "light");
+        await driver.forcedColors(mode === "forced" ? "active" : "none");
+        await driver.events("action", [activate]);
+        await driver.focus("start");
+        await driver.press("Tab");
+        const focused = await driver.focusVisible("action", control);
+        const outline = await driver.computed("action", "outline-style", control);
+        await driver.press("Enter");
+        const enter = dispatches(await driver.takeEvents(), activate, "action");
+        await driver.press(" ");
+        const space = dispatches(await driver.takeEvents(), activate, "action");
+        const box = await driver.box("action");
+        const paints = await driver.paints("glyph");
+        const ink = await driver.computed("action", "color", control);
+        observations.push({
+          positiveControl: await driver.drawing("known"), drawing: await driver.drawing("glyph"),
+          nodes: await meaningful(driver, "action"), focused, ring: outline !== "none",
+          fits: box.x >= 0 && box.x + box.width <= 320, targetHeight: box.height,
+          visibleStroke: paints.length > 1 && paints.every((part) => part.stroke === ink),
+          enter, space,
+        });
+      }
+      return observations;
+    } finally {
+      await driver.forcedColors("none");
+      await driver.theme(null);
+      await driver.viewport(original.width, original.height);
+    }
+  },
+  expected: ["light", "dark", "forced"].map(() => ({
+    positiveControl: expectedDrawing("close"), drawing: expectedDrawing(label.toLowerCase()),
+    nodes: [{ role: "button", name: label }], focused: true, ring: true, fits: true,
+    targetHeight: 88, visibleStroke: true, enter: 1, space: 1,
+  })),
+}));
 
 export const buttonScenarios: readonly Scenario[] = [
   {
@@ -986,3 +1037,144 @@ export const forwardedIconScenarios: readonly Scenario[] = [
     expected: { controls: [{ role: "button", name: "S" }], axe: [] },
   },
 ];
+
+/** Observe the rendered plate independently of the public initials attribute. */
+export const initialsPlate = '[aria-hidden="true"] svg circle';
+const initialsText = ".initials-text";
+const systemPaints = ["Canvas", "CanvasText", "ButtonFace", "ButtonText", "Highlight", "HighlightText"] as const;
+const accountNodes = [{ role: "button", name: "Account actions" }];
+const account = '<ocelle-button id="account" flush ground="chrome" label="Account actions" initials="WW"> </ocelle-button>';
+const invalidInitials = ["   ", "ABC", "A B", "\u200B", "\u2060", "A\u200B", "\u2800", "\u2800\uFE0F", "A\u2800", "\u0007", "A\u0000", undefined];
+// CGJ followed by a combining acute, and A followed by a variation selector, each form one cluster.
+const validInitials = ["W", "WW", "  e\u0301W  ", "👩‍💻", "\u034F\u0301", "A\uFE0F"];
+
+async function hasPlate(driver: Driver): Promise<boolean> {
+  return (await driver.box("account", initialsPlate)).width > 0;
+}
+
+export const initialsScenarios: readonly Scenario[] = [
+  {
+    name: "Initials preserve exact visible graphemes, reflect property changes and restore ordinary presentation on each rejected input",
+    async run(driver) {
+      await driver.mount(account);
+      const valid = [];
+      for (const raw of validInitials) {
+        await driver.setProperty("account", "initials", raw);
+        valid.push({ reflected: await driver.attribute("account", "initials"), text: await driver.propertyIn("account", initialsText, "textContent"), plate: await hasPlate(driver) });
+      }
+      const transitions = [];
+      for (const raw of invalidInitials) {
+        await driver.setProperty("account", "initials", "  e\u0301W  ");
+        const before = await driver.propertyIn("account", initialsText, "textContent");
+        await driver.setProperty("account", "initials", raw);
+        transitions.push({ before, plate: await hasPlate(driver), ink: (await driver.box("account", initialsText)).width > 0, nodes: await meaningful(driver, "account") });
+      }
+      return { valid, transitions, cleared: await driver.attribute("account", "initials") };
+    },
+    expected: {
+      valid: validInitials.map((raw) => ({ reflected: raw, text: raw.trim(), plate: true })),
+      transitions: invalidInitials.map(() => ({ before: "e\u0301W", plate: false, ink: false, nodes: accountNodes })), cleared: null,
+    },
+  },
+  {
+    name: "Initials yield to visual content, link and busy, return on the same native button and use the disabled palette",
+    async run(driver) {
+      await driver.mount(account);
+      await driver.theme("light");
+      const initial = await hasPlate(driver);
+      if (!initial) return { named: await meaningful(driver, "account"), initial };
+      await driver.text("account", "Visible");
+      const labelWins = !await hasPlate(driver);
+      await driver.text("account", " ");
+      const whitespace = await hasPlate(driver);
+      await driver.insert("account", '<span slot="icon" id="art">X</span>', "innerHTML");
+      const iconWins = !await hasPlate(driver);
+      await driver.remove("art");
+      const restored = await hasPlate(driver);
+      await driver.setAttribute("account", "aria-label", "Manage profile");
+      const renamed = await meaningful(driver, "account");
+      await driver.setAttribute("account", "href", "#profile");
+      const link = { role: (await driver.axState("account", control)).role, plate: await hasPlate(driver) };
+      await driver.setAttribute("account", "href", null);
+      const ordinary = await driver.box("account", control);
+      await driver.events("account", [activate]);
+      await driver.setAttribute("account", "busy", "");
+      await driver.focus("account");
+      await driver.press("Enter");
+      const busy = { plate: await hasPlate(driver), spinner: (await driver.box("account", ".spinner")).width > 0, target: await driver.box("account", control), events: dispatches(await driver.takeEvents(), activate, "account") };
+      await driver.setAttribute("account", "busy", null);
+      await driver.setAttribute("account", "disabled", "");
+      await driver.callClick("account");
+      return { initial, labelWins, whitespace, iconWins, restored, renamed, link, busy: { ...busy, target: busy.target.width === ordinary.width && busy.target.height === ordinary.height }, disabled: {
+        plate: await hasPlate(driver), state: (await driver.axState("account", control)).disabled, events: dispatches(await driver.takeEvents(), activate, "account"),
+        fill: await driver.computed("account", "fill", initialsPlate), ink: await driver.computed("account", "color", initialsText),
+      } };
+    },
+    expected: { initial: true, labelWins: true, whitespace: true, iconWins: true, restored: true, renamed: [{ role: "button", name: "Manage profile" }], link: { role: "link", plate: false }, busy: { plate: false, spinner: true, target: true, events: 0 }, disabled: { plate: true, state: true, events: 0, fill: colour("disabled-bg", "light"), ink: colour("disabled-ink", "light") } },
+  },
+  ...([1280, 320].flatMap((width) => [16, 32].map((root) => ({ width, root })))).map(({ width, root }): Scenario => ({
+    name: `Initials standalone at ${String(width)} px and ${String(root)} px root retain paint, text, focus and keyboard activation across palettes`,
+    async run(driver) {
+      const original = await driver.viewportSize();
+      const observations = [];
+      try {
+        await driver.viewport(width, 800);
+        for (const mode of ["light", "dark", "forced"] as const) {
+          await driver.mount('<div class="on-chrome"><button id="before">Before</button>' + account + '<span id="scale"></span></div>' + systemPaints.map((name) => `<span hidden id="probe-${name}"></span>`).join(""));
+          await driver.rules(groundRules + ` html { font-size: ${String(root / 16 * 100)}%; } #scale { font-size: 1rem; }` + systemPaints.map((name) => `#probe-${name} { forced-color-adjust: none; color: ${name}; }`).join(" "));
+          await driver.theme(mode === "dark" ? "dark" : "light");
+          await driver.forcedColors(mode === "forced" ? "active" : "none");
+          await driver.events("account", [activate]);
+          await driver.focus("before");
+          await driver.press("Tab");
+          const focused = await driver.focusVisible("account", control);
+          await driver.press("Enter");
+          const enter = dispatches(await driver.takeEvents(), activate, "account");
+          await driver.press(" ");
+          const space = dispatches(await driver.takeEvents(), activate, "account");
+          const target = await driver.box("account", control);
+          const circle = await driver.box("account", initialsPlate);
+          const text = await driver.box("account", initialsText);
+          if (circle.width === 0) return { named: await meaningful(driver, "account"), focused, enter, space, missingPlate: true };
+          const ink = await driver.computed("account", "color", initialsText);
+          const fill = await driver.computed("account", "fill", initialsPlate);
+          const stroke = await driver.computed("account", "stroke", initialsPlate);
+          const accent = await driver.resolveColour("var(--ocelle-color-accent)");
+          const onAccent = await driver.resolveColour("var(--ocelle-color-on-accent)");
+          const forcedPaint = await Promise.all(systemPaints.map((name) => driver.computed(`probe-${name}`, "color")));
+          const outline = await driver.computed("account", "outline-color", control);
+          const centred = (a: Box, b: Box): boolean => Math.abs(a.x + a.width / 2 - b.x - b.width / 2) <= 1 && Math.abs(a.y + a.height / 2 - b.y - b.height / 2) <= 1;
+          observations.push({ nodes: await meaningful(driver, "account"), focused, enter, space, root: await driver.computed("scale", "font-size"),
+            target: [target.width, target.height], ring: Number.parseFloat(await driver.computed("account", "outline-width", control)) > 0,
+            fits: await driver.scrollWidth() <= width && circle.width > 0 && circle.width === circle.height && text.width > 0 && text.width <= circle.width && text.height <= circle.height && circle.width < target.width && centred(circle, target) && centred(text, circle),
+            paint: mode === "forced" ? forcedPaint.includes(ink) && forcedPaint.includes(fill) && forcedPaint.includes(stroke) && forcedPaint.includes(outline) && ink !== fill && stroke !== fill : ink === onAccent && fill === accent,
+          });
+        }
+        return observations;
+      } finally {
+        await driver.forcedColors("none");
+        await driver.theme(null);
+        await driver.viewport(original.width, original.height);
+      }
+    },
+    expected: Array.from({ length: 3 }, () => ({ nodes: accountNodes, focused: true, enter: 1, space: 1, root: `${String(root)}px`, target: [2.75 * root, 2.75 * root], ring: true, fits: true, paint: true })),
+  })),
+];
+
+/** NEXT LINE is Unicode White_Space. The zero-width no-break space is default-ignorable, but not White_Space. */
+export const initialsWhitespaceCases = [
+  { name: "trims leading and trailing NEXT LINE before rejecting controls", inputs: ["\u0085A", "A\u0085", " \u0085A\u0085 "], expectedText: "A" },
+  { name: "rejects a leading or trailing zero-width no-break space cluster", inputs: ["\uFEFFA", "A\uFEFF"], expectedText: null },
+] as const;
+
+export async function initialsAfterWhitespaceUpdate(driver: Driver, inputs: readonly string[]): Promise<unknown[]> {
+  await driver.mount(account);
+  const observed = [];
+  for (const raw of inputs) {
+    await driver.setProperty("account", "initials", "W");
+    const before = await driver.propertyIn("account", initialsText, "textContent");
+    await driver.setProperty("account", "initials", raw);
+    observed.push({ before, text: await driver.propertyIn("account", initialsText, "textContent"), plate: await hasPlate(driver), name: (await driver.axState("account", control)).name });
+  }
+  return observed;
+}

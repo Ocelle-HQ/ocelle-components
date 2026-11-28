@@ -414,11 +414,11 @@ describe("serialise(manifest)", () => {
 });
 
 /**
- * The type of `name`: the union of exactly the thirteen names of the set, in the order of spec US2 scenario 1, or
+ * The type of `name`: the union of exactly the eighteen names of the set, in the order of spec US2 scenario 1, or
  * undefined (US2-1, FR-018).
  */
 const unionOfTheSet =
-  '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | undefined';
+  '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | "inbox" | "history" | "settings" | "notifications" | "appearance" | undefined';
 
 type Described = Record<string, unknown>;
 
@@ -468,7 +468,7 @@ async function declared(path: string, includeAttributeTypesAndDefaults = false):
 const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"];
 
 describe("generate(root) on the repository's element source", () => {
-  it("declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1)", async () => {
+  it("declares ocelle-icon with its tag name, class, name (the union of the eighteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1)", async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
@@ -545,7 +545,7 @@ describe("generate(root) on the repository's element source", () => {
       cssProperties: [],
     });
     const members = (icon?.members as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
-    expect(members).toEqual([
+    expect(members, "public icon properties with the full name union").toEqual([
       { kind: "field", name: "name", privacy: "public", type: { text: unionOfTheSet }, default: "undefined", attribute: "name", reflects: true, described: true },
       { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
     ]);
@@ -990,13 +990,14 @@ describe("generate(root) on the repository's element source", () => {
     const variant = '"primary" | "secondary" | "quiet" | undefined';
     const size = '"default" | "compact" | undefined';
     const ground = '"accent-low" | "inset" | "hover-bg" | "state" | "chrome" | undefined';
-    expect(described(button?.members)).toEqual([
+    expect(described(button?.members), "public button properties including reflected initials").toEqual([
       { kind: "field", name: "variant", privacy: "public", type: { text: variant }, default: "undefined", attribute: "variant", reflects: true, described: true },
       { kind: "field", name: "size", privacy: "public", type: { text: size }, default: "undefined", attribute: "size", reflects: true, described: true },
       { kind: "field", name: "flush", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "flush", reflects: true, described: true },
       { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
       { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
       { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      { kind: "field", name: "initials", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "initials", reflects: true, described: true },
       // 012 phase 4 (tasks.md T043, T048; FR-015): busy.
       { kind: "field", name: "busy", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "busy", reflects: true, described: true },
       // 012 phase 3 (tasks.md T033, T037): the link properties.
@@ -1014,6 +1015,7 @@ describe("generate(root) on the repository's element source", () => {
       { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
       { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      { name: "initials", fieldName: "initials", type: { text: "string | undefined" }, default: "undefined", described: true },
       { name: "busy", fieldName: "busy", type: { text: "boolean" }, default: "false", described: true },
       ...["href", "target", "rel", "download"].map((name) => ({ name, fieldName: name, type: { text: "string | undefined" }, default: "undefined", described: true })),
     ]);

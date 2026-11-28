@@ -1,0 +1,18 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 2
+    title: "Braille Pattern Blank still opts into an empty account mark"
+    evidence:
+      - artifact: "spec.md § FR-003 accepts non-whitespace clusters after checking Cc and Default_Ignorable_Code_Point. SC-002 requires legible initials."
+      - code: "Node probe on U+2800: trimmed length 1, Intl.Segmenter cluster count 1, and the union of whitespace, Cc and Default_Ignorable_Code_Point does not match. A fontTools probe of DejaVuSans.ttf maps U+2800 to uni2800 with zero contours."
+    claim: |
+      Braille Pattern Blank encodes a cell with no raised dots. As the sole supplied
+      initial it qualifies for the ochre plate but supplies no visible character.
+      The round-two control-character fix leaves this input accepted.
+    remedies:
+      - "Treat clusters made entirely of U+2800 and/or default-ignorable code points as blank. Include a live transition from visible initials to a lone Braille Pattern Blank and preserve ordinary rendering and the action name."

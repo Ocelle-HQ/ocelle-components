@@ -1056,6 +1056,15 @@
               }
             },
             {
+              "default": "undefined",
+              "description": "Decorative one- or two-grapheme initials for a named button without a slotted icon or label. Reflected.",
+              "fieldName": "initials",
+              "name": "initials",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
               "default": "false",
               "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
               "fieldName": "busy",
@@ -1204,6 +1213,18 @@
               "reflects": true,
               "type": {
                 "text": "boolean"
+              }
+            },
+            {
+              "attribute": "initials",
+              "default": "undefined",
+              "description": "Decorative one- or two-grapheme initials for a named button without a slotted icon or label. Reflected.",
+              "kind": "field",
+              "name": "initials",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
               }
             },
             {
@@ -4298,7 +4319,7 @@
               "fieldName": "name",
               "name": "name",
               "type": {
-                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | undefined"
+                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | \"inbox\" | \"history\" | \"settings\" | \"notifications\" | \"appearance\" | undefined"
               }
             },
             {
@@ -4327,7 +4348,7 @@
               "privacy": "public",
               "reflects": true,
               "type": {
-                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | undefined"
+                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | \"inbox\" | \"history\" | \"settings\" | \"notifications\" | \"appearance\" | undefined"
               }
             },
             {

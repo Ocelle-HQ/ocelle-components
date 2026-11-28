@@ -1,13 +1,13 @@
 // The shared bodies of User Story 2's browser scenarios, the icon set (005 spec US2 scenarios 1 to 4, FR-010, FR-017,
-// FR-018; research.md R-07, R-08, R-11; T032), and, per name of the thirteen, US1-2's box (SC-002) and US1-7's
+// FR-018; research.md R-07, R-08, R-11; T032), and, per name of the eighteen, US1-2's box (SC-002) and US1-7's
 // forced-colour contexts (SC-004; analysis G1). Expected values are written by hand: the drawings from
 // test/icons-expected.ts, the sizes and system colours as in scenarios/icon.ts, the pixel rules of R-08 as measured in
 // reviews/phase-3/spike.md. Every "does not" outcome is observed in the same scenario as the positive outcome it
 // guards (spec § "Does not" outcomes are paired):
 // - no forbidden content (`style`, `id`, `href`, `xlink:href`, `<use>`, `<image>`, `<foreignObject>`, `<script>`,
 //   `on*`; analysis L13) and no paint of a shape's own, beside the icon's exact expected drawing;
-// - no near-miss name draws, beside the thirteen names that do;
-// - the nine non-directional icons are not mirrored, beside the four inline-direction icons that are (plant:
+// - no near-miss name draws, beside the eighteen names that do;
+// - the fourteen non-directional icons are not mirrored, beside the four inline-direction icons that are (plant:
 //   mirroring applied to every icon, which `folder`, `file`, `search` and `copy` catch; spike.md).
 import { expectedDrawing, expectedIcons, iconNames } from "../icons-expected.ts";
 import { differs, equal, flipped } from "../pixels.ts";
@@ -103,7 +103,7 @@ async function wholeBox(driver: Driver, id: string): Promise<unknown> {
 
 export const iconSetScenarios: readonly Scenario[] = [
   {
-    name: "US2-1, US2-2: exactly the thirteen names draw, no near-miss name draws, and no two names draw the same drawing (FR-017)",
+    name: "US2-1, US2-2: exactly the eighteen names draw, no near-miss name draws, and no two names draw the same drawing (FR-017)",
     run: async (driver) => {
       await driver.mount(
         `<p>${iconNames.map((name) => `<ocelle-icon id="set-${name}" name="${name}"></ocelle-icon>`).join("")}</p>` +
@@ -121,8 +121,8 @@ export const iconSetScenarios: readonly Scenario[] = [
       };
     },
     expected: {
-      drawn: ["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"],
-      distinct: 13,
+      drawn: ["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy", "inbox", "history", "settings", "notifications", "appearance"],
+      distinct: 18,
       missesDrawn: [],
     },
   },
@@ -131,10 +131,12 @@ export const iconSetScenarios: readonly Scenario[] = [
       name: `US2-2, US2-3, US1-2, US1-7: ${name} draws its expected drawing on the 24-unit grid with the shared stroke, nothing forbidden, painted inside the box, at the icon size, and in the system colour of each forced-colours context (FR-010, FR-011, FR-015, FR-017, FR-018)`,
       run: async (driver) => {
         await driver.mount(`<p>Icon <ocelle-icon id="icon" name="${name}"></ocelle-icon></p>`);
+        const drawing = await driver.drawing("icon");
+        if (drawing.svg === null) return { drawing };
         const parts = await driver.elements("icon");
         const geometry = await driver.geometry("icon");
         const observed = {
-          drawing: await driver.drawing("icon"),
+          drawing,
           elements: parts.map((part) => part.name),
           forbidden: forbidden(parts),
           ownAttributes: ownAttributes(parts),
@@ -164,7 +166,7 @@ export const iconSetScenarios: readonly Scenario[] = [
     }),
   ),
   {
-    name: "US2-4: under dir=rtl the four inline-direction icons render as their left-to-right capture flipped and differ from it unflipped, while the other nine render as their left-to-right capture (FR-017)",
+    name: "US2-4: under dir=rtl the four inline-direction icons render as their left-to-right capture flipped and differ from it unflipped, while the other fourteen render as their left-to-right capture (FR-017)",
     run: async (driver) => {
       const observed: Record<string, unknown> = {};
       for (const name of iconNames) {

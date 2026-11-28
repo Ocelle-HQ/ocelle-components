@@ -132,7 +132,7 @@ function observe(page: Page): Promise<unknown> {
 }
 
 /** The thirteen names of the set (spec US2 scenario 1), each drawn, unlabelled. */
-const theSet = ["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => ({ name, label: null, drawn: true }));
+const theSet = ["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy", "inbox", "history", "settings", "notifications", "appearance"].map((name) => ({ name, label: null, drawn: true }));
 
 const stories = [
   { id: "elements-ocelle-icon--close", icons: [{ name: "close", label: null, drawn: true }] },
@@ -148,7 +148,7 @@ describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { ti
     for (const theme of ["light", "dark"] as const) {
       it(`${id} in ${theme}: renders its ocelle-icon with the story's name and label, with base.css applied and no request outside the origin`, async () => {
         const { page, outside } = await open(id, theme);
-        expect({ ...((await observe(page)) as object), outside }).toEqual({
+        expect({ ...((await observe(page)) as object), outside }).toStrictEqual({
           theme,
           base: { linked: true, scheme: theme },
           defined: true,
@@ -158,6 +158,27 @@ describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { ti
         await page.close();
       });
     }
+  }
+});
+
+describe("isolated chrome action stories", { timeout: 60_000 }, () => {
+  for (const label of ["Inbox", "History", "Settings", "Notifications", "Appearance"]) {
+    it(`renders the named ${label} action on chrome at 320 CSS px and twice the root text size`, async () => {
+      const { page } = await open(`elements-ocelle-icon--${label.toLowerCase()}-action`, "light", "ocelle-button");
+      try {
+        await page.setViewportSize({ width: 320, height: 800 });
+        await page.addStyleTag({ content: "html { font-size: 200%; }" });
+        const ground = page.locator('#storybook-root [data-token="color-chrome"]');
+        const button = ground.getByRole("button", { name: label, exact: true });
+        expect(await button.count()).toBe(1);
+        expect(await ground.locator(`ocelle-icon[name="${label.toLowerCase()}"] svg > *`).count()).toBeGreaterThan(0);
+        const rect = await button.boundingBox();
+        expect(rect?.height).toBe(88);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+      } finally {
+        await page.close();
+      }
+    });
   }
 });
 
@@ -3335,3 +3356,53 @@ function readStories(file: string): string {
   const url = new URL(`../../stories/${file}`, import.meta.url);
   return existsSync(url) ? readFileSync(url, "utf8") : "";
 }
+
+describe("initials trigger stories", { timeout: 60_000 }, () => {
+  for (const id of ["elements-ocelle-button--initials-trigger", "elements-ocelle-personal-rail--initials-trigger", "elements-ocelle-button--initials-trigger-busy", "elements-ocelle-button--initials-trigger-disabled"]) {
+    it(`${id} renders its named state at narrow and enlarged sizes`, async () => {
+      const index = JSON.parse(readFileSync(join(built.out, "index.json"), "utf8")) as { entries: Record<string, unknown> };
+      expect(Object.hasOwn(index.entries, id), "built initials story").toBe(true);
+      const { page } = await open(id, "light", "ocelle-button[initials]");
+      try {
+        const trigger = page.locator("#storybook-root ocelle-button[initials]");
+        const native = trigger.getByRole("button", { name: /\S/ });
+        expect(await native.count()).toBe(1);
+        const busy = id.endsWith("-busy");
+        expect(await native.getAttribute("aria-busy")).toBe(busy ? "true" : null);
+        expect(await native.isDisabled()).toBe(busy || id.endsWith("-disabled"));
+        const picture = trigger.locator(busy ? ".spinner svg" : '[aria-hidden="true"] svg circle');
+        for (const [width, root] of [[320, 16], [1280, 32], [320, 32]] as const) {
+          await page.setViewportSize({ width, height: 800 });
+          await page.addStyleTag({ content: `html { font-size: ${String(root / 16 * 100)}%; }` });
+          expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).toBe(`${String(root)}px`);
+          expect(await picture.isVisible()).toBe(true);
+          const focusable = !busy && !id.endsWith("-disabled");
+          const observations = [];
+          if (focusable) {
+            await native.focus();
+            await page.keyboard.press("Shift+Tab");
+            await page.keyboard.press("Tab");
+            const geometry = await native.evaluate((button) => {
+              const host = button.getRootNode() as ShadowRoot;
+              const ink = host.querySelector(".initials-text");
+              const range = document.createRange();
+              range.selectNodeContents(ink ?? button);
+              const text = range.getBoundingClientRect();
+              const circle = host.querySelector("circle:not([stroke-dasharray])")?.getBoundingClientRect();
+              return {
+                focused: button.matches(":focus-visible") && Number.parseFloat(getComputedStyle(button).outlineWidth) > 0,
+                fits: circle !== undefined && text.width > 0 && text.left >= circle.left - 1 && text.right <= circle.right + 1 && text.top >= circle.top - 1 && text.bottom <= circle.bottom + 1,
+              };
+            });
+            observations.push(geometry);
+          }
+          expect(observations).toEqual(focusable ? [{ focused: true, fits: true }] : []);
+          expect((await native.boundingBox())?.height).toBe(root * 2.75);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        }
+      } finally {
+        await page.close();
+      }
+    });
+  }
+});

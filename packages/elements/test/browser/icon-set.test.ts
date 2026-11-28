@@ -28,11 +28,13 @@ function started(): { readonly browser: Browser; readonly origin: string } {
   return { browser, origin: served.origin };
 }
 
-describe("ocelle-icon's set on the strict-CSP fixture with the browser build (US2)", { timeout: 120_000 }, () => {
+describe("ocelle-icon's eighteen-name set on the strict-CSP fixture with the browser build (US2)", { timeout: 120_000 }, () => {
   it.each(iconSetScenarios)("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "icon.html");
     const observed = await run(fixtureDriver(page.page, page.log));
-    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+    const recorded = await page.finish();
+    expect(observed, "settled drawing and interaction").toEqual(expected);
+    expect(recorded).toEqual(clean);
   });
 });

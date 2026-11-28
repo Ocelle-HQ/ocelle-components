@@ -1,0 +1,10 @@
+# History fold phase-1 of 040-chrome-glyphs-initials: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/040-chrome-glyphs-initials, d3b65b6555db3993447413caf2755a1f57dbd902).
+975feede5d6efcc1582bce5c6a6031cef3c5c754 6246242245a50822dd86471dc5700d66032288a9
+d3b65b6555db3993447413caf2755a1f57dbd902 10b909cd06499fb0e28c655e2be874da1116a419
+
+# History fold phase-2 of 040-chrome-glyphs-initials: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-2/040-chrome-glyphs-initials, 2566558f9c87573d25814dd4d0b46e509ca12e1d).
+303f034669a010d5f73a596d1d4906767dc53d90 79d9ebb0ae29a4a015f1291d176a9163840f714e
+bf1c0e77600f3344b24ee063dc1758fb88677eb9 406b7804bfcd78838d1a5a065331e7acea86417e
+a763d1ab6376d0b12fc70b7fa2fdfb63489895c3 1dac3aba41d92cfb833cee46cc155f256ce1505b
+d93001b5bdd5e70dc87b939c55c75ecfcf9c4dea 13bcb755309e1cfb8689215ebb8808faa860655c
+2566558f9c87573d25814dd4d0b46e509ca12e1d 43c85adb005bec9d98c295ee952597746f9c9aac

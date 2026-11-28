@@ -174,3 +174,12 @@ export const BusyCompact: StoryObj = {
   name: "Busy, compact",
   render: () => '<p><ocelle-button variant="primary" size="compact" busy>Saving</ocelle-button> <ocelle-button variant="secondary" size="compact" busy>Saving</ocelle-button> <ocelle-button variant="quiet" size="compact" busy>Saving</ocelle-button></p>',
 };
+
+/** A standalone trigger for host-owned account actions, on the chrome surface. */
+function initialsTrigger(state = ""): string {
+  return ground("color-chrome", `<ocelle-button flush ground="chrome" initials="WW" label="Account actions for WW" ${state}></ocelle-button>`);
+}
+
+export const InitialsTrigger: StoryObj = { render: () => initialsTrigger() };
+export const InitialsTriggerBusy: StoryObj = { render: () => initialsTrigger("busy") };
+export const InitialsTriggerDisabled: StoryObj = { render: () => initialsTrigger("disabled") };

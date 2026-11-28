@@ -5,6 +5,10 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Initials account trigger (#91, MINOR).** A named `ocelle-button` can display one or two caller-supplied initials using its reflected `initials` property. It retains the native keyboard and activation behavior in standalone and personal-rail use.
+
+**Shared chrome icons (#91, MINOR).** Named controls can now use the `inbox`, `history`, `settings`, `notifications` and `appearance` glyphs in their decorative icon slots.
+
 **Grouped copyable identifiers (#89). `grouped` and `compact` on `ocelle-copy-field` are a MINOR addition.**
 Hosts can display identifiers in groups of four and optionally show a compact preview with a reveal control. The
 Copy request carries the exact original value in either presentation.

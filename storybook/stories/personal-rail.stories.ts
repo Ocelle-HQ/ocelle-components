@@ -10,6 +10,8 @@
 // Storybook check).
 import type { Meta, StoryObj } from "@storybook/html-vite";
 import "../../packages/elements/src/ocelle-personal-rail.ts";
+import "../../packages/elements/src/ocelle-button.ts";
+import "../../packages/elements/src/ocelle-icon.ts";
 
 const meta: Meta = { title: "Elements/ocelle-personal-rail" };
 export default meta;
@@ -41,3 +43,9 @@ export const HostAriaLabel: StoryObj = { name: "Host aria-label", render: () => 
 export const LabelAndHostAriaLabel: StoryObj = { name: "Label and host aria-label", render: () => rail(' label="Me" aria-label="Other"', primary + account) };
 
 export const BlankHostAriaLabel: StoryObj = { name: "Blank host aria-label", render: () => rail(' label="Me" aria-label=""', primary + account) };
+
+export const InitialsTrigger: StoryObj = {
+  render: () => rail(' label="Personal"', primary +
+    '<ocelle-button slot="bottom" flush ground="chrome" label="Settings"><ocelle-icon slot="icon" name="settings"></ocelle-icon></ocelle-button>' +
+    '<ocelle-button slot="bottom" flush ground="chrome" label="Account actions for WW" initials="WW"></ocelle-button>'),
+};

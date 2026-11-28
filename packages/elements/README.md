@@ -2,7 +2,7 @@
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
 under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has fifty-two elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
+`ocelle-icon`, with a set of eighteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
 a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab stop only while it overflows,
@@ -167,6 +167,11 @@ part or CSS custom property.
 | `search` | no | kitty-mission-ui's Artifact Viewer, replacing its own magnifier glyph (spec-kitty-design#496) |
 | `table` | no | kitty-mission-ui's Artifact Viewer, replacing its own table glyph (spec-kitty-design#496) |
 | `copy` | no | the copy field's control (#14) |
+| `inbox` | no | opening the inbox |
+| `history` | no | reviewing recent activity |
+| `settings` | no | opening settings |
+| `notifications` | no | reading notifications |
+| `appearance` | no | choosing an appearance |
 
 Every drawing is the project's own, on a 24-unit grid with one stroke width, round caps and joins, painted only in
 `currentColor`. `chevron-start`, `chevron-end`, `arrow-start` and `arrow-end` follow the inline direction: under
@@ -1069,6 +1074,10 @@ In forced colours the rail's divider is drawn in a system colour, and a horizont
 navigation landmark, with no other landmark inside it.
 
 ## `ocelle-button`
+
+Use `<ocelle-button flush ground="chrome" initials="WW" label="Account actions for WW"></ocelle-button>` for a named account trigger. The reflected optional `initials` string supplies decorative text on an ochre circle. The host supplies the button’s name independently and handles `ocelle-button-activate` to open its account actions. Including the displayed initials in that name also supports users who speak the visible label.
+
+The button trims surrounding Unicode `White_Space` (including U+0085 NEXT LINE) and displays one or two extended grapheme clusters exactly as supplied. U+FEFF ZERO WIDTH NO-BREAK SPACE stays in the value for the cluster check. Internal whitespace, control characters or a cluster made entirely of default-ignorable characters or U+2800 BRAILLE PATTERN BLANK restore the ordinary presentation. Link mode, a slotted icon or visible default-slot label take precedence. Busy replaces the mark with the spinner. Disabled retains the mark in the disabled palette. In a personal rail place the trigger in `slot="bottom"` after Settings.
 
 ```html
 <ocelle-button>Save</ocelle-button>
