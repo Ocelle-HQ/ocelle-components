@@ -1,0 +1,32 @@
+name: Anchored popover Phase 2 resume
+on:
+  push:
+    branches:
+      - 'ci/036-phase-2-resume'
+permissions:
+  contents: read
+jobs:
+  resume:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      SPECIFY_FEATURE: 036-anchored-popover-pilot
+      SPECIFY_FEATURE_DIRECTORY: specs/036-anchored-popover
+      SPECIFY_FEATURE_NO_PERSIST: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: a6ef9048f9ca30f69a32dd9b55e7d4085f154104
+          fetch-depth: 0
+          persist-credentials: false
+      - shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "a6ef9048f9ca30f69a32dd9b55e7d4085f154104"
+          test -z "$(git status --porcelain)"
+          .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
+          .specify/extensions/story/scripts/units.sh
+          .specify/extensions/story/scripts/verdict.sh 1
+          .specify/extensions/story/scripts/base.sh 2
+          printf 'PHASE_TWO_BASE=%s\n' "$(cat specs/036-anchored-popover/reviews/phase-2/base.sha)"
+          git log -1 --format='PREVIOUS_PHASE_REMAP=%H' --grep='remap evidence SHAs after the history fold'
