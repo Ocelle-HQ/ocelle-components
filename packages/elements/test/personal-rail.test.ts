@@ -2,9 +2,11 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-personal-rail.ts";
+import "../src/ocelle-button.ts";
+import "../src/ocelle-icon.ts";
 import railItems from "./browser/fixtures/rail-items.css?raw";
 import { inProcessDriver } from "./in-process.ts";
-import { personalRailScenarios } from "./scenarios/personal-rail.ts";
+import { personalRailScenarios, initialsRailScenarios } from "./scenarios/personal-rail.ts";
 
 // 011 User Story 4's personal-rail scenarios, in process on the element source (research.md R-13, T042): the shared
 // bodies of scenarios/personal-rail.ts on the in-process driver at the spec's 1280 × 800 px viewport, with the
@@ -29,5 +31,12 @@ afterEach(async () => {
 describe("ocelle-personal-rail, in process (011 US4)", () => {
   it.each(personalRailScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
+  });
+});
+
+describe("Initials in the personal rail in process", { timeout: 60_000 }, () => {
+  it.each(initialsRailScenarios)("$name", async ({ run, expected }) => {
+    const observed = await run(driver);
+    expect(observed, "rail geometry, keyboard focus and initials").toEqual(expected);
   });
 });

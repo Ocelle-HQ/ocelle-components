@@ -1,7 +1,7 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { busyNavigationScenarios, busyScenarios } from "../scenarios/busy.ts";
-import { chromeActionScenarios, buttonScenarios } from "../scenarios/button.ts";
+import { chromeActionScenarios, initialsScenarios, buttonScenarios } from "../scenarios/button.ts";
 import { linkNavigationScenarios, linkScenarios } from "../scenarios/link.ts";
 import type { Navigation, Outcome } from "../scenarios/link.ts";
 import { fixtureDriver } from "./driver.ts";
@@ -109,5 +109,16 @@ describe("a busy ocelle-button's link navigation on the strict-CSP fixture with 
     const page = await visit(browser, origin, "button.html", ["ocelle-elements.js", "axe.js", "link-target.html"]);
     const observed = await run(fixtureDriver(page.page, page.log), navigation(page, served, origin));
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
+
+describe("Initials account button on the strict-CSP fixture", { timeout: 60_000 }, () => {
+  it.each(initialsScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "button.html", ["ocelle-elements.js", "axe.js"]);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    const recorded = await page.finish();
+    expect(observed, "named button and visible initials").toEqual(expected);
+    expect(recorded).toEqual(clean);
   });
 });
