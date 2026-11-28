@@ -1,0 +1,55 @@
+{
+  "repository": "Ocelle-HQ/ocelle-components",
+  "pullRequest": 110,
+  "head": "4a4fe0d8df740d0747819af99c0a4a12ada6272b",
+  "base": "b67940a47436a0cc97df09596743fe69c4b24ba0",
+  "testedMerge": "a837ffdd0e44f0886b25ba1174dd9dc6ea329af2",
+  "runId": "46112115759",
+  "attempt": "1",
+  "pin": {
+    "image": "mcr.microsoft.com/playwright",
+    "digest": "sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+    "platform": "linux/amd64",
+    "tag": "v1.64.1-noble",
+    "node": "26.13.0",
+    "browser": "chromium_headless_shell-1248"
+  },
+  "engines": [
+    "docker",
+    "podman"
+  ],
+  "files": [
+    {
+      "name": "elements-ocelle-personal-rail--initials-trigger.light.png",
+      "sha256": "ed1b8374c71a2bb7f138b0d56d4b853d1719d89fdbf91967b86d6db38f1d9397"
+    },
+    {
+      "name": "elements-ocelle-personal-rail--initials-trigger.dark.png",
+      "sha256": "0b6811260f7c4dbe2af43169e0645b8464d15c5a5d22b40fcef83c6d5dd13bdd"
+    },
+    {
+      "name": "elements-ocelle-button--initials-trigger-disabled.light.png",
+      "sha256": "aa5f2bd9ac1702153360f0f73c6cd5c49b39a3cd93df8382bec1edcaa057eab0"
+    },
+    {
+      "name": "elements-ocelle-button--initials-trigger-disabled.dark.png",
+      "sha256": "6973073d41b027f9385a0f466464749c2fc3f15d574a5402b95ee7d43b286558"
+    },
+    {
+      "name": "elements-ocelle-button--initials-trigger-busy.light.png",
+      "sha256": "e62acb07df895c1729ff7c902252366695c507d8666aa36f7e0660a95a141918"
+    },
+    {
+      "name": "elements-ocelle-button--initials-trigger-busy.dark.png",
+      "sha256": "e8f1f571993713bc79b87a77e3d84f8216497001661fef4029c675527bfc8f9f"
+    },
+    {
+      "name": "elements-ocelle-button--initials-trigger.light.png",
+      "sha256": "09a8712bc1415233da4fdb38b3e406d4e0c1fd1215f8d0cb9ab58f68db983a22"
+    },
+    {
+      "name": "elements-ocelle-button--initials-trigger.dark.png",
+      "sha256": "fc06b549116c1e243d2fd7dd1ffa93c03c17eab001699daa81f79096cd4de278"
+    }
+  ]
+}

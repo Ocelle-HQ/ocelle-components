@@ -47,8 +47,9 @@ const graphemes = new Intl.Segmenter();
 
 /** Preserve the caller's spelling, dropping only surrounding whitespace. */
 function visibleInitials(raw: string | undefined): string | undefined {
-  const text = raw?.trim();
-  if (!text || /[\s\p{Cc}]/u.test(text)) return undefined;
+  // Capture the complete non-whitespace run, allowing Unicode White_Space only around it.
+  const text = raw?.match(/^\p{White_Space}*([^\p{White_Space}]+)\p{White_Space}*$/u)?.[1];
+  if (text === undefined || /\p{Cc}/u.test(text)) return undefined;
   let count = 0;
   for (const { segment } of graphemes.segment(text)) {
     if (++count > 2 || /^[\u2800\p{Default_Ignorable_Code_Point}]+$/u.test(segment)) return undefined;
