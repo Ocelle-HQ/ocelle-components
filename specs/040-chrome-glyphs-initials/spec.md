@@ -39,7 +39,7 @@ An Ocelle console user can distinguish and activate a standalone account trigger
 3. **Given** the standalone or rail trigger, **when** the user reaches it by Tab and activates it by Enter or Space, **then** focus remains visible and each activation reaches the host once. The host supplies any subsequent account content or actions.
 4. **Given** a 320 CSS px viewport or 200% text size, **when** the relevant controls render and receive focus, **then** supported initials and glyphs, control boundaries and focus remain visible, with no new overlap or page-width overflow in the verification examples.
 
-5. **Given** a named initials button, **when** its initials change from a padded decomposed letter plus a second letter to a blank, overlong, internally separated or default-ignorable-only cluster value, **then** it first shows the exact trimmed letters, then returns to its ordinary presentation.
+5. **Given** a named initials button, **when** its initials change from a padded decomposed letter plus a second letter to a blank, overlong, internally separated, default-ignorable-only cluster value or a value containing U+0007 BELL, **then** it first shows the exact trimmed letters, then returns to its ordinary presentation with its action name unchanged.
 
 ### Edge Cases
 
@@ -54,7 +54,7 @@ An Ocelle console user can distinguish and activate a standalone account trigger
 - **FR-001**. Provide distinct Inbox, History, Settings, Notifications and Appearance glyphs where the shared set lacks them. Use the set's size, stroke and inherited foreground conventions, and preserve existing glyph behavior.
 - **FR-002**. Demonstrate each glyph on an individual named existing control with visible keyboard focus and decorative glyph content. Verify the existing keyboard behavior for the control's role.
 - **FR-003**. Provide an opt-in initials treatment that renders caller-supplied short initials as dark text on a circular ochre fill in both normal themes. The button retains its independent meaningful name and the initials are decorative to assistive technology.
-After trimming surrounding whitespace, accept one or two Unicode extended grapheme clusters with no internal whitespace. Reject the entire value if any cluster consists entirely of Unicode Default_Ignorable_Code_Point characters. Preserve every code point of an accepted value, including combining marks and joiners. Invalid values use the ordinary presentation.
+After trimming surrounding whitespace, accept one or two Unicode extended grapheme clusters with no internal whitespace. Reject the trimmed value if it contains a Unicode control character (General_Category=Control, Cc) or if any cluster consists entirely of Unicode Default_Ignorable_Code_Point characters. Preserve every code point of an accepted value, including combining marks and joiners. Invalid values use the ordinary presentation.
 
 - **FR-004**. Fit the initials trigger beneath Settings in the existing personal rail bottom group with its standard target footprint, spacing, divider alignment and source order.
 - **FR-005**. Demonstrate the treatment as a standalone trigger with fictional content. Preserve standard button activation so the host can provide its own account actions and content through an anchored popover.

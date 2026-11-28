@@ -37,7 +37,7 @@ Add focused standalone and rail cases through `packages/elements/test/scenarios/
 - `storybook/baselines/elements-ocelle-button--initials-trigger-disabled.light.png`
 - `storybook/baselines/elements-ocelle-button--initials-trigger-disabled.dark.png`
 
-Test the following inputs (JavaScript string escapes denote actual characters), asserting the exact text without normalization for every accepted case. Update the same mounted host from an accepted input to each rejected input and assert that the plate and initials disappear, ordinary rendering returns and the independent action name persists.
+Test the following inputs (JavaScript string escapes denote actual characters), asserting the exact text without normalization for every accepted case. Assign the initials property on the same mounted host, changing it from an accepted input to each rejected input and assert that the plate and initials disappear, ordinary rendering returns and the independent action name persists.
 
 | Input | Rendered initials or ordinary presentation |
 | --- | --- |
@@ -46,6 +46,7 @@ Test the following inputs (JavaScript string escapes denote actual characters), 
 | `"👩‍💻"` | `"👩‍💻"` (one joined grapheme) |
 | `"   "`, `"ABC"`, `"A B"` | ordinary |
 | `"\u200B"`, `"\u2060"`, `"A\u200B"` | ordinary because at least one cluster is entirely default-ignorable |
+| `"\u0007"`, `"A\u0000"` | ordinary because the trimmed value contains a Cc character |
 
 The standalone fixture and example do not implement account content or popup behavior.
 
