@@ -14,21 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: f6f800c8d102b4d93c1cdc87a3df7b0c94d842cd
+          ref: 0ba66195a854fccd47bb5715f9c664bef08fcee3
           fetch-depth: 0
           persist-credentials: false
-      - name: Confirm eight fixed and open the fresh-eye round
+      - name: Check the fresh lens scope
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "f6f800c8d102b4d93c1cdc87a3df7b0c94d842cd"
+          test "$(git rev-parse HEAD)" = "0ba66195a854fccd47bb5715f9c664bef08fcee3"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh verify 0255f6e1c73c7ca25b649a30af8700e2760b38a9
-          status=$(.specify/extensions/squad/scripts/status.sh)
-          echo "$status"
-          jq -e '.round == 1 and .confirmed == 8 and .verify == 1 and .unresolved == 0' <<< "$status"
-          git config user.name "Ocelle Spec Kit proof"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          round=$(.specify/extensions/squad/scripts/round.sh)
-          echo "$round"
-          jq -e '.round == 2 and .lenses == ["fresh"]' <<< "$round"
-          test "$(cat "$SPECIFY_FEATURE_DIRECTORY/reviews/plan/round-2/base.sha")" = "f6f800c8d102b4d93c1cdc87a3df7b0c94d842cd"
+          tooling/speckit/bin/scope-check.sh lens 30923bb52e0e4a5e99189c1697428ea9422a5c8e
+          grep -Fx 'complete: true' specs/039-workflow-studio-compositions/reviews/plan/round-2/lens-fresh.yaml
