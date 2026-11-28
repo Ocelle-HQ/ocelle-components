@@ -7,7 +7,7 @@
 <script type="module" src="anchored-popover.js"></script>
 </head>
 <body>
-<main>
+<main id="interaction-fixture">
   <h1>Compact controls</h1>
   <div id="chrome">
     <button id="before" type="button">Before controls</button>
@@ -27,5 +27,33 @@
   <span id="appearance-probe" hidden></span>
   <span id="panel-probe" hidden></span>
 </main>
+<main id="placement-fixture">
+  <div id="placement-top-clip" class="placement-clip">
+    <ocelle-anchored-popover id="placement-top" label="Top edge options" placement="below">
+      <span slot="trigger" aria-hidden="true">☼</span>
+    </ocelle-anchored-popover>
+  </div>
+  <div id="placement-bottom-clip" class="placement-clip">
+    <ocelle-anchored-popover id="placement-bottom" label="Bottom edge options" placement="above">
+      <span slot="trigger" aria-hidden="true">AR</span>
+    </ocelle-anchored-popover>
+  </div>
+</main>
+<template id="placement-actions">
+  <div class="placement-actions">
+    <button data-first-action type="button"><span>Review the notification delivery schedule</span></button>
+    <button type="button">Appearance</button>
+    <button type="button">Activity history</button>
+    <button type="button">Digest frequency</button>
+    <button type="button">Account details</button>
+    <button type="button">Device alerts</button>
+    <button type="button">Shortcuts</button>
+    <button type="button">Display density</button>
+    <button type="button">Regional settings</button>
+    <button type="button">Accessibility</button>
+    <button type="button">Help and support</button>
+    <button data-last-action type="button">Finish preference review</button>
+  </div>
+</template>
 </body>
 </html>

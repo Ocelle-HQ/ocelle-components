@@ -98,6 +98,126 @@ try {
   // Let the browser hit-test through the slotted initials to the native trigger.
   await page.mouse.click(profileBox.x + profileBox.width / 2, profileBox.y + profileBox.height / 2);
   assert.equal(await profile.locator("[part=surface]").evaluate((element) => element.matches(":popover-open")), true);
+
+
+  await page.mouse.click(profileBox.x + profileBox.width / 2, profileBox.y + profileBox.height / 2);
+  assert.equal(await profile.locator("[part=surface]").evaluate((element) => element.matches(":popover-open")), false);
+
+  const preparePlacement = async (width, height, mode) => {
+    await page.setViewportSize({ width, height });
+    await page.locator("html").evaluate((root, selected) => { root.setAttribute("data-placement-fixture", selected); }, mode);
+    assert.deepEqual(await page.evaluate(() => [innerWidth, innerHeight]), [width, height]);
+  };
+  const waitForFrames = () => page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => { requestAnimationFrame(() => { resolve(undefined); }); });
+  }));
+  const nativeOpen = async (host) => {
+    await host.locator("button[part=trigger]").focus();
+    await page.keyboard.press("Enter");
+    assert.equal(await host.locator("[part=surface]").evaluate((element) => element.matches(":popover-open")), true);
+    await waitForFrames();
+  };
+  const placementGeometry = (host) => host.evaluate((element) => {
+    const anchor = element.shadowRoot.querySelector("[part=trigger]").getBoundingClientRect();
+    const box = element.shadowRoot.querySelector("[part=surface]").getBoundingClientRect();
+    const clip = element.parentElement;
+    const bounds = clip.getBoundingClientRect();
+    const { transform, overflowX, overflowY } = getComputedStyle(clip);
+    return {
+      anchor: { top: anchor.top, bottom: anchor.bottom },
+      box: { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width, height: box.height },
+      clip: { top: bounds.top, bottom: bounds.bottom, transform, overflowX, overflowY },
+      viewport: { width: innerWidth, height: innerHeight },
+    };
+  });
+  const assertPlacement = async (host, edge) => {
+    const { anchor, box, clip, viewport } = await placementGeometry(host);
+    assert.notEqual(clip.transform, "none");
+    assert.deepEqual([clip.overflowX, clip.overflowY], ["hidden", "hidden"]);
+    const preferred = edge === "top" ? box.top >= anchor.bottom - 0.5 : box.bottom <= anchor.top + 0.5;
+    assert.ok(preferred, `the ${edge} fixture preserves the side with usable space`);
+    assert.ok(box.width > 0 && box.height > 0 && box.left >= -0.5 && box.top >= -0.5
+      && box.right <= viewport.width + 0.5 && box.bottom <= viewport.height + 0.5, "the surface stays inside the actual viewport");
+    return clip;
+  };
+  const pointer = async (action) => {
+    const box = await action.boundingBox();
+    assert.ok(box, "a real action has a rendered box");
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+  const documentScroll = () => page.evaluate(() => ({
+    x: scrollX, y: scrollY, width: document.documentElement.scrollWidth, client: document.documentElement.clientWidth,
+  }));
+
+  await preparePlacement(320, 440, "edges");
+  for (const edge of ["top", "bottom"]) {
+    const id = `placement-${edge}`;
+    const host = page.locator(`#${id}`);
+    await nativeOpen(host);
+    const clip = await assertPlacement(host, edge);
+    const first = host.locator("[data-first-action]");
+    const start = await pointer(first);
+    assert.ok(edge === "top" ? start.y > clip.bottom : start.y < clip.top, "the target hit lies beyond the transformed clip");
+    await page.mouse.click(start.x, start.y);
+    assert.equal(await first.getAttribute("data-trusted-clicks"), "1", "the projected action receives a trusted hit beyond the clip");
+    const panel = host.locator("[part=surface]");
+    const capacity = await panel.evaluate((element) => element.scrollHeight - element.clientHeight);
+    assert.ok(capacity > 0, "tall content has a real inner scroll range");
+    const beforeScroll = await documentScroll();
+    assert.equal(beforeScroll.width, beforeScroll.client, "the narrow page has no horizontal overflow");
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.wheel(0, capacity);
+    await page.waitForFunction((hostId) => {
+      const element = document.getElementById(hostId);
+      const panel = element.shadowRoot.querySelector("[part=surface]");
+      const end = element.querySelector("[data-last-action]").getBoundingClientRect();
+      const visible = panel.getBoundingClientRect();
+      return panel.scrollTop > 0 && end.top >= visible.top - 0.5 && end.bottom <= visible.bottom + 0.5;
+    }, id);
+    const last = host.locator("[data-last-action]");
+    const end = await pointer(last);
+    await page.mouse.click(end.x, end.y);
+    assert.equal(await last.getAttribute("data-trusted-clicks"), "1", "inner scrolling makes the final action clickable");
+    assert.deepEqual(await documentScroll(), beforeScroll, "the page did not scroll or widen");
+    await host.locator("button[part=trigger]").focus();
+    await page.keyboard.press("Escape");
+    assert.equal(await panel.evaluate((element) => element.matches(":popover-open")), false);
+  }
+
+  await preparePlacement(520, 520, "edges");
+  const enlargedHost = page.locator("#placement-top");
+  await nativeOpen(enlargedHost);
+  const enlargedAction = enlargedHost.locator("[data-first-action]");
+  const baselineFont = await enlargedAction.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  await page.locator("html").evaluate((root) => { root.setAttribute("data-placement-fixture", "large-text"); });
+  await waitForFrames();
+  assert.deepEqual(await page.evaluate(() => [innerWidth, innerHeight]), [520, 520], "text enlargement does not resize the viewport");
+  const enlarged = await enlargedAction.locator("span").evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return {
+      font: Number.parseFloat(getComputedStyle(element).fontSize),
+      lines: new Set(Array.from(range.getClientRects(), ({ top }) => top)).size,
+    };
+  });
+  assert.ok(baselineFont > 0);
+  assert.equal(enlarged.font, baselineFont * 2, "native action text doubles independently of the viewport");
+  assert.ok(enlarged.lines > 1, "the enlarged label occupies multiple rendered line boxes");
+  await assertPlacement(enlargedHost, "top");
+  const beforeTabs = await documentScroll();
+  assert.equal(beforeTabs.width, beforeTabs.client);
+  const controls = await enlargedHost.locator(".placement-actions button").all();
+  assert.ok(controls.length > 1);
+  for (const action of controls) {
+    await page.keyboard.press("Tab");
+    assert.equal(await hasFocus(action), true, "native Tab reaches every enlarged action");
+  }
+  assert.equal(await controls.at(-1).evaluate((element) => {
+    const style = getComputedStyle(element);
+    return element.matches(":focus-visible") && style.outlineStyle !== "none" && Number.parseFloat(style.outlineWidth) > 0;
+  }), true, "the last enlarged action shows a native keyboard focus outline");
+  assert.deepEqual(await documentScroll(), beforeTabs, "native keyboard scrolling leaves the page unchanged");
+
   assert.deepEqual(errors, [], "no uncaught errors on the actual fixture");
   assert.deepEqual(failedRequests, [], "every fixture asset loads");
   assert.deepEqual(await page.evaluate(() => window.__popoverCspViolations), [], "no policy violations");
