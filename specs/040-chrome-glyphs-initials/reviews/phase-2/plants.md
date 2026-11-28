@@ -1,6 +1,6 @@
 # Plants of phase 2
 
-- base: 303f034669a010d5f73a596d1d4906767dc53d90
+- base: 79d9ebb0ae29a4a015f1291d176a9163840f714e
 - command: OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected 303f034669a010d5f73a596d1d4906767dc53d90
 - exit: 0
 - selection: 21 of 326 Plants
