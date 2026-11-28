@@ -1,0 +1,4 @@
+{"mode":"head","revision":"f4fc2e8bbf2ab1c30b2513fbb0078bfe81440a5f","input":"a7b251bdf59f1a38e5f91830cb47257fbcf7de324adda0bcee3bfbf7a1429835","selected":[{"project":"elements-browser","file":"packages/elements/test/browser/anchored-popover.test.ts"},{"project":"elements (chromium)","file":"packages/elements/test/anchored-popover-placement.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":14.135}
+Failed to resolve dependency: [36mlit/directives/class-map.js[39m, present in client 'optimizeDeps.include'
+Failed to resolve dependency: [36mlit/directives/if-defined.js[39m, present in client 'optimizeDeps.include'
+Failed to resolve dependency: [36mlit/directives/live.js[39m, present in client 'optimizeDeps.include'
