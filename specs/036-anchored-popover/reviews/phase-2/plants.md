@@ -1,6 +1,6 @@
 # Plants of Phase 2
 
-- base: a6ef9048f9ca30f69a32dd9b55e7d4085f154104
+- base: 18b33aecbbcf5ef85296c4bd8f0e328b762adb60
 - candidate: 3ff4e940ae544b0010d0b091602685c858b03823
 - selector: `pnpm run gate:plants -- --affected a6ef9048f9ca30f69a32dd9b55e7d4085f154104 --list`
 - selector exit: 0
