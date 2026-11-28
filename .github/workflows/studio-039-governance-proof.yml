@@ -14,13 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: cb60f78ca275a355f44269e201e653886c54e07f
+          ref: f209b1288700d7022db5d696e9c2e7b13d8f508f
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate all four lens paths
+      - name: Verify scope and the reviewed finding totals
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "cb60f78ca275a355f44269e201e653886c54e07f"
+          test "$(git rev-parse HEAD)" = "f209b1288700d7022db5d696e9c2e7b13d8f508f"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh lens 6f1e735d7898a8a059353c7c27de49ab3058ef2b
-          grep -Fx 'complete: true' specs/039-workflow-studio-compositions/reviews/plan/round-1/lens-*.yaml | test "$(wc -l)" -eq 4
+          tooling/speckit/bin/scope-check.sh refute 6f1e735d7898a8a059353c7c27de49ab3058ef2b
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 1 and .lens_files == 4 and .confirmed == 8 and .fixes == 8 and .forks == 0 and .undecided == 0' <<< "$status"
