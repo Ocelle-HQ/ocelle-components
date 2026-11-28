@@ -1,0 +1,23 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "Make the neutral scaffold runnable under the actual replay rules"
+    evidence:
+      - artifact: "plan.md Test-First Work and quickstart.md Before a phase require real controls on a neutral scaffold and matching post-action assertions in replay. The built and strict-runtime sections depend on a new Storybook registration and fixture."
+      - code: "tooling/speckit/extensions/story/scripts/scaffold.sh:15–21 rejects files selected by story_test_changes. .specify/extensions/story/story-config.yml:16 includes both **/*.stories.ts and **/test/**, so the canonical scaffold cannot contain the shipped CSF or the strict fixture HTML."
+      - code: "storybook/.storybook/main.ts:15 discovers the shipped CSF glob. tooling/speckit/README.md:175–181 and gates/bin/story-evidence.ts:453–460 keep a declared implementation story at the replayed revision and reject changes to it in the red commit. gates/lib/test-evidence.ts:264–271,373–386 admits a known missing scaffold module on the pre-scaffold base and checks exact replayed assertion identities."
+    claim: |
+      The non-test host and stylesheet can be scaffolded. The shipped story and strict
+      fixture cannot be included in that scaffold. A red browser case that navigates
+      to the new shipped story ID therefore cannot reach the neutral controls. A
+      missing index, asset, or mount assertion on the pre-scaffold base also cannot
+      stand in for the different post-action assertion captured on the scaffold.
+      The current plan names the desired evidence but leaves an execution route
+      unresolved.
+    remedies:
+      - "Specify the red and replay inputs for each layer. Scaffold the non-test host and stylesheet. Put the strict fixture HTML in the tests-only red and include it in replay. Use a test-owned isolated registration of the same neutral host when recording built-preview post-action red assertions. Keep the shipped story ID assertion separate and exercise the actual shipped story on green. Before implementation, verify that the canonical scaffold replay reaches the named assertion sites and that the pre-scaffold base either reaches those same sites or qualifies for the runner's known-missing-module result. Keep the shipped CSF out of both the scaffold and the tests-only red."
