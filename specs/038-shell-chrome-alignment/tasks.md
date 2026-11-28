@@ -2,7 +2,7 @@
 
 **Input**. [Specification](spec.md), [reviewed implementation plan](plan.md), [contracts](contracts/shell-chrome.md) and [validation](quickstart.md).
 
-Run these phases in order. Each starts from a clean, recorded full phase base. Commit runnable tests and fixture support before changing component or Storybook source. Verify the named target is rendered, then retain the assertion-level red, the same assertions green, and the independently replayed result. A story-scoped change to generated evidence may use only its assigned paths. The integration owner updates `tasks.md` as tasks finish, maintains the phase's canonical evidence, and folds the approved phase with the recorded operator authorization.
+Run these phases in order. Each starts from a clean, recorded full phase base. Commit runnable tests and fixture support before changing component or Storybook source. Verify the named target is rendered, then retain the assertion-level red, the same assertions green, and the independently replayed result. A story-scoped change to generated evidence may use only its assigned paths. The integration owner updates `tasks.md` as tasks finish, maintains the phase's canonical evidence, and folds the approved phase with the recorded operator authorization. Before the tests-only red, declare and verify changed runnable consumers in that phase's `reviews/phase-N/test-scope.txt`. List the files reached by shared helpers, declare implementation stories, and run any explicitly deferred gate on the same exact candidate before approval.
 
 ## Phase 1: User Story 1 — Present one continuous chrome frame
 
@@ -13,7 +13,7 @@ Run these phases in order. Each starts from a clean, recorded full phase base. C
 
 ## Phase 2: User Story 2 — Place the rail divider beside Settings
 
-- [ ] T005 [US2] Add the public flag and comparative geometry red cases in `packages/elements/test/personal-rail.test.ts`, `packages/elements/test/browser/personal-rail.test.ts`, and `packages/elements/test/scenarios/personal-rail.ts`. Prerequisites: T004 and its approved fold. Compare identical tall rails, valid reflection, omitted, empty and other orientations, horizontal with opt-in, both empty-group regressions and focus/order after orientation change. In forced colours sample the system-colour divider, token gap and unchanged destination positions and order on both populated fixed-height rails.
+- [ ] T005 [US2] Add the public flag and comparative geometry red cases in `packages/elements/test/personal-rail.test.ts`, `packages/elements/test/browser/personal-rail.test.ts`, and `packages/elements/test/scenarios/personal-rail.ts`. Prerequisites: T004 and its approved fold. Compare identical tall rails, valid reflection, omitted, empty and other orientations, horizontal with opt-in, both empty-group regressions and focus/order on both vertical-to-horizontal and horizontal-to-vertical transitions with the opt-in enabled. Change the same populated rail’s height and check that the displaced spare space remains before the divider and a one-token gap remains below it. In forced colours sample the system-colour divider, token gap and unchanged destination positions and order on both populated fixed-height rails.
 - [ ] T006 [US2] Implement the optional reflected flag and vertical-only spare-space redistribution in `packages/elements/src/ocelle-personal-rail.ts`. Prerequisites: T005. Keep the same visible divider and presentation. Demonstrate the same red assertions green in both test projects.
 - [ ] T007 [P] [US2] Regenerate and verify the public manifest and eight Plant paths listed under Manifest records. Replace the equal-gap paragraph in `packages/elements/README.md` with the tested default and opt-in positions and update `packages/elements/CHANGELOG.md`. Prerequisites: T006. Retain the actual manifest preflight against the pinned phase base, unchanged horizontal and empty-group behavior, and each Plant defect.
 - [ ] T008 [P] [US2] Add the populated opt-in tall example in `storybook/stories/personal-rail.stories.ts` and its two PNGs under Phase 2 captures. Prerequisites: T006. This task owns the Storybook inventory paths listed below. Derive the story index, capture and Axe expectations from the actual pinned runs and verify the affected Plants. The existing empty-index override for this story file owns all exports, so its blank file stays effective when adding an export.
@@ -21,16 +21,28 @@ Run these phases in order. Each starts from a clean, recorded full phase base. C
 
 ## Phase 3: User Story 3 — Place a badge beside the product name
 
-- [ ] T010 [P] [US3] Add tests-only direct, projected, no-accessory and dynamic accessory cases in `packages/elements/test/top-bar.test.ts`, `packages/elements/test/app-shell-actions.test.ts` and `packages/elements/test/app-shell-reflow.test.ts`. Prerequisites: T009 and its approved fold. At a true 320 CSS px use the long product name, a short badge, actual shell navigation, menu and Settings action. Observe one badge and the full accessible name, no overflow, two-axis target size, trusted Tab and activation, and rendered pixels for both complete focus indicators in normal and forced-colour runs.
+- [ ] T010 [P] [US3] Add tests-only direct, projected, no-accessory and dynamic accessory cases in `packages/elements/test/top-bar.test.ts`, `packages/elements/test/app-shell-actions.test.ts` and `packages/elements/test/app-shell-reflow.test.ts`. Prerequisites: T009 and its approved fold. At a true 320 CSS px use the long product name, a short badge, actual shell navigation, menu and Settings action. Observe one badge and the full accessible name, no overflow, two-axis target size, trusted Tab and activation, and rendered pixels for both complete focus indicators in normal and forced-colour runs. Compare the direct and shell-projected badge with the corresponding empty state at a wide viewport and at 320 CSS px.
 - [ ] T011 [P] [US3] Extend `packages/elements/test/browser/app-shell.test.ts` and its external `packages/elements/test/browser/fixtures/app-shell.html`, `packages/elements/test/browser/fixtures/app-shell.css` and `packages/elements/test/browser/fixtures/app-shell.js` fixture with a built strict-CSP accessory specimen. Prerequisites: T009 and its approved fold. Prove rendered and accessible badge projection, the real menu and one trusted Settings activation before the clean runtime observation. Keep the existing built resize, drawer/Escape focus and skip-link case.
 - [ ] T012 [US3] Add and forward the native optional slot in `packages/elements/src/ocelle-top-bar.ts` and `packages/elements/src/ocelle-app-shell.ts`. Prerequisites: T010, T011 and their canonical tests-only red on the integrated phase branch. Make no extra box or gap for empty content and leave text available to accessibility when visually ellipsized. Run the same tests green.
 - [ ] T013 [P] [US3] Regenerate and verify the public manifest and eight Plant paths listed under Manifest records. Document the two optional slot surfaces in `packages/elements/README.md` and `packages/elements/CHANGELOG.md`. Prerequisites: T012. Verify against the exact phase base and keep the existing refs and Plant findings.
 - [ ] T014 [P] [US3] Add the standalone and shell badge story variants in `storybook/stories/top-bar.stories.ts` and `storybook/stories/app-shell.stories.ts` and their four PNGs under Phase 3 captures. Prerequisites: T012. This task owns the Storybook inventory paths listed below for this phase. Compare rendered results with and without the accessory and verify actual builds, counts, captures, Axe and affected Plants.
-- [ ] T015 [US3] Save the scoped replay, built CSP, Mutation and preflight/capture receipts in `specs/038-shell-chrome-alignment/reviews/phase-3/`. Prerequisites: T013, T014. Confirm behavior, actual generated evidence and full phase review. The landing integration owner reruns the manifest preflight against integrated current main, reconciles the recorded inventories, and retains the CI and review receipts in `specs/038-shell-chrome-alignment/reviews/landing/`.
+- [ ] T015 [US3] Save the scoped replay, built CSP, Mutation and preflight/capture receipts in `specs/038-shell-chrome-alignment/reviews/phase-3/`. Prerequisites: T013, T014. Confirm behavior, both widths, actual generated evidence and full phase review. The landing integration owner reruns the manifest preflight against integrated current main, reconciles the recorded inventories, and retains the CI and review receipts in `specs/038-shell-chrome-alignment/reviews/landing/`.
 
 ## Generated paths and worktree ownership
 
 The canonical owner validates parallel returns from one clean pin. The two Phase 3 red workers return tests only. Integrate both and run the canonical assertion red before T012 starts. Phases run in order. Within each phase, keep generated files to the preceding owner and use the documented return checker. Worktree assignments use exact paths, disjoint ownership, and the recorded phase pin.
+
+### Focused replay inputs
+
+The integration owner writes the exact paths in `specs/038-shell-chrome-alignment/reviews/phase-N/test-scope.txt`, matching the actual tracked diff and the scope syntax in the Spec Kit README. Use the following runnable targets when their fixtures or shared helpers change.
+
+| Phase | Runnable targets | Implementation stories |
+| --- | --- | --- |
+| 1 | `packages/elements/test/top-bar.test.ts`, `packages/elements/test/browser/app-shell.test.ts` | none |
+| 2 | `packages/elements/test/personal-rail.test.ts`, `packages/elements/test/browser/personal-rail.test.ts` | `storybook/stories/personal-rail.stories.ts` |
+| 3 | `packages/elements/test/top-bar.test.ts`, `packages/elements/test/app-shell-actions.test.ts`, `packages/elements/test/app-shell-reflow.test.ts`, `packages/elements/test/browser/app-shell.test.ts` | `storybook/stories/top-bar.stories.ts`, `storybook/stories/app-shell.stories.ts` |
+
+Where the story and manifest inventory tests change in Phase 2 or 3, declare their exact runnable paths under the same pin. Keep the changed shared files in their assigned task. Required Storybook, Visual, Axe and Plants results belong to the same candidate before the review.
 
 ### Phase 1 captures
 
@@ -104,6 +116,19 @@ T007 and T013 own the following paths in their respective phases. Run `node tool
 - `gates/plants/manifest/fail-undescribed-property/tree/packages/elements/custom-elements.json`
 - `gates/plants/manifest/fail-undescribed-slot/tree/packages/elements/custom-elements.json`
 - `gates/plants/manifest/pass-reordered/tree/packages/elements/custom-elements.json`
+
+The corresponding descriptors are read-only evidence inputs. Preserve their declared findings and locations.
+
+| Descriptor | Expected result |
+| --- | --- |
+| `gates/plants/manifest/fail-lost-attribute/plant.json` | `stale` at `packages/elements/custom-elements.json` · ocelle-icon.attribute.label differs from the generated manifest |
+| `gates/plants/manifest/fail-undescribed-attribute/plant.json` | `no-description` at `packages/elements/src/ocelle-plant.ts` · ocelle-plant.attribute.tone has no description |
+| `gates/plants/manifest/fail-undescribed-css-part/plant.json` | `no-description` at `packages/elements/src/ocelle-plant.ts` · ocelle-plant.css-part.drawing has no description |
+| `gates/plants/manifest/fail-undescribed-css-property/plant.json` | `no-description` at `packages/elements/src/ocelle-plant.ts` · ocelle-plant.css-property.--ocelle-plant-gap has no description |
+| `gates/plants/manifest/fail-undescribed-event/plant.json` | `no-description` at `packages/elements/src/ocelle-plant.ts` · ocelle-plant.event.ocelle-plant-change has no description |
+| `gates/plants/manifest/fail-undescribed-property/plant.json` | `no-description` at `packages/elements/src/ocelle-plant.ts` · ocelle-plant.property.tone has no description |
+| `gates/plants/manifest/fail-undescribed-slot/plant.json` | `no-description` at `packages/elements/src/ocelle-plant.ts` · ocelle-plant.slot.icon has no description |
+| `gates/plants/manifest/pass-reordered/plant.json` | Pass, no findings |
 
 ### Storybook inventory paths
 
