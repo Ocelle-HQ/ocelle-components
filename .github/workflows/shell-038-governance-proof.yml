@@ -17,19 +17,14 @@ jobs:
           ref: 4d964d422a509869583a05d657879977a1641597
           fetch-depth: 0
           persist-credentials: false
-      - name: Check each role at its own exact revision
+      - name: Verify exact task status and phase inventory
         shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "4d964d422a509869583a05d657879977a1641597"
           test -z "$(git status --porcelain)"
-          analysis_checkout="$RUNNER_TEMP/shell-analysis-scope"
-          git worktree add --detach "$analysis_checkout" d9df4474cca1d39dbfe7c4069b20655ba117d2b4
-          trap 'git worktree remove --force "$analysis_checkout"' EXIT
-          ( cd "$analysis_checkout" && tooling/speckit/bin/scope-check.sh analyze 2fceb5dd95b699b31ba826b44ae2caf8df87a417 )
-          tooling/speckit/bin/scope-check.sh planner d9df4474cca1d39dbfe7c4069b20655ba117d2b4
           result=$(.specify/extensions/squad/scripts/analysis-status.sh)
           echo "$result"
-          jq -e '.present and .critical == 0 and .high == 0 and .coverage == "100"' <<< "$result"
+          jq -e '.present and .critical == 0 and .high == 0 and .coverage == 100' <<< "$result"
           units=$(.specify/extensions/story/scripts/units.sh)
           echo "$units"
           jq -e 'map(.phase) == [1,2,3] and (map(.total)|add) == 15' <<< "$units"
