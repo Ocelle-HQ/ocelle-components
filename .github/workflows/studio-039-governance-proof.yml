@@ -14,15 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 048a381f19d36ec913b9b8874ebd4d65011bb11f
+          ref: 8e7ad6b3f397fe807c4c704de075b18229a397d3
           fetch-depth: 0
           persist-credentials: false
-      - name: Check the second-round scope and single verified finding
+      - name: Check the scoped replay plan correction
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "048a381f19d36ec913b9b8874ebd4d65011bb11f"
+          test "$(git rev-parse HEAD)" = "8e7ad6b3f397fe807c4c704de075b18229a397d3"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh refute 30923bb52e0e4a5e99189c1697428ea9422a5c8e
-          status=$(.specify/extensions/squad/scripts/status.sh)
-          echo "$status"
-          jq -e '.round == 2 and .lens_files == 1 and .confirmed == 1 and .fixes == 1 and .forks == 0' <<< "$status"
+          tooling/speckit/bin/scope-check.sh planner 048a381f19d36ec913b9b8874ebd4d65011bb11f
