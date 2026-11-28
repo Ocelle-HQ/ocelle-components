@@ -14,12 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 051adc6af8c0ba774a1317eb51c34fb9efca8cd7
+          ref: 85cae20a9f84137be6d05b76d07c0a7e00e5e65c
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify the first spec-fix scope
+      - name: Verify the clean Studio spec and initialize its plan
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "051adc6af8c0ba774a1317eb51c34fb9efca8cd7"
+          test "$(git rev-parse HEAD)" = "85cae20a9f84137be6d05b76d07c0a7e00e5e65c"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh planner e6944774cab6c6032f6b1fc571f3c79d373108db
+          tooling/speckit/bin/scope-check.sh spec-check 051adc6af8c0ba774a1317eb51c34fb9efca8cd7
+          status=$(.specify/extensions/squad/scripts/spec-status.sh)
+          echo "$status"
+          jq -e '.check == 2 and .verdict == "clean" and .blocking == 0 and .operator_questions == 0' <<< "$status"
+          .specify/scripts/bash/setup-plan.sh --json
