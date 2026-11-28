@@ -1,0 +1,179 @@
+name: Copy-field product sensitivity
+on:
+  push:
+    branches: [ci/035-product-sensitivity]
+permissions:
+  contents: read
+jobs:
+  sensitivity:
+    name: Phase ${{ matrix.phase }} / ${{ matrix.variant }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        phase: [1, 2]
+        variant: [control, restored-main]
+    env:
+      LANDING_INPUT: 5984afeb68540619a379e262fe7da18aeda04097
+      LANDING_TREE: 5c326907fe4615e384c8fb6cf4dc0bb7dd526c8f
+      LANDING_MAIN: 34c2fe11f9a68d1fde43b3f9d5dff13a29782bd5
+      ORIGINAL_HEAD: 6fdbe28fba6adc8dd25f38d6a97fd850da1c000f
+      PHASE: ${{ matrix.phase }}
+      VARIANT: ${{ matrix.variant }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.LANDING_INPUT }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the exact integration and product sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$LANDING_INPUT"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$LANDING_TREE"
+          test "$(git show -s --format=%P HEAD)" = "$ORIGINAL_HEAD $LANDING_MAIN"
+          git diff --quiet HEAD --
+          test -z "$(git status --porcelain)"
+          case "$PHASE" in
+            1)
+              target=packages/elements/src/ocelle-copy-field.ts
+              old=9425f5510155e23514449105cce3e4251ed82287
+              new=b110ecb8f649dedbc62b736b9289341cea63bf9d
+              historical=e340eefa9128bc1e5ede06cc06fb46a252d7a702
+              ;;
+            2)
+              target=storybook/stories/copy-field.stories.ts
+              old=3741467a1b08dd40d371dab593ad8986b17adeed
+              new=582b22b6c82b7e650f31908bd30c7623dc912e46
+              historical=d8793108e6786c58d2d04ca140ee60c1c41b3849
+              ;;
+          esac
+          test "$(git rev-parse "$LANDING_MAIN:$target")" = "$old"
+          test "$(git rev-parse "$historical:$target")" = "$old"
+          test "$(git rev-parse "HEAD:$target")" = "$new"
+          printf 'PRODUCT_PATH=%s\nPRODUCT_OLD=%s\nPRODUCT_NEW=%s\n' "$target" "$old" "$new" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup
+      - name: Run the product sensitivity check
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/product-sensitivity"
+          mkdir -p "$report"
+          git diff --quiet HEAD --
+          if [ "$VARIANT" = restored-main ]; then
+            git restore --source="$LANDING_MAIN" --worktree -- "$PRODUCT_PATH"
+            test "$(git diff --name-only HEAD --)" = "$PRODUCT_PATH"
+            test "$(git hash-object "$PRODUCT_PATH")" = "$PRODUCT_OLD"
+          else
+            test "$(git hash-object "$PRODUCT_PATH")" = "$PRODUCT_NEW"
+          fi
+          git diff --cached --quiet HEAD --
+          node --input-type=module - "$report/input.json" <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          const phase = Number(process.env.PHASE);
+          const feature = "specs/035-copy-identifier-groups/reviews/phase-";
+          const recorded = JSON.parse(readFileSync(feature + phase + "/tdd-check.json", "utf8"));
+          const expectedHead = phase === 1
+            ? "143a4477f0f91fe8cdf1a6fec198c5d087dd60c1"
+            : "4ac4aaa639586a4167724d0a1f36954876f3a621";
+          const expectedRed = phase === 1
+            ? "99084e20681d1b575bffbf931ebb820ff6d33e7a"
+            : "2b25fd319b7431e809bf4af0d30dbe65ef96d26d";
+          const wantedFiles = phase === 1
+            ? [
+                "packages/elements/test/browser/copy-field.test.ts",
+                "packages/elements/test/copy-field.test.ts",
+                "packages/elements/test/node/manifest.test.ts",
+              ]
+            : ["storybook/test/integration/copy-field-stories.test.ts"];
+          assert.equal(recorded.status, "pass");
+          assert.equal(recorded.head, expectedHead);
+          const originalRed = recorded.red_commits.filter(({ label }) => label === "phase");
+          assert.equal(originalRed.length, 1);
+          assert.equal(originalRed[0].sha, expectedRed);
+          assert.equal(originalRed[0].exit_code, 1);
+          assert.equal(originalRed[0].evidence.status, "red");
+          const expected = originalRed[0].evidence.assertions;
+          assert.equal(expected.length, phase === 1 ? 51 : 3);
+          assert.deepEqual([...new Set(expected.map(({ file }) => file))].sort(), wantedFiles);
+          const changedLines = Object.fromEntries(wantedFiles.map((file) => {
+            const anchors = new Set(expected.filter((entry) => entry.file === file).map(({ source }) => source.text));
+            const ranges = [];
+            const seen = new Set();
+            readFileSync(file, "utf8").split("\n").forEach((line, index) => {
+              if (anchors.has(line.trim())) {
+                seen.add(line.trim());
+                ranges.push({ start: index + 1, end: index + 1 });
+              }
+            });
+            assert.deepEqual(seen, anchors, "recorded assertion source missing in " + file);
+            return [file, ranges];
+          }));
+          writeFileSync(process.argv[2], JSON.stringify({
+            mode: process.env.VARIANT === "restored-main" ? "red" : "head",
+            changed: wantedFiles,
+            deleted: [],
+            extra: [],
+            expected,
+            changedLines,
+            missingModules: [],
+          }));
+          NODE
+          node gates/bin/story-evidence.ts worker "$report/input.json" "$report/result.json"
+          node --input-type=module - "$report/input.json" "$report/result.json" "$report/proof.json" <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFileSync, writeFileSync } from "node:fs";
+          import { assertionKey, decodeWorkerResult } from "./gates/lib/test-evidence.ts";
+
+          const [inputPath, resultPath, proofPath] = process.argv.slice(2);
+          const input = JSON.parse(readFileSync(inputPath, "utf8"));
+          const result = decodeWorkerResult(JSON.parse(readFileSync(resultPath, "utf8")));
+          assert.ok(result, "repository test worker did not return valid evidence");
+          assert.deepEqual(result.selected.map(({file}) => file).sort(), input.changed);
+          const restored = process.env.VARIANT === "restored-main";
+          assert.equal(result.evidence.status, restored ? "red" : "green", result.evidence.problem);
+          assert.deepEqual(
+            result.evidence.assertions.map(assertionKey).sort(),
+            restored ? input.expected.map(assertionKey).sort() : [],
+          );
+          if (process.env.PHASE === "2" && restored) {
+            const ids = result.evidence.assertions.map(({ diagnostic }) =>
+              /^built Storybook index is missing (elements-ocelle-copy-field--[a-z-]+):/.exec(diagnostic)?.[1],
+            ).sort();
+            assert.deepEqual(ids, [
+              "elements-ocelle-copy-field--compact-digest",
+              "elements-ocelle-copy-field--grouped-record-id",
+              "elements-ocelle-copy-field--revealed-digest",
+            ]);
+          }
+          const proof = {
+            phase: Number(process.env.PHASE),
+            variant: process.env.VARIANT,
+            head: process.env.LANDING_INPUT,
+            tree: process.env.LANDING_TREE,
+            sourceMain: process.env.LANDING_MAIN,
+            path: process.env.PRODUCT_PATH,
+            blob: restored ? process.env.PRODUCT_OLD : process.env.PRODUCT_NEW,
+            status: result.evidence.status,
+            selected: result.selected,
+            assertions: result.evidence.assertions,
+          };
+          writeFileSync(proofPath, JSON.stringify(proof, null, 2) + "\n");
+          console.log("Phase " + proof.phase + " " + proof.variant + ": " + proof.status + ", "
+            + proof.assertions.length + " expected assertion failures in " + proof.selected.length + " test files");
+          NODE
+          if [ "$VARIANT" = restored-main ]; then
+            test "$(git diff --name-only HEAD --)" = "$PRODUCT_PATH"
+            git restore --source=HEAD --worktree -- "$PRODUCT_PATH"
+          fi
+          git diff --quiet HEAD --
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: product-sensitivity-${{ matrix.phase }}-${{ matrix.variant }}
+          path: ${{ runner.temp }}/product-sensitivity/proof.json
+          if-no-files-found: warn
