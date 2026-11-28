@@ -1,0 +1,55 @@
+{
+  "candidate": "66da4da78d73cc2d94e6748f188ad4e59fe04a0b",
+  "testedMerge": "2f08c51b6c7aefb205c301685f248c21fa3923cd",
+  "run": 46112847765,
+  "aggregateJob": 140891344373,
+  "jobs": [
+    {
+      "job_id": 140880123880,
+      "lines": [
+        "packages/elements/src/icons.ts:136: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "packages/elements/src/icons.ts:136: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "packages/elements/src/icons.ts:137: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "packages/elements/src/icons.ts:137: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "packages/elements/src/icons.ts:140: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "packages/elements/src/icons.ts:143: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "packages/elements/src/icons.ts:143: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "packages/elements/src/icons.ts:144: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "packages/elements/src/icons.ts:144: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "packages/elements/src/icons.ts:145: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "packages/elements/src/icons.ts:145: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "packages/elements/src/icons.ts:146: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "packages/elements/src/icons.ts:146: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "packages/elements/src/ocelle-button.ts:49: mutation: compile-error: BlockStatement: replaced by {}",
+        "packages/elements/src/ocelle-button.ts:51: mutation: compile-error: OptionalChaining: replaced by raw?.match(/^\\p{White_Space}*([^\\p{White_Space}]+)\\p{White_Space}*$/u)[1]",
+        "packages/elements/src/ocelle-button.ts:51: mutation: compile-error: OptionalChaining: replaced by raw.match",
+        "packages/elements/src/ocelle-button.ts:52: mutation: compile-error: ConditionalExpression: replaced by true",
+        "packages/elements/src/ocelle-button.ts:52: mutation: compile-error: ConditionalExpression: replaced by false",
+        "packages/elements/src/ocelle-button.ts:52: mutation: compile-error: LogicalOperator: replaced by text === undefined && /\\p{Cc}/u.test(text)",
+        "packages/elements/src/ocelle-button.ts:52: mutation: compile-error: ConditionalExpression: replaced by false",
+        "packages/elements/src/ocelle-button.ts:52: mutation: compile-error: EqualityOperator: replaced by text !== undefined",
+        "mutation: 51 mutants on the changed lines of 2 files, none survived; 0 timeouts, 21 compile errors, 0 zero-mutant entries; 0 equivalent records"
+      ]
+    },
+    {
+      "job_id": 140880123892,
+      "lines": [
+        "packages/elements/src/ocelle-button.ts:255-377: mutation: zero-mutants: no mutant on the changed lines",
+        "mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records"
+      ]
+    },
+    {
+      "job_id": 140880123916,
+      "lines": [
+        "mutation: 32 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"
+      ]
+    },
+    {
+      "job_id": 140880123918,
+      "lines": [
+        "packages/elements/src/ocelle-button.ts:224-253: mutation: zero-mutants: no mutant on the changed lines",
+        "mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records"
+      ]
+    }
+  ]
+}

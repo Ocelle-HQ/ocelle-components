@@ -1,0 +1,1061 @@
+{
+  "configuration": "stryker.elements.config.json",
+  "testSelection": "related",
+  "ranges": [
+    "packages/elements/src/ocelle-button.ts:46-59",
+    "packages/elements/src/ocelle-button.ts:135-135",
+    "packages/elements/src/ocelle-button.ts:209-253",
+    "packages/elements/src/ocelle-button.ts:255-266",
+    "packages/elements/src/ocelle-button.ts:360-377",
+    "packages/elements/src/ocelle-button.ts:453-459",
+    "packages/elements/src/ocelle-button.ts:620-622",
+    "packages/elements/src/ocelle-button.ts:628-628"
+  ],
+  "baseline": {
+    "tests": 337,
+    "elapsedMs": 184021
+  },
+  "totalMs": 825865.554679,
+  "mutants": [
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 91,
+          "line": 51
+        },
+        "start": {
+          "column": 16,
+          "line": 51
+        }
+      },
+      "mutatorName": "OptionalChaining",
+      "replacement": "raw?.match(/^\\p{White_Space}*([^\\p{White_Space}]+)\\p{White_Space}*$/u)[1]",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 26,
+          "line": 51
+        },
+        "start": {
+          "column": 16,
+          "line": 51
+        }
+      },
+      "mutatorName": "OptionalChaining",
+      "replacement": "raw.match",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 2,
+          "line": 58
+        },
+        "start": {
+          "column": 71,
+          "line": 49
+        }
+      },
+      "mutatorName": "BlockStatement",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/\\p{White_Space}*([^\\p{White_Space}]+)\\p{White_Space}*$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\p{White_Space}*([^\\p{White_Space}])\\p{White_Space}*$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\p{White_Space}*([\\p{White_Space}]+)\\p{White_Space}*$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\p{White_Space}*([^\\P{White_Space}]+)\\p{White_Space}*$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\p{White_Space}*([^\\p{White_Space}]+)\\p{White_Space}$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\p{White_Space}*([^\\p{White_Space}]+)\\p{White_Space}*/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 49,
+          "line": 52
+        },
+        "start": {
+          "column": 7,
+          "line": 52
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "true",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\p{White_Space}*([^\\p{White_Space}]+)\\P{White_Space}*$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\p{White_Space}([^\\p{White_Space}]+)\\p{White_Space}*$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 51
+        },
+        "start": {
+          "column": 27,
+          "line": 51
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^\\P{White_Space}*([^\\p{White_Space}]+)\\p{White_Space}*$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 49,
+          "line": 52
+        },
+        "start": {
+          "column": 7,
+          "line": 52
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 49,
+          "line": 52
+        },
+        "start": {
+          "column": 7,
+          "line": 52
+        }
+      },
+      "mutatorName": "LogicalOperator",
+      "replacement": "text === undefined && /\\p{Cc}/u.test(text)",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 25,
+          "line": 52
+        },
+        "start": {
+          "column": 7,
+          "line": 52
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 25,
+          "line": 52
+        },
+        "start": {
+          "column": 7,
+          "line": 52
+        }
+      },
+      "mutatorName": "EqualityOperator",
+      "replacement": "text !== undefined",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 38,
+          "line": 52
+        },
+        "start": {
+          "column": 29,
+          "line": 52
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/\\P{Cc}/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 56
+        },
+        "start": {
+          "column": 54,
+          "line": 54
+        }
+      },
+      "mutatorName": "BlockStatement",
+      "replacement": "{}",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 84,
+          "line": 55
+        },
+        "start": {
+          "column": 9,
+          "line": 55
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 84,
+          "line": 55
+        },
+        "start": {
+          "column": 9,
+          "line": 55
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 84,
+          "line": 55
+        },
+        "start": {
+          "column": 9,
+          "line": 55
+        }
+      },
+      "mutatorName": "LogicalOperator",
+      "replacement": "++count > 2 && /^[\\u2800\\p{Default_Ignorable_Code_Point}]+$/u.test(segment)",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 20,
+          "line": 55
+        },
+        "start": {
+          "column": 9,
+          "line": 55
+        }
+      },
+      "mutatorName": "EqualityOperator",
+      "replacement": "++count >= 2",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 20,
+          "line": 55
+        },
+        "start": {
+          "column": 9,
+          "line": 55
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 20,
+          "line": 55
+        },
+        "start": {
+          "column": 9,
+          "line": 55
+        }
+      },
+      "mutatorName": "EqualityOperator",
+      "replacement": "++count <= 2",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 55
+        },
+        "start": {
+          "column": 24,
+          "line": 55
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/[\\u2800\\p{Default_Ignorable_Code_Point}]+$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 16,
+          "line": 55
+        },
+        "start": {
+          "column": 9,
+          "line": 55
+        }
+      },
+      "mutatorName": "UpdateOperator",
+      "replacement": "--count",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 55
+        },
+        "start": {
+          "column": 24,
+          "line": 55
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^[\\u2800\\p{Default_Ignorable_Code_Point}]+/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 55
+        },
+        "start": {
+          "column": 24,
+          "line": 55
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^[\\u2800\\p{Default_Ignorable_Code_Point}]$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 55
+        },
+        "start": {
+          "column": 24,
+          "line": 55
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^[\\u2800\\P{Default_Ignorable_Code_Point}]+$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 55
+        },
+        "start": {
+          "column": 24,
+          "line": 55
+        }
+      },
+      "mutatorName": "Regex",
+      "replacement": "/^[^\\u2800\\p{Default_Ignorable_Code_Point}]+$/u",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 44,
+          "line": 135
+        },
+        "start": {
+          "column": 40,
+          "line": 135
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "false",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 76,
+          "line": 620
+        },
+        "start": {
+          "column": 22,
+          "line": 620
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 76,
+          "line": 620
+        },
+        "start": {
+          "column": 22,
+          "line": 620
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 76,
+          "line": 620
+        },
+        "start": {
+          "column": 22,
+          "line": 620
+        }
+      },
+      "mutatorName": "LogicalOperator",
+      "replacement": "href === undefined && !this.#labelled || !this.#iconed",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 48,
+          "line": 621
+        },
+        "start": {
+          "column": 18,
+          "line": 621
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 59,
+          "line": 620
+        },
+        "start": {
+          "column": 22,
+          "line": 620
+        }
+      },
+      "mutatorName": "LogicalOperator",
+      "replacement": "href === undefined || !this.#labelled",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 59,
+          "line": 620
+        },
+        "start": {
+          "column": 22,
+          "line": 620
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 40,
+          "line": 620
+        },
+        "start": {
+          "column": 22,
+          "line": 620
+        }
+      },
+      "mutatorName": "EqualityOperator",
+      "replacement": "href !== undefined",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 40,
+          "line": 620
+        },
+        "start": {
+          "column": 22,
+          "line": 620
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 310,
+          "line": 622
+        },
+        "start": {
+          "column": 25,
+          "line": 622
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "``",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 59,
+          "line": 620
+        },
+        "start": {
+          "column": 44,
+          "line": 620
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "this.#labelled",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 76,
+          "line": 620
+        },
+        "start": {
+          "column": 63,
+          "line": 620
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "this.#iconed",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 500,
+          "line": 628
+        },
+        "start": {
+          "column": 16,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "``",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 48,
+          "line": 621
+        },
+        "start": {
+          "column": 18,
+          "line": 621
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 40,
+          "line": 621
+        },
+        "start": {
+          "column": 18,
+          "line": 621
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 48,
+          "line": 621
+        },
+        "start": {
+          "column": 18,
+          "line": 621
+        }
+      },
+      "mutatorName": "LogicalOperator",
+      "replacement": "initials === undefined && busy",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 40,
+          "line": 621
+        },
+        "start": {
+          "column": 18,
+          "line": 621
+        }
+      },
+      "mutatorName": "EqualityOperator",
+      "replacement": "initials !== undefined",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 82,
+          "line": 628
+        },
+        "start": {
+          "column": 73,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 183,
+          "line": 628
+        },
+        "start": {
+          "column": 177,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 67,
+          "line": 622
+        },
+        "start": {
+          "column": 57,
+          "line": 622
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 220,
+          "line": 628
+        },
+        "start": {
+          "column": 214,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 111,
+          "line": 628
+        },
+        "start": {
+          "column": 85,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 622
+        },
+        "start": {
+          "column": 70,
+          "line": 622
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 628
+        },
+        "start": {
+          "column": 48,
+          "line": 628
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "false",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 46,
+          "line": 135
+        },
+        "start": {
+          "column": 15,
+          "line": 135
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 628
+        },
+        "start": {
+          "column": 48,
+          "line": 628
+        }
+      },
+      "mutatorName": "EqualityOperator",
+      "replacement": "initials !== undefined",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 268,
+          "line": 628
+        },
+        "start": {
+          "column": 245,
+          "line": 628
+        }
+      },
+      "mutatorName": "LogicalOperator",
+      "replacement": "this.#name() && nothing",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 240,
+          "line": 621
+        },
+        "start": {
+          "column": 65,
+          "line": 621
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "``",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 307,
+          "line": 628
+        },
+        "start": {
+          "column": 292,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 390,
+          "line": 628
+        },
+        "start": {
+          "column": 375,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 628
+        },
+        "start": {
+          "column": 48,
+          "line": 628
+        }
+      },
+      "mutatorName": "ConditionalExpression",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 351,
+          "line": 628
+        },
+        "start": {
+          "column": 325,
+          "line": 628
+        }
+      },
+      "mutatorName": "LogicalOperator",
+      "replacement": "this.#current() && nothing",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 428,
+          "line": 628
+        },
+        "start": {
+          "column": 414,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/ocelle-button.ts",
+      "location": {
+        "end": {
+          "column": 452,
+          "line": 628
+        },
+        "start": {
+          "column": 445,
+          "line": 628
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    }
+  ]
+}
