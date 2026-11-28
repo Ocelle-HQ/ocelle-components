@@ -14,16 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 85cae20a9f84137be6d05b76d07c0a7e00e5e65c
+          ref: 8dee940e0b4239bc11f91c769b5617cb0ea41863
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify the clean Studio spec and initialize its plan
+      - name: Open the first adversarial plan round
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "85cae20a9f84137be6d05b76d07c0a7e00e5e65c"
+          test "$(git rev-parse HEAD)" = "8dee940e0b4239bc11f91c769b5617cb0ea41863"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh spec-check 051adc6af8c0ba774a1317eb51c34fb9efca8cd7
-          status=$(.specify/extensions/squad/scripts/spec-status.sh)
+          git config user.name "Ocelle Spec Kit proof"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          status=$(.specify/extensions/squad/scripts/round.sh)
           echo "$status"
-          jq -e '.check == 2 and .verdict == "clean" and .blocking == 0 and .operator_questions == 0' <<< "$status"
-          .specify/scripts/bash/setup-plan.sh --json
+          jq -e '.round == 1 and .lenses == ["correctness","a11y-security","testability","fresh"]' <<< "$status"
+          test "$(cat "$SPECIFY_FEATURE_DIRECTORY/reviews/plan/round-1/base.sha")" = "8dee940e0b4239bc11f91c769b5617cb0ea41863"
