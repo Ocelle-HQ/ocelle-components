@@ -13,8 +13,9 @@ afterEach(async () => {
   await commands.emulateForcedColors("none");
 });
 
-describe("ocelle-icon's set, in process (US2)", () => {
+describe("ocelle-icon's eighteen-name set, in process (US2)", () => {
   it.each(iconSetScenarios)("$name", { timeout: 60_000 }, async ({ run, expected }) => {
-    expect(await run(driver)).toEqual(expected);
+    const observed = await run(driver);
+    expect(observed, "settled drawing and interaction").toEqual(expected);
   });
 });

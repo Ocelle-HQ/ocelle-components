@@ -5,7 +5,7 @@ import "../src/ocelle-icon.ts";
 import "./fixtures/shadow-controls.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { busyScenarios, busySinkScenarios } from "./scenarios/busy.ts";
-import { buttonScenarios, forwardedIconScenarios } from "./scenarios/button.ts";
+import { chromeActionScenarios, buttonScenarios, forwardedIconScenarios } from "./scenarios/button.ts";
 import { linkScenarios, linkSinkScenarios } from "./scenarios/link.ts";
 
 // User Story 1's browser scenarios for `ocelle-button` in button mode, in process on the element source (012
@@ -22,8 +22,9 @@ afterEach(async () => {
 });
 
 describe("ocelle-button, in process (US1)", { timeout: 60_000 }, () => {
-  it.each(buttonScenarios)("$name", async ({ run, expected }) => {
-    expect(await run(driver)).toEqual(expected);
+  it.each([...buttonScenarios, ...chromeActionScenarios])("$name", async ({ run, expected }) => {
+    const observed = await run(driver);
+    expect(observed, "settled drawing and interaction").toEqual(expected);
   });
 });
 

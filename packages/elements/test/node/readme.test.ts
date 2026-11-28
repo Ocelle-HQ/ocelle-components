@@ -890,6 +890,11 @@ const iconRows = [
   "| `search` | no | kitty-mission-ui's Artifact Viewer, replacing its own magnifier glyph (spec-kitty-design#496) |",
   "| `table` | no | kitty-mission-ui's Artifact Viewer, replacing its own table glyph (spec-kitty-design#496) |",
   "| `copy` | no | the copy field's control (#14) |",
+  "| `inbox` | no | opening the inbox |",
+  "| `history` | no | reviewing recent activity |",
+  "| `settings` | no | opening settings |",
+  "| `notifications` | no | reading notifications |",
+  "| `appearance` | no | choosing an appearance |",
 ];
 
 /**
@@ -1141,8 +1146,8 @@ describe("packages/elements/README.md", () => {
     });
   });
 
-  it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
-    expect(tableRows(read("README.md"), "Icons")).toEqual(iconRows);
+  it("lists the eighteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
+    expect(tableRows(read("README.md"), "Icons"), "documented icon catalog").toEqual(iconRows);
   });
 
   it("keeps the rail's item-size sentence and the next one on one line of the README as written, with no line break between them (phase 5 review R2-01, landing L1-05)", () => {
