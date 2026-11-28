@@ -1,0 +1,55 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Make the focused-step deletion reachable by keyboard"
+    evidence:
+      - artifact: "spec.md US1 scenario 4 and SC-001 require a real removal with focus recovering to Publish decision. plan.md Phase 1 relies on canvas recovery when the removed node action owned focus and mentions removed inspector controls, but assigns no deletion control or keyboard trigger to either route."
+      - code: "packages/elements/src/ocelle-workflow-canvas.ts:68-70,1377-1387 handles navigation keys on the node action. The public canvas contract has no delete request. Lines 1243-1251 and 1268-1273 recover a removed canvas action only when the canvas owns the focus loss."
+    claim: |
+      Selecting a canvas node does not give the keyboard user a way to delete it from that focused action. If a
+      separate Remove button accepts the action and survives the rerender, it now legitimately owns focus and the
+      canvas cannot recover to Publish decision. A browser test that calls a host delete helper or removes the node
+      directly would miss this gap in the executable journey.
+    remedies:
+      - "Specify a discoverable, named keyboard-operable Remove Security review action tied to the selected step, with that action removed by its real activation and the host moving focus to the operable Publish decision action. If the story also illustrates canvas-owned deletion, define a scoped keyboard trigger from the genuinely focused node action. Verify a real keyboard activation, exactly one removal and the newly focused control, and separately prove unaffected focus is retained."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "Treat a connected but hidden opener as unavailable on close"
+    evidence:
+      - artifact: "plan.md Phase 1 speaks of removed inspector/opener paths and waiting for native close. Phase 2 and Phase 3 promise focus return after dismissal and narrow transitions. contracts/compositions.md describes removed openers but has no test of an opener that remains mounted while its pane becomes hidden."
+      - code: "packages/elements/src/overlay.ts:400-417 captures deep active focus at show; 500-508 dispatches close after attempting focus return; 530-547 accepts a connected, enabled and non-inert opener, calls focus and returns without checking that it took focus. packages/elements/src/ocelle-list-detail.ts:103-116 hides mounted list or inspector panes with display:none in its one-column route."
+    claim: |
+      The narrow handoff can leave the saved opener connected and enabled inside a hidden pane. Native return then
+      attempts to focus it and the close event still fires, even when focus falls to the document or an unrelated
+      control. A fallback keyed only to removal, or an assertion on the close event alone, would miss that failure.
+    remedies:
+      - "Record the actual opener for the named keyboard and tap actions. After close and the new pane layout, verify where deep focus landed, restore an operable visible opener or the specified reachable fallback if the original is hidden, disabled or removed, and preserve genuinely unrelated focus. Exercise a narrow transition with a still-connected hidden opener and Escape or the visible dismissal control, including reduced motion so focus recovery never depends on a fixed animation delay."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "Announce an authoring rejection without taking focus"
+    evidence:
+      - artifact: "plan.md Phase 1 and spec.md FR-004/SC-002 require a visible rejection notice and unchanged accepted state. The plan does not select the notice's announcement behavior or assign an assertion on the exposed feedback."
+      - code: "packages/elements/src/ocelle-notice.ts:235-247 and 275-284 only announce when `announce` is set or the host has an alert/status role. The default is false. packages/elements/src/form-control.ts:187-194 has its own accessible error announcement for the separate interview field."
+    claim: |
+      The authoring evidence can pass with a visually rendered but silent default notice while focus remains on the
+      canvas controls or returns to Edit connection. A screen-reader user receives no status explanation for the
+      rejected action without leaving the focused control and locating the result manually.
+    remedies:
+      - "Assign the authoring rejection to the existing notice's live status contract and verify one meaningful announcement after the delivered rejected request, the unchanged authoritative connection, and retained focus on the available editing control. Keep the textarea's own error announcement as the interview feedback path."
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "Check the host-owned controls at actual narrow and forced-colour sizes"
+    evidence:
+      - artifact: "plan.md Phase 1 introduces host-owned finding, Step and Add step controls; Phase 3 adds comparison and acceptance controls. Test-First Work checks the active element, taps, narrow layout and representative forced colours without checking the rendered focus ring or minimum target on these new host controls."
+      - code: ".specify/memory/constitution.md:45-59 requires the token focus ring, primary target minimum and accessible themes. packages/styles/src/base.css:35-38 only inherits typography for native buttons and selects. storybook/test/integration/change-list-upgrade.test.ts:47-81 demonstrates checking a real focused ring against viewport and composed clipping ancestors."
+    claim: |
+      An unstyled native host action can still pass role, focus and Playwright tap assertions while falling under the
+      library's target minimum or having a clipped or indistinguishable indicator in the narrow composition.
+      Existing component guarantees do not automatically apply to host-created actions or their clipping ancestors.
+    remedies:
+      - "Use published Ocelle controls for the host's primary actions, or give their native surfaces the existing target and focus tokens in the external stylesheet. At the actual narrow width, measure the primary target against `--ocelle-target-min` and the real keyboard ring against viewport and clipping bounds. Cover the relevant finding, Add/Remove and comparison/accept controls in representative normal and forced-colour routes."

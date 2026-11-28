@@ -1,0 +1,35 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Prove behavior reds beyond the new fixture's availability"
+    evidence:
+      - artifact: "plan.md § Test-First Work and Ownership, lines 40–45, specifies index, mount, and asset assertions before the scenario checks. quickstart.md § Before a phase does not distinguish the resulting red assertions."
+      - code: "storybook/test/unit/browser/pane-action-footer.test.ts:85–96 checks the mount export before interaction. storybook/test/integration/pane-action-footer.test.ts:171 checks the built index before navigation. packages/elements/test/browser/pane-action-footer.test.ts:26–49 checks source and CSS before bundling."
+      - code: "gates/lib/story-selection.ts:73–78 selects the recorded failing cases. gates/lib/test-evidence.ts:373–385 verifies those cases and assertion sites. Neither mechanism can record a downstream assertion the test never reached."
+    claim: |
+      Every test for a new composition can fail at its common availability
+      assertion and then pass against a working fixture without ever having
+      demonstrated sensitivity to broken behavior. The canonical replay can
+      accept that failure set, even if no recorded red reached the request,
+      retained draft, instance pin, or focus assertion.
+    remedies:
+      - "Separate packaging and fixture-availability cases from behavior cases. Use a runnable behavior-neutral scaffold where needed so the behavior cases reach controlled targets. Require the phase records to identify failures at the relevant post-action assertions for authoring requests and focus, interview draft and retry, and per-instance upgrade state, alongside the distinct availability evidence."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 2
+    title: "Observe the authoritative semantic snapshot in the authoring test"
+    evidence:
+      - artifact: "spec.md SC-002 requires byte-identical serialized semantics after movement. plan.md § Phase 1, line 24, asks for a comparison without identifying where tests obtain the authoritative serialization."
+      - code: "packages/elements/src/workflow-canvas-types.ts:8–37 defines the canvas projection as display nodes and connections with separate layout. It carries an accountable-role label, but no named reviewer binding from the fixture's authoring store."
+    claim: |
+      A test can compare only the canvas projection before and after a move
+      while the authoritative fixture has lost or changed a reviewer binding
+      omitted from that projection. That test would report a preserved semantic
+      graph without exercising the contract the issue names.
+    remedies:
+      - "Name a fixture-owned, read-only observation of the real serialized semantic store. Compare immutable snapshots captured independently before and after the delivered action. Assert unchanged semantic bytes and changed visible layout after movement, the specific accepted edge delta after rewiring, and the unchanged store and reported request after rejection."
