@@ -1,0 +1,27 @@
+name: Read anchored popover Phase 2 evidence
+on:
+  push:
+    branches:
+      - 'ci/036-phase-2-evidence'
+permissions:
+  actions: read
+  contents: read
+jobs:
+  relay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          github-token: ${{ github.token }}
+          run-id: 46157605890
+          name: ocelle-phase-replay-1
+          path: ${{ runner.temp }}/popover-replay
+      - shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/popover-replay"
+          for key in tdd-check.json check-red-phase.log check-final-tests-on-base.log check-head.log; do
+            base64 -w 2400 "$key" | sed "s/^/OCELLE_P2_RECEIPT $key /"
+            wc -c "$key"
+          done
