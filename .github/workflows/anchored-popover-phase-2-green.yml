@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 env:
-  OCELLE_PROOF_HEAD: 0ee04df4c61649ef876b0074c14d57b91a65490a
+  OCELLE_PROOF_HEAD: db86303363ea1bed8d9ef40dfa6a63c844e4eee6
   OCELLE_PROOF_BASE: a6ef9048f9ca30f69a32dd9b55e7d4085f154104
   OCELLE_PROOF_PHASE: '2'
 
@@ -126,7 +126,8 @@ jobs:
       - name: Exercise the new and existing real popover and packaged browser cases
         run: |
           test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
-          pnpm test -- packages/elements/test/anchored-popover.test.ts \
+          node gates/bin/test.ts --project elements --project elements-touch --project elements-browser \
+            packages/elements/test/anchored-popover.test.ts \
             packages/elements/test/anchored-popover-lifecycle.test.ts \
             packages/elements/test/anchored-popover-pointer.test.ts \
             packages/elements/test/anchored-popover.touch.test.ts \
