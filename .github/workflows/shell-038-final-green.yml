@@ -1,0 +1,29 @@
+name: Shell Phase 1 exact green evidence export
+on:
+  push:
+    branches: [ci/038-phase-1-final-receipt]
+permissions:
+  actions: read
+jobs:
+  receipt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: shell-phase-1-green
+          run-id: 46092973214
+          repository: Ocelle-HQ/ocelle-components
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/phase-1-final-green
+      - name: Confirm and export exact green replay and Mutation records
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/phase-1-final-green"
+          jq -e --arg head "be87feddf8b96ba15319340ca7dce144cb9d6ad6" '.head == $head and .status == "pass" and .head_exit == 0 and .final_tests_on_base_exit == 1 and (.red_commits[0].evidence.assertions | length) == 6 and (.problems | length) == 0' tdd-check.json >/dev/null
+          sha256sum tdd-check.json mutation.txt
+          for name in tdd-check.json mutation.txt; do
+            while IFS= read -r chunk; do
+              printf 'record %s %s\n' "$name" "$chunk"
+            done < <(base64 -w 3072 "$name")
+          done
