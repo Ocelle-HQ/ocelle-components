@@ -167,14 +167,20 @@ try {
     assert.equal(beforeScroll.width, beforeScroll.client, "the narrow page has no horizontal overflow");
     await page.mouse.move(start.x, start.y);
     await page.mouse.wheel(0, capacity);
-    await page.waitForFunction((hostId) => {
-      const element = document.getElementById(hostId);
-      const panel = element.shadowRoot.querySelector("[part=surface]");
-      const end = element.querySelector("[data-last-action]").getBoundingClientRect();
+    const last = host.locator("[data-last-action]");
+    const finalActionVisible = () => last.evaluate((action) => {
+      const panel = action.closest("ocelle-anchored-popover").shadowRoot.querySelector("[part=surface]");
+      const end = action.getBoundingClientRect();
       const visible = panel.getBoundingClientRect();
       return panel.scrollTop > 0 && end.top >= visible.top - 0.5 && end.bottom <= visible.bottom + 0.5;
-    }, id);
-    const last = host.locator("[data-last-action]");
+    });
+    const deadline = performance.now() + 5000;
+    let visible = await finalActionVisible();
+    while (!visible && performance.now() < deadline) {
+      await new Promise((resolve) => { setTimeout(resolve, 50); });
+      visible = await finalActionVisible();
+    }
+    assert.ok(visible, "native wheel scrolling makes the final action fully visible inside the panel");
     const end = await pointer(last);
     await page.mouse.click(end.x, end.y);
     assert.equal(await last.getAttribute("data-trusted-clicks"), "1", "inner scrolling makes the final action clickable");

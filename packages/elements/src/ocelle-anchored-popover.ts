@@ -187,13 +187,14 @@ export class OcelleAnchoredPopover extends LitElement {
     if (surface !== null) this.#hide(includes(surface, this.#active()));
   }
 
-  protected override createRenderRoot(): HTMLElement | DocumentFragment {
-    const root = super.createRenderRoot() as ShadowRoot;
+  #geometryFor(root: ShadowRoot): CSSStyleDeclaration {
+    if (this.#geometry !== undefined) return this.#geometry;
     const sheet = new CSSStyleSheet();
     sheet.replaceSync('[part="surface"] {}');
-    this.#geometry = (sheet.cssRules.item(0) as CSSStyleRule).style;
+    const geometry = (sheet.cssRules.item(0) as CSSStyleRule).style;
     root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
-    return root;
+    this.#geometry = geometry;
+    return geometry;
   }
 
   protected override render() {
@@ -249,8 +250,9 @@ export class OcelleAnchoredPopover extends LitElement {
     }
     if (event.defaultPrevented) return;
     const { defaultView: view } = this.ownerDocument;
-    const geometry = this.#geometry;
-    if (view === null || geometry === undefined) return;
+    const root = this.shadowRoot;
+    if (view === null || root === null) return;
+    const geometry = this.#geometryFor(root);
     // A canceled opening can leave tracking scheduled until the next frame.
     this.#releaseTracking();
     this.#trigger?.setAttribute("aria-expanded", "true");
@@ -283,7 +285,7 @@ export class OcelleAnchoredPopover extends LitElement {
     const open = this.#open;
     if (open === undefined) return;
     const surface = this.#surface;
-    if (surface === null || !surface.matches(":popover-open")) {
+    if (!surface?.matches(":popover-open")) {
       this.#stop();
       return;
     }
