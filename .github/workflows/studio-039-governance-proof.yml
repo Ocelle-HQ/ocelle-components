@@ -14,13 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 0ba66195a854fccd47bb5715f9c664bef08fcee3
+          ref: 048a381f19d36ec913b9b8874ebd4d65011bb11f
           fetch-depth: 0
           persist-credentials: false
-      - name: Check the fresh lens scope
+      - name: Check the second-round scope and single verified finding
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "0ba66195a854fccd47bb5715f9c664bef08fcee3"
+          test "$(git rev-parse HEAD)" = "048a381f19d36ec913b9b8874ebd4d65011bb11f"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh lens 30923bb52e0e4a5e99189c1697428ea9422a5c8e
-          grep -Fx 'complete: true' specs/039-workflow-studio-compositions/reviews/plan/round-2/lens-fresh.yaml
+          tooling/speckit/bin/scope-check.sh refute 30923bb52e0e4a5e99189c1697428ea9422a5c8e
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 2 and .lens_files == 1 and .confirmed == 1 and .fixes == 1 and .forks == 0' <<< "$status"
