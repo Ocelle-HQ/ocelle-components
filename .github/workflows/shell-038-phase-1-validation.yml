@@ -1,129 +1,79 @@
-name: Shell Phase 1 validation and visual comparison
+name: Shell Phase 1 exact baseline export
 on:
   push:
     branches: [ci/038-phase-1-validation]
 permissions:
+  actions: read
   contents: read
-env:
-  SPECIFY_FEATURE_DIRECTORY: specs/038-shell-chrome-alignment
-  SPECIFY_FEATURE_NO_PERSIST: "1"
-  EXPECTED_HEAD: 663820232a5df81195bd6c20a9c1a12931be9b55
-  PHASE_BASE: 1451b45ba68a5780693d69935e8a87f9c7419fc6
 jobs:
-  story:
-    name: Canonical replay and changed-scope Mutation
+  export:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [0,1,2,3,4,5,6,7]
+    env:
+      GROUP: ${{ matrix.group }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: 663820232a5df81195bd6c20a9c1a12931be9b55
-          fetch-depth: 0
           persist-credentials: false
-      - uses: ./.github/actions/setup
-      - name: Prove original red, final tests against base, and green
-        shell: bash
-        run: |
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          mkdir -p "$RUNNER_TEMP/shell-story"
-          report="$RUNNER_TEMP/shell-story/tdd-check.json"
-          .specify/extensions/story/scripts/tdd-check.sh 1 > "$report"
-          jq '{status, head, base, final_tests_on_base_exit, head_exit, problems, reds: [.red_commits[] | {label, exit_code, count: (.evidence.assertions | length)}]}' "$report"
-          jq -e --arg sha "$EXPECTED_HEAD" --arg base "$PHASE_BASE" '.status == "pass" and .head == $sha and .base == $base and .final_tests_on_base_exit == 1 and .head_exit == 0 and (.problems | length) == 0 and (.red_commits[0].evidence.assertions | length) == 6' "$report"
-      - name: Check the actual Mutation range and retained scope
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/shell-story"
-          pnpm run gate:mutation -- --base "$PHASE_BASE" | tee "$RUNNER_TEMP/shell-story/mutation.txt"
-      - if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          name: shell-phase-1-green
-          path: ${{ runner.temp }}/shell-story/
-          if-no-files-found: warn
-  static:
-    name: Types, lint, strict CSP and manifest
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: 663820232a5df81195bd6c20a9c1a12931be9b55
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-      - name: Verify the exact static and build checks
-        shell: bash
-        run: |
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          pnpm run gate:typecheck
-          pnpm run gate:lint
-          pnpm run gate:style-lint
-          pnpm run gate:test-lint
-          pnpm --filter './packages/*' -r build
-          pnpm run gate:csp
-          pnpm run gate:manifest
-          pnpm run gate:storybook-build
-          pnpm run gate:sandbox-paths
-  visual:
-    name: Pinned visual comparison before updating baselines
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: 663820232a5df81195bd6c20a9c1a12931be9b55
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-      - name: Compare the full inventory and record only measured differences
-        shell: bash
-        run: |
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          mkdir -p "$RUNNER_TEMP/shell-visual"
-          set +e
-          pnpm --silent run gate:visual -- --engine both --remove-docker-image > "$RUNNER_TEMP/shell-visual/comparison.txt" 2>&1
-          status=$?
-          set -e
-          cat "$RUNNER_TEMP/shell-visual/comparison.txt"
-          printf '%s\n' "$status" > "$RUNNER_TEMP/shell-visual/visual-exit.txt"
-          test "$status" -eq 1
-          node --input-type=module <<'NODE'
-          import { createHash } from "node:crypto";
-          import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-          import { join } from "node:path";
-          const allowed = new Set(["elements-ocelle-app-shell--flush-block-end.dark.png","elements-ocelle-app-shell--flush-block-end.light.png","elements-ocelle-app-shell--flush-both-ends.dark.png","elements-ocelle-app-shell--flush-both-ends.light.png","elements-ocelle-app-shell--flush-inline-end.dark.png","elements-ocelle-app-shell--flush-inline-end.light.png","elements-ocelle-app-shell--mission-collapsed.dark.png","elements-ocelle-app-shell--mission-collapsed.light.png","elements-ocelle-app-shell--mission-drawer-open.dark.png","elements-ocelle-app-shell--mission-drawer-open.light.png","elements-ocelle-app-shell--mission-expanded.dark.png","elements-ocelle-app-shell--mission-expanded.light.png","elements-ocelle-app-shell--mission-narrow.dark.png","elements-ocelle-app-shell--mission-narrow.light.png","elements-ocelle-app-shell--omitted-regions.dark.png","elements-ocelle-app-shell--omitted-regions.light.png","elements-ocelle-app-shell--personal-drawer-open.dark.png","elements-ocelle-app-shell--personal-drawer-open.light.png","elements-ocelle-app-shell--personal-narrow.dark.png","elements-ocelle-app-shell--personal-narrow.light.png","elements-ocelle-app-shell--personal.dark.png","elements-ocelle-app-shell--personal.light.png","elements-ocelle-app-shell--project-collapsed.dark.png","elements-ocelle-app-shell--project-collapsed.light.png","elements-ocelle-app-shell--project-drawer-open.dark.png","elements-ocelle-app-shell--project-drawer-open.light.png","elements-ocelle-app-shell--project-expanded.dark.png","elements-ocelle-app-shell--project-expanded.light.png","elements-ocelle-app-shell--project-narrow.dark.png","elements-ocelle-app-shell--project-narrow.light.png","elements-ocelle-top-bar--brand-only.dark.png","elements-ocelle-top-bar--brand-only.light.png","elements-ocelle-top-bar--focused.dark.png","elements-ocelle-top-bar--focused.light.png","elements-ocelle-top-bar--menu-closed.dark.png","elements-ocelle-top-bar--menu-closed.light.png","elements-ocelle-top-bar--menu-expanded.dark.png","elements-ocelle-top-bar--menu-expanded.light.png","elements-ocelle-top-bar--narrow.dark.png","elements-ocelle-top-bar--narrow.light.png","elements-ocelle-top-bar--with-actions.dark.png","elements-ocelle-top-bar--with-actions.light.png"]);
-          const source = "storybook/.visual";
-          const evidence = join(process.env.RUNNER_TEMP, "shell-visual");
-          const output = join(evidence, "baselines");
-          mkdirSync(output);
-          const findings = readFileSync(join(evidence, "comparison.txt"), "utf8").split("\n").filter(line => line.includes(": visual: "));
-          const reports = findings.map((line) => {
-            const match = /^([a-z0-9-]+)\/(light|dark): visual: differs: /.exec(line);
-            if (match === null) throw new Error("Unexpected visual finding: " + line);
-            return match[1] + "." + match[2] + ".png";
-          }).sort();
-          const names = readdirSync(join(source, "baselines")).sort();
-          if (names.length === 0 || new Set(reports).size !== reports.length || JSON.stringify(names) !== JSON.stringify(reports)) {
-            throw new Error("Capture paths do not match the observed visual findings");
-          }
-          if (names.some(name => !allowed.has(name))) throw new Error("Comparison found a change outside the planned chrome stories");
-          const files = names.map(name => {
-            const fresh = join(source, "baselines", name);
-            const bytes = readFileSync(fresh);
-            copyFileSync(fresh, join(output, name));
-            const diff = name.replace(/\.png$/, ".diff.png");
-            copyFileSync(join(source, diff), join(evidence, diff));
-            return {name, size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex")};
-          });
-          const receipt = {head: process.env.EXPECTED_HEAD, phaseBase: process.env.PHASE_BASE, status: "differs", engines: ["docker", "podman"], pin: JSON.parse(readFileSync("storybook/visual/container.json", "utf8")), files};
-          const record = JSON.stringify(receipt, null, 2) + "\n";
-          writeFileSync(join(evidence, "receipt.json"), record);
-          console.log(record.trimEnd());
-          NODE
-      - if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+          node-version-file: .node-version
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: shell-phase-1-visual-comparison
-          path: ${{ runner.temp }}/shell-visual/
-          if-no-files-found: error
+          run-id: 46090749386
+          repository: Ocelle-HQ/ocelle-components
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/shell-visual
+      - name: Verify transferred PNGs and localize the changed pixels
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "663820232a5df81195bd6c20a9c1a12931be9b55"
+          node --input-type=module <<'NODE'
+          import { createHash } from "node:crypto";
+          import { readFileSync } from "node:fs";
+          import { join } from "node:path";
+          import { inflateSync } from "node:zlib";
+          import { decodePng } from "./packages/elements/test/pixels.ts";
+          const root = join(process.env.RUNNER_TEMP, "shell-visual");
+          const receipt = JSON.parse(readFileSync(join(root, "receipt.json"), "utf8"));
+          const names = ["elements-ocelle-app-shell--flush-block-end.dark.png","elements-ocelle-app-shell--flush-block-end.light.png","elements-ocelle-app-shell--flush-both-ends.dark.png","elements-ocelle-app-shell--flush-both-ends.light.png","elements-ocelle-app-shell--flush-inline-end.dark.png","elements-ocelle-app-shell--flush-inline-end.light.png","elements-ocelle-app-shell--mission-collapsed.dark.png","elements-ocelle-app-shell--mission-collapsed.light.png","elements-ocelle-app-shell--mission-expanded.dark.png","elements-ocelle-app-shell--mission-expanded.light.png","elements-ocelle-app-shell--mission-narrow.dark.png","elements-ocelle-app-shell--mission-narrow.light.png","elements-ocelle-app-shell--omitted-regions.dark.png","elements-ocelle-app-shell--omitted-regions.light.png","elements-ocelle-app-shell--personal-narrow.dark.png","elements-ocelle-app-shell--personal-narrow.light.png","elements-ocelle-app-shell--personal.dark.png","elements-ocelle-app-shell--personal.light.png","elements-ocelle-app-shell--project-collapsed.dark.png","elements-ocelle-app-shell--project-collapsed.light.png","elements-ocelle-app-shell--project-expanded.dark.png","elements-ocelle-app-shell--project-expanded.light.png","elements-ocelle-app-shell--project-narrow.dark.png","elements-ocelle-app-shell--project-narrow.light.png","elements-ocelle-top-bar--brand-only.dark.png","elements-ocelle-top-bar--brand-only.light.png","elements-ocelle-top-bar--focused.dark.png","elements-ocelle-top-bar--focused.light.png","elements-ocelle-top-bar--menu-closed.dark.png","elements-ocelle-top-bar--menu-closed.light.png","elements-ocelle-top-bar--menu-expanded.dark.png","elements-ocelle-top-bar--menu-expanded.light.png","elements-ocelle-top-bar--narrow.dark.png","elements-ocelle-top-bar--narrow.light.png","elements-ocelle-top-bar--with-actions.dark.png","elements-ocelle-top-bar--with-actions.light.png"];
+          if (receipt.head !== "663820232a5df81195bd6c20a9c1a12931be9b55" || receipt.phaseBase !== "1451b45ba68a5780693d69935e8a87f9c7419fc6" || JSON.stringify(receipt.files.map(file => file.name)) !== JSON.stringify(names)) throw new Error("Visual receipt pin or path mismatch");
+          const group = Number(process.env.GROUP);
+          const selected = receipt.files.slice(group * 5, (group + 1) * 5);
+          if (!selected.length) throw new Error("Empty export group");
+          for (const file of selected) {
+            const bytes = readFileSync(join(root, "baselines", file.name));
+            const sha256 = createHash("sha256").update(bytes).digest("hex");
+            if (sha256 !== file.sha256 || bytes.length !== file.size) throw new Error("Review and export bytes differ: " + file.name);
+            const prior = readFileSync(join("storybook/baselines", file.name));
+            const inflate = data => Promise.resolve(inflateSync(data));
+            const before = await decodePng(prior, inflate);
+            const after = await decodePng(bytes, inflate);
+            if (before.width !== after.width || before.height !== after.height) throw new Error("Unexpected capture size change: " + file.name);
+            let pixels = 0, top = after.height, bottom = -1;
+            for (let y = 0; y < after.height; y++) {
+              for (let x = 0; x < after.width; x++) {
+                const offset = (y * after.width + x) * 4;
+                if (![0, 1, 2, 3].some(channel => before.data[offset + channel] !== after.data[offset + channel])) continue;
+                pixels++;
+                top = Math.min(y, top);
+                bottom = Math.max(y, bottom);
+              }
+            }
+            if (!pixels) throw new Error("Expected a measured difference: " + file.name);
+            const blob = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+            console.log("png-metadata " + JSON.stringify({name: file.name, sha256, blob, size: bytes.length, pixels, top, bottom, width: after.width, height: after.height}));
+            const encoded = bytes.toString("base64");
+            for (const chunk of encoded.match(/.{1,3072}/g)) console.log("png-data " + file.name + " " + chunk);
+            if (["elements-ocelle-top-bar--brand-only.light.png", "elements-ocelle-app-shell--mission-expanded.light.png"].includes(file.name)) {
+              const diff = readFileSync(join(root, file.name.replace(/\.png$/, ".diff.png"))).toString("base64");
+              for (const chunk of diff.match(/.{1,3072}/g)) console.log("png-sample " + file.name + " " + chunk);
+            }
+          }
+          NODE
