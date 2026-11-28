@@ -990,13 +990,14 @@ describe("generate(root) on the repository's element source", () => {
     const variant = '"primary" | "secondary" | "quiet" | undefined';
     const size = '"default" | "compact" | undefined';
     const ground = '"accent-low" | "inset" | "hover-bg" | "state" | "chrome" | undefined';
-    expect(described(button?.members)).toEqual([
+    expect(described(button?.members), "public button properties including reflected initials").toEqual([
       { kind: "field", name: "variant", privacy: "public", type: { text: variant }, default: "undefined", attribute: "variant", reflects: true, described: true },
       { kind: "field", name: "size", privacy: "public", type: { text: size }, default: "undefined", attribute: "size", reflects: true, described: true },
       { kind: "field", name: "flush", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "flush", reflects: true, described: true },
       { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
       { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
       { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      { kind: "field", name: "initials", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "initials", reflects: true, described: true },
       // 012 phase 4 (tasks.md T043, T048; FR-015): busy.
       { kind: "field", name: "busy", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "busy", reflects: true, described: true },
       // 012 phase 3 (tasks.md T033, T037): the link properties.
@@ -1014,6 +1015,7 @@ describe("generate(root) on the repository's element source", () => {
       { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
       { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      { name: "initials", fieldName: "initials", type: { text: "string | undefined" }, default: "undefined", described: true },
       { name: "busy", fieldName: "busy", type: { text: "boolean" }, default: "false", described: true },
       ...["href", "target", "rel", "download"].map((name) => ({ name, fieldName: name, type: { text: "string | undefined" }, default: "undefined", described: true })),
     ]);

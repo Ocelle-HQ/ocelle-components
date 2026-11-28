@@ -1,6 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { personalRailScenarios } from "../scenarios/personal-rail.ts";
+import { personalRailScenarios, initialsRailScenarios } from "../scenarios/personal-rail.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -37,5 +37,16 @@ describe("ocelle-personal-rail on the strict-CSP fixture with the browser build 
     const page = await visit(browser, origin, base ? "personal-rail-base.html" : "personal-rail.html", allowed);
     const observed = await run(fixtureDriver(page.page, page.log, base));
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
+
+describe("Initials in the personal rail on the strict-CSP fixture", { timeout: 60_000 }, () => {
+  it.each(initialsRailScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "personal-rail.html", allowed);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    const recorded = await page.finish();
+    expect(observed, "rail geometry, keyboard focus and initials").toEqual(expected);
+    expect(recorded).toEqual(clean);
   });
 });

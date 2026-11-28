@@ -5,7 +5,7 @@ import "../src/ocelle-icon.ts";
 import "./fixtures/shadow-controls.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { busyScenarios, busySinkScenarios } from "./scenarios/busy.ts";
-import { chromeActionScenarios, buttonScenarios, forwardedIconScenarios } from "./scenarios/button.ts";
+import { chromeActionScenarios, initialsScenarios, buttonScenarios, forwardedIconScenarios } from "./scenarios/button.ts";
 import { linkScenarios, linkSinkScenarios } from "./scenarios/link.ts";
 
 // User Story 1's browser scenarios for `ocelle-button` in button mode, in process on the element source (012
@@ -269,5 +269,12 @@ describe("ocelle-button's icon gap follows the label text", () => {
     await empty.updateComplete;
     await frame();
     expect({ texted: layout(texted).margin, empty: layout(empty) }).toEqual({ texted: "8px", empty: { margin: "0px", centred: true } });
+  });
+});
+
+describe("Initials account button in process", { timeout: 60_000 }, () => {
+  it.each(initialsScenarios)("$name", async ({ run, expected }) => {
+    const observed = await run(driver);
+    expect(observed, "named button and visible initials").toEqual(expected);
   });
 });

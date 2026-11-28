@@ -36,6 +36,7 @@
 import { expect } from "vitest";
 import readmeText from "../../README.md?raw";
 import type { Scenario } from "./icon.ts";
+import { dispatches, initialsPlate } from "./button.ts";
 import { systemColours } from "./icon.ts";
 import type { Box, Driver, Palette, Pixels } from "./driver.ts";
 import { after, below, boxes, inOrder, lengthIs, pick, probe, tenth, tokenColour, tokenPx, tokensOf } from "./layout.ts";
@@ -830,3 +831,65 @@ const withBase: Scenario[] = [
 ];
 
 export const personalRailScenarios: RailScenario[] = [...plain.map((scenario) => ({ ...scenario, base: false })), ...withBase.map((scenario) => ({ ...scenario, base: true }))];
+
+const innerButton = '[part="control"]';
+
+export const initialsRailScenarios: readonly RailScenario[] = [320, 1280].flatMap((width) => [16, 32].map((root) => ({
+  name: `Initials rail at ${String(width)} px and ${String(root)} px root preserves the untreated layout, keyboard order and activation`,
+  base: false,
+  async run(driver: Driver) {
+    const original = await driver.viewportSize();
+    const result = [];
+    try {
+      await driver.viewport(width, 800);
+      for (const forced of ["none", "active"] as const) {
+        await mount(driver, '<button id="start">Start</button><span id="scale"></span>' + box("r", rail("r", primary("r", 1) +
+          '<ocelle-button id="settings" slot="bottom" flush ground="chrome" label="Settings"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>' +
+          '<ocelle-button id="account" slot="bottom" flush ground="chrome" label="Account actions"><ocelle-icon id="old" slot="icon" name="folder"></ocelle-icon></ocelle-button>')));
+        await driver.rules(`html { font-size: ${String(root / 16 * 100)}%; } #r-box { height: 18rem; margin-inline: 0.5rem; } #scale { font-size: 1rem; }`);
+        await driver.forcedColors(forced);
+        const geometry = async () => ({
+          primary: await driver.box("r-p1"), settings: await driver.box("settings", innerButton), account: await driver.box("account", innerButton), divider: await driver.box("r", ".divider"),
+        });
+        const before = await geometry();
+        await driver.remove("old");
+        await driver.setAttribute("account", "initials", "WW");
+        const after = await geometry();
+        const target = await tokenPx(driver, "target-min");
+        const ringWidth = async () => Number.parseFloat(await driver.computed("account", "outline-width", innerButton));
+        await driver.events("account", ["ocelle-button-activate"]);
+        await driver.focus("start");
+        await driver.press("Tab");
+        const primaryFocus = await driver.focusVisible("r-p1");
+        await driver.press("Tab");
+        const settingsFocus = await driver.focusVisible("settings", innerButton);
+        await driver.press("Tab");
+        const accountFocus = await driver.focusVisible("account", innerButton);
+        const ring = await ringWidth();
+        const extent = ring + Number.parseFloat(await driver.computed("account", "outline-offset", innerButton));
+        const railOverflow = await driver.computed("r", "overflow");
+        const focused = await driver.box("account", innerButton);
+        const bottom = focused.y + focused.height;
+        const right = focused.x + focused.width;
+        await driver.press("Enter");
+        const enter = dispatches(await driver.takeEvents(), "ocelle-button-activate", "account");
+        await driver.press(" ");
+        const space = dispatches(await driver.takeEvents(), "ocelle-button-activate", "account");
+        result.push({
+          geometry: JSON.stringify(before) === JSON.stringify(after), divider: after.divider.height > 0,
+          targets: [before.account.width, before.account.height, after.account.width, after.account.height, target],
+          gap: after.account.y - (after.settings.y + after.settings.height) > 0,
+          root: await driver.computed("scale", "font-size"), focus: [primaryFocus, settingsFocus, accountFocus],
+          visibleRing: ring > 0 && railOverflow === "visible" && bottom + extent <= 800 && right + extent <= width && focused.x - extent >= 0,
+          fits: await driver.scrollWidth() <= width, enter, space, name: (await driver.axState("account", innerButton)).name,
+          plate: (await driver.box("account", initialsPlate)).width > 0,
+        });
+      }
+      return result;
+    } finally {
+      await driver.forcedColors("none");
+      await driver.viewport(original.width, original.height);
+    }
+  },
+  expected: Array.from({ length: 2 }, () => ({ geometry: true, divider: true, targets: Array<number>(5).fill(root * 2.75), gap: true, root: `${String(root)}px`, focus: [true, true, true], visibleRing: true, fits: true, enter: 1, space: 1, name: "Account actions", plate: true })),
+})));
