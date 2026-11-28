@@ -14,13 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 067375dbe9b9428e235bdfac063f020fc7185c45
+          ref: 5bb142d2f6955780fde0cb165e20bc8c8a4b050c
           fetch-depth: 0
           persist-credentials: false
-      - name: Check the final independent lens scope
+      - name: Verify the clean plan and current task setup
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "067375dbe9b9428e235bdfac063f020fc7185c45"
+          test "$(git rev-parse HEAD)" = "5bb142d2f6955780fde0cb165e20bc8c8a4b050c"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh lens 6234e03d102558b5b7658932d925af921d708b22
-          grep -Fx 'findings: []' specs/039-workflow-studio-compositions/reviews/plan/round-3/lens-fresh.yaml
+          tooling/speckit/bin/scope-check.sh refute 6234e03d102558b5b7658932d925af921d708b22
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 3 and .lens_files == 1 and .confirmed == 0 and .forks == 0 and .unresolved == 0' <<< "$status"
+          setup=$(.specify/scripts/bash/setup-tasks.sh --json)
+          jq '{FEATURE_DIR,TASKS_TEMPLATE,AVAILABLE_DOCS}' <<< "$setup"
+          test -z "$(git status --porcelain)"
