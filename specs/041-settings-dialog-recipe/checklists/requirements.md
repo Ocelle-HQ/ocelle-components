@@ -16,6 +16,7 @@
 - [x] No clarification markers remain.
 - [x] Requirements and success outcomes are testable.
 - [x] Scenarios cover independent navigation, disclosure, focus, dismissal and reflow.
+- [x] Category and section navigation each specify the focused heading and the next Tab destination.
 - [x] Edge cases, dependencies and scope boundaries are identified.
 
 ## Feature Readiness

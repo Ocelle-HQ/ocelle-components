@@ -36,7 +36,7 @@ A keyboard user can choose a category or independently reveal its child destinat
 
 1. **Given** a category with collapsed destinations, **When** a user activates its separately named disclosure control, **Then** the child navigation slides into view, the expanded state is announced, and the displayed panel stays in place.
 2. **Given** reduced motion, **When** a user toggles the disclosure, **Then** the same state changes occur with no sliding animation.
-3. **Given** the dialog is open, **When** a keyboard user changes category or section, **Then** focus reaches the new panel predictably and continues through visible controls within the modal. Escape or Close returns focus to the opener.
+3. **Given** the dialog is open, **When** a keyboard user changes category or section, **Then** focus moves to the new panel’s main heading. The next Tab reaches the first section destination on a category landing panel or the first panel action on a section detail panel. Tab and Shift+Tab keep focus within the modal. Escape or Close returns focus to the opener.
 4. **Given** a narrow viewport, **When** the user opens the dialog, **Then** navigation and content stack in reading order, with no horizontal overflow and with Close reachable.
 
 ### Edge Cases
@@ -53,7 +53,7 @@ A keyboard user can choose a category or independently reveal its child destinat
 - **FR-002**: The dialog MUST keep its outer bounds and header position stable across short and long panels at fixed viewport and text size, with independent content scrolling and a reachable Close action.
 - **FR-003**: Each category label MUST open a landing panel with clear, operable section destinations.
 - **FR-004**: Each category MUST offer a separate, named disclosure control without a visible chevron, expose its expanded state programmatically, and honor reduced motion when changing visibility.
-- **FR-005**: Landing and detail panels MUST have clear heading, section and action hierarchy, indicate the selected destination, and move focus predictably when switching panels.
+- **FR-005**: Landing and detail panels MUST have clear heading, section and action hierarchy, indicate the selected destination, and move focus to the destination panel’s main heading on category or section activation. The next Tab MUST reach the first section destination on a landing panel or the first panel action on a detail panel.
 - **FR-006**: The modal MUST contain keyboard focus while open, dismiss via Escape or Close and restore focus to the opener.
 - **FR-007**: The recipe MUST stack navigation and content at narrow widths with no horizontal overflow and keep controls reachable at 200% text.
 - **FR-008**: Category labels and panel content MUST be host-supplied. The example MUST use fictional content and existing tokens, accessibility and strict-CSP conventions.
@@ -63,7 +63,7 @@ A keyboard user can choose a category or independently reveal its child destinat
 ### Measurable Outcomes
 
 - **SC-001**: Switching between the short landing panel and long detail leaves dialog and header geometry unchanged at the same viewport, and Close remains reachable after the content pane scrolls.
-- **SC-002**: Keyboard and pointer activation can independently navigate and toggle the child destinations. The keyboard flow verifies current and expanded states, focus on the destination, focus containment and return after both dismissals.
+- **SC-002**: Keyboard and pointer activation can independently navigate and toggle the child destinations. The browser keyboard test verifies current and expanded states. It checks the focused heading immediately after category activation and the first section destination after one Tab, then checks the focused heading immediately after section activation and the first panel action after one Tab. It also verifies focus containment and return after both dismissals.
 - **SC-003**: The same controls remain identifiable and operable in light, dark and forced-colors modes. Disclosure remains operable with reduced motion.
 - **SC-004**: At 320 CSS pixels and at 200% text where applicable, navigation, panel contents and Close are reachable without horizontal scrolling.
 
