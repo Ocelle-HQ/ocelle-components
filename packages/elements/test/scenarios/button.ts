@@ -36,6 +36,7 @@
 //   beside the labelled cases above, an icon-only button's icon (default, compact, busy) has the block-centre of a
 //   native `<button>`'s svg in the same line; plant: the unscoped `.icon-row > .label { align-self: baseline }` in
 //   place of the scoped `.icon-row:not(.bare) > .label` rule.
+import { expectedDrawing } from "../icons-expected.ts";
 import { tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
 import type { Box, Driver, EventRecord, Palette } from "./driver.ts";
@@ -424,6 +425,56 @@ const flushCases = [
 export async function meaningful(driver: Driver, id: string): Promise<unknown[]> {
   return (await driver.ax(id)).filter((node) => node.role !== "generic" || node.name !== "");
 }
+
+const chromeActions = ["Inbox", "History", "Settings", "Notifications", "Appearance"] as const;
+
+export const chromeActionScenarios: readonly Scenario[] = chromeActions.map((label) => ({
+  name: `Chrome action ${label} has a decorative drawing, keyboard focus and one intent per gesture across palettes and at twice the root size`,
+  async run(driver) {
+    const name = label.toLowerCase();
+    const original = await driver.viewportSize();
+    const observations = [];
+    try {
+      await driver.viewport(320, 800);
+      for (const mode of ["light", "dark", "forced"] as const) {
+        await driver.mount(`<div class="on-chrome"><ocelle-icon id="known" name="close"></ocelle-icon><button id="start">Start</button>
+          <ocelle-button id="action" flush ground="chrome" label="${label}"><ocelle-icon id="glyph" slot="icon" name="${name}"></ocelle-icon></ocelle-button></div>`);
+        await driver.rules(groundRules + " html { font-size: 200%; }");
+        await driver.theme(mode === "dark" ? "dark" : "light");
+        await driver.forcedColors(mode === "forced" ? "active" : "none");
+        await driver.events("action", [activate]);
+        await driver.focus("start");
+        await driver.press("Tab");
+        const focused = await driver.focusVisible("action", control);
+        const outline = await driver.computed("action", "outline-style", control);
+        await driver.press("Enter");
+        const enter = dispatches(await driver.takeEvents(), activate, "action");
+        await driver.press(" ");
+        const space = dispatches(await driver.takeEvents(), activate, "action");
+        const box = await driver.box("action");
+        const paints = await driver.paints("glyph");
+        const ink = await driver.computed("action", "color", control);
+        observations.push({
+          positiveControl: await driver.drawing("known"), drawing: await driver.drawing("glyph"),
+          nodes: await meaningful(driver, "action"), focused, ring: outline !== "none",
+          fits: box.x >= 0 && box.x + box.width <= 320, targetHeight: box.height,
+          visibleStroke: paints.length > 1 && paints.every((part) => part.stroke === ink),
+          enter, space,
+        });
+      }
+      return observations;
+    } finally {
+      await driver.forcedColors("none");
+      await driver.theme(null);
+      await driver.viewport(original.width, original.height);
+    }
+  },
+  expected: ["light", "dark", "forced"].map(() => ({
+    positiveControl: expectedDrawing("close"), drawing: expectedDrawing(label.toLowerCase()),
+    nodes: [{ role: "button", name: label }], focused: true, ring: true, fits: true,
+    targetHeight: 88, visibleStroke: true, enter: 1, space: 1,
+  })),
+}));
 
 export const buttonScenarios: readonly Scenario[] = [
   {

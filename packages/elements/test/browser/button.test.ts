@@ -1,7 +1,7 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { busyNavigationScenarios, busyScenarios } from "../scenarios/busy.ts";
-import { buttonScenarios } from "../scenarios/button.ts";
+import { chromeActionScenarios, buttonScenarios } from "../scenarios/button.ts";
 import { linkNavigationScenarios, linkScenarios } from "../scenarios/link.ts";
 import type { Navigation, Outcome } from "../scenarios/link.ts";
 import { fixtureDriver } from "./driver.ts";
@@ -33,11 +33,13 @@ function started(): { readonly browser: Browser; readonly origin: string; readon
 }
 
 describe("ocelle-button on the strict-CSP fixture with the browser build (US1)", { timeout: 120_000 }, () => {
-  it.each(buttonScenarios)("$name", async ({ run, expected }) => {
+  it.each([...buttonScenarios, ...chromeActionScenarios])("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "button.html", ["ocelle-elements.js", "axe.js"]);
     const observed = await run(fixtureDriver(page.page, page.log));
-    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+    const recorded = await page.finish();
+    expect(observed, "settled drawing and interaction").toEqual(expected);
+    expect(recorded).toEqual(clean);
   });
 });
 

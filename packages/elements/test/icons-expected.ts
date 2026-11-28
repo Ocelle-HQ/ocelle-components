@@ -1,6 +1,6 @@
 // The expected icon drawings, written by hand (005 research.md R-07, data-model.md § Icon; PLAN-TESTABILITY-1-005):
 // never read from src/icons.ts. Each rendered `ocelle-icon` holds one `svg` with the shared attributes below and,
-// as its children in order, the shapes of its entry. The thirteen names of the set (spec US2 scenario 1, FR-017) in
+// as its children in order, the shapes of its entry. The eighteen names of the set (spec US2 scenario 1, FR-017) in
 // the spec's order; the drawings are the ones measured in reviews/phase-3/spike.md: geometry within 2 to 22 on the
 // 24-unit grid (R-07), every shape kind of data-model.md § Icon used. `mirror` marks the four inline-direction icons.
 import type { Part } from "./scenarios/driver.ts";
@@ -70,9 +70,14 @@ export const expectedIcons: Readonly<Record<string, ExpectedIcon>> = {
   table: { mirror: false, shapes: [rect(3, 4, 18, 16, 1), line(3, 10, 21, 10), line(3, 15, 21, 15), line(12, 10, 12, 20)] },
   // A sheet in front of the outline of the sheet behind it, up and to the left.
   copy: { mirror: false, shapes: [rect(8, 8, 12, 12, 1), path("M16 8V4H4v12h4")] },
+  inbox: { mirror: false, shapes: [path("M3 14l3-9h12l3 9v5H3z"), polyline("3 14 8 14 10 16 14 16 16 14 21 14")] },
+  history: { mirror: false, shapes: [path("M4 10a8 8 0 1 1 1 7"), polyline("3 5 4 10 9 9"), polyline("12 7 12 12 16 14")] },
+  settings: { mirror: false, shapes: [path("M10 3h4l1 3 3-1 2 3-2 3 2 2-1 4-4 1-1 3h-4l-1-3-3-1-2-3 2-3-2-2 2-4 3 1z"), circle(12, 12, 3)] },
+  notifications: { mirror: false, shapes: [path("M4 17l2-3V10a6 6 0 0 1 12 0v4l2 3z"), path("M10 20q2 2 4 0")] },
+  appearance: { mirror: false, shapes: [circle(12, 12, 8), line(12, 4, 12, 20), line(15, 7, 15, 17), line(18, 10, 18, 14)] },
 };
 
-/** The thirteen names of the set, in the spec's order. */
+/** The eighteen names of the set, in the spec's order. */
 export const iconNames: readonly string[] = Object.keys(expectedIcons);
 
 /**

@@ -132,7 +132,7 @@ function observe(page: Page): Promise<unknown> {
 }
 
 /** The thirteen names of the set (spec US2 scenario 1), each drawn, unlabelled. */
-const theSet = ["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => ({ name, label: null, drawn: true }));
+const theSet = ["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy", "inbox", "history", "settings", "notifications", "appearance"].map((name) => ({ name, label: null, drawn: true }));
 
 const stories = [
   { id: "elements-ocelle-icon--close", icons: [{ name: "close", label: null, drawn: true }] },
@@ -148,7 +148,7 @@ describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { ti
     for (const theme of ["light", "dark"] as const) {
       it(`${id} in ${theme}: renders its ocelle-icon with the story's name and label, with base.css applied and no request outside the origin`, async () => {
         const { page, outside } = await open(id, theme);
-        expect({ ...((await observe(page)) as object), outside }).toEqual({
+        expect({ ...((await observe(page)) as object), outside }).toStrictEqual({
           theme,
           base: { linked: true, scheme: theme },
           defined: true,
@@ -158,6 +158,27 @@ describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { ti
         await page.close();
       });
     }
+  }
+});
+
+describe("isolated chrome action stories", { timeout: 60_000 }, () => {
+  for (const label of ["Inbox", "History", "Settings", "Notifications", "Appearance"]) {
+    it(`renders the named ${label} action on chrome at 320 CSS px and twice the root text size`, async () => {
+      const { page } = await open(`elements-ocelle-icon--${label.toLowerCase()}-action`, "light", "ocelle-button");
+      try {
+        await page.setViewportSize({ width: 320, height: 800 });
+        await page.addStyleTag({ content: "html { font-size: 200%; }" });
+        const ground = page.locator('#storybook-root [data-token="color-chrome"]');
+        const button = ground.getByRole("button", { name: label, exact: true });
+        expect(await button.count()).toBe(1);
+        expect(await ground.locator(`ocelle-icon[name="${label.toLowerCase()}"] svg > *`).count()).toBeGreaterThan(0);
+        const rect = await button.boundingBox();
+        expect(rect?.height).toBe(88);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+      } finally {
+        await page.close();
+      }
+    });
   }
 });
 
