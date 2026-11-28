@@ -1,0 +1,61 @@
+name: Anchored popover exact Phase 1 advisory comparison
+
+on:
+  push:
+    branches: [ci/036-phase-1-advisory]
+
+permissions:
+  contents: read
+
+env:
+  OCELLE_PROOF_HEAD: b78736328e6cec05b4d84d3a8724fe1b9c17c5d0
+  OCELLE_PROOF_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
+  OCELLE_PROOF_PHASE: '1'
+
+jobs:
+  mutation-pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.OCELLE_PROOF_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run the full and related arms serially
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/ocelle-mutation-proof"
+          mkdir "$receipt"
+          test "$(git rev-parse HEAD)" = "$OCELLE_PROOF_HEAD"
+          git merge-base --is-ancestor "$OCELLE_PROOF_BASE" HEAD
+          printf 'head=%s\nbase=%s\ntree=%s\nrun=%s\nattempt=%s\nrunner=%s\nnode=%s\npnpm=%s\nplaywright=%s\nstryker=%s\n' \
+            "$OCELLE_PROOF_HEAD" "$OCELLE_PROOF_BASE" "$(git rev-parse 'HEAD^{tree}')" \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$ImageVersion" "$(node --version)" "$(pnpm --version)" \
+            "$(pnpm exec playwright --version)" "$(node -p 'require("./node_modules/@stryker-mutator/core/package.json").version')" \
+            | tee "$receipt/identity.txt"
+          node gates/bin/mutation.ts --base "$OCELLE_PROOF_BASE" --plan > "$receipt/plan.json"
+          selection=$(jq -er '[.[].files | select(split(",") | all(startswith("packages/elements/src/")))] | first' "$receipt/plan.json")
+          printf '%s\n' "$selection" | tee "$receipt/selector.txt"
+          for arm in full related; do
+            test -z "$(git status --porcelain)"
+            extra=()
+            if [[ "$arm" = related ]]; then
+              extra+=(--shadow-related-elements)
+            fi
+            code=0
+            timeout --signal=TERM --kill-after=30s 70m node gates/bin/mutation.ts \
+              --base "$OCELLE_PROOF_BASE" --files "$selection" --shadow-grouped "${extra[@]}" \
+              > "$receipt/$arm.log" 2> "$receipt/$arm.stderr" || code=$?
+            printf '%s\n' "$code" | tee "$receipt/$arm.exit"
+            sed -n 's/^mutation shadow receipt: //p' "$receipt/$arm.stderr" > "$receipt/$arm.jsonl"
+            tail -15 "$receipt/$arm.log"
+            grep -v '^mutation shadow receipt: ' "$receipt/$arm.stderr" | tail -15 || true
+          done
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ocelle-mutation-arms-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ocelle-mutation-proof
+          if-no-files-found: error
