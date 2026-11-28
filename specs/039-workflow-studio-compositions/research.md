@@ -2,11 +2,15 @@
 
 ## R-01 — Use the canvas request model directly
 
-The shipped canvas names selected nodes, viewport, layout and connections independently. It emits `ocelle-workflow-node-select` with `nodeId`, and canvas viewport, position and connection requests with their typed values. Accept or reject in one fixture host after recording the actual request. Render only the authoritative state. Reusing native canvas controls for step, move and connection fields keeps keyboard and tap paths on the implementation consumers actually use. [Canvas contract](../029-workflow-canvas/contracts/workflow-canvas.md)
+The shipped canvas names selected nodes, viewport, layout and connections independently. It emits `ocelle-workflow-node-select` with `nodeId`, and canvas viewport, position and connection requests with their typed values. Observe the delivered request before host acceptance or rejection. The canvas projects an accountable role and can hide dangling connections. Read independent immutable snapshots from the actual serialized host graph, including the named reviewer and accepted edges. The authoritative check detects a changed binding or hidden stale connection even when the display looks unchanged. [Canvas contract](../029-workflow-canvas/contracts/workflow-canvas.md)
 
-## R-02 — Return focus through real host actions
+## R-02 — Match the host route, binding and focus to the rendered controls
 
-The existing canvas recovers focus by keyed, visible graph order after removing a focused node. It does not offer an API to focus a node by ID from an unrelated inspector. Use the canvas behavior for its own removals and use real host-owned selection, Step and Add step actions where the host was responsible for focus. Keep Add step operable in the empty narrow route. Use the form-select’s public focus method after revealing the narrow drawer. The host controls the responsive specimen and lifecycle without using shadow DOM internals. [Responsive patterns](../009-workflow-layouts/spec.md) · [Canvas focus contract](../029-workflow-canvas/spec.md)
+The canvas recovers its own removed action by visible graph order. Its Step chooser sets a reveal target, and a graph projection can hide stale records. The example host owns the named removal and its complete semantic and layout transition. Use public host selection controls when the host owns focus recovery. Keep the visible Step and Add step fallbacks operable.
+
+List-detail chooses from its own border box and exports the public narrow and detail-open inputs. Use the same published threshold and measured recipe container to route the inline or drawer inspector. The form-select falls back to the first enabled option if its current value is absent. A real enabled empty-value option plus public value synchronization represents the host's missing binding consistently. The notice announces only when enabled or assigned a live role. Use its existing announce behavior for rejection and keep the textarea's existing error path for the interview.
+
+An overlay close follows a focus attempt on the opener. A mounted but hidden opener cannot receive focus. Use the public close lifecycle and settled pane state, then check actual deep focus and select the visible fallback when needed. Use the existing tokenized focus and target treatment and observed clipping bounds for the story's primary host controls. [Responsive patterns](../009-workflow-layouts/contracts/elements.md) · [Canvas focus contract](../029-workflow-canvas/spec.md)
 
 ## R-03 — Keep the editable interview draft until an accepted save
 
@@ -18,7 +22,7 @@ The #75 completed comparison recipe already uses shared facts, a notice and read
 
 ## R-05 — Exercise the same hosts in two build environments
 
-The pane action footer uses an external host, ordinary Storybook build tests and a separately compiled strict package fixture. Existing default Mutation retains the in-process Storybook browser project. Reuse the same host under each test harness rather than proving only a stubbable wrapper. The built Storybook bootstrap has a distinct policy. Its recipe markup and requests receive their own checks. The package fixture uses an externally bundled host and the actual built element registrations. [Strict fixture precedent](../../packages/elements/test/browser/pane-action-footer.test.ts) · [Host and Mutation guidance](../../tooling/speckit/README.md)
+The pane action footer uses an external host, ordinary Storybook build tests and a separately compiled strict package fixture. Reuse the same host under each harness along with default Mutation's retained in-process browser project. Check Storybook recipe markup and local requests under the normal preview policy. The package fixture loads the external host and actual built elements under strict policy. Keep availability assertions separate from behavior. A runnable neutral scaffold gives the tests real targets so canonical red can record the downstream state or focus failures. [Strict fixture precedent](../../packages/elements/test/browser/pane-action-footer.test.ts) · [Replay and Mutation guidance](../../tooling/speckit/README.md)
 
 ## R-06 — Pin capture and no assumptions about inventory arithmetic
 
