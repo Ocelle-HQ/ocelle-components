@@ -15,6 +15,9 @@
 # SHAs and appends a section to <feature>/reviews/history-map.txt (old -> new for every commit of the range that maps
 # to a new one).
 #
+# Labels design-triage, design-spec, design-plan and design-tasks fold one approved
+# mission design stage before any implementation evidence exists.
+# Its exact tree is preserved, so no remap commit is needed.
 # Leaves HEAD on the folded history and keeps the old head as refs/ocelle/prefold/<label>/<branch>. Never pushes.
 # Signing (op 021): when commit.gpgsign is on, every rebuilt commit is made with `git commit-tree -S`; a rebuilt or
 # remap commit without a gpgsig header, or a signing failure, leaves the branch on the old head with no prefold ref.
@@ -25,9 +28,18 @@ set -euo pipefail
 base=${1:-}; feature=${2:-}; label=${3:-landing}
 die() { printf '{"ok":false,"problems":["%s"]}\n' "$1"; exit 2; }
 [[ "$base" =~ ^[0-9a-f]{7,64}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null || die "pr-base must be a commit sha"
-[[ -n "$feature" && -d "$feature/reviews" ]] || die "feature-dir must hold reviews/"
 [[ "$label" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "label must be lower-case letters, digits and hyphens"
+case "$label" in
+  design-triage|design-spec|design-plan|design-tasks) design_stage=${label#design-} ;;
+  *) design_stage="" ;;
+esac
 cd "$(git rev-parse --show-toplevel)"
+if [[ -n "$design_stage" ]]; then
+  [[ "$feature" =~ ^specs/[0-9]+-[a-z0-9-]+$ ]] || die "design folds require a mission path"
+  [[ "$design_stage" == triage || -d "$feature" ]] || die "mission directory is missing"
+else
+  [[ -n "$feature" && -d "$feature/reviews" ]] || die "feature-dir must hold reviews/"
+fi
 [[ -z "$(git status --porcelain)" ]] || die "working tree not clean"
 branch=$(git symbolic-ref --short HEAD 2>/dev/null) || die "HEAD is detached"
 old_head=$(git rev-parse HEAD)
@@ -58,6 +70,21 @@ done
 keep[$old_head]=1
 
 mapfile -t commits < <(git rev-list --reverse "$base..$old_head")
+if [[ -n "$design_stage" ]]; then
+  [[ ! -e "$feature/reviews/history-map.txt" ]] || die "fold the design before implementation history"
+  for dir in "$feature"/reviews/phase-*; do
+    [[ ! -e "$dir" ]] || die "fold the design before recording implementation evidence"
+  done
+  for c in "${commits[@]}"; do
+    while IFS= read -r -d '' path; do
+      case "$design_stage:$path" in
+        triage:triage/*.md|spec:"$feature"/*|plan:"$feature"/*|tasks:"$feature"/*) ;;
+        *) die "design range changes files outside its stage records" ;;
+      esac
+    done < <(git diff-tree --no-commit-id --name-only --no-renames -r -z "$c")
+  done
+  [[ ${#commits[@]} -gt 1 ]] || die "design fold needs more than one commit"
+fi
 parent=$base; group=(); declare -A map=(); new_count=0
 author_of() { git log -1 --format='%an <%ae>' "$1"; }
 emit_group() {
@@ -67,6 +94,9 @@ emit_group() {
   [[ -n "$lead" ]] || lead=$last
   for c in "${group[@]}"; do [[ "$c" == "$lead" ]] || folded+="- $(git log -1 --format=%s "$c")"$'\n'; done
   msg=$(git log -1 --format=%B "$lead")
+  if [[ -n "$design_stage" ]]; then
+    msg="docs($design_stage): approve $design_stage for ${feature##*/}"
+  fi
   trailers=$(for c in "${group[@]}"; do git log -1 --format=%B "$c" | git interpret-trailers --parse; done | awk '!seen[$0]++')
   # The last commit's message without its trailing trailer block (trailer lines and blank lines at the end).
   body=$(printf '%s\n' "$msg" | awk -v t="$(printf '%s\n' "$msg" | git interpret-trailers --parse)" '
@@ -106,8 +136,16 @@ if (( ${#problems[@]} )); then
   printf '{"ok":false,"old_head":"%s","problems":[%s]}\n' "$old_head" "$(printf '"%s",' "${problems[@]}" | sed 's/,$//')"; exit 1
 fi
 
+if [[ -n "$design_stage" && "$new_count" != 1 ]]; then
+  die "design fold cannot combine multiple authors"
+fi
 git update-ref "refs/ocelle/prefold/$label/$branch" "$old_head"
 git reset -q --hard "$parent"
+
+if [[ -n "$design_stage" ]]; then
+  printf '{"ok":true,"old_head":"%s","new_head":"%s","commits_before":%d,"commits_after":1,"problems":[]}\n' "$old_head" "$parent" "${#commits[@]}"
+  exit 0
+fi
 
 # Remap the evidence files and write the map.
 remap() { local s full; s=$1; full=$(git rev-parse -q --verify "$s^{commit}" 2>/dev/null) || { echo "$s"; return; }
