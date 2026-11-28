@@ -73,7 +73,7 @@ Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/
 3. **Gate "triage"**: show decision, target, issues in and out of scope, semver and the record path. Options:
    `approve`, `reject`. Then run `$T/decide.sh approved` or `$T/decide.sh rejected` (it records your answer's
    source, the operator, in the record and commits it). Rejected: stop.
-4. Route on `decision`: `mission` → 2; `op` → 3; `fold` → tell the operator which feature's spec must grow (from
+4. Route on `decision`: `mission` → fold the triage stage, then 2; `op` → 3; `fold` → tell the operator which feature's spec must grow (from
    the record) and stop; `none` or `decision-needed` → report and stop.
 
 ## 2. Mission
@@ -91,7 +91,7 @@ Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/
      reached with blocking findings left, the options are `approve after a final fix` (one more spec fix, no
      further check; the plan squad reads the spec next), `approve as is`, `reject`; otherwise `approve`,
      `reject`. Reject: stop.
-3. **Plan.** Run `/speckit-plan` with the spec prompt.
+3. **Plan.** Fold the approved spec stage first. Run `/speckit-plan` with the spec prompt.
 4. **Plan squad**, rounds while the last round confirmed something and the operator did not accept, three at most:
    1. `$Q/round.sh` opens the round and lists its lenses.
    2. Delegate one `lens-lotte` call per lens **in a single message, in parallel** (`lens=<name>`). When all are back,
@@ -105,11 +105,17 @@ Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/
       `unresolved == 0`. After a batch with `unresolved > 0`: **gate "squad batch"**, options `more-rounds`,
       `accept`, `reject`; accept runs `$Q/accept.sh` and commits its file; after five batches only `accept`,
       `reject`.
-5. **Gate "plan"**: show the squad rounds and their results. Options: `approve`, `reject`.
+5. **Gate "plan"**: show the squad rounds and their results. Options: `approve`, `reject`. After approval, fold the plan stage.
 6. **Tasks.** Run `/speckit-tasks`. Delegate "analysis after tasks" to `analyst-anouk`; scope `analyze`; run
    `$Q/analysis-status.sh`. **Gate "tasks"**: show `present`, the counts per severity and the coverage; say that
    critical findings must be resolved first. Options: `approve`, `reject`.
-7. Implement: step 4.
+7. Fold the approved tasks stage and implement in step 4.
+
+### Design stage commits
+
+On a mission, publish one commit per approved stage in order: triage, spec, plan, tasks. Record the clean stage base before delegating its first step. The triage base is the parent of the first triage commit. Each later stage starts at the previous published stage commit. After recording each approval and before starting the next stage, run `tooling/speckit/bin/fold-history.sh <stage-base> <feature-dir> design-<stage>` if the range has more than one commit. Use the mission path from triage before the directory exists. Confirm the tool reports one commit. Take the folded tasks commit as the Phase 1 base.
+
+Keep each pre-fold tip at `archive/<branch>-prefold-design-<stage>` before publishing the folded commit with a lease against the pre-fold tip. Get the operator's explicit approval for the archive and force-push, including advance approval covering these stages. The archives retain review-referenced commits. On resume, use the existing archive, stage commits and approval records to identify the next unfinished stage. If the fold cannot preserve a single author, report it and leave history intact.
 
 ## 3. Op
 

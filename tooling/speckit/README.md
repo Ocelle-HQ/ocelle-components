@@ -261,3 +261,7 @@ project record. A rerun of `ocelle-implement` skips phases that are done and app
 - Phases run one after another (`max_concurrency: 1`): later phases build on earlier ones.
 - Rounds per batch (3) and the batch cap (5) are literals in `ocelle-story`; change them there.
 - The scripts are bash only.
+
+### Mission design stage commits
+
+For a mission, `/ocelle-run` folds each approved design stage into its own signed-off commit: triage, spec, plan and tasks. Each fold preserves the exact tree, and the corresponding archived pre-fold tip retains the intermediate commits referenced by review records. Phase 1 starts from the folded tasks commit.
