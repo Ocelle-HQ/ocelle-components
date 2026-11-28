@@ -7,7 +7,9 @@ in_scope: [88]
 out_of_scope: [1, 12, 13, 15, 16, 57, 61, 67, 71, 76, 86, 87, 89, 90, 91, 92]
 semver: none
 spec_prompt: "Resolve #88 and triage/041-settings-dialog-recipe.md with an executable Storybook recipe for a stable split-pane settings dialog. Compose the existing dialog, disclosure, navigation, scroller, and controls with fictional host-supplied content. Specify and prove stable modal sizing and Close access, separate named category navigation and disclosure actions, selected destinations and predictable focus, keyboard modal behavior and narrow reflow. Follow test-first, strict-CSP and token conventions and verify light, dark, forced colors, reduced motion, 320 px and 200% text."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-28T15:08:58Z
 ---
 
 # Triage 041 — Stable split-pane settings dialog recipe
