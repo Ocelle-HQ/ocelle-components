@@ -4298,7 +4298,7 @@
               "fieldName": "name",
               "name": "name",
               "type": {
-                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | undefined"
+                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | \"inbox\" | \"history\" | \"settings\" | \"notifications\" | \"appearance\" | undefined"
               }
             }
           ],
@@ -4318,7 +4318,7 @@
               "privacy": "public",
               "reflects": true,
               "type": {
-                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | undefined"
+                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | \"inbox\" | \"history\" | \"settings\" | \"notifications\" | \"appearance\" | undefined"
               }
             },
             {

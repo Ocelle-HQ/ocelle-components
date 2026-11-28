@@ -106,11 +106,11 @@ const excepted: readonly string[] = [...proseAndCodeBlock, ...dataTable, ...list
 
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 844 story-themes and exits 0, the Prose document's ten, the overflowing code-block stories' thirty-six, the scrolling listbox story's twelve and the data table stories' seventy-four color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029; 014 FR-051)",
+    "audits the repository's 854 story-themes and exits 0, the Prose document's ten, the overflowing code-block stories' thirty-six, the scrolling listbox story's twelve and the data table stories' seventy-four color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029; 014 FR-051)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 844 story-theme runs, 0 serious or critical; 132 notes (0 incomplete, 132 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 854 story-theme runs, 0 serious or critical; 132 notes (0 incomplete, 132 excepted)"], stderr: excepted });
     },
     timeout,
   );
