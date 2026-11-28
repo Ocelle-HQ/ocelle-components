@@ -1,0 +1,11 @@
+# Squad round 1: refute
+
+| ID | Verdict | Kind | Decision | Reason |
+|----|---------|------|----------|--------|
+| PLAN-A11Y-SECURITY-1-001 | confirmed | fix | - | The contract states dark text on ochre in both themes. The contrast declaration in packages/tokens/src/source.ts covers color-on-accent on color-accent, but neither Phase 2 nor the verification guide checks that the rendered HTML text and SVG fill actually resolve to that audited pair. Assert both computed colours in both themes and verify the declared pair through the contrast gate. |
+| PLAN-CORRECTNESS-1-001 | confirmed | fix | - | The existing native button takes both minimum axes from target-min, which is 2.75rem. Qualify 44 CSS px as the 16 px root example. At a 32 px root the minimum is 88 CSS px. Compare the treated control and ordinary reference at each measured root size and verify both axes against the resolved token. |
+| PLAN-CORRECTNESS-1-002 | confirmed | fix | - | Phase 2 defines a replacement spinner and disabled initials palette, but its story inventory contains only the standalone and rail examples. Existing Busy and Disabled exports exercise ordinary buttons. Add standalone busy and disabled initials stories with light and dark baselines to satisfy Principle V. |
+| PLAN-FRESH-1-001 | confirmed | fix | - | Node confirms that U+200B and U+2060 each survive trimming, fail the whitespace test and segment as a single cluster. Each can turn on an apparently empty mark contrary to SC-002. Define fallback for clusters composed entirely of default-ignorable characters and test each example. Preserve visible graphemes, including those with joined or combining characters, in keeping with the data model. |
+| PLAN-FRESH-1-002 | duplicate | - | - | PLAN-CORRECTNESS-1-001 covers the same fixed-size oracle at enlarged root text. |
+| PLAN-TESTABILITY-1-001 | confirmed | fix | - | A decomposed e with acute followed by W has two graphemes and three code points in Node. Both counts agree on WW. Add explicit accepted padded and multicodepoint values and rejected blank, too-long and internally separated values, including a live transition to ordinary rendering. Assert the exact trimmed text for accepted values. |
+| PLAN-TESTABILITY-1-002 | duplicate | - | - | PLAN-CORRECTNESS-1-001 covers comparison of both target axes against the token and reference at each root size. |

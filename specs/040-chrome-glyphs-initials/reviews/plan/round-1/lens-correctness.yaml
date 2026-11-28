@@ -1,0 +1,26 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The promised 44 px target conflicts with the existing button at enlarged root text"
+    evidence:
+      - artifact: "contracts/chrome-controls.md § Initials button says the normal-size treatment centers the mark inside its existing 44 px target. plan.md Phase 2 repeats 44 px while prescribing a 200% root-text rail comparison."
+      - code: "packages/elements/src/ocelle-button.ts:148 sets both minimum axes to --ocelle-target-min. packages/tokens/src/source.ts:213 defines it as 2.75rem. At a 32 px root this is 88 px, exactly the rail's 3.25rem minus two 0.25rem paddings."
+    claim: |
+      A test requiring 44 CSS px at the enlarged root rejects the unchanged reference control. Enforcing that dimension on the initials control would make its footprint differ from Settings and from the reference.
+    remedies:
+      - "Specify 44 CSS px at the default 16 px root only. At each root size assert the resolved target token and compare geometry with the ordinary flush control at that same size."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 2
+    title: "The Storybook inventory omits the busy and disabled initials presentations"
+    evidence:
+      - artifact: "plan.md Phase 2 prescribes distinct busy and disabled rendering but lists only one standalone story and one composed story, each captured in both themes."
+      - code: ".specify/memory/constitution.md § V requires a story per variant and per state, in light and dark, with committed visual baselines."
+    claim: |
+      Existing button stories exercise the ordinary presentation. They cannot show whether the busy spinner replaces a configured initials mark or whether its disabled palette still distinguishes the letters and plate. The phase has behavioral cases for these states but lists no corresponding story captures.
+    remedies:
+      - "Add named busy and disabled initials examples to the standalone story inventory and capture their light and dark baselines."
