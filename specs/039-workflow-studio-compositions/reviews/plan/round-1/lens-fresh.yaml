@@ -1,0 +1,33 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "Remove stale graph references when deleting a step"
+    evidence:
+      - artifact: "plan.md Phase 1 describes focus recovery after deletion but does not define the authoritative graph update. data-model.md covers adding and wiring a step but omits deletion. spec.md US1 scenario 4 deletes Security review after wiring both outcomes."
+      - code: "packages/elements/src/workflow-canvas-graph.ts:26–40 silently filters layout entries and connections whose step no longer exists. specs/029-workflow-canvas/data-model.md:9–17 leaves semantic graph validity to the host."
+    claim: |
+      Deleting only the step can make the canvas and focus checks pass while the serialized
+      fixture still points to the deleted step. This is especially easy to miss in the
+      required journey because the chosen step already has accepted connections when it
+      is deleted.
+    remedies:
+      - "Define deletion as one host update that removes the chosen step, its binding, all incoming and outgoing connections and its layout entry, and resolves stale selection while preserving unrelated records. Require the acceptance test to read back the authoritative graph after deletion and verify both the removed references and a surviving unrelated connection, alongside the existing focus assertion."
+  - id: PLAN-FRESH-1-002
+    severity: 2
+    title: "Tie the narrow inspector route to the recipe container"
+    evidence:
+      - artifact: "plan.md Phase 1 leaves the inspector route to unspecified host layout state. quickstart.md step 2 calls for a narrow layout without identifying the measured container. spec.md US1 scenario 2 requires the narrow drawer to reveal the actual reviewer field."
+      - code: "specs/009-workflow-layouts/contracts/elements.md:89–99,111–123 defines tier selection from list-detail's own border box, never from the viewport, and no event for a tier change. packages/elements/src/ocelle-list-detail.ts:289–302 shows the component choosing its own visible panes independently."
+    claim: |
+      A story can open the correct inspector at a narrow browser viewport and still route
+      incorrectly in a constrained pane inside a wide viewport. A viewport-based route
+      can choose the wide inspector while list-detail is already presenting one pane
+      at a time. The finding can then target an unavailable field or bypass the
+      required drawer.
+    remedies:
+      - "Define one host-owned compact route based on the story's measured container and coordinate it with list-detail's public narrow and detailOpen properties. Include a built interaction check that holds the viewport wide, constrains the story container to the narrow tier, and verifies that the finding opens the real drawer and focuses the visible reviewer field without losing the selected step."
