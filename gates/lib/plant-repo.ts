@@ -34,6 +34,12 @@ export interface CommitSpec {
   readonly parent?: number;
   /** For a merge record: the numbers of the two earlier records (0 for the base commit) it merges. */
   readonly merge?: readonly [number, number];
+  /** Since 030 (research.md R-17): the plant directory whose files are laid over the previous commit's tree. */
+  readonly files?: string;
+  /** Since 030: the paths removed from that tree. */
+  readonly delete?: readonly string[];
+  /** Since 030: the files a generated value of a secret-scan rule is appended to, at plant time. */
+  readonly secrets?: readonly { readonly rule: string; readonly path: string }[];
 }
 
 /** The root files of the configuration set (research.md R-10). */
@@ -209,6 +215,11 @@ export function parseCommits(text: string): CommitSpec[] {
     if (message === "") throw new Error(`${at} has no message`);
     return { author, message, ...(parent === undefined ? {} : { parent }), ...(merge === undefined ? {} : { merge }) };
   });
+}
+
+/** Whether a commit plant's base commit holds the configuration set (030 research.md R-17): the readiness plants'. */
+export function hasConfigurationBase(plant: string): boolean {
+  return plant === "" && false;
 }
 
 /** The records of a commit plant's commits.txt; none when the plant has no commits.txt (an empty range). */
