@@ -1075,6 +1075,10 @@ navigation landmark, with no other landmark inside it.
 
 ## `ocelle-button`
 
+Use `<ocelle-button flush ground="chrome" initials="WW" label="Account actions for WW"></ocelle-button>` for a named account trigger. The reflected optional `initials` string supplies decorative text on an ochre circle. The host supplies the button’s name independently and handles `ocelle-button-activate` to open its account actions. Including the displayed initials in that name also supports users who speak the visible label.
+
+The button trims surrounding whitespace and displays one or two extended grapheme clusters exactly as supplied. Internal whitespace, control characters or a cluster made entirely of default-ignorable characters or U+2800 BRAILLE PATTERN BLANK restore the ordinary presentation. Link mode, a slotted icon or visible default-slot label take precedence. Busy replaces the mark with the spinner. Disabled retains the mark in the disabled palette. In a personal rail place the trigger in `slot="bottom"` after Settings.
+
 ```html
 <ocelle-button>Save</ocelle-button>
 <ocelle-button variant="primary"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>

@@ -43,6 +43,19 @@ import { define } from "./define.ts";
 import { iconSlotStyles } from "./icon-slot.ts";
 import { spinner, spinnerStyles } from "./spinner.ts";
 
+const graphemes = new Intl.Segmenter();
+
+/** Preserve the caller's spelling, dropping only surrounding whitespace. */
+function visibleInitials(raw: string | undefined): string | undefined {
+  const text = raw?.trim();
+  if (!text || /[\s\p{Cc}]/u.test(text)) return undefined;
+  let count = 0;
+  for (const { segment } of graphemes.segment(text)) {
+    if (++count > 2 || /^[\u2800\p{Default_Ignorable_Code_Point}]+$/u.test(segment)) return undefined;
+  }
+  return text;
+}
+
 /** The host attributes `ocelle-button` moves onto its inner control (FR-009). */
 const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"] as const;
 /** The moved ID references and the inner control's reflection property for each (research.md R-04). */
@@ -118,6 +131,7 @@ export class OcelleButton extends LitElement {
     // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
     disabled: { type: Boolean, reflect: true },
+    initials: { type: String, reflect: true },
     busy: { type: Boolean, reflect: true },
     href: { type: String, reflect: true },
     target: { type: String, reflect: true },
@@ -191,7 +205,64 @@ export class OcelleButton extends LitElement {
         border-style: none;
       }
 
+      :host .control.initials-trigger {
+        justify-content: center;
+        padding-inline: 0;
+      }
+
+      .initials-mark {
+        display: grid;
+        grid-template-areas: "mark";
+        place-items: center;
+        inline-size: var(--ocelle-size-avatar);
+        block-size: var(--ocelle-size-avatar);
+        font-size: var(--ocelle-font-size-xs);
+        font-weight: var(--ocelle-font-weight-strong);
+        line-height: var(--ocelle-line-height-compact);
+        color: var(--ocelle-color-on-accent);
+      }
+
+      :host([size="compact"]) .initials-mark {
+        grid-template-columns: 100%;
+        grid-template-rows: 100%;
+        inline-size: calc(var(--ocelle-space-6) - 2 * var(--ocelle-border-width));
+        block-size: calc(var(--ocelle-space-6) - 2 * var(--ocelle-border-width));
+      }
+
+      :host([size="compact"][flush]) .initials-mark {
+        inline-size: var(--ocelle-space-6);
+        block-size: var(--ocelle-space-6);
+      }
+
+      .initials-text {
+        position: relative;
+        background-clip: text;
+        background-color: var(--ocelle-color-accent);
+      }
+
+      .initials-mark > * {
+        grid-area: mark;
+      }
+
+      .initials-mark svg {
+        inline-size: 100%;
+        block-size: 100%;
+        fill: var(--ocelle-color-accent);
+      }
+
       @media not (forced-colors: active) {
+        :host([disabled]) .initials-mark {
+          color: var(--ocelle-color-disabled-ink);
+        }
+
+        :host([disabled]) .initials-text {
+          background-color: var(--ocelle-color-disabled-bg);
+        }
+
+        :host([disabled]) .initials-mark svg {
+          fill: var(--ocelle-color-disabled-bg);
+        }
+
         :host .control {
           background-color: var(--ocelle-color-sheet);
           border-color: var(--ocelle-color-control-border);
@@ -285,6 +356,24 @@ export class OcelleButton extends LitElement {
       }
 
       @media (forced-colors: active) {
+        .initials-mark {
+          forced-color-adjust: none;
+          color: ButtonText;
+        }
+
+        .initials-text {
+          background-color: ButtonFace;
+        }
+
+        .initials-mark svg {
+          fill: ButtonFace;
+          stroke: currentColor;
+        }
+
+        :host([disabled]) .initials-mark {
+          color: GrayText;
+        }
+
         :host([flush]) .control:where(:hover, :active) {
           outline-style: dashed;
           outline-width: var(--ocelle-focus-width);
@@ -359,6 +448,13 @@ export class OcelleButton extends LitElement {
    * @default false
    */
   declare disabled: boolean;
+
+  /**
+   * Decorative one- or two-grapheme initials for a named button without a slotted icon or label. Reflected.
+   *
+   * @default undefined
+   */
+  declare initials: string | undefined;
 
   /**
    * Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,
@@ -519,14 +615,16 @@ export class OcelleButton extends LitElement {
     const value = (name: string): string | typeof nothing => this.#moved.get(name) ?? nothing;
     const state = this.#state();
     const busy = state === "unavailable";
-    const content = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot" aria-hidden="true" ?hidden=${busy}><slot name="icon" @slotchange=${this.#readIcon}></slot></span>${spinner(busy)}<span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
     const href = linkHref(this.href, document.baseURI);
+    const initials = href === undefined && !this.#labelled && !this.#iconed ? visibleInitials(this.initials) : undefined;
+    const mark = initials === undefined || busy ? nothing : html`<span class="initials-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11.5"></circle></svg><span class="initials-text">${initials}</span></span>`;
+    const content = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot" aria-hidden="true" ?hidden=${busy}><slot name="icon" @slotchange=${this.#readIcon}></slot></span>${spinner(busy)}${mark}<span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
     if (href !== undefined) {
       const available = state === "available";
       const rel = this.rel ?? (this.target === "_blank" ? "noopener" : undefined);
       return html`<a part="control" class="control" href=${available ? href : nothing} target=${available ? (this.target ?? nothing) : nothing} rel=${available ? (rel ?? nothing) : nothing} download=${available ? (this.download ?? nothing) : nothing} role=${available ? nothing : "link"} tabindex=${busy ? "0" : nothing} aria-disabled=${available ? nothing : "true"} aria-busy=${busy ? "true" : nothing} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} title=${value("title")} @click=${this.#activate}>${content}</a>`;
     }
-    return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-disabled=${busy ? "true" : nothing} aria-busy=${busy ? "true" : nothing} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${content}</button>`;
+    return html`<button part="control" class=${initials === undefined ? "control" : "control initials-trigger"} type="button" ?disabled=${this.disabled} aria-disabled=${busy ? "true" : nothing} aria-busy=${busy ? "true" : nothing} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${content}</button>`;
   }
 
   /**
