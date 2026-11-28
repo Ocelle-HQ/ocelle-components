@@ -1,0 +1,69 @@
+name: Anchored popover Phase 2 advisory Mutation
+on:
+  push:
+    branches:
+      - 'ci/036-phase-2-related-diagnostic'
+permissions:
+  contents: read
+jobs:
+  mutation-plan:
+    name: Mutation plan
+    runs-on: ubuntu-24.04
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 3ff4e940ae544b0010d0b091602685c858b03823
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - id: plan
+        env:
+          BASE: a6ef9048f9ca30f69a32dd9b55e7d4085f154104
+        run: |
+          shards="$(pnpm --silent run gate:mutation -- --base "$BASE" --plan)"
+          echo "$shards"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+  mutation-shard:
+    name: Mutation shard
+    needs: mutation-plan
+    if: needs.mutation-plan.outputs.shards != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 75 || 10 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.mutation-plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 3ff4e940ae544b0010d0b091602685c858b03823
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      # Values reach the script through the environment, never pasted into it (a shard's file list comes from the pull request).
+      - env:
+          BASE: a6ef9048f9ca30f69a32dd9b55e7d4085f154104
+          FILES: ${{ matrix.shard.files }}
+        run: pnpm run gate:mutation -- --base "$BASE" --files "$FILES" --shadow-grouped --shadow-related-elements
+  mutation:
+    name: Related Mutation diagnostic
+    needs: [mutation-plan, mutation-shard]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 3ff4e940ae544b0010d0b091602685c858b03823
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # Passes only when the plan succeeded and the shards succeeded, or were skipped because the plan had none.
+      - env:
+          PLAN: ${{ needs.mutation-plan.result }}
+          SHARDS: ${{ needs.mutation-shard.result }}
+          PLANNED: ${{ needs.mutation-plan.outputs.shards }}
+        run: |
+          echo "mutation-plan: $PLAN; mutation-shard: $SHARDS; shards: $PLANNED"
+          test "$PLAN" = success
+          test "$SHARDS" = success || { test "$SHARDS" = skipped && test "$PLANNED" = "[]"; }
