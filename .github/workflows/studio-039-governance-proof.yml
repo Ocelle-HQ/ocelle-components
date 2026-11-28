@@ -14,15 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: e6944774cab6c6032f6b1fc571f3c79d373108db
+          ref: 051adc6af8c0ba774a1317eb51c34fb9efca8cd7
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify first spec check scope and findings
+      - name: Verify the first spec-fix scope
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "e6944774cab6c6032f6b1fc571f3c79d373108db"
+          test "$(git rev-parse HEAD)" = "051adc6af8c0ba774a1317eb51c34fb9efca8cd7"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh spec-check 977d4d508981f38f5da62d95d74bc5aec3ce0421
-          status=$(.specify/extensions/squad/scripts/spec-status.sh)
-          echo "$status"
-          jq -e '.check == 1 and .verdict == "issues" and .blocking == 4 and .operator_questions == 0' <<< "$status"
+          tooling/speckit/bin/scope-check.sh planner e6944774cab6c6032f6b1fc571f3c79d373108db
