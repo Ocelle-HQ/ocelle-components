@@ -2,7 +2,7 @@
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
 under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has fifty-two elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
+`ocelle-icon`, with a set of eighteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-form-textarea`,
 a labelled multiline field, `ocelle-scroller`, a horizontal strip that is a tab stop only while it overflows,
@@ -167,6 +167,11 @@ part or CSS custom property.
 | `search` | no | kitty-mission-ui's Artifact Viewer, replacing its own magnifier glyph (spec-kitty-design#496) |
 | `table` | no | kitty-mission-ui's Artifact Viewer, replacing its own table glyph (spec-kitty-design#496) |
 | `copy` | no | the copy field's control (#14) |
+| `inbox` | no | opening the inbox |
+| `history` | no | reviewing recent activity |
+| `settings` | no | opening settings |
+| `notifications` | no | reading notifications |
+| `appearance` | no | choosing an appearance |
 
 Every drawing is the project's own, on a 24-unit grid with one stroke width, round caps and joins, painted only in
 `currentColor`. `chevron-start`, `chevron-end`, `arrow-start` and `arrow-end` follow the inline direction: under

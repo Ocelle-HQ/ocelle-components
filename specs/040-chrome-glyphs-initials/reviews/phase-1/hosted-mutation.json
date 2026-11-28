@@ -1,0 +1,56 @@
+{
+  "candidate": "0fd302f6392cb71953a4e4e92c7b80e602e12b36",
+  "testedMerge": "fdb917eccb7cb6816785f90535431c9324cf28ca",
+  "base": "aee31975f93b764512109c4ea8ba2dbfb2976f1b",
+  "run": 46100810218,
+  "jobs": [
+    {
+      "conclusion": "success",
+      "id": 140842680959,
+      "name": "Mutation shard (packages/elements/src/icons.ts:24-134, 30)",
+      "url": "https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46100810218/job/140842680959",
+      "lines": [
+        "2026-11-28T03:48:07.5515879Z packages/elements/src/icons.ts:111: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5516815Z packages/elements/src/icons.ts:114: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5517759Z packages/elements/src/icons.ts:114: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:48:07.5518438Z packages/elements/src/icons.ts:115: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5519217Z packages/elements/src/icons.ts:115: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:48:07.5519941Z packages/elements/src/icons.ts:118: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5520698Z packages/elements/src/icons.ts:121: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5521481Z packages/elements/src/icons.ts:121: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:48:07.5522232Z packages/elements/src/icons.ts:122: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5522988Z packages/elements/src/icons.ts:122: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:48:07.5523610Z packages/elements/src/icons.ts:123: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5524388Z packages/elements/src/icons.ts:123: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:48:07.5525392Z packages/elements/src/icons.ts:126: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5526232Z packages/elements/src/icons.ts:129: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5527052Z packages/elements/src/icons.ts:129: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:48:07.5527897Z packages/elements/src/icons.ts:130: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:48:07.5529088Z packages/elements/src/icons.ts:130: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:48:07.5530191Z mutation: 30 mutants on the changed lines of 1 file, none survived; 0 timeouts, 17 compile errors, 0 zero-mutant entries; 0 equivalent records"
+      ]
+    },
+    {
+      "conclusion": "success",
+      "id": 140842680991,
+      "name": "Mutation shard (packages/elements/src/icons.ts:135-148, 14)",
+      "url": "https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46100810218/job/140842680991",
+      "lines": [
+        "2026-11-28T03:47:52.2368829Z packages/elements/src/icons.ts:136: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:47:52.2371690Z packages/elements/src/icons.ts:136: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:47:52.2372603Z packages/elements/src/icons.ts:137: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:47:52.2373456Z packages/elements/src/icons.ts:137: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:47:52.2374461Z packages/elements/src/icons.ts:140: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:47:52.2381743Z packages/elements/src/icons.ts:143: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:47:52.2382804Z packages/elements/src/icons.ts:143: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:47:52.2383844Z packages/elements/src/icons.ts:144: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:47:52.2384873Z packages/elements/src/icons.ts:144: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:47:52.2385865Z packages/elements/src/icons.ts:145: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:47:52.2386936Z packages/elements/src/icons.ts:145: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:47:52.2387934Z packages/elements/src/icons.ts:146: mutation: compile-error: ObjectLiteral: replaced by {}",
+        "2026-11-28T03:47:52.2388924Z packages/elements/src/icons.ts:146: mutation: compile-error: StringLiteral: replaced by \"\"",
+        "2026-11-28T03:47:52.2390186Z mutation: 18 mutants on the changed lines of 1 file, none survived; 0 timeouts, 13 compile errors, 0 zero-mutant entries; 0 equivalent records"
+      ]
+    }
+  ]
+}

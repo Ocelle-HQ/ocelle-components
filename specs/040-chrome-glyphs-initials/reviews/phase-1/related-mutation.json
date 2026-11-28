@@ -1,0 +1,799 @@
+{
+  "configuration": "stryker.elements.config.json",
+  "testSelection": "related",
+  "ranges": [
+    "packages/elements/src/icons.ts:24-29",
+    "packages/elements/src/icons.ts:111-148"
+  ],
+  "baseline": {
+    "tests": 2197,
+    "elapsedMs": 1398622
+  },
+  "totalMs": 3670488.613326,
+  "mutants": [
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 117
+        },
+        "start": {
+          "column": 10,
+          "line": 111
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 51,
+          "line": 114
+        },
+        "start": {
+          "column": 7,
+          "line": 114
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 114
+        },
+        "start": {
+          "column": 15,
+          "line": 114
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 72,
+          "line": 115
+        },
+        "start": {
+          "column": 7,
+          "line": 115
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 25,
+          "line": 115
+        },
+        "start": {
+          "column": 15,
+          "line": 115
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 125
+        },
+        "start": {
+          "column": 12,
+          "line": 118
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 49,
+          "line": 121
+        },
+        "start": {
+          "column": 7,
+          "line": 121
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 121
+        },
+        "start": {
+          "column": 15,
+          "line": 121
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 18,
+          "line": 112
+        },
+        "start": {
+          "column": 13,
+          "line": 112
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 51,
+          "line": 122
+        },
+        "start": {
+          "column": 7,
+          "line": 122
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 25,
+          "line": 122
+        },
+        "start": {
+          "column": 15,
+          "line": 122
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 116
+        },
+        "start": {
+          "column": 13,
+          "line": 113
+        }
+      },
+      "mutatorName": "ArrayDeclaration",
+      "replacement": "[]",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 47,
+          "line": 121
+        },
+        "start": {
+          "column": 26,
+          "line": 121
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 55,
+          "line": 123
+        },
+        "start": {
+          "column": 7,
+          "line": 123
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 49,
+          "line": 114
+        },
+        "start": {
+          "column": 26,
+          "line": 114
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 25,
+          "line": 123
+        },
+        "start": {
+          "column": 15,
+          "line": 123
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 132
+        },
+        "start": {
+          "column": 13,
+          "line": 126
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 102,
+          "line": 129
+        },
+        "start": {
+          "column": 7,
+          "line": 129
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 53,
+          "line": 123
+        },
+        "start": {
+          "column": 35,
+          "line": 123
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 124
+        },
+        "start": {
+          "column": 13,
+          "line": 120
+        }
+      },
+      "mutatorName": "ArrayDeclaration",
+      "replacement": "[]",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 129
+        },
+        "start": {
+          "column": 15,
+          "line": 129
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 47,
+          "line": 130
+        },
+        "start": {
+          "column": 7,
+          "line": 130
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 23,
+          "line": 130
+        },
+        "start": {
+          "column": 15,
+          "line": 130
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 49,
+          "line": 122
+        },
+        "start": {
+          "column": 35,
+          "line": 122
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 139
+        },
+        "start": {
+          "column": 18,
+          "line": 133
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 64,
+          "line": 136
+        },
+        "start": {
+          "column": 7,
+          "line": 136
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 18,
+          "line": 119
+        },
+        "start": {
+          "column": 13,
+          "line": 119
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 136
+        },
+        "start": {
+          "column": 15,
+          "line": 136
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 44,
+          "line": 137
+        },
+        "start": {
+          "column": 7,
+          "line": 137
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 18,
+          "line": 127
+        },
+        "start": {
+          "column": 13,
+          "line": 127
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 137
+        },
+        "start": {
+          "column": 15,
+          "line": 137
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 131
+        },
+        "start": {
+          "column": 13,
+          "line": 128
+        }
+      },
+      "mutatorName": "ArrayDeclaration",
+      "replacement": "[]",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 62,
+          "line": 136
+        },
+        "start": {
+          "column": 26,
+          "line": 136
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 148
+        },
+        "start": {
+          "column": 15,
+          "line": 140
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 47,
+          "line": 143
+        },
+        "start": {
+          "column": 7,
+          "line": 143
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 144
+        },
+        "start": {
+          "column": 7,
+          "line": 144
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 23,
+          "line": 143
+        },
+        "start": {
+          "column": 15,
+          "line": 143
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 144
+        },
+        "start": {
+          "column": 15,
+          "line": 144
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 100,
+          "line": 129
+        },
+        "start": {
+          "column": 26,
+          "line": 129
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 145
+        },
+        "start": {
+          "column": 7,
+          "line": 145
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 145
+        },
+        "start": {
+          "column": 15,
+          "line": 145
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 55,
+          "line": 146
+        },
+        "start": {
+          "column": 7,
+          "line": 146
+        }
+      },
+      "mutatorName": "ObjectLiteral",
+      "replacement": "{}",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 146
+        },
+        "start": {
+          "column": 15,
+          "line": 146
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "CompileError"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 42,
+          "line": 137
+        },
+        "start": {
+          "column": 26,
+          "line": 137
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 18,
+          "line": 141
+        },
+        "start": {
+          "column": 13,
+          "line": 141
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "true",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 147
+        },
+        "start": {
+          "column": 13,
+          "line": 142
+        }
+      },
+      "mutatorName": "ArrayDeclaration",
+      "replacement": "[]",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 138
+        },
+        "start": {
+          "column": 13,
+          "line": 135
+        }
+      },
+      "mutatorName": "ArrayDeclaration",
+      "replacement": "[]",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 70,
+          "line": 115
+        },
+        "start": {
+          "column": 35,
+          "line": 115
+        }
+      },
+      "mutatorName": "StringLiteral",
+      "replacement": "\"\"",
+      "status": "Killed"
+    },
+    {
+      "path": "packages/elements/src/icons.ts",
+      "location": {
+        "end": {
+          "column": 18,
+          "line": 134
+        },
+        "start": {
+          "column": 13,
+          "line": 134
+        }
+      },
+      "mutatorName": "BooleanLiteral",
+      "replacement": "true",
+      "status": "Timeout"
+    }
+  ]
+}

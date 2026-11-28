@@ -21,7 +21,12 @@ export type IconName =
   | "file"
   | "search"
   | "table"
-  | "copy";
+  | "copy"
+  | "inbox"
+  | "history"
+  | "settings"
+  | "notifications"
+  | "appearance";
 
 /** One shape of a drawing, on the 24-unit grid (data-model.md § Icon). */
 export type Shape =
@@ -101,6 +106,44 @@ export const icons: Readonly<Record<IconName, Icon>> = {
     shapes: [
       { kind: "rect", x: 8, y: 8, width: 12, height: 12, rx: 1 },
       { kind: "path", d: "M16 8V4H4v12h4" },
+    ],
+  },
+  inbox: {
+    mirror: false,
+    shapes: [
+      { kind: "path", d: "M3 14l3-9h12l3 9v5H3z" },
+      { kind: "polyline", points: "3 14 8 14 10 16 14 16 16 14 21 14" },
+    ],
+  },
+  history: {
+    mirror: false,
+    shapes: [
+      { kind: "path", d: "M4 10a8 8 0 1 1 1 7" },
+      { kind: "polyline", points: "3 5 4 10 9 9" },
+      { kind: "polyline", points: "12 7 12 12 16 14" },
+    ],
+  },
+  settings: {
+    mirror: false,
+    shapes: [
+      { kind: "path", d: "M10 3h4l1 3 3-1 2 3-2 3 2 2-1 4-4 1-1 3h-4l-1-3-3-1-2-3 2-3-2-2 2-4 3 1z" },
+      { kind: "circle", cx: 12, cy: 12, r: 3 },
+    ],
+  },
+  notifications: {
+    mirror: false,
+    shapes: [
+      { kind: "path", d: "M4 17l2-3V10a6 6 0 0 1 12 0v4l2 3z" },
+      { kind: "path", d: "M10 20q2 2 4 0" },
+    ],
+  },
+  appearance: {
+    mirror: false,
+    shapes: [
+      { kind: "circle", cx: 12, cy: 12, r: 8 },
+      { kind: "line", x1: 12, y1: 4, x2: 12, y2: 20 },
+      { kind: "line", x1: 15, y1: 7, x2: 15, y2: 17 },
+      { kind: "line", x1: 18, y1: 10, x2: 18, y2: 14 },
     ],
   },
 };
