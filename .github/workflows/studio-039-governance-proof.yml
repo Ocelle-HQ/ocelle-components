@@ -14,12 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 8e7ad6b3f397fe807c4c704de075b18229a397d3
+          ref: 5a233a0f7c75820ab25df8525d947b76ca37fc60
           fetch-depth: 0
           persist-credentials: false
-      - name: Check the scoped replay plan correction
+      - name: Verify replay design and open the final plan lens
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "8e7ad6b3f397fe807c4c704de075b18229a397d3"
+          test "$(git rev-parse HEAD)" = "5a233a0f7c75820ab25df8525d947b76ca37fc60"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh planner 048a381f19d36ec913b9b8874ebd4d65011bb11f
+          tooling/speckit/bin/scope-check.sh verify 8e7ad6b3f397fe807c4c704de075b18229a397d3
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 2 and .confirmed == 1 and .verify == 1 and .unresolved == 0' <<< "$status"
+          git config user.name "Ocelle Spec Kit proof"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          round=$(.specify/extensions/squad/scripts/round.sh)
+          echo "$round"
+          jq -e '.round == 3 and .lenses == ["fresh"]' <<< "$round"
+          test "$(cat "$SPECIFY_FEATURE_DIRECTORY/reviews/plan/round-3/base.sha")" = "5a233a0f7c75820ab25df8525d947b76ca37fc60"
