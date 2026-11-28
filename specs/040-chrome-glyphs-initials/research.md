@@ -12,7 +12,7 @@
 
 **Decision.** Add an optional string on `ocelle-button` for a named standalone native button without slotted visible content. Paint its circular plate as a decorative SVG and position escaped HTML text over it.
 
-**Rationale.** `packages/elements/src/ocelle-button.ts` already owns the native button, moved ARIA attributes, name resolution, focus and activation. A circular inner drawing can use the established avatar and semantic accent tokens without changing control radius or focus. The default 44 px target fits the 52 px rail after its two 4 px paddings. The compact icon link size is 40 px and is a different comparison. A full-size flush chrome button is the rail geometry control.
+**Rationale.** `packages/elements/src/ocelle-button.ts` already owns the native button, moved ARIA attributes, name resolution, focus and activation. A circular inner drawing can use the established avatar and semantic accent tokens without changing control radius or focus. At a 16 px root the default 44 px target fits the 52 px rail after its two 4 px paddings. The compact icon link size is 40 px and is a different comparison. A full-size flush chrome button is the rail geometry control.
 
 **Alternatives.** A child in the existing icon slot is pinned to the icon-size token by `icon-slot.ts`. A separate control would duplicate semantics and event integration. A CSS pill radius would misuse a state-only token. An account menu is a host integration on the separately tracked popover interface.
 

@@ -6,6 +6,6 @@ A glyph has an exact public `IconName`, drawing geometry in the shared view box 
 
 ## Initials presentation
 
-A host optionally supplies `initials` as one or two non-whitespace Unicode grapheme clusters after trimming surrounding whitespace. Internal whitespace and out-of-range values use the ordinary presentation. Preserve the supplied casing and characters. Only a native button with empty visual slots uses the mark. The accessible name is separate and follows the existing button contract.
+A host optionally supplies `initials` as one or two non-whitespace Unicode grapheme clusters after trimming surrounding whitespace. After trimming surrounding whitespace, accept one or two Unicode extended grapheme clusters with no internal whitespace. Reject the entire value if any cluster consists entirely of Unicode Default_Ignorable_Code_Point characters. Preserve every code point of an accepted value, including combining marks and joiners. Invalid values use the ordinary presentation. Preserve the supplied casing and characters. Only a native button with empty visual slots uses the mark. The accessible name is separate and follows the existing button contract.
 
 Normal enabled, busy and disabled button states retain their existing activation rules. Busy temporarily replaces the mark with the existing spinner. The treated presentation responds to changes to the initials, slot content, and button/link mode. The page owns account data and actions. The component adds no state persistence.
