@@ -1,0 +1,32 @@
+name: Workflow Studio governance proof
+on:
+  push:
+    branches: [ci/039-governance]
+permissions:
+  contents: read
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SPECIFY_FEATURE_DIRECTORY: specs/039-workflow-studio-compositions
+      SPECIFY_FEATURE_NO_PERSIST: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 977d4d508981f38f5da62d95d74bc5aec3ce0421
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate approved triage and the linked feature
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "977d4d508981f38f5da62d95d74bc5aec3ce0421"
+          test -z "$(git status --porcelain)"
+          status=$(.specify/extensions/triage/scripts/status.sh)
+          echo "$status" | jq '{record, triage, decision, status, target, in_scope, semver}'
+          jq -e '.triage == 39 and .status == "approved" and .decision == "mission" and .in_scope == "[76]" and .semver == "none"' <<< "$status"
+          test "$(git show --format= --name-only 596fbe48cd7fce8e471ff9d99bd4ee9a1d64a84a | sed '/^$/d')" = "triage/039-workflow-studio-compositions.md"
+          printf '%s\n' '{"feature_directory":"specs/039-workflow-studio-compositions"}' > .specify/feature.json
+          .specify/extensions/triage/scripts/link.sh
+          test "$(cat "$SPECIFY_FEATURE_DIRECTORY/triage.ref")" = "triage/039-workflow-studio-compositions.md"
+          test -z "$(git status --porcelain)"
