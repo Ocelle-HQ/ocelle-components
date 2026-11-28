@@ -1160,3 +1160,21 @@ export const initialsScenarios: readonly Scenario[] = [
     expected: Array.from({ length: 3 }, () => ({ nodes: accountNodes, focused: true, enter: 1, space: 1, root: `${String(root)}px`, target: [2.75 * root, 2.75 * root], ring: true, fits: true, paint: true })),
   })),
 ];
+
+/** NEXT LINE is Unicode White_Space. The zero-width no-break space is default-ignorable, but not White_Space. */
+export const initialsWhitespaceCases = [
+  { name: "trims leading and trailing NEXT LINE before rejecting controls", inputs: ["\u0085A", "A\u0085", " \u0085A\u0085 "], expectedText: "A" },
+  { name: "rejects a leading or trailing zero-width no-break space cluster", inputs: ["\uFEFFA", "A\uFEFF"], expectedText: null },
+] as const;
+
+export async function initialsAfterWhitespaceUpdate(driver: Driver, inputs: readonly string[]): Promise<unknown[]> {
+  await driver.mount(account);
+  const observed = [];
+  for (const raw of inputs) {
+    await driver.setProperty("account", "initials", "W");
+    const before = await driver.propertyIn("account", initialsText, "textContent");
+    await driver.setProperty("account", "initials", raw);
+    observed.push({ before, text: await driver.propertyIn("account", initialsText, "textContent"), plate: await hasPlate(driver), name: (await driver.axState("account", control)).name });
+  }
+  return observed;
+}

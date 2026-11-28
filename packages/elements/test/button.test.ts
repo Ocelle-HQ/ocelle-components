@@ -5,7 +5,7 @@ import "../src/ocelle-icon.ts";
 import "./fixtures/shadow-controls.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { busyScenarios, busySinkScenarios } from "./scenarios/busy.ts";
-import { chromeActionScenarios, initialsScenarios, buttonScenarios, forwardedIconScenarios } from "./scenarios/button.ts";
+import { chromeActionScenarios, initialsScenarios, initialsAfterWhitespaceUpdate, initialsWhitespaceCases, buttonScenarios, forwardedIconScenarios } from "./scenarios/button.ts";
 import { linkScenarios, linkSinkScenarios } from "./scenarios/link.ts";
 
 // User Story 1's browser scenarios for `ocelle-button` in button mode, in process on the element source (012
@@ -276,5 +276,12 @@ describe("Initials account button in process", { timeout: 60_000 }, () => {
   it.each(initialsScenarios)("$name", async ({ run, expected }) => {
     const observed = await run(driver);
     expect(observed, "named button and visible initials").toEqual(expected);
+  });
+});
+
+describe("Unicode whitespace boundaries of initials in process", { timeout: 60_000 }, () => {
+  it.each(initialsWhitespaceCases)("$name", async ({ inputs, expectedText }) => {
+    const observed = await initialsAfterWhitespaceUpdate(driver, inputs);
+    expect(observed, "Unicode White_Space trimming and full-cluster visibility").toEqual(inputs.map(() => ({ before: "W", text: expectedText, plate: expectedText !== null, name: "Account actions" })));
   });
 });
