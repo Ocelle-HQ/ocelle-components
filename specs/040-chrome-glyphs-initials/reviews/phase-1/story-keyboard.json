@@ -1,0 +1,560 @@
+{
+  "chromium": "156.0.8078.4",
+  "cases": [
+    {
+      "id": "elements-ocelle-icon--inbox-action",
+      "palette": "light",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(143, 94, 15)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--inbox-action",
+      "palette": "dark",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(224, 162, 58)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--inbox-action",
+      "palette": "forced",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgba(5, 0, 73, 0.8)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--history-action",
+      "palette": "light",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(143, 94, 15)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--history-action",
+      "palette": "dark",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(224, 162, 58)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--history-action",
+      "palette": "forced",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgba(5, 0, 73, 0.8)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--settings-action",
+      "palette": "light",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(143, 94, 15)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--settings-action",
+      "palette": "dark",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(224, 162, 58)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--settings-action",
+      "palette": "forced",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgba(5, 0, 73, 0.8)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--notifications-action",
+      "palette": "light",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(143, 94, 15)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--notifications-action",
+      "palette": "dark",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(224, 162, 58)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--notifications-action",
+      "palette": "forced",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgba(5, 0, 73, 0.8)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--appearance-action",
+      "palette": "light",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(143, 94, 15)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--appearance-action",
+      "palette": "dark",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgb(224, 162, 58)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "elements-ocelle-icon--appearance-action",
+      "palette": "forced",
+      "state": {
+        "focused": true,
+        "outlineColor": "rgba(5, 0, 73, 0.8)",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "withinViewport": true,
+        "rootSize": "32px",
+        "scrollWidth": 320
+      },
+      "actions": {
+        "keys": [
+          [
+            "Enter",
+            true
+          ],
+          [
+            " ",
+            true
+          ]
+        ],
+        "intents": [
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          },
+          {
+            "target": "ocelle-button",
+            "bubbles": true,
+            "composed": true
+          }
+        ]
+      }
+    }
+  ]
+}

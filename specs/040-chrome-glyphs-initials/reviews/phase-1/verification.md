@@ -20,4 +20,15 @@ pnpm exec vitest run packages/elements/test/icon-set.test.ts packages/elements/t
 pnpm exec vitest run packages/elements/test/browser/icon-set.test.ts packages/elements/test/browser/button.test.ts storybook/test/integration/elements-stories.test.ts -t 'eighteen-name set|Chrome action|isolated chrome action'
 ```
 
-The Docker captures used the repository's pinned image, Storybook builder, two-pass capture runner and baseline comparison. The selected IDs were `elements-ocelle-icon--set`, `elements-ocelle-icon--set-right-to-left` and `elements-ocelle-icon--{inbox,history,settings,notifications,appearance}-action`. The hosted [scoped capture](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46099081588) matched all fourteen committed image digests under pinned Docker and Podman at candidate `3f936324e011102865ccfa949921bea9cca35bba`. See `visual-capture.json` for the pin, tested merge and individual digests. The existing count-only Visual, Visual findings and Axe integration suites are assigned to the required hosted jobs in `test-scope.txt`.
+The Docker captures used the repository's pinned image, Storybook builder, two-pass capture runner and baseline comparison. The selected IDs were `elements-ocelle-icon--set`, `elements-ocelle-icon--set-right-to-left` and `elements-ocelle-icon--{inbox,history,settings,notifications,appearance}-action`. The hosted [scoped capture](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46099081588) matched all fourteen committed image digests under pinned Docker and Podman at candidate `3f936324e011102865ccfa949921bea9cca35bba`. See `visual-capture.json` for the pin, tested merge and individual digests. The existing count-only Visual, Visual findings, Visual capture and Axe integration suites are assigned to the required hosted jobs in `test-scope.txt`.
+
+The five built action stories also passed a trusted-keyboard probe in all three palettes at a measured 32px root and 320px viewport. The run checked the exact accessible name, focused native button and solid outline, one intent after Enter, and a second after Space. Both intents targeted the host, bubbled and crossed its shadow boundary. Run the following from the repository root to reproduce the 15 cases in `story-keyboard.json`.
+
+```sh
+pnpm run gate:storybook-build
+node specs/040-chrome-glyphs-initials/reviews/phase-1/story-keyboard.mjs
+```
+
+The modified shared helpers add named action cases and five drawing expectations. The button and icon-set suites exercise them through both drivers. Other suites import the existing `severe`, `expectedDrawing` and original catalog entries. Their function implementations and the original drawing data are unchanged.
+
+A focused axe-core audit found zero serious or critical violations across the same 15 built-story cases. The first full local Axe run examined 854 story-theme pairs and reported one 15-second render timeout on the existing `elements-ocelle-nav-item--expanded/light` story. It reported no finding on any of the changed stories.
