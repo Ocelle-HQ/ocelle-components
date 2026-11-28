@@ -7,7 +7,9 @@ in_scope: [76]
 out_of_scope: [1, 7, 8, 9, 12, 13, 14, 16, 72, 73, 74, 75, 86, 87, 88, 89, 90, 91, 92, 93, 109]
 semver: none
 spec_prompt: "Resolve #76 and triage/039-workflow-studio-compositions.md as one Storybook composition mission with independently testable Authoring, Run inspection, and Catalog upgrades phases in that order. Reuse the delivered node, canvas, status, form, timeline, pane, decision, and comparison contracts. Use fictional host fixtures to prove keyboard add, binding, outcome wiring, exact-field validation focus, deletion recovery, layout versus semantic updates, host rejection, read-only inspection, retained multiline drafts after failed save, distinct actors and revision evidence, independent bindings for two admitted instances, and explicit acceptance before changing a pinned digest. Verify keyboard and tap paths, narrow transitions, focus return, strict-CSP compatibility where applicable, light and dark baselines, forced colours, and axe. Keep editor, persistence, Catalog policy and runtime services in their host products."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-28T01:02:20Z
 ---
 
 # Triage 039 — Workflow Studio compositions in Storybook
