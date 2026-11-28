@@ -977,6 +977,18 @@
               "attribute": "disabled"
             },
             {
+              "attribute": "initials",
+              "default": "undefined",
+              "description": "Decorative one- or two-grapheme initials for a named button without a slotted icon or label. Reflected.",
+              "kind": "field",
+              "name": "initials",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
               "type": {
                 "text": "boolean"
               },
@@ -1260,6 +1272,15 @@
               "fieldName": "disabled",
               "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
               "default": "false"
+            },
+            {
+              "default": "undefined",
+              "description": "Decorative one- or two-grapheme initials for a named button without a slotted icon or label. Reflected.",
+              "fieldName": "initials",
+              "name": "initials",
+              "type": {
+                "text": "string | undefined"
+              }
             },
             {
               "type": {
