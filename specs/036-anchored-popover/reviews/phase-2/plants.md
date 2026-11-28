@@ -1,5 +1,7 @@
 # Plants of Phase 2
 
+Previous candidate receipt. The current candidate is running the same selection and full gate again. [Current run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46162541866)
+
 - base: a6ef9048f9ca30f69a32dd9b55e7d4085f154104
 - candidate: f4fc2e8bbf2ab1c30b2513fbb0078bfe81440a5f
 - selector: `pnpm run gate:plants -- --affected a6ef9048f9ca30f69a32dd9b55e7d4085f154104 --list`

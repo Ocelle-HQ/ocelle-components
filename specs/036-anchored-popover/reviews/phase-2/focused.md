@@ -1,10 +1,10 @@
 # Phase 2 focused checks
 
-- Source candidate `f4fc2e8bbf2ab1c30b2513fbb0078bfe81440a5f`
-- Phase base `a6ef9048f9ca30f69a32dd9b55e7d4085f154104`
-- Canonical replay preserved 18 missing-behavior assertions across the two scoped projects. The base exited 1 on those assertions and the candidate exited 0. [Replay](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46158714296/job/141020981092)
-- The focused regression ran 70 tests in six files, including Phase 1 lifecycle, keyboard, pointer and touch coverage. The earlier candidate exposed two same-turn focus and hit-test regressions. Both original cases passed unchanged after the correction. [Regression job](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46158714296/job/141020981097)
-- The type, lint, style, test lint, CSP and manifest checks passed. [Static job](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46158714296/job/141020980869)
+- Candidate `3ff4e940ae544b0010d0b091602685c858b03823`
+- Base `a6ef9048f9ca30f69a32dd9b55e7d4085f154104`
+- Canonical replay retained all 18 originally recorded missing-behavior assertions. The base exited 1 and the candidate exited 0. [Replay](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46162402315/job/141032406363)
+- All 77 tests in six files passed, with the existing Phase 1 lifecycle, pointer and touch cases unchanged. [Regression](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46162402315/job/141032406376)
+- The type, lint, style, test lint, CSP and manifest checks passed. [Static checks](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46162402315/job/141032406124)
 
 ```text
 typecheck: no type error in the files of tsconfig.json

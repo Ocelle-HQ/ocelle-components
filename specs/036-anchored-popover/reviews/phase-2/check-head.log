@@ -1,4 +1,4 @@
-{"mode":"head","revision":"f4fc2e8bbf2ab1c30b2513fbb0078bfe81440a5f","input":"a7b251bdf59f1a38e5f91830cb47257fbcf7de324adda0bcee3bfbf7a1429835","selected":[{"project":"elements-browser","file":"packages/elements/test/browser/anchored-popover.test.ts"},{"project":"elements (chromium)","file":"packages/elements/test/anchored-popover-placement.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":14.135}
+{"mode":"head","revision":"3ff4e940ae544b0010d0b091602685c858b03823","input":"09562b8c680e35dbcc92e84094ad30cf5f251fbb48e267746877469beb65cff6","selected":[{"project":"elements-browser","file":"packages/elements/test/browser/anchored-popover.test.ts"},{"project":"elements (chromium)","file":"packages/elements/test/anchored-popover-placement.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":13.855}
 Failed to resolve dependency: [36mlit/directives/class-map.js[39m, present in client 'optimizeDeps.include'
 Failed to resolve dependency: [36mlit/directives/if-defined.js[39m, present in client 'optimizeDeps.include'
 Failed to resolve dependency: [36mlit/directives/live.js[39m, present in client 'optimizeDeps.include'
