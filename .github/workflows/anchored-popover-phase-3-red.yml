@@ -1,0 +1,79 @@
+name: Anchored popover Phase 3 red
+on:
+  push:
+    branches:
+      - 'ci/036-phase-3-red'
+permissions:
+  contents: read
+env:
+  SPECIFY_FEATURE: 036-anchored-popover-pilot
+  SPECIFY_FEATURE_DIRECTORY: specs/036-anchored-popover
+  SPECIFY_FEATURE_NO_PERSIST: '1'
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 400e8ffb6a0dcf33a29427c24def9ed402897d88
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Verify disjoint worker worktrees and proof on the joined tests-only revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "400e8ffb6a0dcf33a29427c24def9ed402897d88"
+          test -z "$(git status --porcelain)"
+          out="$RUNNER_TEMP/ocelle-popover-phase-3-red"
+          mkdir "$out"
+          root="$(pwd -P)"
+          a="$RUNNER_TEMP/ocelle-popover-storybook"
+          b="$RUNNER_TEMP/ocelle-popover-package"
+          c="$RUNNER_TEMP/ocelle-popover-retained"
+          pin="cc68c81d82b05b29c740d15130ad1090f9c51442"
+          git worktree add --detach "$a" "a9923e36e744fdd02e06649b3fe55a54d0b1fd95"
+          git worktree add --detach "$b" "4a8d59b404cb51c2fcbdfedf4a95b6b38bb3a912"
+          git worktree add --detach "$c" "3d7608080d187b940f0511a458157e526938dc89"
+          tooling/speckit/bin/worktree-return-check.sh "$root" "$pin" "$a" storybook/test/integration/anchored-popover.test.ts --worker "$b" packages/elements/test/browser/anchored-popover-stories.test.ts packages/elements/test/browser/fixtures/anchored-popover-stories.html --worker "$c" storybook/test/unit/browser/anchored-popover.test.ts | tee "$out/worktrees.json"
+          jq -e '.ok and (.returns | length == 3)' "$out/worktrees.json"
+          (cd "$a" && tooling/speckit/bin/scope-check.sh implement "$pin")
+          (cd "$b" && tooling/speckit/bin/scope-check.sh implement "$pin")
+          (cd "$c" && tooling/speckit/bin/scope-check.sh implement "$pin")
+          git worktree remove "$a"
+          git worktree remove "$b"
+          git worktree remove "$c"
+          tooling/speckit/bin/scope-check.sh implement "$pin"
+          dir=specs/036-anchored-popover/reviews/phase-3
+          .specify/extensions/story/scripts/red.sh 3 phase | tee "$out/red.json"
+          if [[ -f "$dir/red-phase.log" ]]; then cp "$dir/red-phase.log" "$out/"; fi
+          for key in worktrees.json red-phase.log; do
+            if [[ -f "$out/$key" ]]; then
+              base64 -w 2400 "$out/$key" | sed "s/^/OCELLE_P3_RECEIPT $key /"
+              wc -c "$out/$key"
+            fi
+          done
+          jq -e --arg head "400e8ffb6a0dcf33a29427c24def9ed402897d88" '.sha == $head and .tests_only and .red and .recorded' "$out/red.json"
+          test "$(cat "$dir/red-commits")" = "phase 400e8ffb6a0dcf33a29427c24def9ed402897d88"
+          cp "$dir/red-commits" "$out/"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: anchored-popover-phase-3-red
+          path: ${{ runner.temp }}/ocelle-popover-phase-3-red/
+  static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 400e8ffb6a0dcf33a29427c24def9ed402897d88
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:typecheck
+      - if: success() || failure()
+        run: pnpm run gate:lint
+      - if: success() || failure()
+        run: pnpm run gate:test-lint
