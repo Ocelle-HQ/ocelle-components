@@ -115,10 +115,8 @@ export class OcelleAnchoredPopover extends LitElement {
       display: none;
       box-sizing: border-box;
       position: fixed;
-      inset: auto;
-      margin: 0;
-      width: max-content;
-      visibility: hidden;
+      max-inline-size: calc(100% - 2 * var(--ocelle-gutter));
+      max-block-size: calc(100% - 2 * var(--ocelle-gutter));
       scroll-margin-top: var(--ocelle-gutter);
       scroll-margin-right: var(--ocelle-space-2);
       padding: var(--ocelle-space-2);
@@ -191,10 +189,9 @@ export class OcelleAnchoredPopover extends LitElement {
     if (this.#geometry !== undefined) return this.#geometry;
     const sheet = new CSSStyleSheet();
     sheet.replaceSync('[part="surface"] {}');
-    const geometry = (sheet.cssRules.item(0) as CSSStyleRule).style;
+    this.#geometry = (sheet.cssRules.item(0) as CSSStyleRule).style;
     root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
-    this.#geometry = geometry;
-    return geometry;
+    return this.#geometry;
   }
 
   protected override render() {
@@ -252,11 +249,10 @@ export class OcelleAnchoredPopover extends LitElement {
     const { defaultView: view } = this.ownerDocument;
     const root = this.shadowRoot;
     if (view === null || root === null) return;
-    const geometry = this.#geometryFor(root);
     // A canceled opening can leave tracking scheduled until the next frame.
     this.#releaseTracking();
     this.#trigger?.setAttribute("aria-expanded", "true");
-    const open: OpenSurface = { view, geometry, listeners: new AbortController(), frame: 0, outsidePointer: undefined };
+    const open: OpenSurface = { view, geometry: this.#geometryFor(root), listeners: new AbortController(), frame: 0, outsidePointer: undefined };
     this.#open = open;
     const options = { capture: true, signal: open.listeners.signal };
     this.ownerDocument.addEventListener("pointerdown", this.#onPointerDown, options);
@@ -264,6 +260,19 @@ export class OcelleAnchoredPopover extends LitElement {
     this.ownerDocument.addEventListener("pointercancel", this.#onPointerCancel, options);
     this.ownerDocument.addEventListener("focusin", this.#onFocus, options);
     open.frame = view.requestAnimationFrame(this.#follow);
+    const surface = this.#surface;
+    const trigger = this.#trigger;
+    if (surface !== null && trigger !== null && !trigger.disabled && trigger.getClientRects().length > 0) {
+      // Measure the closed box for the synchronous native opening.
+      open.geometry.display = "block";
+      open.geometry.visibility = "hidden";
+      try {
+        this.#place(open, trigger, surface);
+      } finally {
+        open.geometry.removeProperty("display");
+        open.geometry.removeProperty("visibility");
+      }
+    }
   }
 
   #stop(): void {
@@ -300,7 +309,7 @@ export class OcelleAnchoredPopover extends LitElement {
   };
 
   #place(open: OpenSurface, trigger: HTMLButtonElement, surface: HTMLElement): boolean {
-    const { view, geometry } = open;
+    const view = open.view;
     const triggerStyle = view.getComputedStyle(trigger);
     const surfaceStyle = view.getComputedStyle(surface);
     const gutter = pixels(surfaceStyle.scrollMarginTop);
@@ -313,30 +322,37 @@ export class OcelleAnchoredPopover extends LitElement {
     const maxWidth = bounds.right - bounds.left;
     if (maxWidth < minimumWidth || bounds.bottom - bounds.top < minimumHeight) return false;
 
+    // Reset native centering once before writing anchored coordinates.
+    if (open.maxWidth === undefined) {
+      open.geometry.inset = "auto";
+      open.geometry.margin = "0";
+      open.geometry.width = "max-content";
+    }
+
     // All sides share the viewport's inline cap, so the previous side cannot change which adjacent side fits.
     if (open.maxWidth !== maxWidth) {
-      geometry.maxWidth = `${String(maxWidth)}px`;
+      open.geometry.maxWidth = `${String(maxWidth)}px`;
       open.maxWidth = maxWidth;
     }
     const anchor = trigger.getBoundingClientRect();
-    const preferredWidth = surface.getBoundingClientRect().width;
+    const preferredWidth = pixels(surfaceStyle.width);
     const options = { preferred: this.placement, rtl: triggerStyle.direction === "rtl", gap, minimumHeight, preferredWidth };
     const region = choosePopoverRegion(bounds, anchor, options);
     const maxHeight = region.bottom - region.top;
     if (open.maxHeight !== maxHeight) {
-      geometry.maxHeight = `${String(maxHeight)}px`;
+      open.geometry.maxHeight = `${String(maxHeight)}px`;
       open.maxHeight = maxHeight;
     }
-    const position = positionPopover(region, anchor, surface.getBoundingClientRect(), options);
+    const size = { width: pixels(surfaceStyle.width), height: pixels(surfaceStyle.height) };
+    const position = positionPopover(region, anchor, size, options);
     if (open.left !== position.left) {
-      geometry.left = `${String(position.left)}px`;
+      open.geometry.left = `${String(position.left)}px`;
       open.left = position.left;
     }
     if (open.top !== position.top) {
-      geometry.top = `${String(position.top)}px`;
+      open.geometry.top = `${String(position.top)}px`;
       open.top = position.top;
     }
-    if (geometry.visibility !== "visible") geometry.visibility = "visible";
     return true;
   }
 
