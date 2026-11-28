@@ -1,7 +1,7 @@
 # Specification Quality Checklist: Shared Chrome Glyphs and Initials Trigger
 
-**Purpose**: Validate specification completeness and quality before planning  
-**Created**: 2026-11-28  
+**Purpose**: Validate specification completeness and quality before planning
+**Created**: 2026-11-28
 **Feature**: [Specification](../spec.md)
 
 ## Content Quality
