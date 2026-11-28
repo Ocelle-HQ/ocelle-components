@@ -53,6 +53,20 @@ jobs:
           test "$(git rev-parse "$LANDING_MAIN:$target")" = "$old"
           test "$(git rev-parse "$historical:$target")" = "$old"
           test "$(git rev-parse "HEAD:$target")" = "$new"
+          scenarios=packages/elements/test/scenarios/copy-field.ts
+          scenario='prefixed and unprefixed runs expose break opportunities only between units and start each wrapped line flush'
+          original_green=143a4477f0f91fe8cdf1a6fec198c5d087dd60c1
+          original_red=99084e20681d1b575bffbf931ebb820ff6d33e7a
+          test "$(git rev-parse "HEAD:$scenarios")" = "$(git rev-parse "$original_green:$scenarios")"
+          git grep -F -q "$scenario" HEAD -- "$scenarios"
+          for revision in "$original_red" "$LANDING_MAIN"; do
+            git cat-file -e "$revision:$scenarios"
+            if git grep -F -q "$scenario" "$revision" -- "$scenarios"; then
+              exit 1
+            else
+              test "$?" -eq 1
+            fi
+          done
           printf 'PRODUCT_PATH=%s\nPRODUCT_OLD=%s\nPRODUCT_NEW=%s\n' "$target" "$old" "$new" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup
       - name: Run the product sensitivity check
@@ -99,6 +113,9 @@ jobs:
           assert.equal(originalRed[0].evidence.status, "red");
           const expected = originalRed[0].evidence.assertions;
           assert.equal(expected.length, phase === 1 ? 51 : 3);
+          // This wrapping case was added after the original red and was already present at original green.
+          expected.push({"file":"packages/elements/test/copy-field.test.ts","project":"elements (chromium)","test":"ocelle-copy-field, in process > #89 FR-002: prefixed and unprefixed runs expose break opportunities only between units and start each wrapped line flush","source":{"text":"expect(observed, \"the source copy field meets the browser scenario\").toEqual(expected);","occurrence":1,"line":32}});
+          assert.equal(expected.length, 52);
           assert.deepEqual([...new Set(expected.map(({ file }) => file))].sort(), wantedFiles);
           const changedLines = Object.fromEntries(wantedFiles.map((file) => {
             const anchors = new Set(expected.filter((entry) => entry.file === file).map(({ source }) => source.text));
@@ -118,8 +135,7 @@ jobs:
             changed: wantedFiles,
             deleted: [],
             extra: [],
-            expected: [],
-            recordedExpected: expected,
+            expected,
             changedLines,
             missingModules: [],
           }));
@@ -137,15 +153,10 @@ jobs:
           assert.deepEqual(result.selected.map(({file}) => file).sort(), input.changed);
           const restored = process.env.VARIANT === "restored-main";
           assert.equal(result.evidence.status, restored ? "red" : "green", result.evidence.problem);
-          const observed = new Map(result.evidence.assertions.map((item) => [assertionKey(item), item]));
-          const expected = new Map(input.recordedExpected.map((item) => [assertionKey(item), item]));
-          const missing = [...expected].filter(([key]) => !observed.has(key)).map(([, item]) => item);
-          const unexpected = [...observed].filter(([key]) => !expected.has(key)).map(([, item]) => item);
-          const difference = { missing, unexpected, observedCount: observed.size, recordedCount: expected.size };
-          writeFileSync(proofPath.replace(/proof\.json$/, "difference.json"), JSON.stringify(difference, null, 2) + "\n");
-          console.log(JSON.stringify(difference));
-          assert.deepEqual({ missing, unexpected }, { missing: [], unexpected: [] },
-            "observed assertion set differs from original proof");
+          assert.deepEqual(
+            result.evidence.assertions.map(assertionKey).sort(),
+            restored ? input.expected.map(assertionKey).sort() : [],
+          );
           if (process.env.PHASE === "2" && restored) {
             const ids = result.evidence.assertions.map(({ diagnostic }) =>
               /^built Storybook index is missing (elements-ocelle-copy-field--[a-z-]+):/.exec(diagnostic)?.[1],
@@ -181,5 +192,5 @@ jobs:
         if: always()
         with:
           name: product-sensitivity-${{ matrix.phase }}-${{ matrix.variant }}
-          path: ${{ runner.temp }}/product-sensitivity/*.json
+          path: ${{ runner.temp }}/product-sensitivity/proof.json
           if-no-files-found: warn
