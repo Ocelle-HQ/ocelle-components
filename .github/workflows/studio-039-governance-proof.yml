@@ -14,12 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: d97b5042841fb131403b42958901a037e99f32d7
+          ref: 0255f6e1c73c7ca25b649a30af8700e2760b38a9
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify the planner scope for eight fixes
+      - name: Check the complete planner fix scope
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "d97b5042841fb131403b42958901a037e99f32d7"
+          test "$(git rev-parse HEAD)" = "0255f6e1c73c7ca25b649a30af8700e2760b38a9"
           test -z "$(git status --porcelain)"
           tooling/speckit/bin/scope-check.sh planner f209b1288700d7022db5d696e9c2e7b13d8f508f
