@@ -1,9 +1,7 @@
 # Plants of Phase 2
 
-Previous candidate receipt. The current candidate is running the same selection and full gate again. [Current run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46162541866)
-
 - base: a6ef9048f9ca30f69a32dd9b55e7d4085f154104
-- candidate: f4fc2e8bbf2ab1c30b2513fbb0078bfe81440a5f
+- candidate: 3ff4e940ae544b0010d0b091602685c858b03823
 - selector: `pnpm run gate:plants -- --affected a6ef9048f9ca30f69a32dd9b55e7d4085f154104 --list`
 - selector exit: 0
 
@@ -32,7 +30,7 @@ note: affected: axe/pass-repository, by packages/elements/src/anchored-popover-p
 plants: affected since a6ef9048f9ca30f69a32dd9b55e7d4085f154104: 21 of 326 plants selected, none judged (--list)
 ```
 
-The selector recorded 21 affected Plants. The repository's standard sharded workflow judged the full inventory, including all 21, on the identical candidate with Docker and Podman for Visual Plants. All 77 shards and the aggregate passed. [Selection](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46158758007/job/141021118919) · [Complete Plants verdict](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46158758007/job/141026461453)
+All 77 standard Plants shards and their aggregate passed on the identical candidate. They judged the full pinned inventory, including every case above. Visual Plants used Docker and Podman. [Exact selector](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46162541866/job/141032858555) · [Exact aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46162541866/job/141038711232)
 
 - command: `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards`
 - exit: 0
