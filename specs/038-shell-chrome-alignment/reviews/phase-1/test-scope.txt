@@ -1,0 +1,2 @@
+packages/elements/test/top-bar.test.ts
+packages/elements/test/browser/app-shell.test.ts
