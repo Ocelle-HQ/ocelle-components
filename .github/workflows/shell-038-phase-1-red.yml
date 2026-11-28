@@ -1,0 +1,40 @@
+name: Shell Phase 1 tests-only red
+on:
+  push:
+    branches: [ci/038-phase-1-red]
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SPECIFY_FEATURE_DIRECTORY: specs/038-shell-chrome-alignment
+      SPECIFY_FEATURE_NO_PERSIST: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 66bcdcac20e1b3bce9e6a233f25bb1080b254616
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run the canonical red check
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "66bcdcac20e1b3bce9e6a233f25bb1080b254616"
+          test "$(git rev-parse HEAD^)" = "17db64cf6789969b9a1baeec5e7b17c38543afdd"
+          mkdir -p "$RUNNER_TEMP/shell-red"
+          report="$RUNNER_TEMP/shell-red/red.json"
+          .specify/extensions/story/scripts/red.sh 1 phase > "$report"
+          jq '{phase, label, sha, tests_only, red, recorded, exit_code, evidence}' "$report"
+          cp specs/038-shell-chrome-alignment/reviews/phase-1/red-phase.log "$RUNNER_TEMP/shell-red/"
+          if test -f specs/038-shell-chrome-alignment/reviews/phase-1/red-commits; then
+            cp specs/038-shell-chrome-alignment/reviews/phase-1/red-commits "$RUNNER_TEMP/shell-red/"
+          fi
+          jq -e --arg sha "66bcdcac20e1b3bce9e6a233f25bb1080b254616" '.sha == $sha and .tests_only and .recorded and .red and .exit_code == 1 and (.evidence.assertions | length) == 6 and all(.evidence.assertions[]; (tostring | contains("zero lower-divider pixels")))' "$report"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: shell-phase-1-red
+          path: ${{ runner.temp }}/shell-red/
+          if-no-files-found: error
