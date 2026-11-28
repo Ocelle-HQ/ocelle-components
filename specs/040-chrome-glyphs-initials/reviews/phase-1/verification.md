@@ -6,8 +6,8 @@ The new catalog, chrome actions and Storybook examples passed the same behaviora
 | --- | --- |
 | Storybook build | 427 stories, including the five isolated actions and both set galleries |
 | Typecheck | No type errors |
-| Production lint | 762 files, no findings |
-| Test lint | 580 files, no findings |
+| Production lint | 763 files, no findings |
+| Test lint | 581 files, no findings |
 | Manifest | 52 elements, no findings |
 | Manifest preflight | All eight applicable overlay receipts matched their intended findings, with no missing snapshots |
 | Built strict CSP | 93 distribution files checked, no findings |
@@ -32,3 +32,22 @@ node specs/040-chrome-glyphs-initials/reviews/phase-1/story-keyboard.mjs
 The modified shared helpers add named action cases and five drawing expectations. The button and icon-set suites exercise them through both drivers. Other suites import the existing `severe`, `expectedDrawing` and original catalog entries. Their function implementations and the original drawing data are unchanged.
 
 A focused axe-core audit found zero serious or critical violations across the same 15 built-story cases. The first full local Axe run examined 854 story-theme pairs and reported one 15-second render timeout on the existing `elements-ocelle-nav-item--expanded/light` story. It reported no finding on any of the changed stories.
+
+The repository's phase runner recorded 35 assertion-level failures on tests-only commit `975feede5d6efcc1582bce5c6a6031cef3c5c754`. The final tests reproduced those same 35 failures against phase base `aee31975f93b764512109c4ea8ba2dbfb2976f1b`, with the stories kept at their base implementation. Its local suites then passed on candidate `0fd302f6392cb71953a4e4e92c7b80e602e12b36`. See `tdd-check.json` and the corresponding logs.
+
+The full Visual, Accessibility and Plants jobs passed on that candidate's tested merge `fdb917eccb7cb6816785f90535431c9324cf28ca`. [Hosted CI run 46100810218](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/46100810218)
+
+The Unit plan and all four shard reports for that same tested merge confirm the deferred suites passed.
+
+| Unit shard | Deferred gate integration suite |
+| --- | --- |
+| 0 | `visual-findings.test.ts` |
+| 1 | `visual.test.ts` |
+| 2 | `visual-capture.test.ts` |
+| 3 | `axe.test.ts` |
+
+Shard 2 also passed all 36 `plant-repo.test.ts` checks, including copying all 854 committed baselines with identical bytes.
+
+All required checks on run 46100810218 finished successfully, including both standard Mutation shards and aggregate Mutation testing. The candidate and the dual-engine capture revision have identical element sources, generated manifest, Storybook source and committed baselines. The intervening commits changed gate inventory expectations, replay scope and review evidence.
+
+The affected Plants run completed locally with exit 0. All 21 selected cases met their expected results, including the repository Axe audit. See `plants.md` for the complete command output.
