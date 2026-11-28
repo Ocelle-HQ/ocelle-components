@@ -1,0 +1,80 @@
+name: Workflow Studio Phase 1 scaffold verification
+on:
+  push:
+    branches: [ci/039-phase-1-scaffold]
+permissions:
+  contents: read
+jobs:
+  scaffold:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SPECIFY_FEATURE_DIRECTORY: specs/039-workflow-studio-compositions
+      SPECIFY_FEATURE_NO_PERSIST: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 424b8ad5673ed37f9b91471da83862ab9abcd7c4
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Verify the canonical neutral scaffold and compile it
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "424b8ad5673ed37f9b91471da83862ab9abcd7c4"
+          test "$(git rev-parse HEAD^)" = "0fdb99388b0ca9afec68e9be0185299fbe669654"
+          test -z "$(git status --porcelain)"
+          status=$(.specify/extensions/story/scripts/scaffold.sh 1)
+          echo "$status"
+          jq -e --arg sha "424b8ad5673ed37f9b91471da83862ab9abcd7c4" '.phase == "1" and .sha == $sha and .recorded and .tests_touched == false' <<< "$status"
+          pnpm run gate:typecheck
+          pnpm run gate:lint
+          pnpm run gate:style-lint
+      - name: Mount the neutral controls in the actual Storybook browser project
+        shell: bash
+        run: |
+          workbench="storybook/test/unit/browser/workflow-studio-scaffold-probe.test.ts"
+          test ! -e "$workbench"
+          trap 'rm -f -- "$workbench"' EXIT
+          cat > "$workbench" <<'TS'
+          import { expect, it } from "vitest";
+          import "../../../../packages/elements/src/index.ts";
+          import "../../../stories/workflow-studio.css";
+          import { renderWorkflowStudioAuthoring } from "../../../stories/workflow-studio-authoring.ts";
+
+          it("uses the real Ocelle controls with a deterministic neutral fixture", async () => {
+            const first = renderWorkflowStudioAuthoring();
+            document.body.append(first.root);
+            try {
+              const actionRow = first.root.querySelector("ocelle-action-row");
+              const canvas = first.root.querySelector("ocelle-workflow-canvas");
+              expect(actionRow).not.toBeNull();
+              expect(canvas).not.toBeNull();
+              await actionRow?.updateComplete;
+              await canvas?.updateComplete;
+              expect(actionRow?.shadowRoot?.querySelector("button")).not.toBeNull();
+              expect(canvas?.graph.nodes.map(node => node.id)).toContain("publish-decision");
+              expect(first.readSemanticSnapshot()).not.toContain("security-review-1");
+            } finally {
+              first.root.remove();
+            }
+
+            const unassigned = renderWorkflowStudioAuthoring({ scenario: "unassigned", compact: true });
+            document.body.append(unassigned.root);
+            try {
+              const drawer = unassigned.root.querySelector("ocelle-drawer");
+              const field = drawer?.querySelector("ocelle-form-select");
+              const canvas = unassigned.root.querySelector("ocelle-workflow-canvas");
+              expect(drawer).not.toBeNull();
+              expect(drawer?.open).toBe(false);
+              expect(field).not.toBeNull();
+              await field?.updateComplete;
+              expect(field?.value).toBe("");
+              expect(canvas?.selectedNodeId).toBe("security-review-1");
+              expect(unassigned.readSemanticSnapshot()).toContain("security-review-1");
+            } finally {
+              unassigned.root.remove();
+            }
+          });
+          TS
+          pnpm exec vitest run --project storybook-browser "$workbench"
