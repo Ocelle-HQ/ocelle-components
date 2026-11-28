@@ -43,7 +43,6 @@ export class OcelleTopBar extends LitElement {
       box-sizing: border-box;
       min-block-size: var(--ocelle-shell-topbar-height);
       padding-inline: var(--ocelle-space-3);
-      border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-chrome-muted);
       font-family: var(--ocelle-font-sans);
       line-height: var(--ocelle-line-height-normal);
     }
@@ -107,10 +106,6 @@ export class OcelleTopBar extends LitElement {
     }
 
     @media (forced-colors: active) {
-      [part="bar"] {
-        border-color: CanvasText;
-      }
-
       [part="menu-button"] {
         border-color: ButtonText;
         color: ButtonText;
