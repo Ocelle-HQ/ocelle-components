@@ -1,79 +1,191 @@
-name: Shell Phase 1 exact baseline export
+name: Shell Phase 1 validation of measured baselines
 on:
   push:
     branches: [ci/038-phase-1-validation]
 permissions:
-  actions: read
   contents: read
+env:
+  SPECIFY_FEATURE_DIRECTORY: specs/038-shell-chrome-alignment
+  SPECIFY_FEATURE_NO_PERSIST: "1"
+  EXPECTED_HEAD: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+  PHASE_BASE: 1451b45ba68a5780693d69935e8a87f9c7419fc6
 jobs:
-  export:
+  story:
+    name: Canonical replay and changed-scope Mutation
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        group: [0,1,2,3,4,5,6,7]
-    env:
-      GROUP: ${{ matrix.group }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 663820232a5df81195bd6c20a9c1a12931be9b55
+          ref: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+          fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version-file: .node-version
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: shell-phase-1-visual-comparison
-          run-id: 46090749386
-          repository: Ocelle-HQ/ocelle-components
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: ${{ runner.temp }}/shell-visual
-      - name: Verify transferred PNGs and localize the changed pixels
+      - uses: ./.github/actions/setup
+      - name: Prove original red, final tests against base, and green
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "663820232a5df81195bd6c20a9c1a12931be9b55"
-          node --input-type=module <<'NODE'
-          import { createHash } from "node:crypto";
-          import { readFileSync } from "node:fs";
-          import { join } from "node:path";
-          import { inflateSync } from "node:zlib";
-          import { decodePng } from "./packages/elements/test/pixels.ts";
-          const root = join(process.env.RUNNER_TEMP, "shell-visual");
-          const receipt = JSON.parse(readFileSync(join(root, "receipt.json"), "utf8"));
-          const names = ["elements-ocelle-app-shell--flush-block-end.dark.png","elements-ocelle-app-shell--flush-block-end.light.png","elements-ocelle-app-shell--flush-both-ends.dark.png","elements-ocelle-app-shell--flush-both-ends.light.png","elements-ocelle-app-shell--flush-inline-end.dark.png","elements-ocelle-app-shell--flush-inline-end.light.png","elements-ocelle-app-shell--mission-collapsed.dark.png","elements-ocelle-app-shell--mission-collapsed.light.png","elements-ocelle-app-shell--mission-expanded.dark.png","elements-ocelle-app-shell--mission-expanded.light.png","elements-ocelle-app-shell--mission-narrow.dark.png","elements-ocelle-app-shell--mission-narrow.light.png","elements-ocelle-app-shell--omitted-regions.dark.png","elements-ocelle-app-shell--omitted-regions.light.png","elements-ocelle-app-shell--personal-narrow.dark.png","elements-ocelle-app-shell--personal-narrow.light.png","elements-ocelle-app-shell--personal.dark.png","elements-ocelle-app-shell--personal.light.png","elements-ocelle-app-shell--project-collapsed.dark.png","elements-ocelle-app-shell--project-collapsed.light.png","elements-ocelle-app-shell--project-expanded.dark.png","elements-ocelle-app-shell--project-expanded.light.png","elements-ocelle-app-shell--project-narrow.dark.png","elements-ocelle-app-shell--project-narrow.light.png","elements-ocelle-top-bar--brand-only.dark.png","elements-ocelle-top-bar--brand-only.light.png","elements-ocelle-top-bar--focused.dark.png","elements-ocelle-top-bar--focused.light.png","elements-ocelle-top-bar--menu-closed.dark.png","elements-ocelle-top-bar--menu-closed.light.png","elements-ocelle-top-bar--menu-expanded.dark.png","elements-ocelle-top-bar--menu-expanded.light.png","elements-ocelle-top-bar--narrow.dark.png","elements-ocelle-top-bar--narrow.light.png","elements-ocelle-top-bar--with-actions.dark.png","elements-ocelle-top-bar--with-actions.light.png"];
-          if (receipt.head !== "663820232a5df81195bd6c20a9c1a12931be9b55" || receipt.phaseBase !== "1451b45ba68a5780693d69935e8a87f9c7419fc6" || JSON.stringify(receipt.files.map(file => file.name)) !== JSON.stringify(names)) throw new Error("Visual receipt pin or path mismatch");
-          const group = Number(process.env.GROUP);
-          const selected = receipt.files.slice(group * 5, (group + 1) * 5);
-          if (!selected.length) throw new Error("Empty export group");
-          for (const file of selected) {
-            const bytes = readFileSync(join(root, "baselines", file.name));
-            const sha256 = createHash("sha256").update(bytes).digest("hex");
-            if (sha256 !== file.sha256 || bytes.length !== file.size) throw new Error("Review and export bytes differ: " + file.name);
-            const prior = readFileSync(join("storybook/baselines", file.name));
-            const inflate = data => Promise.resolve(inflateSync(data));
-            const before = await decodePng(prior, inflate);
-            const after = await decodePng(bytes, inflate);
-            if (before.width !== after.width || before.height !== after.height) throw new Error("Unexpected capture size change: " + file.name);
-            let pixels = 0, top = after.height, bottom = -1;
-            for (let y = 0; y < after.height; y++) {
-              for (let x = 0; x < after.width; x++) {
-                const offset = (y * after.width + x) * 4;
-                if (![0, 1, 2, 3].some(channel => before.data[offset + channel] !== after.data[offset + channel])) continue;
-                pixels++;
-                top = Math.min(y, top);
-                bottom = Math.max(y, bottom);
-              }
-            }
-            if (!pixels) throw new Error("Expected a measured difference: " + file.name);
-            const blob = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
-            console.log("png-metadata " + JSON.stringify({name: file.name, sha256, blob, size: bytes.length, pixels, top, bottom, width: after.width, height: after.height}));
-            const encoded = bytes.toString("base64");
-            for (const chunk of encoded.match(/.{1,3072}/g)) console.log("png-data " + file.name + " " + chunk);
-            if (["elements-ocelle-top-bar--brand-only.light.png", "elements-ocelle-app-shell--mission-expanded.light.png"].includes(file.name)) {
-              const diff = readFileSync(join(root, file.name.replace(/\.png$/, ".diff.png"))).toString("base64");
-              for (const chunk of diff.match(/.{1,3072}/g)) console.log("png-sample " + file.name + " " + chunk);
-            }
-          }
-          NODE
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          mkdir -p "$RUNNER_TEMP/shell-story"
+          report="$RUNNER_TEMP/shell-story/tdd-check.json"
+          .specify/extensions/story/scripts/tdd-check.sh 1 > "$report"
+          jq '{status, head, base, final_tests_on_base_exit, head_exit, problems, reds: [.red_commits[] | {label, exit_code, count: (.evidence.assertions | length)}]}' "$report"
+          jq -e --arg sha "$EXPECTED_HEAD" --arg base "$PHASE_BASE" '.status == "pass" and .head == $sha and .base == $base and .final_tests_on_base_exit == 1 and .head_exit == 0 and (.problems | length) == 0 and (.red_commits[0].evidence.assertions | length) == 6' "$report"
+      - name: Check the actual Mutation range and retained scope
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/shell-story"
+          pnpm run gate:mutation -- --base "$PHASE_BASE" | tee "$RUNNER_TEMP/shell-story/mutation.txt"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: shell-phase-1-green
+          path: ${{ runner.temp }}/shell-story/
+          if-no-files-found: warn
+  static:
+    name: Types, lint, strict CSP and manifest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Verify the exact static and build checks
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          pnpm run gate:typecheck
+          pnpm run gate:lint
+          pnpm run gate:style-lint
+          pnpm run gate:test-lint
+          pnpm --filter './packages/*' -r build
+          pnpm run gate:csp
+          pnpm run gate:manifest
+          pnpm run gate:storybook-build
+          pnpm run gate:sandbox-paths
+          pnpm run gate:signoff -- --range "$PHASE_BASE..$EXPECTED_HEAD"
+  visual:
+    name: Visual regression
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Observe Visual tools before capture
+        id: visual-runtime-before
+        continue-on-error: true
+        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/visual-tools-before.json"
+      - run: pnpm run gate:visual -- --engine both --remove-docker-image
+      - run: |
+          reference="$(node -p 'const pin = require("./storybook/visual/container.json"); `${pin.image}@${pin.digest}`')"
+          tag="$(node -p 'const pin = require("./storybook/visual/container.json"); `${pin.image}:${pin.tag}`')"
+          record="$RUNNER_TEMP/pin-record"
+          mkdir -p "$record"
+          skopeo --version > "$record/skopeo-version.txt"
+          skopeo inspect --raw "docker://$reference" > "$record/skopeo-inspect-raw-manifest.json"
+          podman image inspect "$reference" > "$record/podman-inspect.json"
+          skopeo inspect --raw "docker://$tag" > "$record/skopeo-inspect-raw-index.json"
+      - name: Verify Visual tools after capture
+        if: steps.visual-runtime-before.outcome == 'success'
+        continue-on-error: true
+        run: VISUAL_RUNTIME_PNPM="$(command -v pnpm)" pnpm exec node tooling/speckit/bin/record-visual-runtime.ts "$RUNNER_TEMP/pin-record/executed-tools.json" "$RUNNER_TEMP/visual-tools-before.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pin-record
+          path: ${{ runner.temp }}/pin-record/
+      - if: always()
+        run: df -h /
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual
+          path: storybook/.visual/
+          include-hidden-files: true
+  axe:
+    name: Accessibility
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:axe
+  plants-plan:
+    name: Plants plan
+    runs-on: ubuntu-24.04
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - id: plan
+        run: |
+          affected="$RUNNER_TEMP/affected-plants.txt"
+          pnpm --silent run gate:plants -- --affected "$PHASE_BASE" --list > "$affected"
+          printf 'Exact Phase 1 affected Plants selection\n'
+          cat "$affected"
+          pnpm --silent run gate:plants -- --list > "$RUNNER_TEMP/all-plants.txt"
+          cmp "$affected" "$RUNNER_TEMP/all-plants.txt"
+          shards="$(pnpm --silent run gate:plants -- --plan)"
+          echo "$shards"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+  plants-shard:
+    name: Plants shard
+    needs: plants-plan
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}
+    steps:
+      - run: df -h /
+      - run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+      - run: df -h /
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - env:
+          OCELLE_VISUAL_ENGINE: both
+          SHARD: ${{ matrix.shard }}
+        run: pnpm run gate:plants -- --shard "$SHARD"
+      - if: always()
+        run: df -h /
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plant-shard-${{ matrix.shard }}
+          path: storybook/.visual/plant-shards/
+          include-hidden-files: true
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plants-${{ matrix.shard }}
+          path: storybook/.visual/plants/
+          include-hidden-files: true
+  plants:
+    name: Plants
+    needs: [plants-plan, plants-shard]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: be87feddf8b96ba15319340ca7dce144cb9d6ad6
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: plant-shard-*
+          path: storybook/.visual/plant-shards/
+          merge-multiple: true
+      - run: pnpm run gate:plants -- --verdict storybook/.visual/plant-shards
