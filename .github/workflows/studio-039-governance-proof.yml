@@ -14,17 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 8dee940e0b4239bc11f91c769b5617cb0ea41863
+          ref: cb60f78ca275a355f44269e201e653886c54e07f
           fetch-depth: 0
           persist-credentials: false
-      - name: Open the first adversarial plan round
+      - name: Validate all four lens paths
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "8dee940e0b4239bc11f91c769b5617cb0ea41863"
+          test "$(git rev-parse HEAD)" = "cb60f78ca275a355f44269e201e653886c54e07f"
           test -z "$(git status --porcelain)"
-          git config user.name "Ocelle Spec Kit proof"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          status=$(.specify/extensions/squad/scripts/round.sh)
-          echo "$status"
-          jq -e '.round == 1 and .lenses == ["correctness","a11y-security","testability","fresh"]' <<< "$status"
-          test "$(cat "$SPECIFY_FEATURE_DIRECTORY/reviews/plan/round-1/base.sha")" = "8dee940e0b4239bc11f91c769b5617cb0ea41863"
+          tooling/speckit/bin/scope-check.sh lens 6f1e735d7898a8a059353c7c27de49ab3058ef2b
+          grep -Fx 'complete: true' specs/039-workflow-studio-compositions/reviews/plan/round-1/lens-*.yaml | test "$(wc -l)" -eq 4
