@@ -14,18 +14,22 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 5bb142d2f6955780fde0cb165e20bc8c8a4b050c
+          ref: a5310722ef8eec752dd366e14e0c84d7be1f0a09
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify the clean plan and current task setup
+      - name: Verify independent analysis, task fixes and ordered phases
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "5bb142d2f6955780fde0cb165e20bc8c8a4b050c"
+          test "$(git rev-parse HEAD)" = "a5310722ef8eec752dd366e14e0c84d7be1f0a09"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh refute 6234e03d102558b5b7658932d925af921d708b22
-          status=$(.specify/extensions/squad/scripts/status.sh)
+          analysis="$RUNNER_TEMP/studio-analysis-scope"
+          git worktree add --detach "$analysis" 1f727d1b998372194b1de312d40609515a6dc869
+          trap 'git worktree remove --force "$analysis"' EXIT
+          ( cd "$analysis" && tooling/speckit/bin/scope-check.sh analyze 4ef309d00bfce2d9deb308f4d8fb2015fa6a2b42 )
+          tooling/speckit/bin/scope-check.sh planner 1f727d1b998372194b1de312d40609515a6dc869
+          status=$(.specify/extensions/squad/scripts/analysis-status.sh)
           echo "$status"
-          jq -e '.round == 3 and .lens_files == 1 and .confirmed == 0 and .forks == 0 and .unresolved == 0' <<< "$status"
-          setup=$(.specify/scripts/bash/setup-tasks.sh --json)
-          jq '{FEATURE_DIR,TASKS_TEMPLATE,AVAILABLE_DOCS}' <<< "$setup"
-          test -z "$(git status --porcelain)"
+          jq -e '.present and .critical == 0 and .high == 0 and .coverage == 100' <<< "$status"
+          units=$(.specify/extensions/story/scripts/units.sh)
+          echo "$units"
+          jq -e 'map(.phase) == [1,2,3] and (map(.total)|add) == 24' <<< "$units"
