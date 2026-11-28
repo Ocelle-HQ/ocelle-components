@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+secret: npmrc-auth .npmrc
+
+Add a npmrc-auth value

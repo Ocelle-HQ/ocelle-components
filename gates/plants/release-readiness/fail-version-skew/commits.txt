@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+files: files
+
+Give the styles package another version

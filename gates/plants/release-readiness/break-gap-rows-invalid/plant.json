@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "gap-rows.json is not a list of rows (030 contracts/release-readiness-gate.md).",
+  "cause": "gates/release/gap-rows.json is invalid"
+}

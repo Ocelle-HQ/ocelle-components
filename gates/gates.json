@@ -152,5 +152,13 @@
     "plantCommand": "node gates/bin/pack-contents.ts --root {root} --tarballs {root}/tarballs",
     "plantForm": "pack-tree",
     "scope": "the tarball of each of @ocelle/tokens, @ocelle/styles and @ocelle/elements as pnpm pack writes it after the build (030 FR-004): its declared entry points, the files gates/release/pack-manifest.json requires, allows and compares byte for byte with the repository, the deny list, the packed manifest's private flag, version, peer, workspace: specifiers, repository and licence, and op 023's sandbox-path rule on every text entry"
+  },
+  {
+    "id": "release-readiness",
+    "check": "Release readiness",
+    "command": "pnpm run gate:release-readiness",
+    "plantCommand": "node gates/bin/release-readiness.ts --root {root}",
+    "plantForm": "commit-repo",
+    "scope": "the checkout at HEAD (030 FR-010 to FR-014): the 17 rows of gates/release/gap-rows.json against the gap table of #1 and their evidence in the custom-elements manifest, the token source, the stylesheets and the specs' verification.md; the history secret scan of every commit reachable from HEAD with the allow list gates/release/secret-allowlist.json; one shared version and, with --tag, the tag; the dated changelog entries and the elements and tokens they name"
   }
 ]

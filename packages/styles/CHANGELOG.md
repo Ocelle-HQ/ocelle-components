@@ -5,6 +5,12 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
 
 ## Unreleased
 
+## 1.0.0 - 2026-11-28
+
+The first public release, 1.0.0, published to the public npm registry with provenance, in lockstep with
+`@ocelle/tokens` and `@ocelle/elements`: everything below is the package's public surface since its start, the
+`base.css` export, its hook attributes and their values.
+
 `base.css`'s four blocks for the data records (the `ocelle-data-table` rules, their prose override, the pre-upgrade
 rules of `ocelle-event-timeline` and `ocelle-evidence-chain`, and the numeric-cell rule), the `data-ocelle-align`
 hook with its value `end`, and the base-style hook `--data-table-box-size` and `--data-table-end-fade` that

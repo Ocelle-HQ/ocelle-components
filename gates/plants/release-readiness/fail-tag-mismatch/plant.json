@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "The tag is not v followed by the packages' version (030 FR-012).",
+  "findings": [
+    {
+      "location": "packages/tokens/package.json",
+      "rule": "tag-mismatch",
+      "message": "the tag v0.0.0 is not v"
+    }
+  ],
+  "args": [
+    "--tag",
+    "v0.0.0"
+  ]
+}

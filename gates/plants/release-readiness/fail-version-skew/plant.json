@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "@ocelle/styles has a version of its own (030 FR-012, Story 2 scenario 4).",
+  "findings": [
+    {
+      "location": "packages/styles/package.json",
+      "rule": "version-mismatch",
+      "message": "version 0.9.9 differs from @ocelle/tokens"
+    }
+  ]
+}

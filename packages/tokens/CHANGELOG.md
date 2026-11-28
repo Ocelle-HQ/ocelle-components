@@ -5,6 +5,12 @@ All notable changes to `@ocelle/tokens`. The package follows semantic versioning
 
 ## Unreleased
 
+## 1.0.0 - 2026-11-28
+
+The first public release, 1.0.0, published to the public npm registry with provenance, in lockstep with
+`@ocelle/styles` and `@ocelle/elements`: everything below is the package's public surface since its start, every token
+name, both themes, the stylesheet hooks, the JSON shape and the brand font.
+
 **First release: hosts and Ocelle elements get every design token, both themes and the brand font from one
 package (mission 002; #5).** Before, there was no token package: colours, spacing and type were not available as
 shared `--ocelle-*` names. Now a host links `tokens.css` and serves `fonts/` beside it under `font-src 'self'`,

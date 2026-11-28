@@ -17,7 +17,7 @@ import { directoryNames, filePaths } from "../lib/entries.ts";
 import { emit, formatFinding, plural } from "../lib/findings.ts";
 import { gateKeysProblem, judgePlant, parsePlant, plantFilesProblem, storybookGates } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
-import { buildCommitRepo, buildMutationRepo, buildPackTree, buildRepoTree, buildTrackedTree, carriesConfiguration, parseDelta } from "../lib/plant-repo.ts";
+import { buildCommitRepo, buildMutationRepo, buildPackTree, buildRepoTree, buildTrackedTree, carriesConfiguration, hasConfigurationBase, parseDelta } from "../lib/plant-repo.ts";
 import { affectedPlants, containerDecision, gateRunsAtOnce, limiter, needsEngine, otherShardSize, plantSeconds, plantShards, plantTimeNote, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { RunnerTools, VisualCopyTools } from "../lib/plant-runner.ts";
 import { affectedInCiFindings, checkRegistry, ciJobs, parseRegistry, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
@@ -587,7 +587,7 @@ function runnerTools(root: string, io: Io): RunnerTools {
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
       "repo-tree": (plant, into, spec) => buildRepoTree(root, plant, into, spec).then(() => ({})),
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
-      "commit-repo": (plant, into) => buildCommitRepo(plant, into),
+      "commit-repo": (plant, into) => buildCommitRepo(plant, into, hasConfigurationBase(plant) ? root : undefined),
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
       "mutation-repo": (plant, into) => buildMutationRepo(root, plant, into),
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree"

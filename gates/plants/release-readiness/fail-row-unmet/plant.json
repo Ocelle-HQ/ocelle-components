@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The manifest declares no element, so every gap row that names an element is unmet (030 FR-010, Story 2 scenario 2).",
+  "findings": [
+    {
+      "location": "gates/release/gap-rows.json",
+      "rule": "gap-row-unmet",
+      "message": "row 1 (#492): missing element ocelle-personal-rail"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "An .npmrc that reads the token from the environment is no hit (030 research.md R-08)."
+}

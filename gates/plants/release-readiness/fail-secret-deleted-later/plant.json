@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A value added in one commit and removed in the next is still in the history (030 FR-011).",
+  "findings": [
+    {
+      "location": "commit:1:notes/token.txt",
+      "rule": "secret",
+      "message": "npm-token"
+    }
+  ]
+}

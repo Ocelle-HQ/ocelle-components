@@ -1,0 +1,15 @@
+[
+  {
+    "upstream": [
+      "#1"
+    ],
+    "need": "a planted need",
+    "metIn": "#2 planted",
+    "evidence": [
+      {
+        "kind": "spec",
+        "dir": "001-repository-foundation"
+      }
+    ]
+  }
+]

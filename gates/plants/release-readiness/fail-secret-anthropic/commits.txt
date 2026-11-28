@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+secret: anthropic-key notes/key.txt
+
+Add a anthropic-key value

@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+secret: private-key keys/id.pem
+
+Add a private-key value

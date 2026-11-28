@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+secret: github-token notes/token.txt
+
+Add a github-token value

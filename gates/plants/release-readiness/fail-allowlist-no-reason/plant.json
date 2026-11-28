@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "An allow-list entry with an empty reason allows nothing and is itself a finding (030 FR-011, data-model.md § Secret allow-list entry).",
+  "findings": [
+    {
+      "location": "commit:1:notes/token.txt",
+      "rule": "secret",
+      "message": "npm-token"
+    },
+    {
+      "location": "gates/release/secret-allowlist.json",
+      "rule": "allowlist-no-reason",
+      "message": "entry 1 (notes/token.txt, npm-token)"
+    }
+  ]
+}

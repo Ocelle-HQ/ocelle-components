@@ -1,0 +1,3 @@
+packages:
+  planted@1.0.0:
+    resolution: {integrity: sha512-IVz9g8XiNnin6iWYX4VxuwlVaBKlo9Kd/LUpmkV4T0DDsJ0+lxKeT7fdwWEcvXw21xglSIKjOU/jetD2Yb/UnQ==}

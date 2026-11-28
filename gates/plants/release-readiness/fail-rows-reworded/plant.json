@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The gap table's row 14 is reworded, so gap-rows.json no longer states it verbatim (030 FR-010, data-model.md § Gap row).",
+  "findings": [
+    {
+      "location": "gates/release/gap-rows.json",
+      "rule": "gap-rows-mismatch",
+      "message": "row 14: need differs"
+    }
+  ]
+}

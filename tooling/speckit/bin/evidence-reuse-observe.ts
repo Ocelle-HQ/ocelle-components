@@ -403,11 +403,14 @@ function visualRuntime(context: Context, job: Job, rawJob: Json, run: HostedRun,
   // These blob IDs cover the audited CI job and shared setup. Re-audit before accepting a new version of either.
   // 030 US1 (T019): ci.yml re-audited with the pack-contents job and the header's count of twenty required checks; the
   // visual job, the shared setup and the runtime recorder are unchanged (the previous ci.yml blob was 6eb0ec30c806).
+  // 030 US2 (T033, operator decision reviews/phase-1/operator-ci-pin-decision.md): ci.yml re-audited with the
+  // release-readiness job, fetch-depth: 0 on the unit-tests-shard and unit-tests-full checkouts and the header's count
+  // of twenty-one; the visual job, the shared setup and the runtime recorder are unchanged (previous blob 0b807c7187df).
   const workflowBlob = git(["rev-parse", `${tree}:${ciWorkflow}`]).toString().trim();
   const setupBlob = git(["rev-parse", `${tree}:.github/actions/setup/action.yml`]).toString().trim();
   const recorderPath = "tooling/speckit/bin/record-visual-runtime.ts";
   const runtimeRecorderBlob = git(["rev-parse", `${tree}:${recorderPath}`]).toString().trim();
-  requireEvidence(workflowBlob === "0b807c7187df3304d3a4f624d4bc4fa6749af86c" &&
+  requireEvidence(workflowBlob === "c7cf3b06a17312cd0e243a409c9586d94ff029ca" &&
     setupBlob === "3c8211a282364e46895d9bdc0d173f85402fddbf" &&
     runtimeRecorderBlob === "a7a2b1459ddb2ba50b7b30f05f64c4ef9bde09ff" &&
     git(["rev-parse", `${baseTree}:${ciWorkflow}`]).toString().trim() === workflowBlob &&

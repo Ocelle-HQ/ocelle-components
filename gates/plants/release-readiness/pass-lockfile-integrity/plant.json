@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A sha512- integrity hash of a lockfile is not a secret (030 research.md R-08: no entropy rule)."
+}

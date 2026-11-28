@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The styles entry of the version has no date (030 FR-013, research.md R-09).",
+  "findings": [
+    {
+      "location": "packages/styles/CHANGELOG.md",
+      "rule": "changelog-undated",
+      "message": "## 1.0.0 - <YYYY-MM-DD>"
+    }
+  ]
+}

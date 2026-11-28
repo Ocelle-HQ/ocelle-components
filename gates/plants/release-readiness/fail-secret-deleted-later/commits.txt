@@ -1,0 +1,9 @@
+author: Ada Example <ada@example.com>
+secret: npm-token notes/token.txt
+
+Add a token
+%%
+author: Ada Example <ada@example.com>
+delete: notes/token.txt
+
+Remove the token again

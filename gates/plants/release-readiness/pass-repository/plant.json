@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The repository's own inputs on a base commit that holds the configuration set: every row met, no secret, one version, dated entries (030 Story 2 scenario 1)."
+}

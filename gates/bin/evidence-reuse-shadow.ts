@@ -5,7 +5,7 @@ const requiredJobs = [
   "Typecheck", "Code lint", "Style lint", "Unit tests", "Test lint", "Mutation testing",
   "Content security", "Prefix", "Story config copies", "Install and pins", ...safeguards,
   "Contrast", "Brand rules", "Custom-elements manifest", "Storybook build", visualJob,
-  "Accessibility", "Pack contents", "Plants",
+  "Accessibility", "Pack contents", "Release readiness", "Plants",
 ];
 const mandatoryHelpers = ["Unit test inventory", "Mutation plan", "Plants plan"];
 const unitComparison = "Unit tests full suite comparison";

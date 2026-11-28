@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A row met only by a spec item: a spec alone does not meet a row (030 research.md R-07).",
+  "findings": [
+    {
+      "location": "gates/release/gap-rows.json",
+      "rule": "gap-row-unmet",
+      "message": "only spec evidence"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A tag of the manifest that the elements changelog does not name (030 FR-013, research.md R-09).",
+  "findings": [
+    {
+      "location": "packages/elements/CHANGELOG.md",
+      "rule": "changelog-missing-element",
+      "message": "ocelle-later"
+    }
+  ]
+}

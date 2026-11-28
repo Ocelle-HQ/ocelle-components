@@ -1,7 +1,11 @@
 # Contract: plants
 
 Layout: `gates/plants/<gate-id>/<case>/plant.json` plus inputs. `plant.json` (data-model.md § Plant):
-`{"expect": "fail"|"pass"|"error", "why": "...", "findings": [...], "records": [...], "reports": [...], "cause": "...", "base": "..."}`
+`{"expect": "fail"|"pass"|"error", "why": "...", "findings": [...], "records": [...], "reports": [...], "cause": "...", "base": "...", "args": [...]}`
+(`args`: amendment 2026-11-28, mission 030 US2, operator decision 030 reviews/phase-2/operator-plant-format-decision.md:
+optional on any plant, a non-empty list of non-empty strings the plant runner appends to the gate's plant command after
+its placeholders are filled, such as the release-readiness plants' `--tag v<x>`; any other value is an invalid
+`plant.json`)
 (`reports`: amendment 2026-11-10, mission 007, research R-02: optional on a mutation `pass` or `fail` plant, a list of
 `{"location", "rule", "message"?}` with `rule` one of `timeout`, `compile-error`, `zero-mutants`, the run's report lines
 the plant expects; on an `error` plant, or on a plant of any other gate, an invalid `plant.json`);
@@ -40,6 +44,17 @@ none there (for example no test file in a project).
 (`Plant Base <base@example.com>`), then one commit per record of `commits.txt`, and runs the gate with
 `--root <tmp> --range <base commit>..HEAD`, so the first record has a parent and the range holds exactly the
 records (plan squad round 3).
+Amendment 2026-11-28, mission 030 US2 (030 research.md R-17, FR-044): a record of `commits.txt` may also carry
+`files: <dir>` (once: a directory of the plant laid over the previous commit's tree), `delete: <path>` (repeatable: a
+path removed from that tree; a path the tree does not hold fails the build) and `secret: <rule> <path>` (repeatable: a
+line holding a value of that secret-scan rule of 030 research.md R-08, generated at plant time from the record number
+and the path, appended to the file, so no plant holds a credential-shaped value, FR-045). Each record's commit starts
+from its first parent's tree. For the release-readiness plants the base commit holds the configuration set (with
+`node_modules` linked and untracked) instead of the empty tree; sign-off plants keep the empty base. A finding located
+at `<commit>:<path>` (the release-readiness `secret` finding) names its commit by record, `commit:<n>:<path>`, as a
+bare commit location becomes `commit:<n>` (operator decision, 030 reviews/phase-2/operator-plant-format-decision.md).
+A record may also carry `shallow: true`: its commit is written to `.git/shallow`, so the temporary repository is a
+shallow clone (the release-readiness breaking plant `break-shallow`).
 
 `tracked-tree` (sandbox-paths; op 023, #60, 2026-11-20): the plant job copies the plant's `tree/` into an empty
 directory, replaces every `@SANDBOX_ROOT@` and `@SANDBOX_HOME_USER@` in any file with the sandbox path it stands for

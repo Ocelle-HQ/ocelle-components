@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A hit the allow list keys by path, rule and the SHA-256 of the matched text, with a reason, is allowed (030 FR-011)."
+}

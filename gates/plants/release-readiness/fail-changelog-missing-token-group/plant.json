@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "Tokens of a new name family the tokens changelog names neither in full nor by a prefix mention (030 FR-013, operator decision PLAN-CORRECTNESS-1-005 (a)).",
+  "findings": [
+    {
+      "location": "packages/tokens/CHANGELOG.md",
+      "rule": "changelog-missing-token",
+      "message": "shadow (--ocelle-shadow-raised, --ocelle-shadow-overlay)"
+    }
+  ]
+}

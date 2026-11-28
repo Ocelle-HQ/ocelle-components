@@ -14,7 +14,7 @@ Security (research.md R-16):
 | Typecheck | `pnpm run gate:typecheck` | |
 | Code lint | `pnpm run gate:lint` | |
 | Style lint | `pnpm run gate:style-lint` | |
-| Unit tests | `pnpm run gate:unit-tests` | |
+| Unit tests | `pnpm run gate:unit-tests` | `fetch-depth: 0` on the `unit-tests-shard` and `unit-tests-full` checkouts (since 030 US2: the gates-integration tests that read commit 183b20f and scan the history need the whole history; 030 PLAN-FRESH-2-004 (a)) |
 | Test lint | `pnpm run gate:test-lint` | |
 | Mutation testing | verdict job `mutation`: `needs: [mutation-plan, mutation-shard]`, `if: always()`; passes only when `mutation-plan` succeeded and `mutation-shard` succeeded, or was skipped because the plan had zero shards (research.md R-08) | |
 | Content security | `pnpm -r build && pnpm run gate:csp` | |
@@ -30,6 +30,7 @@ Security (research.md R-16):
 | Accessibility | `pnpm run gate:axe` (job id `axe`; since 006) | |
 | Sandbox paths | `pnpm run gate:sandbox-paths` (job id `sandbox-paths`; since op 023); binary files are skipped by content alone, so no `.gitattributes` exempts a file (op 023 operator round 4) | |
 | Pack contents | `pnpm run gate:pack-contents` (job id `pack-contents`; since 030): builds the three packages, packs each with `pnpm pack` and checks every tarball against `gates/release/pack-manifest.json` (030 contracts/pack-contents-gate.md) | |
+| Release readiness | `pnpm run gate:release-readiness` (job id `release-readiness`; since 030 US2): the gap rows, the history secret scan from `HEAD`, the shared version and the changelogs, one ready / not ready verdict (030 contracts/release-readiness-gate.md) | `fetch-depth: 0` |
 | Plants | verdict job `plants`: `needs: [plants-plan, plants-shard]`, `if: always()`; downloads every `plant-shard-*` artifact into `storybook/.visual/plant-shards/` (`actions/download-artifact` pinned by SHA, `merge-multiple`) and runs `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards` (since 006; 006 contracts/gates.md § The registry) | |
 
 Helper jobs of the mutation gate (research.md R-08; listed as `helperJobs` in `gates/gates.json`) and of the plant job
@@ -57,12 +58,12 @@ It is not a gate, reports no check that the ruleset requires, and the registry c
 The set of gate job ids (one per row of the first table but Plants; for Mutation testing the verdict job `mutation`,
 not its helper jobs) equals the gate ids of `gates/gates.json` and the FR-020 list `fr020` of `gates/lib/registry.ts`:
 the eleven gates of this feature's FR-020 plus `contrast` and `brand-rules` of 002 FR-020, `manifest` of 005
-FR-009, `storybook-build`, `visual` and `axe` of 006 FR-020, `sandbox-paths` of op 023, and `pack-contents` of 030 FR-006, nineteen in all. The plant job
+FR-009, `storybook-build`, `visual` and `axe` of 006 FR-020, `sandbox-paths` of op 023, `pack-contents` of 030 FR-006 and `release-readiness` of 030 FR-014, twenty in all. The plant job
 checks this (research.md R-10).
 
-Required checks: a ruleset (or branch protection) on `main` requires the twenty check names of the first table. The
+Required checks: a ruleset (or branch protection) on `main` requires the twenty-one check names of the first table. The
 operator configures it in the feature verification (plan.md § Verification); `gates/README.md` lists the same
-twenty names. The registry check cannot stop one pull request from removing a gate from `ci.yml`, `gates.json` and
+twenty-one names. The registry check cannot stop one pull request from removing a gate from `ci.yml`, `gates.json` and
 `registry.ts` together; the ruleset does, since the removed check then never reports.
 
 Mission 002 (specs/002-design-tokens, note of 2026-11-04, landing review L1-02 of PR #19): 002 FR-020 added the
@@ -88,3 +89,8 @@ the gate does not block a merge (`gates/README.md` § Required checks on `main`)
 Mission 030 (specs/030-release-v1, US1, FR-006, FR-044): 030 added the `Pack contents` check, so the first table has
 twenty rows. The ruleset on `main` must add the check name `Pack contents` (030 operator step O6); until the operator
 does so, the gate does not block a merge (`gates/README.md` § Required checks on `main`).
+
+Mission 030 (specs/030-release-v1, US2, FR-014, FR-044): 030 added the `Release readiness` check, so the first table
+has twenty-one rows, and gave the Unit tests checkouts (`unit-tests-shard`, `unit-tests-full`) the whole history
+(`fetch-depth: 0`). The ruleset on `main` must add the check name `Release readiness` (030 operator step O6); until the
+operator does so, the gate does not block a merge (`gates/README.md` § Required checks on `main`).

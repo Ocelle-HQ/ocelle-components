@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An allow-list entry that matches no hit is stale (030 data-model.md § Secret allow-list entry).",
+  "findings": [
+    {
+      "location": "gates/release/secret-allowlist.json",
+      "rule": "allowlist-stale",
+      "message": "entry 1 (notes/none.txt, npm-token) matches no hit"
+    }
+  ]
+}

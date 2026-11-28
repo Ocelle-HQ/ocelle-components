@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+secret: google-api-key notes/key.txt
+
+Add a google-api-key value

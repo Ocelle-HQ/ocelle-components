@@ -1,7 +1,7 @@
 # Pull-request CI (FR-020, contracts/ci-checks.md, research.md R-16): one job per gate, each a separately named check,
 # plus the plant job (FR-025). The gate job ids are the gate ids of gates/gates.json and the FR-020 list of
 # gates/lib/registry.ts; the plant job checks that the three sets match (research.md R-10). The ruleset on main
-# requires the twenty check names (gates/README.md).
+# requires the twenty-one check names (gates/README.md).
 #
 # Security (research.md R-16): a read-only token at the top level and no other permission anywhere, every checkout
 # with persist-credentials: false, no secret, every action pinned by commit SHA. Every job runs the shared setup of
@@ -71,9 +71,11 @@ jobs:
       matrix:
         shard: ${{ fromJSON(needs.unit-tests-plan.outputs.shards) }}
     steps:
+      # 030 (PLAN-FRESH-2-004 (a)): the whole history, for the gates-integration tests that read 183b20f and scan it.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -97,6 +99,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup
       - env:
           OCELLE_TEST_REPORT: ${{ runner.temp }}/full-result.json
@@ -365,6 +368,16 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: pnpm run gate:pack-contents
+  release-readiness:
+    name: Release readiness
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:release-readiness
   plants-plan:
     name: Plants plan
     runs-on: ubuntu-24.04

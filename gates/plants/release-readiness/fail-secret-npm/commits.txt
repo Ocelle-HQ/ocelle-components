@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+secret: npm-token notes/token.txt
+
+Add a npm-token value

@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A shallow clone: the history scan needs the whole history (030 contracts/release-readiness-gate.md).",
+  "cause": "the clone is shallow"
+}

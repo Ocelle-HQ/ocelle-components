@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+shallow: true
+
+Cut the history here, as a depth-limited clone does

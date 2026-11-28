@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "With --tag, the styles Unreleased section still holds an entry (030 research.md R-09).",
+  "findings": [
+    {
+      "location": "packages/styles/CHANGELOG.md",
+      "rule": "changelog-unreleased-not-empty",
+      "message": "the Unreleased section is not empty"
+    }
+  ],
+  "args": [
+    "--tag",
+    "v1.0.0"
+  ]
+}

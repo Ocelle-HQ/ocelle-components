@@ -1,0 +1,4 @@
+author: Ada Example <ada@example.com>
+files: files
+
+Add a lockfile entry with its integrity hash

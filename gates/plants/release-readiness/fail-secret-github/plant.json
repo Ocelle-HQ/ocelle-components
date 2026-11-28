@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A commit adds a value of the rule github-token, generated at plant time (no plant holds one); the finding names the commit and the path, never the value (030 FR-011, research.md R-08).",
+  "findings": [
+    {
+      "location": "commit:1:notes/token.txt",
+      "rule": "secret",
+      "message": "github-token"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+author: Ada Example <ada@example.com>
+files: files
+secret: npm-token notes/token.txt
+
+Add a token and its allow-list entry

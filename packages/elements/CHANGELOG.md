@@ -5,6 +5,12 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+## 1.0.0 - 2026-11-28
+
+The first public release, 1.0.0, published to the public npm registry with provenance, in lockstep with
+`@ocelle/tokens` and `@ocelle/styles`: everything below is the package's public surface since its start, every element
+of the custom-elements manifest with its attributes, properties, slots, parts, events and entry points.
+
 **Step indicator (#87). `ocelle-step-indicator` and its standalone entry are a MINOR addition.**
 It presents host-supplied ordered progress with a current marker and accessible completion.
 

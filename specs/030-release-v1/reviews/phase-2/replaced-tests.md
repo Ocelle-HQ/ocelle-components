@@ -61,3 +61,26 @@ Reason, for each: "030 US2: release-readiness is a gate of FR-020 and Release re
 The changes to the registry fixture, `requiredJobs` and `jobNames` are shared test data: tests that read them fail on
 the red commit on assertion lines it does not change, because release-readiness is not registered yet (the reason
 phase 1's red evidence was accepted by operator decision, `reviews/phase-1/operator-red-decision.md`).
+
+## Shared-data failures of the red commit (operator decision, reviews/phase-2/operator-red-decision.md)
+
+`red.sh 2 phase` rejected red commit `8f5fea78` (`evidence.status: invalid`, first problem `unchanged assertion in
+gates/test/plants.test.ts:92`). Of the 530 failing tests of the selected files, 407 fail on lines the red commit
+changed; these 123 fail on lines it did not change, all because release-readiness was not registered yet:
+
+| File | Failing tests | Shared data |
+|---|---|---|
+| `gates/test/evidence-reuse-shadow.test.ts` | 65 | `requiredJobs` holds Release readiness, the observer's list did not |
+| `gates/test/plants.test.ts` | 44 | the registry fixture holds `release-readiness`, the FR-020 list did not (`not-fr-020`) |
+| `gates/test/registry.test.ts` | 6 | the registry fixture and `ids`, as above |
+| `gates/test/plants-job.test.ts` | 4 | the registry fixture, as above |
+| `gates/test/integration/plants.test.ts` | 3 | the expected output names the release-readiness gate the real registry did not hold |
+| `gates/test/integration/evidence-reuse-observe.test.ts` | 1 | `jobNames` holds Release readiness, the observer's list did not |
+
+All 123 pass on the green commit.
+
+## Replaced in the green commit (with the reason in its commit body)
+
+| File and test | Old | New | Why |
+|---|---|---|---|
+| `gates/test/integration/plant-repo.test.ts`, "keeps the empty base for a plant built without the repository, as sign-off plants are, and lays the files over it" | built `readiness-plant` with no repository | builds a copy of that plant without its `delete: gates/release/pack-manifest.json` header, and first asserts the copy lacks it; the same tree assertions | the red tests contradicted each other: deleting a path the tree does not hold fails the build ("fails to build a record that deletes a path ..."), and an empty base holds no `gates/release/` |

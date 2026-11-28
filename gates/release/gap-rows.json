@@ -1,0 +1,654 @@
+[
+  {
+    "upstream": [
+      "#492"
+    ],
+    "need": "personal-rail flip bound and orientation opt-out",
+    "metIn": "#8 layout and headers",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-personal-rail"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-personal-rail",
+        "memberKind": "attribute",
+        "name": "orientation"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-personal-rail",
+        "memberKind": "slot",
+        "name": "bottom"
+      },
+      {
+        "kind": "spec",
+        "dir": "011-layout-headers"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#493",
+      "#495",
+      "#504",
+      "#508",
+      "#525",
+      "#528"
+    ],
+    "need": "action-row: flush density, aria-current true, unavailable state, card wrapping and trailing arrow, hover tokens, accessible-name passthrough",
+    "metIn": "#7 actions and status",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-action-row"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-action-row",
+        "memberKind": "attribute",
+        "name": "layout"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-action-row",
+        "memberKind": "attribute",
+        "name": "current"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-action-row",
+        "memberKind": "attribute",
+        "name": "unavailable"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-action-row",
+        "memberKind": "attribute",
+        "name": "href"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-action-row",
+        "memberKind": "attribute",
+        "name": "aria-label"
+      },
+      {
+        "kind": "token",
+        "name": "color-hover-bg"
+      },
+      {
+        "kind": "token",
+        "name": "color-hover-border"
+      },
+      {
+        "kind": "spec",
+        "dir": "012-button-action-row"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#494",
+      "#499",
+      "#500",
+      "#502",
+      "#512",
+      "#450"
+    ],
+    "need": "top bar, app-shell layouts and tiers, nav item, skip link, flush content cell, personal drawer",
+    "metIn": "#12 app frame and navigation",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-top-bar"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-app-shell"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-nav-item"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-skip-link"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-app-shell",
+        "memberKind": "attribute",
+        "name": "layout"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-app-shell",
+        "memberKind": "attribute",
+        "name": "drawer-label"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-app-shell",
+        "memberKind": "attribute",
+        "name": "flush-block-end"
+      },
+      {
+        "kind": "spec",
+        "dir": "015-app-frame-navigation"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#496",
+      "#504"
+    ],
+    "need": "icon sizing and icon set, brand mark as SVG",
+    "metIn": "#17 icons and brand",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-icon"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-icon",
+        "memberKind": "attribute",
+        "name": "name"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-brand-mark"
+      },
+      {
+        "kind": "spec",
+        "dir": "005-icons-brand-mark"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#497"
+    ],
+    "need": "context-sidebar and section-header dividers, footer, eyebrow-only mode",
+    "metIn": "#8 layout and headers",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-context-sidebar"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-context-sidebar",
+        "memberKind": "slot",
+        "name": "footer"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-section-header"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-section-header",
+        "memberKind": "attribute",
+        "name": "variant"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-section-header",
+        "memberKind": "slot",
+        "name": "eyebrow"
+      },
+      {
+        "kind": "spec",
+        "dir": "011-layout-headers"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#498",
+      "#510",
+      "#517",
+      "#520",
+      "#523",
+      "#533",
+      "#280"
+    ],
+    "need": "progress element, panel tokens, evidence-chain wrapping, code block, facts and empty-state elements, compact data-table, responsive facts",
+    "metIn": "#13 data display",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-progress"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-evidence-chain"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-code-block"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-facts"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-facts",
+        "memberKind": "attribute",
+        "name": "layout"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-empty-state"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-data-table"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-data-table",
+        "memberKind": "attribute",
+        "name": "wrap"
+      },
+      {
+        "kind": "token",
+        "name": "color-panel"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-status-indicator"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-status-indicator",
+        "memberKind": "attribute",
+        "name": "tone"
+      },
+      {
+        "kind": "spec",
+        "dir": "013-data-display"
+      },
+      {
+        "kind": "spec",
+        "dir": "018-status-elements"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#501",
+      "#518",
+      "#532"
+    ],
+    "need": "button: ARIA passthrough, compact breadcrumb padding, compact text, 44 px target, busy spinner",
+    "metIn": "#7 actions and status",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-button"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-button",
+        "memberKind": "attribute",
+        "name": "aria-label"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-button",
+        "memberKind": "attribute",
+        "name": "busy"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-button",
+        "memberKind": "attribute",
+        "name": "size"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-breadcrumbs"
+      },
+      {
+        "kind": "token",
+        "name": "target-min"
+      },
+      {
+        "kind": "spec",
+        "dir": "012-button-action-row"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#503"
+    ],
+    "need": "dialog, drawer, tooltip",
+    "metIn": "#16 overlays",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-dialog"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-drawer"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-tooltip"
+      },
+      {
+        "kind": "spec",
+        "dir": "008-overlays"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#505",
+      "#506",
+      "#507",
+      "#514",
+      "#530"
+    ],
+    "need": "inspector width, flat lane, lane min width, scroller, list/detail layout",
+    "metIn": "#15 workflow and layouts",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-list-detail"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-list-detail",
+        "memberKind": "slot",
+        "name": "inspector"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-workflow-lane"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-workflow-lane",
+        "memberKind": "attribute",
+        "name": "variant"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-workflow-board"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-scroller"
+      },
+      {
+        "kind": "token",
+        "name": "lane-min-width"
+      },
+      {
+        "kind": "spec",
+        "dir": "009-workflow-layouts"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#509"
+    ],
+    "need": "metric row layout, eyebrow style, compact notice",
+    "metIn": "#7, #9, #5",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-metric"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-metric",
+        "memberKind": "attribute",
+        "name": "layout"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-metric",
+        "memberKind": "attribute",
+        "name": "label"
+      },
+      {
+        "kind": "token",
+        "name": "font-size-eyebrow"
+      },
+      {
+        "kind": "token",
+        "name": "tracking-eyebrow"
+      },
+      {
+        "kind": "token",
+        "name": "color-eyebrow"
+      },
+      {
+        "kind": "style-hook",
+        "file": "base.css",
+        "selector": "ocelle-data-table > table > thead > tr > th"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-notice",
+        "memberKind": "attribute",
+        "name": "size"
+      },
+      {
+        "kind": "spec",
+        "dir": "018-status-elements"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#511",
+      "#521",
+      "#522",
+      "#527",
+      "#534"
+    ],
+    "need": "joined segmented choice, tabs, inline link, listbox, request-only copy field",
+    "metIn": "#14 selection and input",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-segmented-choice"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-segmented-choice",
+        "memberKind": "attribute",
+        "name": "joined"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-tabs"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-link"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-listbox"
+      },
+      {
+        "kind": "element",
+        "tag": "ocelle-copy-field"
+      },
+      {
+        "kind": "spec",
+        "dir": "014-selection-input"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#513"
+    ],
+    "need": "notice without empty heading block",
+    "metIn": "#9 feedback and forms",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-notice"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-notice",
+        "memberKind": "attribute",
+        "name": "tone"
+      },
+      {
+        "kind": "spec",
+        "dir": "010-feedback-forms"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#516"
+    ],
+    "need": "compact card density",
+    "metIn": "#8 layout and headers",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-card"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-card",
+        "memberKind": "attribute",
+        "name": "density"
+      },
+      {
+        "kind": "spec",
+        "dir": "011-layout-headers"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#519"
+    ],
+    "need": "prose rhythm, measure, element-selector tables",
+    "metIn": "#6 base styles",
+    "evidence": [
+      {
+        "kind": "style-hook",
+        "file": "base.css",
+        "selector": "[data-ocelle-prose=\"\"]"
+      },
+      {
+        "kind": "token",
+        "name": "line-height-prose"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#524",
+      "#526"
+    ],
+    "need": "interactive pill, compact outlined mono badge",
+    "metIn": "#7 actions and status",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-pill-tag"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-pill-tag",
+        "memberKind": "attribute",
+        "name": "interactive"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-pill-tag",
+        "memberKind": "attribute",
+        "name": "density"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-pill-tag",
+        "memberKind": "attribute",
+        "name": "variant"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-pill-tag",
+        "memberKind": "event",
+        "name": "ocelle-pill-tag-activate"
+      },
+      {
+        "kind": "spec",
+        "dir": "018-status-elements"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#529"
+    ],
+    "need": "compact page-header title and eyebrow",
+    "metIn": "#8 layout and headers",
+    "evidence": [
+      {
+        "kind": "element",
+        "tag": "ocelle-page-header"
+      },
+      {
+        "kind": "member",
+        "tag": "ocelle-page-header",
+        "memberKind": "attribute",
+        "name": "size"
+      },
+      {
+        "kind": "spec",
+        "dir": "011-layout-headers"
+      }
+    ]
+  },
+  {
+    "upstream": [
+      "#531",
+      "#535"
+    ],
+    "need": "compact screen type scale, mono value style, identifier wrap policy",
+    "metIn": "#5 tokens, #6 base styles",
+    "evidence": [
+      {
+        "kind": "token",
+        "name": "font-size-xs"
+      },
+      {
+        "kind": "token",
+        "name": "figures"
+      },
+      {
+        "kind": "style-hook",
+        "file": "base.css",
+        "selector": "[data-ocelle-value=\"\"]"
+      },
+      {
+        "kind": "style-hook",
+        "file": "base.css",
+        "selector": "[data-ocelle-wrap=\"anywhere\"]"
+      }
+    ]
+  }
+]

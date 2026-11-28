@@ -172,7 +172,9 @@ export async function runPlant(tools: RunnerTools, root: string, gate: Gate, pat
       throw new Error(`${path}: cannot build its temporary repository (${errorText(error)})`, { cause: error });
     });
     const engine = engineValue(plant, tools.env ?? {});
-    const [command, ...args] = plantArgs(gate.plantCommand, { ...plantValues(gate.plantForm, into, built, plant), engine });
+    const [command, ...filled] = plantArgs(gate.plantCommand, { ...plantValues(gate.plantForm, into, built, plant), engine });
+    // 030 US2: a plant's own arguments follow the plant command (the release-readiness plants' `--tag`).
+    const args = [...filled, ...(plant.args ?? [])];
     const ran = await tools.run(command === "node" ? tools.node : String(command), args);
     const commits = built.commits === undefined ? {} : { commits: built.commits };
     const findings = plant.findings ?? [];

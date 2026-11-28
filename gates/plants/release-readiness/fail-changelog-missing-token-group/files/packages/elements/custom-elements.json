@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/ocelle-planted.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "OcellePlanted",
+          "tagName": "ocelle-planted",
+          "customElement": true
+        }
+      ]
+    }
+  ]
+}

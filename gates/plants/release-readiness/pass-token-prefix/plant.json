@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A new token covered by a `--ocelle-<prefix>-*` mention of the tokens changelog (030 research.md R-09)."
+}

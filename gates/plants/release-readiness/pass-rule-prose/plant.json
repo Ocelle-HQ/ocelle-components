@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A Markdown file that describes the .npmrc and env rules is no hit: both rules are bound to file names (030 research.md R-08)."
+}

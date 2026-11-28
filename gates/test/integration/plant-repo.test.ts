@@ -544,8 +544,15 @@ describe("buildCommitRepo: the files, delete and secret headers (030)", () => {
   it(
     "keeps the empty base for a plant built without the repository, as sign-off plants are, and lays the files over it",
     async () => {
+      // Replaced in 030 US2's green commit: the readiness fixture's second record deletes gates/release/pack-manifest.json,
+      // a configuration-set file an empty base does not hold, and deleting an absent path fails the build (the case
+      // below), so this case builds a copy of the plant without that header.
+      const own = tempDir("commit-plant-empty-base");
+      cpSync(plant, own, { recursive: true });
+      writeFileSync(join(own, "commits.txt"), readFileSync(join(plant, "commits.txt"), "utf8").replace("delete: gates/release/pack-manifest.json\n", ""));
+      expect(readFileSync(join(own, "commits.txt"), "utf8")).not.toContain("pack-manifest");
       const into = tempDir("commit-repo-empty-base");
-      const built = buildCommitRepo(plant, into);
+      const built = buildCommitRepo(own, into);
       await expect(built).resolves.toMatchObject({ commits: [expect.any(String), expect.any(String)] });
       const { base, commits } = await built;
       expect({ base: tree(into, base), first: tree(into, String(commits[0])), second: tree(into, String(commits[1])) }).toEqual({

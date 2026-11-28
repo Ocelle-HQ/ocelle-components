@@ -57,12 +57,17 @@ export interface Plant {
   readonly baselinesOf?: string;
   /** A visual pass plant whose baselines come only from single-story-theme requests (006 research.md R-11). */
   readonly captureAlone?: true;
+  /**
+   * Arguments the plant runner appends to the gate's plant command, after its placeholders are filled (030 US2: the
+   * release-readiness plants' `--tag`; operator decision reviews/phase-2/operator-plant-format-decision.md).
+   */
+  readonly args?: readonly string[];
 }
 
 /** The gates that build the Storybook in their plant roots (006 research.md R-07, R-16). */
 export const storybookGates: readonly string[] = ["storybook-build", "visual", "axe"];
 
-const keys = new Set(["expect", "why", "findings", "records", "reports", "cause", "base", "unlinked", "engine", "baselinesOf", "captureAlone"]);
+const keys = new Set(["expect", "why", "findings", "records", "reports", "cause", "base", "unlinked", "engine", "baselinesOf", "captureAlone", "args"]);
 const engines = ["both", "host", "missing"] as const;
 const unlinkable = "storybook/node_modules";
 
@@ -181,6 +186,11 @@ export function parsePlant(text: string): Plant | string {
     if (fields.captureAlone !== true) return "captureAlone must be true";
     plant = { ...plant, captureAlone: true };
   }
+  if (fields.args !== undefined) {
+    const { args } = fields;
+    if (!Array.isArray(args) || args.length === 0 || !args.every(isText)) return "args must be a non-empty list of non-empty strings";
+    plant = { ...plant, args };
+  }
   return plant;
 }
 
@@ -252,8 +262,11 @@ function reported(gate: string, run: PlantRun): Reported[] {
     const at = line.indexOf(marker);
     if (at <= 0) continue;
     const hash = line.slice(0, at);
-    const record = run.commits?.indexOf(hash) ?? -1;
-    const location = record === -1 ? hash : `commit:${String(record + 1)}`;
+    // 030 US2: a location `<commit>:<path>` (the release-readiness secret finding) names its commit by record too,
+    // `commit:<n>:<path>` (operator decision reviews/phase-2/operator-plant-format-decision.md).
+    const [commit = hash, path] = /^[0-9a-f]{40}:/.test(hash) ? [hash.slice(0, 40), hash.slice(41)] : [hash];
+    const record = run.commits?.indexOf(commit) ?? -1;
+    const location = record === -1 ? hash : `commit:${String(record + 1)}${path === undefined ? "" : `:${path}`}`;
     const body = line.slice(at + marker.length);
     const end = body.indexOf(": ");
     found.push(end === -1 ? { location, rule: body, rest: "" } : { location, rule: body.slice(0, end), rest: body.slice(end + 2) });
