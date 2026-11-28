@@ -24,6 +24,29 @@ describe("ocelle-top-bar", () => {
     expect(host.shadowRoot?.querySelector<HTMLSlotElement>('slot[name="actions"]')?.assignedElements().map((element) => element.textContent)).toEqual(["Settings"]);
   });
 
+  it.each(["light", "dark", "forced colours"] as const)("paints no lower divider pixels in %s", async (mode) => {
+    const host = await mount("");
+    await driver.theme(mode === "dark" ? "dark" : "light");
+    try {
+      await driver.forcedColors(mode === "forced colours" ? "active" : "none");
+      const bar = required(host.shadowRoot?.querySelector('[part="bar"]'));
+      const bounds = bar.getBoundingClientRect();
+      expect(getComputedStyle(bar).visibility).toBe("visible");
+      expect(bounds.width).toBeGreaterThan(0);
+      expect(bounds.height).toBeGreaterThan(0);
+
+      const image = await driver.pixels("top");
+      const rowBytes = image.width * 4;
+      const pixels = Uint8Array.from(image.data);
+      const lowerEdge = pixels.subarray(pixels.length - rowBytes);
+      const hasDividerPixels = lowerEdge.some((channel, at) => channel !== pixels[at]);
+      expect(hasDividerPixels, "the default top bar paints zero lower-divider pixels").toBe(false);
+    } finally {
+      await driver.forcedColors("none");
+      await driver.theme(null);
+    }
+  });
+
   it("leaves no menu button or action gap when omitted and reveals actions appended later", async () => {
     const host = await mount("");
     const actions = host.shadowRoot?.querySelector<HTMLElement>('[part="actions"]');

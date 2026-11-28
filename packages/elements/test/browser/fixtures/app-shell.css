@@ -5,3 +5,13 @@
 #frame.narrow {
   inline-size: 26rem;
 }
+
+#shell::part(main) {
+  border-inline-start: var(--ocelle-border-width) solid var(--ocelle-color-rule-strong);
+}
+
+@media (forced-colors: active) {
+  #shell::part(main) {
+    border-inline-start-color: CanvasText;
+  }
+}
