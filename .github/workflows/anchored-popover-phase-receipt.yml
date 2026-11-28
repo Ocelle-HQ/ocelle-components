@@ -1,0 +1,53 @@
+name: Anchored popover Phase 1 exact proof receipt
+on:
+  push:
+    branches: [ci/036-phase-1-receipt]
+permissions:
+  actions: read
+jobs:
+  receipt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: ocelle-phase-replay-1
+          run-id: 46039123809
+          repository: Ocelle-HQ/ocelle-components
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/verified-replay
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: ocelle-browser-floors-1
+          run-id: 46039123809
+          repository: Ocelle-HQ/ocelle-components
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/verified-browser
+      - name: Check and export only exact phase evidence
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/verified-replay"
+          jq -e --arg head "b78736328e6cec05b4d84d3a8724fe1b9c17c5d0" --arg base "58a38e180433d2b1eb748ac321e1234acd761c4b" '
+            .head == $head and .base == $base and .status == "pass" and .head_exit == 0 and
+            .final_tests_on_base_exit == 3 and .final_tests_on_scaffold_exit == 1 and
+            [.red_commits[].label] == ["phase","fix-1","fix-2","fix-3"] and
+            all(.red_commits[]; .exit_code == 1) and (.problems | length) == 0
+          ' tdd-check.json
+          grep -Fx 'head=b78736328e6cec05b4d84d3a8724fe1b9c17c5d0' identity.txt
+          for name in tdd-check.json check-*.log; do
+            test -s "$name"
+            sha256sum "$name"
+            while IFS= read -r chunk; do
+              printf 'record replay/%s %s\n' "$name" "$chunk"
+            done < <(base64 -w 3072 "$name")
+          done
+          cd "$RUNNER_TEMP/verified-browser"
+          grep -Fx 'head=b78736328e6cec05b4d84d3a8724fe1b9c17c5d0' identity.txt
+          jq -se 'map([.engine,.version,.client,.result]) == [["chromium","135.0.7049.114","1.64.1","pass"],["webkit","17.4","1.43.1","pass"]]' chromium.json webkit.json
+          for name in chromium.json webkit.json webkit-image.txt; do
+            test -s "$name"
+            sha256sum "$name"
+            while IFS= read -r chunk; do
+              printf 'record browser/%s %s\n' "$name" "$chunk"
+            done < <(base64 -w 3072 "$name")
+          done
