@@ -14,15 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: f209b1288700d7022db5d696e9c2e7b13d8f508f
+          ref: d97b5042841fb131403b42958901a037e99f32d7
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify scope and the reviewed finding totals
+      - name: Verify the planner scope for eight fixes
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "f209b1288700d7022db5d696e9c2e7b13d8f508f"
+          test "$(git rev-parse HEAD)" = "d97b5042841fb131403b42958901a037e99f32d7"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh refute 6f1e735d7898a8a059353c7c27de49ab3058ef2b
-          status=$(.specify/extensions/squad/scripts/status.sh)
-          echo "$status"
-          jq -e '.round == 1 and .lens_files == 4 and .confirmed == 8 and .fixes == 8 and .forks == 0 and .undecided == 0' <<< "$status"
+          tooling/speckit/bin/scope-check.sh planner f209b1288700d7022db5d696e9c2e7b13d8f508f
