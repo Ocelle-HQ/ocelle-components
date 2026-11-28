@@ -1,13 +1,39 @@
 import { LitElement, css, html } from "lit";
 import type { CSSResultGroup, PropertyDeclarations } from "lit";
+import { choosePopoverRegion, positionPopover } from "./anchored-popover-placement.ts";
+import type { PopoverRect } from "./anchored-popover-placement.ts";
 import { define } from "./define.ts";
 
 interface OpenSurface {
   readonly view: Window;
   readonly listeners: AbortController;
+  readonly geometry: CSSStyleDeclaration;
+  maxWidth?: number;
+  maxHeight?: number;
+  left?: number;
+  top?: number;
   frame: number;
   tab?: KeyboardEvent;
   outsidePointer: number | undefined;
+}
+
+function pixels(value: string): number {
+  return Number.parseFloat(value) || 0;
+}
+
+function viewportBounds(view: Window, gutter: number): PopoverRect {
+  const { clientWidth, clientHeight } = view.document.documentElement;
+  const visible = view.visualViewport;
+  const offsetLeft = visible?.offsetLeft ?? 0;
+  const offsetTop = visible?.offsetTop ?? 0;
+  const width = visible?.width ?? clientWidth;
+  const height = visible?.height ?? clientHeight;
+  return {
+    left: Math.max(0, offsetLeft) + gutter,
+    top: Math.max(0, offsetTop) + gutter,
+    right: Math.min(clientWidth, offsetLeft + width) - gutter,
+    bottom: Math.min(clientHeight, offsetTop + height) - gutter,
+  };
 }
 
 function flatParent(element: Element): Element | null {
@@ -87,12 +113,20 @@ export class OcelleAnchoredPopover extends LitElement {
     [part="surface"] {
       display: none;
       box-sizing: border-box;
+      position: fixed;
+      inset: auto;
+      margin: 0;
+      width: max-content;
       max-inline-size: calc(100% - 2 * var(--ocelle-gutter));
       max-block-size: calc(100% - 2 * var(--ocelle-gutter));
+      scroll-margin-top: var(--ocelle-gutter);
+      scroll-margin-right: var(--ocelle-space-2);
       padding: var(--ocelle-space-2);
       border: var(--ocelle-border-width) solid var(--ocelle-color-control-border);
       border-radius: var(--ocelle-radius-2);
       overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
       background-color: var(--ocelle-color-sheet);
       color: var(--ocelle-color-ink);
     }
@@ -139,6 +173,7 @@ export class OcelleAnchoredPopover extends LitElement {
   declare placement: "below" | "above";
 
   #open: OpenSurface | undefined;
+  #geometry: CSSStyleDeclaration | undefined;
 
   constructor() {
     super();
@@ -150,6 +185,15 @@ export class OcelleAnchoredPopover extends LitElement {
   close(): void {
     const surface = this.#surface;
     if (surface !== null) this.#hide(includes(surface, this.#active()));
+  }
+
+  #geometryFor(root: ShadowRoot): CSSStyleDeclaration {
+    if (this.#geometry !== undefined) return this.#geometry;
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync('[part="surface"] {}');
+    this.#geometry = (sheet.cssRules.item(0) as CSSStyleRule).style;
+    root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+    return this.#geometry;
   }
 
   protected override render() {
@@ -205,11 +249,12 @@ export class OcelleAnchoredPopover extends LitElement {
     }
     if (event.defaultPrevented) return;
     const { defaultView: view } = this.ownerDocument;
-    if (view === null) return;
+    const root = this.shadowRoot;
+    if (view === null || root === null) return;
     // A canceled opening can leave tracking scheduled until the next frame.
     this.#releaseTracking();
     this.#trigger?.setAttribute("aria-expanded", "true");
-    const open: OpenSurface = { view, listeners: new AbortController(), frame: 0, outsidePointer: undefined };
+    const open: OpenSurface = { view, geometry: this.#geometryFor(root), listeners: new AbortController(), frame: 0, outsidePointer: undefined };
     this.#open = open;
     const options = { capture: true, signal: open.listeners.signal };
     this.ownerDocument.addEventListener("pointerdown", this.#onPointerDown, options);
@@ -230,18 +275,21 @@ export class OcelleAnchoredPopover extends LitElement {
     if (open !== undefined) {
       open.listeners.abort();
       open.view.cancelAnimationFrame(open.frame);
+      // Stryker disable next-line StringLiteral: equivalent. Both the empty value and the invalid generated declaration clear this CSSOM rule.
+      open.geometry.cssText = "";
     }
   }
 
   #follow = (): void => {
     const open = this.#open;
     if (open === undefined) return;
-    if (!this.#surface?.matches(":popover-open")) {
+    const surface = this.#surface;
+    if (!surface?.matches(":popover-open")) {
       this.#stop();
       return;
     }
     const trigger = this.#trigger;
-    if (trigger === null || trigger.disabled || trigger.getClientRects().length === 0) {
+    if (trigger === null || trigger.disabled || trigger.getClientRects().length === 0 || !this.#place(open, trigger, surface)) {
       this.#hide(false);
       return;
     }
@@ -249,6 +297,45 @@ export class OcelleAnchoredPopover extends LitElement {
     delete open.tab;
     if (this.#open === open) open.frame = open.view.requestAnimationFrame(this.#follow);
   };
+
+  #place(open: OpenSurface, trigger: HTMLButtonElement, surface: HTMLElement): boolean {
+    const triggerStyle = open.view.getComputedStyle(trigger);
+    const surfaceStyle = open.view.getComputedStyle(surface);
+    const gutter = pixels(surfaceStyle.scrollMarginTop);
+    const gap = pixels(surfaceStyle.scrollMarginRight);
+    const minimumWidth = pixels(triggerStyle.minInlineSize) + pixels(surfaceStyle.paddingLeft) + pixels(surfaceStyle.paddingRight)
+      + pixels(surfaceStyle.borderLeftWidth) + pixels(surfaceStyle.borderRightWidth);
+    const minimumHeight = pixels(triggerStyle.minBlockSize) + pixels(surfaceStyle.paddingTop) + pixels(surfaceStyle.paddingBottom)
+      + pixels(surfaceStyle.borderTopWidth) + pixels(surfaceStyle.borderBottomWidth);
+    const bounds = viewportBounds(open.view, gutter);
+    const maxWidth = bounds.right - bounds.left;
+    if (maxWidth < minimumWidth || bounds.bottom - bounds.top < minimumHeight) return false;
+
+    // All sides share the viewport's inline cap, so the previous side cannot change which adjacent side fits.
+    if (open.maxWidth !== maxWidth) {
+      open.geometry.setProperty("max-width", `${String(maxWidth)}px`);
+      open.maxWidth = maxWidth;
+    }
+    const anchor = trigger.getBoundingClientRect();
+    const preferredWidth = surface.getBoundingClientRect().width;
+    const options = { preferred: this.placement, rtl: triggerStyle.direction === "rtl", gap, minimumHeight, preferredWidth };
+    const region = choosePopoverRegion(bounds, anchor, options);
+    const maxHeight = region.bottom - region.top;
+    if (open.maxHeight !== maxHeight) {
+      open.geometry.setProperty("max-height", `${String(maxHeight)}px`);
+      open.maxHeight = maxHeight;
+    }
+    const position = positionPopover(region, anchor, surface.getBoundingClientRect(), options.rtl);
+    if (open.left !== position.left) {
+      open.geometry.setProperty("left", `${String(position.left)}px`);
+      open.left = position.left;
+    }
+    if (open.top !== position.top) {
+      open.geometry.setProperty("top", `${String(position.top)}px`);
+      open.top = position.top;
+    }
+    return true;
+  }
 
   #onKey(event: KeyboardEvent): void {
     const open = this.#open;
