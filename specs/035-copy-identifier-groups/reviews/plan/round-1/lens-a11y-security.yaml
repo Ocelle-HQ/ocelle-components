@@ -1,0 +1,52 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Prove the ordered value and disclosure state in the accessibility tree"
+    evidence:
+      - artifact: "spec.md § User Story 2 and FR-003 require exactly one complete identifier in reading order and an exposed disclosure state. plan.md § Phase 1 calls for full accessible reading, and § Phase 2 calls for programmatic Reveal state, without defining which exposed nodes establish either result."
+      - code: "packages/elements/test/scenarios/copy-field.ts:179-211 already reads the component's accessibility subtree in tree order, and packages/elements/test/scenarios/code-block.ts:594-600 joins ordered StaticText to prove exact digest reading. packages/elements/test/scenarios/driver.ts:318-326 already exposes the expanded state."
+      - source: "W3C APG places aria-expanded on the disclosure button and makes aria-controls optional. https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/"
+    claim: |
+      A check that finds the full string can pass while the same subtree also exposes the shortened preview or repeats the value as a control description. An attribute assertion can also pass while expanded state is missing from the native button's accessible node. The plan's stable relationship needs a shadow-local target if implemented as an ID reference, under Constitution III.
+    remedies:
+      - "In compact and revealed states, compare the ordered accessibility subtree to the expected full trimmed identifier, named native controls and separate status. Assert one identifier reading, absence of ellipsis and duplicate preview fragments, the named Reveal button's expanded state before and after activation, and Copy's unchanged name. Put aria-expanded on the inner button. Keep any optional aria-controls reference and its target in the same shadow root."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "Define focus when a host update removes a focused Reveal control"
+    evidence:
+      - artifact: "spec.md § User Story 2 scenario 4 removes Reveal when the next value has fewer than three body groups. plan.md § Approach preserves focus during reveal and § Phase 1 tests host value updates, but neither specifies where focus goes when an update removes the focused button."
+      - code: "packages/elements/src/ocelle-copy-field.ts:187-192 updates on value replacement, and :233-235 disables Copy for an empty replacement. packages/elements/src/ocelle-code-block.ts:198-201,229-241 captures inner focus before removing its focusable scroll region and restores focus to a retained block."
+      - source: "WCAG 2.2 SC 2.4.3 calls for a sequential focus order that preserves operation. https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html"
+    claim: |
+      Host replacement can remove the keyboard user's active control while the field stays mounted. A visual reset test and the same-node test on activation both pass even if the replacement drops focus and its visible indicator. A fallback that always focuses Copy also fails when the new value is empty and Copy is disabled.
+    remedies:
+      - "Specify and test focus continuity when the host updates a field while Reveal is focused. Keep focus on the existing button when it remains eligible. When it disappears, focus the still-enabled Copy button or, if Copy is disabled, use a retained programmatically focusable field target from which Tab reaches the following external control. Check that updates leave focus elsewhere alone."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "Measure enlarged text, both target sizes and painted focus through reflow"
+    evidence:
+      - artifact: "spec.md FR-005 requires visible focus without clipping and reflow at 320 px and separately at 200% text. plan.md § Approach allows stacking, and §§ Phase 1 and Phase 2 call for visual wrap and visible focus without defining an observable for real text scaling, painted outlines or adjacent pointer target sizes."
+      - code: "packages/elements/src/ocelle-copy-field.ts:84-105 gives Copy token-sized minimum dimensions and an outline outside its box. packages/elements/test/scenarios/copy-field.ts:625-640,692-723 checks paint in both themes and forced colours. storybook/test/integration/pane-action-footer.test.ts:317-355 independently verifies viewport width and computed text scaling."
+      - source: "WCAG 2.2 SC 1.4.4 covers resizing text, including control labels, and SC 2.5.8 covers the size or spacing of adjacent pointer targets. https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html"
+    claim: |
+      A computed outline can still be clipped by a narrow stacked layout or covered by its adjacent control. A fixture can also change the root font or viewport while leaving a text-bearing Reveal control at its old size. Neither result proves the requested narrow and enlarged keyboard interaction. Two adjacent buttons need independent pointer target dimensions even when their text or icon still fits.
+    remedies:
+      - "Assert the value and Reveal label reach twice their computed font size in the enlarged-text case. In the applicable grouped, compact and revealed layouts, check group rects and page width, both native button boxes against the existing target token, and painted keyboard focus on each control in light, dark and forced colours. Reuse the existing geometry and ring-pixel helpers."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "Exercise the new presentation and Copy paths under the enforced policy"
+    evidence:
+      - artifact: "plan.md § Phase 2 names the built package and absence of origin, resource and policy failures, but its positive trusted interaction checks are scoped to the Storybook examples and it does not say which component actions the separate strict-CSP fixture exercises."
+      - code: "packages/elements/test/browser/serve.ts:40-41,166-179,187-226 serves the strict policy and records unexpected same-origin requests, violations and errors. packages/elements/test/browser/copy-field.test.ts:40-49 checks clean results and zero clipboard calls in the same assertion as the positive scenario. packages/elements/src/ocelle-code-block.ts:203-210 binds every identifier fragment as template text, and packages/elements/test/scenarios/code-block.ts:790-805 checks that markup-like content stays text."
+    claim: |
+      A fixture that loads the built script and inspects only initial rendering can pass before the revealed rendering path or a new action is exercised. A clean CSP log also cannot establish that inert markup-like input stayed text, since parsing an inert tag may not violate policy. The existing component contract prohibits clipboard and network work by the element in either presentation.
+    remedies:
+      - "Extend the existing built component fixture with a compact value, real Reveal activation and Copy before and after reveal. In the same scenarios assert the positive outcomes, the existing clean policy and request-allowlist result, and zero component clipboard calls. Use an inert markup-like prefix to prove that the displayed and accessible fragments remain text and Copy preserves the original string."

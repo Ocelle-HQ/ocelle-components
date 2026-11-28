@@ -1606,6 +1606,28 @@
             },
             {
               "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "name": "grouped",
+              "kind": "field",
+              "description": "Shows identifiers with a separate prefix and groups of four Unicode code points. Values containing internal\nwhitespace use plain rendering. The Copy action still requests the original value.",
+              "default": "false",
+              "attribute": "grouped"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "name": "compact",
+              "kind": "field",
+              "description": "Shows the ends of a grouped identifier with at least three body groups, with a control that toggles the full\ndisplay. Changing the value restores the preview.",
+              "default": "false",
+              "attribute": "compact"
+            },
+            {
+              "type": {
                 "text": "string"
               },
               "privacy": "public",
@@ -1677,6 +1699,24 @@
               "fieldName": "copyLabel",
               "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
               "default": "\"Copy\""
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "grouped",
+              "fieldName": "grouped",
+              "description": "Shows identifiers with a separate prefix and groups of four Unicode code points. Values containing internal\nwhitespace use plain rendering. The Copy action still requests the original value.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "compact",
+              "fieldName": "compact",
+              "description": "Shows the ends of a grouped identifier with at least three body groups, with a control that toggles the full\ndisplay. Changing the value restores the preview.",
+              "default": "false"
             }
           ]
         }

@@ -1598,6 +1598,24 @@
               "type": {
                 "text": "string"
               }
+            },
+            {
+              "default": "false",
+              "description": "Shows identifiers with a separate prefix and groups of four Unicode code points. Values containing internal\nwhitespace use plain rendering. The Copy action still requests the original value.",
+              "fieldName": "grouped",
+              "name": "grouped",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Shows the ends of a grouped identifier with at least three body groups, with a control that toggles the full\ndisplay. Changing the value restores the preview.",
+              "fieldName": "compact",
+              "name": "compact",
+              "type": {
+                "text": "boolean"
+              }
             }
           ],
           "cssParts": [
@@ -1633,6 +1651,28 @@
               "privacy": "public",
               "type": {
                 "text": "string"
+              }
+            },
+            {
+              "attribute": "grouped",
+              "default": "false",
+              "description": "Shows identifiers with a separate prefix and groups of four Unicode code points. Values containing internal\nwhitespace use plain rendering. The Copy action still requests the original value.",
+              "kind": "field",
+              "name": "grouped",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "compact",
+              "default": "false",
+              "description": "Shows the ends of a grouped identifier with at least three body groups, with a control that toggles the full\ndisplay. Changing the value restores the preview.",
+              "kind": "field",
+              "name": "compact",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
               }
             },
             {

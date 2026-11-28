@@ -1,0 +1,4 @@
+{"mode":"head","revision":"143a4477f0f91fe8cdf1a6fec198c5d087dd60c1","input":"672a9475472bb436cfd8dfef2f3bcfcae6d8c5b1350e39291628d59f4b2604dd","selected":[{"project":"elements-node","file":"packages/elements/test/node/manifest.test.ts"},{"project":"elements-browser","file":"packages/elements/test/browser/copy-field.test.ts"},{"project":"gates","file":"gates/test/vitest-config.test.ts"},{"project":"elements (chromium)","file":"packages/elements/test/copy-field.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":86.75}
+Failed to resolve dependency: lit/directives/class-map.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/if-defined.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/live.js, present in client 'optimizeDeps.include'

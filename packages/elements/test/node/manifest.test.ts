@@ -430,10 +430,11 @@ const byName = <T extends Described>(entries: readonly T[]): T[] => [...entries]
 
 /**
  * The element declaration of one module of the repository's manifest, projected to what contracts/elements.md states:
- * each public member's type, attribute, whether it reflects and its default, each attribute's field, each event's
- * detail type, the slot, part and CSS property names, and whether each has a description; lists sorted by name.
+ * each public member's type, attribute, whether it reflects and its default, each attribute's field and optionally
+ * its type and default, each event's detail type, the slot, part and CSS property names, and whether each has a
+ * description. Lists are sorted by name.
  */
-async function declared(path: string): Promise<unknown> {
+async function declared(path: string, includeAttributeTypesAndDefaults = false): Promise<unknown> {
   const manifest = await generate(repo);
   const modules = manifest.modules as { path: string; declarations: Described[] }[];
   const [element] = modules.find((module) => module.path === path)?.declarations ?? [];
@@ -450,7 +451,12 @@ async function declared(path: string): Promise<unknown> {
       default: member.default,
       described: hasDescription(member),
     })),
-    attributes: list("attributes").map((attribute) => ({ name: attribute.name, fieldName: attribute.fieldName, described: hasDescription(attribute) })),
+    attributes: list("attributes").map((attribute) => ({
+      name: attribute.name,
+      fieldName: attribute.fieldName,
+      described: hasDescription(attribute),
+      ...(includeAttributeTypesAndDefaults ? { type: (attribute.type as { text?: unknown } | undefined)?.text, default: attribute.default } : {}),
+    })),
     events: list("events").map((event) => ({ name: event.name, type: (event.type as { text?: unknown } | undefined)?.text, described: hasDescription(event) })),
     slots: list("slots").map((slot) => ({ name: slot.name, described: hasDescription(slot) })),
     cssParts: list("cssParts").map((part) => ({ name: part.name, described: hasDescription(part) })),
@@ -721,19 +727,23 @@ describe("generate(root) on the repository's element source", () => {
   });
 
   it("declares ocelle-copy-field per contracts/elements.md: value and status (strings, not reflected, default empty) and copyLabel (attribute copy-label, not reflected, default Copy), the request event with its { text } detail, no slot, the value and copy-control parts and no CSS property (014 FR-055, phase 5)", async () => {
-    const field = await declared("src/ocelle-copy-field.ts");
-    expect(field).toEqual({
+    const field = await declared("src/ocelle-copy-field.ts", true);
+    expect(field, "generated copy field declares both opt-in flags and retains its Copy event and parts").toEqual({
       name: "OcelleCopyField",
       tagName: "ocelle-copy-field",
       members: [
+        { name: "compact", type: "boolean", attribute: "compact", reflects: expect.any(Boolean) as unknown, default: "false", described: true },
         { name: "copyLabel", type: "string", attribute: "copy-label", reflects: false, default: '"Copy"', described: true },
+        { name: "grouped", type: "boolean", attribute: "grouped", reflects: expect.any(Boolean) as unknown, default: "false", described: true },
         { name: "status", type: "string", attribute: "status", reflects: false, default: '""', described: true },
         { name: "value", type: "string", attribute: "value", reflects: false, default: '""', described: true },
       ],
       attributes: [
-        { name: "copy-label", fieldName: "copyLabel", described: true },
-        { name: "status", fieldName: "status", described: true },
-        { name: "value", fieldName: "value", described: true },
+        { name: "compact", fieldName: "compact", type: "boolean", default: "false", described: true },
+        { name: "copy-label", fieldName: "copyLabel", type: "string", default: '"Copy"', described: true },
+        { name: "grouped", fieldName: "grouped", type: "boolean", default: "false", described: true },
+        { name: "status", fieldName: "status", type: "string", default: '""', described: true },
+        { name: "value", fieldName: "value", type: "string", default: '""', described: true },
       ],
       events: [{ name: "ocelle-copy-field-request", type: "CustomEvent<{ text: string }>", described: true }],
       slots: [],

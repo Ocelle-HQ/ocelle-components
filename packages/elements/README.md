@@ -1794,10 +1794,33 @@ clipboard (through a desktop bridge or the page's clipboard API) and reports the
 </script>
 ```
 
+With `grouped` off, the field uses its default plain presentation.
+
 `value` (attribute and property, not reflected): the text shown and requested, as written. It wraps at any point when
 it does not fit, never scrolls sideways, keeps its whitespace runs, is drawn in the sans with tabular figures on
 `--ocelle-color-inset` and stays selectable. With an empty or missing `value` the Copy control is disabled and emits
 nothing. The text is plain text; a host that shows a digest in groups of four formats `value` itself.
+
+`grouped` and `compact` are Boolean properties with same-name HTML attributes. Both default to `false`. Enable
+`grouped` for identifiers and enable both options for a compact preview.
+
+```html
+<ocelle-copy-field aria-label="Record ID" grouped value="record:AB12CD34EF56"></ocelle-copy-field>
+<ocelle-copy-field aria-label="Digest" grouped compact value="ni:sha-256:aB😀cDeF123"></ocelle-copy-field>
+```
+
+Grouping trims outer whitespace for display. A value with internal whitespace uses plain presentation. An
+identifier keeps its prefix through the last colon, then displays the remaining Unicode code points in groups of
+four, with any short final group intact. The identifier reads left to right and wraps between groups.
+
+Compact presentation applies when grouping produces at least three body groups. It shows the prefix, if any, and
+the first and last groups with an ellipsis between them. The same focused disclosure switches between **Show full
+identifier** and **Show less**, and assistive technology can read the complete identifier in either state. Changing
+the value to a different eligible identifier restores the preview.
+
+Copying selected text with the browser yields the full trimmed identifier in grouped and revealed views. In the
+compact preview it yields the visible prefix and end groups with the ellipsis. The named Copy action sends the
+exact raw `value` captured at activation, including outer whitespace, to the host in `ocelle-copy-field-request`.
 
 `copy-label` (attribute and property `copyLabel`, not reflected): the Copy control's accessible name, trimmed; without
 it, or blank, the control is named "Copy".
@@ -1825,10 +1848,12 @@ writes: Chromium still counts the click's activation then, and WebKit is not mea
 clipboard through a desktop bridge is not affected.
 
 Name the field with a host `aria-label`: it is exposed as a group holding the text and the Copy control, unnamed
-without one. A host `aria-label` names the group, not the control.
+without one. A host `aria-label` names the group, not the control. The compact disclosure, when present, belongs to
+the same group.
 
 Keys: the Copy control is one tab stop, and Enter and Space activate it, as on any button. The field handles no other
-key: Escape and letters reach the page unhandled.
+key: Escape and letters reach the page unhandled. The compact disclosure comes immediately before Copy in the tab
+order and also responds to Enter and Space.
 
 CSS parts: `value` (the text) and `copy-control` (the Copy control). `copy-control` guarantees its box (its position,
 its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which

@@ -1,0 +1,120 @@
+# Op 034 pilot for #89
+
+## Tooling readiness
+
+The #89 trial uses tooling revision `509915d1a7ce2413539587330cce9f7b6d776984`. The readiness evidence is signed at `caa67d00e8dcba71251d8cf98373a450fc5d7b36`. Independent Op 034 round 3 approved the tooling evidence at `b655b83b1d17694039f7b5c968e483384145a90a`. [Signed Op 034 readiness](https://github.com/Ocelle-HQ/ocelle-components/blob/caa67d00e8dcba71251d8cf98373a450fc5d7b36/ops/034-workflow-pilots/reviews/phase-1/pilot-readiness.md) · [Signed Op 034 review](https://github.com/Ocelle-HQ/ocelle-components/blob/b655b83b1d17694039f7b5c968e483384145a90a/ops/034-workflow-pilots/reviews/phase-1/round-3.md) · [Issue #89](https://github.com/Ocelle-HQ/ocelle-components/issues/89)
+
+PR #103 run `45816853490`, attempt `1`, passed all 19 required checks on that tooling head. Its base was `64c575785b325d2ef949b664b3eb48856d1ff791` and its tested merge was `bc91dbf6ac7ce40108d981eba3a9e4a98961c52c`. The final Op phase replay reproduced 98 original and 12 review-fix failing assertions on their bases and passed on the final head. [Required CI](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45816853490) · [Phase replay](https://github.com/Ocelle-HQ/ocelle-components/blob/caa67d00e8dcba71251d8cf98373a450fc5d7b36/ops/034-workflow-pilots/reviews/phase-1/tdd-check.json)
+
+| Required proof | Exact result |
+| --- | --- |
+| Unit tests | 12,464 tests across 372 files in six shards. [Aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45816853490/job/139911983541) |
+| Mutation testing | All 16 standard shards and the aggregate passed. [Aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45816853490/job/139902440292) |
+| Plants | All 326 Plants judged successfully. [Aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45816853490/job/139910954363) |
+| Visual regression | All 796 captures matched under Docker and Podman. [Visual job](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45816853490/job/139898692424) |
+
+## Mutation configuration comparison
+
+Hosted benchmark `45813507802`, attempt `1`, used tooling head `e50e56b32fe67bd6001a8440629091c6b3b49edd` and merge `faa672192cf011bd5b835ac4ff2c1ed106d89a39`. Its mixed, default-only and elements-only arms used folded #87 head `48909216bf586574376c3ed8cdbf4b7e088a87f8`, tree `61c0168cae9bd8ff17a85ac8c11bff0fd9de1d66`, and diff base `25c53a915717fe464a67b53a7dd58ceaf4abc0c7`. The selectors were `storybook/stories/pane-action-footer.ts:1-30` and `packages/elements/src/ocelle-step-indicator.ts:151-167`. The final comparator at `509915d1a7ce2413539587330cce9f7b6d776984` replayed those hosted receipts and matched all 47 selected lines, all 16 mutant identities and outcomes, and verdict `0`. The separate standard seeded check matched both surviving mutants and verdict `1`. [Benchmark run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45813507802) · [Comparison report](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45813507802/artifacts/15116857075) · [Seeded failure parity](https://github.com/Ocelle-HQ/ocelle-components/blob/caa67d00e8dcba71251d8cf98373a450fc5d7b36/ops/034-workflow-pilots/reviews/phase-1/seeded-failure.md)
+
+The split reduced the slowest job from 2,505 seconds to 2,387 seconds, a reduction of 118 seconds or 4.71%. Runner time rose from 41.75 to 41.95 minutes with zero retries. The shared pinning and comparison jobs added 3 and 16 seconds respectively. These measurements are for #87. Classify #89 selectors by configuration before comparing timing or parity, and record whether the issue exercises an actual mixed scope. [Mixed receipt](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45813507802/artifacts/15116911972) · [Default receipt](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45813507802/artifacts/15113069915) · [Elements receipt](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45813507802/artifacts/15117321756)
+
+### Phase 1 mutation probe
+
+The local exploratory standard run used head `57d4ac652943ba4a117ce4e8897951fd59f496d4`, test projection base `1cbe23a0552d4a669c3e858ff011ad92a9cd0891` and selector `packages/elements/src/ocelle-copy-field.ts:379-384`. With the existing 30-minute initial-run cap, it ended at 30m49.18s with exit `2`, Stryker's generic initial-run error and no mutation report. The #87 hosted elements baseline took about 29m55s, and the 42 added #89 source cases took 36.4s in the focused green draft. That timing supports the cap as a possible cause. The error also covers other initial runner failures, so the cause remains unconfirmed.
+
+The recorded configuration assertion failed before the update from 30 to 40 minutes. The 40-minute initial-run budget remains in force alongside full test discovery, per-test coverage, the same concurrency and the 75-minute hosted Elements job ceiling. [Cap red](phase-1/red-fix-1.log)
+
+### First hosted Phase 1 run and recovery
+
+PR #104 run `45826831350`, attempt `1`, tested head `f1102dbb0d3b5dba354d740322ed889de8654448` on base `b655b83b1d17694039f7b5c968e483384145a90a`, with merge `530c147b12e955fd58b077bb0658af7b2c1dca45`. Plants judged all 326 cases and Visual matched all 796 captures. The Unit shard 5 failure was four README fragment assertions. The README-only correction restored the exact default, naming and keyboard clauses and the local README suite passed all 1,149 cases. [Hosted run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350) · [Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350/job/139947395135) · [Visual](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350/job/139933035474) · [Unit shard 5](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350/job/139933359245)
+
+All six hosted elements mutation shards completed. Their 103 mutants included 61 killed, 22 compile errors, one timeout and 19 survivors. Twelve survivors changed word-break boundaries or empty-prefix handling, six affected the retained field's focus fallback or cleanup, and one changed an initial disclosure state that the value setter replaces before the disclosure can render. [Mutation aggregate](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350/job/139955983748) · [Word-break shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350/job/139933334188) · [Focus shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350/job/139933334174) · [Initialization shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45826831350/job/139933334370)
+
+Read-only local discovery found six related test files among 156 standard files. An exploratory related dry run completed 134 tests in 52 seconds. The six-line local shard reported 20 mutants and reproduced the exact 12 hosted word-break survivors. Adding the prefixed and unprefixed wrap assertions at `4243776734794af420d33a20dace043b1b1d041a` yielded 73 killed, 22 compile errors, one timeout and the same seven focus and initialization survivors among 103 mutants on the old source.
+
+The focus test at `082e2a28434f155b014478056166cb330adb8cc0` verifies cleanup of the temporary tab stop. The source fix `6a8390ac048a90fbfbb1f766e10a96fdca163ef3` lets the value setter initialize disclosure state and removes the retained field's temporary `tabindex` on native blur. At integrated draft `64f78a85d1be5f4d5e3d1c733b0994cd538a4dc9`, lint checked 724 files, Typecheck passed and the manifest gate found nothing across 49 elements. The exploratory related run completed a 135-test baseline in 53 seconds and finished in 5m33s. It reported 101 mutants, with 77 killed, 23 compile errors, one timeout, zero survivors and zero uncovered mutants. Its report SHA-256 was `b23bbf08288a35ab6009d5dbf07478b439ff8a47178659177a8bfc2eb2cf431e`.
+
+The read-only advisory also repeated all six hosted selector windows on the exact earlier `f1102dbb0d3b5dba354d740322ed889de8654448` source and tests. It selected six of 156 files, ran the 134-test initial baseline in 53 seconds and completed in 6m49s. All 103 status counts matched the first hosted run, including the exact multiset of 19 surviving line, mutator and replacement identities. The advisory used narrower test discovery and different hardware. The tracked configuration retains full discovery, and these samples do not establish a timing comparison or savings estimate.
+
+## Visual evidence-only experiment
+
+The final Op Visual job's before and after observations took 20 seconds and 2 seconds. Archive `15117136291` matched GitHub's SHA-256 `9ad8bc67fa91b952d81eff7f4857718886a3f77979821785315e48cbb407a6da`. The SHA-256 of `executed-tools.json` was `d634843ab9aebe647b0d76488067301db5001092fee740e1c15b6d0314223b2a` and matched the exact post-step log. The earlier observed job `139893424204` on run `45815311151`, attempt `1`, used head `fa703dfd7e66c3df62d72b4e0c5e15fe9486af69` and tested merge `0956985cbfe9dfa6e2b1c8c282742d8dd716dd9b`. Its archive `15115524198` matched the GitHub SHA-256 `136535100bdea78ef025a54b2fde3373c1ee8c2200d6333f6b074414010542ba`, and its executed tool digest `73eb2a8ce4dc77dda0faf794596f41e3ca4e3bf19787350a2dea3a51304671f7` matched the exact job log. [Final Visual job](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45816853490/job/139898692424) · [Final archive](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45816853490/artifacts/15117136291) · [Earlier job](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45815311151/job/139893424204) · [Earlier archive](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45815311151/artifacts/15115524198)
+
+The two receipts recorded the same versions and five matching executable hashes. The pnpm launcher hashes differ. Rebuilding each launcher from the pinned shim template and its logged installation directory reproduced both hashes. The per-install directory accounts for the difference. Each receipt attests the launcher only, and the differing hashes fail the observer's runtime identity check. Any later equivalence change needs to validate the launcher and attest the actual resolved native executable before and after capture. [Runtime receipts](https://github.com/Ocelle-HQ/ocelle-components/blob/caa67d00e8dcba71251d8cf98373a450fc5d7b36/ops/034-workflow-pilots/reviews/phase-1/round-2-fixes.md#visual-runtime-receipts) · [Pinned shim](https://github.com/pnpm/pnpm/blob/666c35e95c17f1a36414adc28bc25a73a8f1f67f/pnpm/crates/cmd-shim/src/shim.rs#L211-L295)
+
+The complete Phase 2 source candidate's Visual runtime receipt is bound to run `45847625160`, attempt `1`, and tested merge `1ba4139521b20b961047e80b19f0997a23b9494b`. Archive `15132433090` matched GitHub SHA-256 `2c014e3f3ede2f06be33b7b2beba75005a97993fc42a7c0f79d822cdad7ae0cd`. The `executed-tools.json` SHA-256 `e7c74b65c95fed58a470254fb8fc4c62d3a40629c56a8f43e50688f635148706` matched the exact job log. Its runner image was `ubuntu24/20261122.23` and Buildx was `0.39.1`. [Source Visual job](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/job/140005295529) · [Runtime archive](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/artifacts/15132433090)
+
+A read-only API preflight of the earlier run `45834538582` found its immutable head and head commit still at `77cb025da872be76e49190b51a9ed24a9e61be1b`. Its nested PR #104 head had advanced to `4ac4aaa639586a4167724d0a1f36954876f3a621`. This records how the live association field behaves before the controlled pair. [Earlier run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582)
+
+The controlled same-PR #89 evidence-only pair and observer verdict remain pending. Collect successful required CI on the evidence-only successor. Record each exact head, common base, tested merge, run and attempt, required job identity, audited inputs, immutable Visual artifacts and runtime evidence. Require fresh current Sign-off and Sandbox paths. Record the observer verdict and exact disqualifier if there is one. Count potential reuse savings only for an eligible match, with executed runner time reported separately. [Pilot procedure](https://github.com/Ocelle-HQ/ocelle-components/blob/509915d1a7ce2413539587330cce9f7b6d776984/tooling/speckit/README.md)
+
+## Component preflight
+
+The Op preflight verified eight active manifest overlays on the recorded phase base. The reordered overlay was clean and the seven negative overlays produced their exact expected findings. The deleted-snapshot regression found the missing full snapshot with its descriptor still present. For scoped host preflight, actual normal and default mutation discovery both found the #87 pane footer test in `storybook-browser (chromium)`. The default mutation discovery excluded the separately built fixture. The standard scoped #87 host run recorded 140 mutants with zero survivors or uncovered mutants. [Independent preflight checks](https://github.com/Ocelle-HQ/ocelle-components/blob/caa67d00e8dcba71251d8cf98373a450fc5d7b36/ops/034-workflow-pilots/reviews/phase-1/round-2.md#checks-run) · [Scoped host mutation](https://github.com/Ocelle-HQ/ocelle-components/blob/caa67d00e8dcba71251d8cf98373a450fc5d7b36/specs/033-pane-step-indicator/reviews/phase-2/mutation.md)
+
+The canonical #89 runs used `node tooling/speckit/bin/component-preflight.ts manifest --base e340eefa9128bc1e5ede06cc06fb46a252d7a702`. Both runs discovered the same eight full overlays and reported zero missing snapshots. [Phase base](phase-1/base.sha)
+
+| Candidate | Exit and elapsed | Result |
+| --- | --- | --- |
+| Source and generated manifest `652be297efe25de61ac23ca89667921c997ce6c8` | `1`, 2,921 ms | Every overlay reported four unexpected `stale` findings for `ocelle-copy-field.attribute.compact`, `ocelle-copy-field.attribute.grouped`, `ocelle-copy-field.property.compact` and `ocelle-copy-field.property.grouped`. All intended findings were present. |
+| Overlay-only update `72df98d46963149de6f4960c20f8b832953cfca0` | `0`, 2,719 ms | Zero missing or unexpected findings. The reordered fixture was clean and each of the seven negative fixtures reported its sole intended finding. [Planned findings](../plan.md#phase-1--copy-field-behavior-and-public-options) |
+
+The before and after JSON receipt SHA-256 digests were `f5d4f70e23803d7a4ba28092c7e792bda3a216ce19d286fa258166cc83b41df3` and `08a04bcdf7fce1d3f717e91b81907817a7842dcec8f2da8b33a10305599e951b`, respectively. The ordinary manifest gate on the corrected candidate checked 49 elements and reported no findings.
+
+As Phase 2 starts, apply the host preflight and standard scoped mutation only if the stories need a changed executable shared host. Record actual discovery and scoped results when applicable, along with the built browser, strict CSP, Axe, Visual and Plants results.
+
+## Phase 2 Storybook and pinned captures
+
+Tests-only revision `2b25fd319b7431e809bf4af0d30dbe65ef96d26d` built the existing Storybook successfully and reported exactly the three expected missing story IDs in 8.571 seconds. The three built stories then passed twelve browser contexts across 320 px light, dark and forced colours and a separate 660 px viewport at 200% computed text size. The built tests exercise native Tab, focused Reveal and Copy, the full accessible identifier and the exact raw host request. The separate strict-CSP copy-field suite passed all 37 tests, and the content-security gate found nothing across 82 files. [Red replay](phase-2/red-phase.log)
+
+Required CI `45844186350`, attempt `1`, tested story revision `dfd2a51abe3bde18390ee80bd3ffe23276460ec2` on base `b655b83b1d17694039f7b5c968e483384145a90a`, with merge `0fe659d666d3203817cfba508d89ebdf6fd6e160`. Its build indexed 401 stories and its Axe check made 802 audits with zero serious or critical findings and 132 existing exceptions. The pinned Docker and Podman Visual check reported exactly six missing baselines in 802 story-themes. Artifact `15129964383` matched SHA-256 `e6167ec8321c018d384950ad402641d321d8b37ffb1e264b959c637c06d23381` from the API and upload log. All six 1280 × 800 PNGs were copied byte-for-byte from the archive. Only the three named stories were added. [Storybook build](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45844186350/job/139993425284) · [Axe](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45844186350/job/139993425233) · [Visual capture](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45844186350/job/139993425038) · [Pinned archive](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45844186350/artifacts/15129964383)
+
+The existing empty-index overlay still produced its exact single `empty-index` finding in a local Storybook build. Applying the Plant's exact light `color-ink` delta in a local Chromium capture changed 4,497 pixels for the grouped record ID, 2,897 for the compact digest and 5,822 for the revealed digest. The Plant expects those three additional light findings. The local token check supplies the affected inventory, and the required hosted Plant supplies its pinned verdict. The existing injected Axe fixture adds two theme runs, giving 804 in that integration check.
+
+Phase 2 adds story exports and focused tests, with no changed shared executable Storybook host. Standard changed-source mutation planning against the Phase 2 base returned zero shards. The complete PR against the workflow tooling base retains the six standard Phase 1 mutation shards. [Phase 2 base](phase-2/base.sha)
+
+### Complete Phase 2 control
+
+Canonical replay passed on `f44dbfd4aa3bb2f36a45dcde13a889215a7742e9`. It retained all three missing-ID failures on the base after a successful build and passed on the implementation. The hosted candidate has the same code and tests as the replay. [Canonical replay](phase-2/tdd-check.json) · [Red replay](phase-2/red-phase.log)
+
+PR #104 run `45847625160`, attempt `1`, passed all 19 required checks on head `4ac4aaa639586a4167724d0a1f36954876f3a621`, base `b655b83b1d17694039f7b5c968e483384145a90a`, and tested merge `1ba4139521b20b961047e80b19f0997a23b9494b`. The run took 2,436 seconds wall time and 79,325 runner seconds across 111 jobs. [Exact required CI](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160)
+
+| Required check | Result on the tested merge |
+| --- | --- |
+| Unit tests | 12,518 tests in 373 files across six shards. [Unit tests](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/job/140023179575) |
+| Visual regression | All 802 captures matched under Docker and Podman. [Visual regression](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/job/140005295529) |
+| Accessibility | All 802 story-themes were audited with zero serious or critical findings. [Axe](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/job/140005295676) |
+| Plants | All 326 Plants were judged successfully. [Plants receipt](phase-2/plants.md) · [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/job/140016299086) |
+| Mutation testing | The six standard shards reported 101 mutants, zero survivors, 23 compile errors, one timeout and two zero-mutant entries. The shards took 12,117 runner seconds and the slowest took 2,374 seconds. [Mutation testing](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/job/140028134678) |
+
+The hosted unit plan archive `15132440378` matched SHA-256 `31d03dcd260a2663acc3d6e5341b18ed3c0bd9a995ce6c8d9a7a51ec14413fa1`. Its exact tested-merge receipts confirm all four deferred count-only suites passed in `gates-integration`. [Unit plan archive](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45847625160/artifacts/15132440378)
+
+| Shard | Verified suites |
+| --- | --- |
+| 0 | `gates/test/integration/visual-findings.test.ts` (1 passed) |
+| 1 | `gates/test/integration/visual.test.ts` (1 passed) and `gates/test/integration/plant-repo.test.ts` (36 passed) |
+| 2 | `gates/test/integration/visual-capture.test.ts` (4 passed) |
+| 3 | `gates/test/integration/axe.test.ts` (4 passed) |
+| 4 | `storybook/test/integration/copy-field-stories.test.ts` (3 passed) and `gates/test/integration/storybook-build.test.ts` (5 passed) |
+
+## Product verification and checkpoint
+
+The exact tests-only candidate `99084e20681d1b575bffbf931ebb820ff6d33e7a` ran against the canonical phase base and produced 51 intended assertion failures in 80.768 seconds. The three selected files reported 42 source Chromium failures, eight built strict-CSP failures after the old package built and loaded, and one exact generated-declaration failure. The replay recorded exit `1` and marked the tests-only red valid. [Scope](phase-1/test-scope.txt) · [Red commit](phase-1/red-commits) · [Canonical red log](phase-1/red-phase.log)
+
+The isolated implementation projection passed 134 source and declaration cases, 39 strict-CSP and entry cases, and three selected package build checks. Phase 2 adds the exact missing story IDs on a successful build and the three shipped states with six pinned captures. [Tasks](../tasks.md) · [Plan](../plan.md)
+
+### Corrected Phase 1 control
+
+Canonical replay passed on `64f78a85d1be5f4d5e3d1c733b0994cd538a4dc9` with the 51 original red assertions and the cap assertion retained. The corrected CI candidate has the same code and tests. PR #104 run `45834538582`, attempt `1`, passed all 19 required checks on head `77cb025da872be76e49190b51a9ed24a9e61be1b`, base `b655b83b1d17694039f7b5c968e483384145a90a` and tested merge `bd09017155b06f3cdac3d4166ae71877f69c051d`. Elapsed time was 41m21s. The 111 successful jobs used a combined 78,881 runner seconds. [Canonical replay](phase-1/tdd-check.json) · [Required CI](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582)
+
+| Required check | Exact result |
+| --- | --- |
+| Unit tests | 12,515 tests across 372 files in six shards. [Unit tests](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582/job/139975935484) |
+| Mutation testing | All six elements shards passed. They reported 101 mutants with zero survivors, 23 compile errors and one timeout, plus two zero-mutant entries. The shards used 12,137 runner seconds and the slowest took 40m15s. [Mutation testing](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582/job/139983708907) |
+| Visual and Axe | Visual matched all 796 captures and Axe passed all 796 story-themes. [Visual job](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582/job/139959812466) · [Required CI](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582) |
+| Plants | The phase-base selector listed 326 of 326 after the elements Stryker configuration changed. The hosted check judged all 326 successfully. [Plants receipt](phase-1/plants.md) · [Hosted Plants](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582/job/139971400646) |
+
+The standard rerun of `packages/elements/src/ocelle-copy-field.ts:379-387` covers the original failed probe's lines 379–384. Its full gate step completed in 31m41s with 24 mutants and zero survivors under the 40-minute initial-run cap. The public gate output reports the aggregate mutation result and full step timing. A separate initial baseline duration is unavailable in that output. [Scoped standard result](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45834538582/job/139960133789)
+
+At the #89 delivery checkpoint, record time to first failure and verified green, setup and replay times, runner minutes, slowest job, failed runs and retries, coverage and verdict parity, preflight misses, fixture drift and rework. Link the exact receipts and the diary entry. Verify each actual workflow adjustment or document why the settings are retained before starting the next independently ready issue. [Next planned issue](https://github.com/Ocelle-HQ/ocelle-components/issues/86)

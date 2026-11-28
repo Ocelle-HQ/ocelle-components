@@ -21,9 +21,11 @@
 // (#5 rule 1 extended: a control on `inset` is bordered with `accent-strong`); the control is filled
 // `--ocelle-color-sheet`, at least `--ocelle-target-min` in both dimensions, with the token focus ring as an outline.
 // The text wraps anywhere, keeps its whitespace runs, is drawn in the sans with tabular figures and stays selectable.
+// Grouped identifiers wrap between code-point groups. A compact preview has its own native disclosure, with the full
+// identifier available to assistive technology and the visible end groups available to native selection.
 // Forced colours: the boundaries are `ButtonBorder`, the icon `ButtonText`, the ring `Highlight`. No transition or
 // animation. Importing this module defines `ocelle-copy-field` and `ocelle-icon`.
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { define } from "./define.ts";
 import { iconSlotStyles } from "./icon-slot.ts";
 import { attachInternalsTo } from "./internals.ts";
@@ -47,6 +49,8 @@ export class OcelleCopyField extends LitElement {
     // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, as for `value`: the wrapped `status` accessor adds an update request and the template does not read `status`
     status: { type: String, noAccessor: true },
     copyLabel: { type: String, attribute: "copy-label" },
+    grouped: { type: Boolean },
+    compact: { type: Boolean },
   };
 
   static override styles = [
@@ -70,6 +74,10 @@ export class OcelleCopyField extends LitElement {
         border-radius: var(--ocelle-radius-2);
       }
 
+      .field:has(> .reveal) {
+        flex-wrap: wrap;
+      }
+
       [part="value"] {
         flex: 1 1 auto;
         min-inline-size: 0;
@@ -81,7 +89,39 @@ export class OcelleCopyField extends LitElement {
         overflow-wrap: anywhere;
       }
 
-      [part="copy-control"] {
+      .field:has(> .reveal) > [part="value"] {
+        flex-basis: calc(2 * var(--ocelle-measure-cell));
+      }
+
+      .identifier {
+        display: block;
+        text-align: start;
+      }
+
+      .identifier > span {
+        unicode-bidi: isolate;
+      }
+
+      .identifier > span:not(:last-child) {
+        margin-inline-end: var(--ocelle-space-1);
+      }
+
+      .group {
+        white-space: nowrap;
+      }
+
+      .full-identifier {
+        position: absolute;
+        inline-size: var(--ocelle-size-visually-hidden);
+        block-size: var(--ocelle-size-visually-hidden);
+        overflow: hidden;
+        opacity: 0;
+        white-space: nowrap;
+        user-select: none;
+      }
+
+      [part="copy-control"],
+      .reveal {
         display: inline-flex;
         flex: none;
         align-items: center;
@@ -94,13 +134,31 @@ export class OcelleCopyField extends LitElement {
         padding-inline: var(--ocelle-space-2);
         border: none;
         border-inline-start: var(--ocelle-border-width) solid;
-        border-start-end-radius: calc(var(--ocelle-radius-2) - var(--ocelle-border-width));
-        border-end-end-radius: calc(var(--ocelle-radius-2) - var(--ocelle-border-width));
         font: inherit;
         outline: none;
       }
 
-      [part="copy-control"]:focus-visible {
+      [part="copy-control"] {
+        border-start-end-radius: calc(var(--ocelle-radius-2) - var(--ocelle-border-width));
+        border-end-end-radius: calc(var(--ocelle-radius-2) - var(--ocelle-border-width));
+      }
+
+      .reveal {
+        flex-shrink: 1;
+        max-inline-size: 100%;
+        margin-inline-start: auto;
+        overflow-wrap: anywhere;
+      }
+
+      .field:has(> .reveal) > [part="copy-control"]:focus-visible,
+      .reveal:focus-visible {
+        position: relative;
+        z-index: 1;
+      }
+
+      [part="copy-control"]:focus-visible,
+      .reveal:focus-visible,
+      .field:focus-visible {
         outline: var(--ocelle-focus-width) solid;
         outline-offset: var(--ocelle-focus-offset);
       }
@@ -123,7 +181,8 @@ export class OcelleCopyField extends LitElement {
           background: var(--ocelle-color-inset);
         }
 
-        [part="copy-control"] {
+        [part="copy-control"],
+        .reveal {
           border-inline-start-color: var(--ocelle-color-accent-strong);
           background: var(--ocelle-color-sheet);
           color: var(--ocelle-color-ink);
@@ -133,7 +192,9 @@ export class OcelleCopyField extends LitElement {
           color: var(--ocelle-color-disabled-ink);
         }
 
-        [part="copy-control"]:focus-visible {
+        [part="copy-control"]:focus-visible,
+        .reveal:focus-visible,
+        .field:focus-visible {
           outline-color: var(--ocelle-color-focus);
         }
       }
@@ -143,12 +204,15 @@ export class OcelleCopyField extends LitElement {
           border-color: ButtonBorder;
         }
 
-        [part="copy-control"] {
+        [part="copy-control"],
+        .reveal {
           border-inline-start-color: ButtonBorder;
           color: ButtonText;
         }
 
-        [part="copy-control"]:focus-visible {
+        [part="copy-control"]:focus-visible,
+        .reveal:focus-visible,
+        .field:focus-visible {
           outline-color: Highlight;
         }
       }
@@ -162,16 +226,37 @@ export class OcelleCopyField extends LitElement {
    */
   declare copyLabel: string;
 
+  /**
+   * Shows identifiers with a separate prefix and groups of four Unicode code points. Values containing internal
+   * whitespace use plain rendering. The Copy action still requests the original value.
+   *
+   * @default false
+   */
+  declare grouped: boolean;
+
+  /**
+   * Shows the ends of a grouped identifier with at least three body groups, with a control that toggles the full
+   * display. Changing the value restores the preview.
+   *
+   * @default false
+   */
+  declare compact: boolean;
+
   readonly #internals = attachInternalsTo(this);
   /** The live region's one text node, written only when the text shown changes (R-07). */
   readonly #text = document.createTextNode("");
   #value = "";
   #status = "";
+  /** Setting a value that can render the disclosure initializes its collapsed state. */
+  #revealed: boolean | undefined;
+  #focusedDisclosure: Element | null = null;
 
   constructor() {
     super();
     exposeAsGroup(this.#internals);
     this.copyLabel = "Copy";
+    this.grouped = false;
+    this.compact = false;
   }
 
   /**
@@ -187,6 +272,7 @@ export class OcelleCopyField extends LitElement {
   set value(value: string) {
     if (value === this.#value) return;
     this.#value = value;
+    this.#revealed = false;
     if (this.hasUpdated) this.status = "";
     this.requestUpdate();
   }
@@ -219,6 +305,33 @@ export class OcelleCopyField extends LitElement {
     this.renderRoot.querySelector(".status")?.append(this.#text);
   }
 
+  protected override willUpdate(): void {
+    const active = this.shadowRoot?.activeElement ?? null;
+    this.#focusedDisclosure = active?.matches(".reveal") ? active : null;
+  }
+
+  protected override updated(): void {
+    const disclosure = this.#focusedDisclosure;
+    if (disclosure === null || disclosure.isConnected) return;
+
+    const copy = this.renderRoot.querySelector<HTMLButtonElement>('[part="copy-control"]:enabled');
+    if (copy !== null) {
+      copy.focus();
+      return;
+    }
+
+    const field = this.renderRoot.querySelector<HTMLElement>(".field");
+    if (field !== null) {
+      field.tabIndex = -1;
+      field.focus();
+    }
+  }
+
+  /** The retained field takes focus by script only while it needs the fallback. Native blur restores its tab order. */
+  readonly #clearFieldTabIndex = (event: FocusEvent): void => {
+    (event.currentTarget as HTMLElement).removeAttribute("tabindex");
+  };
+
   /** An activation of the Copy control: clears `status` now and requests the copy after the next rendering update. */
   #activate = (): void => {
     const text = this.#value;
@@ -230,10 +343,46 @@ export class OcelleCopyField extends LitElement {
     });
   };
 
+  #toggle = (): void => {
+    this.#revealed = !this.#revealed;
+    this.requestUpdate();
+  };
+
   protected override render(): unknown {
     const label = trimmedOr(this.copyLabel, "Copy");
-    return html`<div class="field"><span part="value">${this.#value}</span><button part="copy-control" type="button" aria-label=${label} ?disabled=${this.#value === ""} @click=${this.#activate}><span class="icon-row"><span class="icon-slot"><ocelle-icon name="copy"></ocelle-icon></span></span></button></div><span class="status" role="status" aria-live="polite"></span>`;
+    const units = this.grouped ? identifierUnits(this.#value) : null;
+    const canReveal = this.compact && units !== null && units.groups.length >= 3;
+    const preview = canReveal && !this.#revealed;
+    const value = units === null ? this.#value : identifierContent(units, preview);
+    const reveal = canReveal
+      ? html`<button class="reveal" type="button" aria-expanded=${this.#revealed} aria-controls="identifier" @click=${this.#toggle}>${this.#revealed ? "Show less" : "Show full identifier"}</button>`
+      : nothing;
+    return html`<div class="field" @blur=${this.#clearFieldTabIndex}><span id="identifier" part="value">${value}</span>${reveal}<button part="copy-control" type="button" aria-label=${label} ?disabled=${this.#value === ""} @click=${this.#activate}><span class="icon-row"><span class="icon-slot"><ocelle-icon name="copy"></ocelle-icon></span></span></button></div><span class="status" role="status" aria-live="polite"></span>`;
   }
+}
+
+interface IdentifierUnits {
+  readonly text: string;
+  readonly prefix: string;
+  readonly groups: readonly string[];
+}
+
+function identifierUnits(value: string): IdentifierUnits | null {
+  const text = value.trim();
+  if (/\s/.test(text)) return null;
+  const cut = text.lastIndexOf(":") + 1;
+  const body = Array.from(text.slice(cut));
+  const groups: string[] = [];
+  for (let at = 0; at < body.length; at += 4) groups.push(body.slice(at, at + 4).join(""));
+  return { text, prefix: text.slice(0, cut), groups };
+}
+
+function identifierContent({ text, prefix, groups }: IdentifierUnits, preview: boolean) {
+  const visible = preview ? [groups[0], "…", groups.at(-1)] : groups;
+  const prefixUnit = prefix === "" ? nothing : html`<span>${prefix}</span>`;
+  const groupUnits = visible.map((group, index) => html`${prefix !== "" || index > 0 ? html`<wbr>` : nothing}<span class="group">${group}</span>`);
+  const full = preview ? html`<bdi class="full-identifier" dir="ltr">${text}</bdi>` : nothing;
+  return html`${full}<bdi class="identifier" dir="ltr" aria-hidden=${preview ? "true" : nothing}>${prefixUnit}${groupUnits}</bdi>`;
 }
 
 /** `value` trimmed when it is a string with a non-whitespace character, else `fallback` (a removed attribute reads `null`). */

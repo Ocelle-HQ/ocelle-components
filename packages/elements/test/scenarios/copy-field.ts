@@ -124,9 +124,9 @@ function recordedRequests(): unknown {
   return JSON.parse(JSON.stringify((window as unknown as { __requests?: unknown[] }).__requests ?? [])) as unknown;
 }
 
-/** A request as `recordRequests` records it, from `#cf`, with the status and region empty at dispatch. */
-function request(text: string): unknown {
-  return { type: "ocelle-copy-field-request", detail: { text }, bubbles: true, composed: true, cancelable: false, target: "cf", status: "", region: "" };
+/** A request as `recordRequests` records it, with the status and region seen at dispatch. */
+function request(text: string, status = ""): unknown {
+  return { type: "ocelle-copy-field-request", detail: { text }, bubbles: true, composed: true, cancelable: false, target: "cf", status, region: status };
 }
 
 /**
@@ -347,7 +347,7 @@ function overflow(): unknown {
   };
 }
 
-export const copyFieldScenarios: readonly CopyFieldScenario[] = [
+const plainCopyFieldScenarios: readonly CopyFieldScenario[] = [
   {
     // Plants: a monospace family on the text; no tabular figures; the well in another token; the icon labelled (an
     // image node in the tree) or missing; the control named by its icon.
@@ -1057,3 +1057,845 @@ async function clickAt(driver: Driver, inPage: InPage, inner: string, count: num
   }, inner);
   await driver.clickTarget("probe", { count, force: true });
 }
+
+const identifier = "ni:sha-256:aB😀cDeF123";
+const rawIdentifier = `  ${identifier}  `;
+const nextRawIdentifier = "  ni:sha-256:aB😀cDeF145  ";
+const fullGroups = ["ni:sha-256:", "aB😀c", "DeF1", "23"];
+const previewGroups = ["ni:sha-256:", "aB😀c", "…", "23"];
+const copyButton = 'button[part~="copy-control"]';
+const revealButton = 'button:not([part~="copy-control"])';
+const copyName = "Copy digest";
+const copyEvent = "ocelle-copy-field-request";
+const activationOptions = { request: copyEvent, read: '[role="status"]', property: "status" };
+const methods = ["pointer", "Enter", " "] as const;
+type Method = (typeof methods)[number];
+type Presentation = "grouped" | "compact" | "revealed";
+
+function identifierPage(presentation: Presentation): string {
+  return page(`grouped ${presentation === "grouped" ? "" : "compact"} value="${rawIdentifier}" copy-label="${copyName}"`);
+}
+
+function methodName(method: Method): string {
+  return method === " " ? "Space" : method;
+}
+
+interface TextRun {
+  readonly text: string;
+  readonly rects: readonly { readonly left: number; readonly right: number; readonly top: number; readonly bottom: number }[];
+  readonly font: string;
+  readonly figures: string;
+  readonly size: number;
+}
+
+/** Reads the text that is actually painted, including its inline line boxes and computed glyph styles. */
+function visibleText(id: string): TextRun[] {
+  const root = document.getElementById(id)?.shadowRoot;
+  const value = root?.querySelector('[part~="value"]');
+  if (root === null || root === undefined || value === null || value === undefined) return [];
+  const walker = document.createTreeWalker(value, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  const runs: TextRun[] = [];
+  for (let next = walker.nextNode(); next !== null; next = walker.nextNode()) {
+    const node = next as Text;
+    const parent = node.parentElement;
+    if (node.data.trim() === "" || parent === null) continue;
+    const style = getComputedStyle(parent);
+    if (style.visibility !== "visible" || !parent.checkVisibility({ opacityProperty: true })) continue;
+    range.selectNodeContents(node);
+    const boxes = [...range.getClientRects()].filter(({ width, height }) => width > 0 && height > 0);
+    // An assistive-only node can have a text rect even when its clipping or position keeps it from painting.
+    const painted = boxes.some((box) =>
+      [0.1, 0.5, 0.9].some((at) => {
+        const hit = root.elementFromPoint(box.left + box.width * at, box.top + box.height / 2);
+        return hit !== null && parent.contains(hit);
+      }),
+    );
+    if (painted) {
+      runs.push({
+        text: node.data,
+        rects: boxes.map(({ left, right, top, bottom }) => ({ left, right, top, bottom })),
+        font: style.fontFamily,
+        figures: style.fontVariantNumeric,
+        size: Number.parseFloat(style.fontSize),
+      });
+    }
+  }
+  return runs;
+}
+
+async function shown(inPage: InPage, id = "cf"): Promise<string[]> {
+  return (await inPage(visibleText, id)).map(({ text }) => text);
+}
+
+/** Natural-width text endpoints allow a trusted drag across all displayed groups on the wide fixture. */
+async function nativeSelection(driver: Driver, inPage: InPage): Promise<string> {
+  const runs = await inPage(visibleText, "cf");
+  const first = runs[0]?.rects[0];
+  const last = runs.at(-1)?.rects.at(-1);
+  if (first === undefined || last === undefined) return "";
+  await driver.pointer([
+    { x: first.left - 0.5, y: (first.top + first.bottom) / 2, down: true },
+    { x: last.right + 0.5, y: (last.top + last.bottom) / 2, up: true },
+  ]);
+  return inPage(() => getSelection()?.toString() ?? "", null);
+}
+
+async function activate(driver: Driver, inPage: InPage, selector: string, method: Method): Promise<void> {
+  if (method === "pointer") await clickAt(driver, inPage, selector, 1);
+  else await driver.pressKeys(method);
+}
+
+function saveButtons(selectors: readonly [string, string]): void {
+  const root = document.getElementById("cf")?.shadowRoot;
+  const scope = window as unknown as { __copyButtons: (Element | null)[] };
+  scope.__copyButtons = selectors.map((selector) => root?.querySelector(selector) ?? null);
+}
+
+function buttonIdentity(selectors: readonly [string, string]): { copy: boolean; reveal: boolean; focus: string } {
+  const host = document.getElementById("cf");
+  const root = host?.shadowRoot;
+  const [storedCopy, storedReveal] = (window as unknown as { __copyButtons?: (Element | null)[] }).__copyButtons ?? [];
+  const [copySelector, revealSelector] = selectors;
+  const copy = root?.querySelector(copySelector) ?? null;
+  const reveal = root?.querySelector(revealSelector) ?? null;
+  const focused = root?.activeElement;
+  let focus = document.activeElement?.id ?? "";
+  if (focused && focused === copy) focus = "copy";
+  else if (focused && focused === reveal) focus = "reveal";
+  else if (focused instanceof HTMLElement && focused.tabIndex === -1) focus = "retained";
+  else if (document.activeElement === host && host instanceof HTMLElement && host.tabIndex === -1) focus = "retained";
+  return { copy: copy !== null && copy === storedCopy, reveal: reveal !== null && reveal.checkVisibility() && reveal === storedReveal, focus };
+}
+
+const buttons = [copyButton, revealButton] as const;
+
+/** Reads the ordered Chromium AX subtree, then queries the actual disclosure's state and node descriptions. */
+async function reading(driver: Driver, inPage: InPage) {
+  const nodes = await driver.axStates("cf", "subtree");
+  const controls = nodes.filter(({ role }) => role === "button");
+  const present = await inPage((selector) => document.getElementById("cf")?.shadowRoot?.querySelector(selector) instanceof HTMLButtonElement, revealButton);
+  const disclosure = present ? await driver.axState("cf", revealButton) : null;
+  const namedAction = disclosure === null ? null : disclosure.expanded
+    ? /\b(hide|collapse|compact|less|fewer)\b/i.test(disclosure.name)
+    : /\b(reveal|show|expand|more)\b/i.test(disclosure.name);
+  const identifierNodes: AxNodeState[] = [];
+  const statusNodes: AxNodeState[] = [];
+  const extra: string[] = [];
+  let section: "identifier" | "control" | "status" = "identifier";
+  let buttonLabel: string | undefined;
+  for (const node of nodes) {
+    if (node.role === "button") {
+      section = "control";
+      buttonLabel = node.name;
+    } else if (node.role === "status") {
+      section = "status";
+      statusNodes.push(node);
+    } else if (node.role === "StaticText") {
+      if (section === "identifier") identifierNodes.push(node);
+      else if (section === "status") statusNodes.push(node);
+      // Visible button text may be exposed as the button's child as well as in its computed name.
+      else if (node.name === buttonLabel) buttonLabel = undefined;
+      else extra.push(node.name);
+    } else if (node.name !== "") extra.push(node.name);
+  }
+  return {
+    identifier: identifierNodes.map(({ name }) => name).join(""),
+    controls: controls.map(({ name }) => name === disclosure?.name && namedAction ? "disclosure" : name),
+    status: statusNodes.map(({ role, name, live }) => role === "status" ? [role, name, live] : [role, name]),
+    order: nodes.filter(({ role }) => role === "group" || role === "button" || role === "status").map(({ role }) => role),
+    extra,
+    descriptions: (await driver.axDetails("cf")).map(({ description }) => description).filter(Boolean),
+    disclosure: disclosure === null ? null : { role: disclosure.role, expanded: disclosure.expanded, namedAction, focusable: disclosure.focusable },
+    actionName: disclosure?.name ?? "",
+  };
+}
+
+function identifierReading(expanded?: boolean, status?: string) {
+  const hasDisclosure = expanded !== undefined;
+  return {
+    identifier,
+    controls: hasDisclosure ? ["disclosure", copyName] : [copyName],
+    status: [["status", "", "polite"], ...(status === undefined ? [] : [["StaticText", status]])],
+    order: hasDisclosure ? ["group", "button", "button", "status"] : ["group", "button", "status"],
+    extra: [],
+    descriptions: [],
+    disclosure: hasDisclosure ? { role: "button", expanded, namedAction: true, focusable: true } : null,
+  };
+}
+
+function watchClicks(selectors: readonly [string, string]): void {
+  const root = document.getElementById("cf")?.shadowRoot;
+  const scope = window as unknown as { __copyClicks: unknown[]; __copyFieldOff?: (() => void)[] };
+  const clicks: unknown[] = [];
+  scope.__copyClicks = clicks;
+  const listener = (event: MouseEvent): void => {
+    const [copy, reveal] = selectors.map((selector) => root?.querySelector(selector));
+    const path = event.composedPath();
+    const button = copy && path.includes(copy) ? "copy" : reveal && path.includes(reveal) ? "reveal" : null;
+    if (button !== null) clicks.push({ button, trusted: event.isTrusted, detail: event.detail });
+  };
+  document.addEventListener("click", listener, { capture: true });
+  (scope.__copyFieldOff ??= []).push(() => {
+    document.removeEventListener("click", listener, { capture: true });
+  });
+}
+
+function recordedClicks(): unknown[] {
+  return (window as unknown as { __copyClicks?: unknown[] }).__copyClicks ?? [];
+}
+
+async function beginPresentation(driver: Driver, inPage: InPage, presentation: Presentation): Promise<void> {
+  await mount(driver, inPage, identifierPage(presentation));
+  if (presentation === "revealed") await activate(driver, inPage, revealButton, "pointer");
+}
+
+function presentedGroups(presentation: Presentation): string[] {
+  return presentation === "compact" ? previewGroups : fullGroups;
+}
+
+function statusHistory(updates: readonly { role: string; text: string }[]): string[] {
+  const texts = updates.filter(({ role }) => role === "status").map(({ text }) => text);
+  return texts.filter((text, index) => index === 0 || text !== texts[index - 1]);
+}
+
+const identifierScenarios: readonly CopyFieldScenario[] = [
+  {
+    name: "#89 FR-002: prefixed and unprefixed runs expose break opportunities only between units and start each wrapped line flush",
+    fixture: false,
+    run: async (driver, inPage) => {
+      const observations: unknown[] = [];
+      const constrain = (width: string): Promise<void> =>
+        driver.rules(`#cf { inline-size: calc(var(--ocelle-target-min) + 2 * var(--ocelle-space-3) + 2 * var(--ocelle-border-width) + ${width}); }`);
+      for (const value of ["123456789012", "123:123456789012"]) {
+        await mount(driver, inPage, page(`grouped value="${value}"`));
+        const wide = await inPage(visibleText, "cf");
+        // Five tabular digits fit an intact four-character unit and its gap, but no adjacent pair.
+        await constrain("5ch");
+        const wrapped = await inPage(visibleText, "cf");
+        const layout = await inPage(() => {
+          const well = document.getElementById("cf")?.shadowRoot?.querySelector('[part~="value"]');
+          if (well === undefined || well === null) return null;
+          const units = [...(well.firstElementChild?.children ?? [])];
+          return {
+            flow: units.map((unit) => unit.localName === "wbr" ? "soft break" : unit.textContent),
+            left: well.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(well).paddingLeft),
+            inside: well.scrollWidth <= well.clientWidth,
+          };
+        }, null);
+        observations.push({
+          flow: layout?.flow,
+          wrapped: wrapped.map(({ text, rects }, index) => ({
+            text,
+            intact: rects.length === 1,
+            flush: layout !== null && rects[0] !== undefined && Math.abs(rects[0].left - layout.left) < 0.5,
+            nextLine: index === 0 ? rects[0]?.top === wide[0]?.rects[0]?.top : (rects[0]?.top ?? 0) > (wrapped[index - 1]?.rects[0]?.top ?? 0),
+          })),
+          inside: layout?.inside,
+        });
+      }
+      await mount(driver, inPage, identifierPage("grouped"));
+      const [widePrefix, wideFirst] = await inPage(visibleText, "cf");
+      // Fit the measured prefix and gap together without fitting the first body group on that line.
+      const prefixAndGap = (wideFirst?.rects[0]?.left ?? 0) - (widePrefix?.rects[0]?.left ?? 0);
+      await constrain(`${String(prefixAndGap + 1)}px`);
+      const [prefix, first] = await inPage(visibleText, "cf");
+      return {
+        observations,
+        nearFit: {
+          prefix: prefix?.text,
+          intact: prefix?.rects.length === 1,
+          nextLine: (first?.rects[0]?.top ?? 0) > (prefix?.rects[0]?.top ?? 0),
+          first: first?.text,
+        },
+      };
+    },
+    expected: {
+      observations: [
+        { flow: ["1234", "soft break", "5678", "soft break", "9012"], wrapped: ["1234", "5678", "9012"].map((text) => ({ text, intact: true, flush: true, nextLine: true })), inside: true },
+        { flow: ["123:", "soft break", "1234", "soft break", "5678", "soft break", "9012"], wrapped: ["123:", "1234", "5678", "9012"].map((text) => ({ text, intact: true, flush: true, nextLine: true })), inside: true },
+      ],
+      nearFit: { prefix: "ni:sha-256:", intact: true, nextLine: true, first: "aB😀c" },
+    },
+  },
+  {
+    name: "#89 FR-001/002: grouped Copy shows the last-colon prefix, four Unicode code points per group and the short end; the same plain value preserves its whitespace and Copy behavior",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, `${identifierPage("grouped")}<ocelle-copy-field id="plain" value="${rawIdentifier}"></ocelle-copy-field>`);
+      const units = await inPage(visibleText, "cf");
+      const gaps = units.slice(1).map((unit, index) => {
+        const previous = units[index]?.rects.at(-1);
+        const current = unit.rects[0];
+        return current !== undefined && previous?.top === current.top && current.left > previous.right;
+      });
+      const selected = await nativeSelection(driver, inPage);
+      await inPage(recordRequests, null);
+      await clickControl(driver, inPage);
+      await inPage(frames, undefined);
+      return {
+        groups: units.map(({ text }) => text),
+        gaps,
+        fonts: [...new Set(units.map(({ font, figures }) => `${font} / ${figures}`))],
+        selected,
+        groupedAX: await reading(driver, inPage),
+        plain: {
+          text: await shown(inPage, "plain"),
+          style: await driver.computedPart("plain", "value", "white-space"),
+          wrap: await driver.computedPart("plain", "value", "overflow-wrap"),
+          copy: (await driver.axState("plain", copyButton)).name,
+        },
+        requests: await inPage(recordedRequests, null),
+      };
+    },
+    expected: {
+      groups: fullGroups,
+      gaps: [true, true, true],
+      fonts: [`${fontFamily} / tabular-nums`],
+      selected: identifier,
+      groupedAX: { ...identifierReading(), actionName: "" },
+      plain: { text: [rawIdentifier], style: "pre-wrap", wrap: "anywhere", copy: "Copy" },
+      requests: [request(rawIdentifier)],
+    },
+  },
+  ...(["grouped", "compact", "revealed"] as const).map((presentation): CopyFieldScenario => ({
+    name: `#89 FR-002/003: native copy and paste reproduce the ${presentation} selection verbatim`,
+    fixture: false,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, `${identifierPage(presentation)}<textarea id="paste" aria-label="Paste inspector"></textarea>`);
+      if (presentation === "revealed") await activate(driver, inPage, revealButton, "pointer");
+      const selection = await nativeSelection(driver, inPage);
+      await driver.pressKeys("c", ["Control"]);
+      await driver.focusNode("paste");
+      await driver.pressKeys("v", ["Control"]);
+      return {
+        selection,
+        paste: await inPage(() => document.querySelector<HTMLTextAreaElement>("#paste")?.value, null),
+      };
+    },
+    expected: { selection: presentedGroups(presentation).join(""), paste: presentedGroups(presentation).join("") },
+  })),
+  {
+    name: "#89 FR-002/003: compact alone and internal whitespace keep plain rendering, while short, prefix-only and empty grouped identifiers have no disclosure",
+    fixture: false,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(`compact value="${rawIdentifier}"`));
+      const read = async (): Promise<unknown> => ({
+        shown: await shown(inPage),
+        buttons: (await driver.axStates("cf", "subtree")).filter(({ role }) => role === "button").map(({ name, disabled }) => [name, disabled === true]),
+      });
+      const compactAlone = await read();
+      await driver.setAttribute("cf", "grouped", "");
+      await driver.setProperty("cf", "value", "  pnpm  run build  ");
+      const whitespace = await read();
+      await driver.setProperty("cf", "value", "  ni:sha-256:  ");
+      const prefixOnly = await read();
+      await driver.setProperty("cf", "value", "  Code:1234Ab  ");
+      const twoGroups = await read();
+      await driver.setProperty("cf", "value", "  X1z  ");
+      const oneGroup = await read();
+      await inPage(recordRequests, null);
+      await driver.setProperty("cf", "value", "");
+      const empty = await read();
+      await clickControl(driver, inPage);
+      await driver.setAttribute("cf", "value", null);
+      const missing = await read();
+      await clickControl(driver, inPage);
+      await inPage(frames, undefined);
+      return { compactAlone, whitespace, prefixOnly, twoGroups, oneGroup, empty, missing, requests: await inPage(recordedRequests, null) };
+    },
+    expected: {
+      compactAlone: { shown: [rawIdentifier], buttons: [["Copy", false]] },
+      whitespace: { shown: ["  pnpm  run build  "], buttons: [["Copy", false]] },
+      prefixOnly: { shown: ["ni:sha-256:"], buttons: [["Copy", false]] },
+      twoGroups: { shown: ["Code:", "1234", "Ab"], buttons: [["Copy", false]] },
+      oneGroup: { shown: ["X1z"], buttons: [["Copy", false]] },
+      empty: { shown: [], buttons: [["Copy", true]] },
+      missing: { shown: [], buttons: [["Copy", true]] },
+      requests: [],
+    },
+  },
+  {
+    name: "#89 FR-001/003: the grouped and compact properties opt in independently and can return the same field to its plain value",
+    fixture: false,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(`value="${rawIdentifier}"`));
+      const defaults = await inPage(() => {
+        const field = document.getElementById("cf") as (HTMLElement & { grouped: boolean; compact: boolean }) | null;
+        return [field?.grouped, field?.compact];
+      }, null);
+      const plain = await shown(inPage);
+      await driver.setProperty("cf", "grouped", true);
+      const grouped = await shown(inPage);
+      await driver.setProperty("cf", "compact", true);
+      const compact = await shown(inPage);
+      await driver.setProperty("cf", "grouped", false);
+      return { defaults, plain, grouped, compact, restored: await shown(inPage) };
+    },
+    expected: { defaults: [false, false], plain: [rawIdentifier], grouped: fullGroups, compact: previewGroups, restored: [rawIdentifier] },
+  },
+  {
+    name: "#89 FR-002: a prefix stays in one unit when it fits and can wrap within itself when it cannot fit the line",
+    fixture: false,
+    run: async (driver, inPage) => {
+      const prefix = `urn:${"a".repeat(44)}:`;
+      const start = await inPage(() => [window.innerWidth, window.innerHeight] as const, null);
+      await mount(driver, inPage, page(`grouped value="${prefix}qB01xY23"`));
+      const wide = await inPage(visibleText, "cf");
+      try {
+        await driver.setViewportSize(320, 640);
+        const narrow = await inPage(visibleText, "cf");
+        return {
+          wide: wide.map(({ text, rects }) => [text, rects.length === 1]),
+          narrow: narrow.map(({ text, rects }) => [text, rects.length === 1]),
+          sideways: await inPage(() => document.documentElement.scrollWidth > document.documentElement.clientWidth, null),
+        };
+      } finally {
+        await driver.setViewportSize(...start);
+      }
+    },
+    expected: {
+      wide: [[`urn:${"a".repeat(44)}:`, true], ["qB01", true], ["xY23", true]],
+      narrow: [[`urn:${"a".repeat(44)}:`, false], ["qB01", true], ["xY23", true]],
+      sideways: false,
+    },
+  },
+  {
+    name: "#89 FR-002/003: a numeric identifier in RTL keeps its prefix, ellipsis and groups physically left to right on one line, including after reveal",
+    fixture: false,
+    run: async (driver, inPage) => {
+      const numeric = "123:123456789012";
+      await mount(driver, inPage, `${page(`dir="rtl" grouped compact value="${numeric}"`)}<ocelle-copy-field id="plain" dir="rtl" value="${numeric}"></ocelle-copy-field>`);
+      const measure = async (): Promise<unknown> => {
+        const runs = await inPage(visibleText, "cf");
+        const onOneLine = runs.every(({ rects }) => rects.length === 1 && rects[0]?.top === runs[0]?.rects[0]?.top);
+        const physical = runs.slice().sort((a, b) => (a.rects[0]?.left ?? 0) - (b.rects[0]?.left ?? 0)).map(({ text }) => text);
+        return { onOneLine, physical, treeOrder: runs.map(({ text }) => text), copy: (await driver.axState("cf", copyButton)).name };
+      };
+      const compact = await measure();
+      await activate(driver, inPage, revealButton, "pointer");
+      const revealed = await measure();
+      const surrounding = await inPage((selector) => ["cf", "plain"].map((id) => {
+        const field = document.getElementById(id);
+        const copy = field?.shadowRoot?.querySelector(selector)?.getBoundingClientRect();
+        const value = field?.shadowRoot?.querySelector('[part~="value"]')?.getBoundingClientRect();
+        return { direction: field === null ? null : getComputedStyle(field).direction, copyOnLeft: copy !== undefined && value !== undefined && copy.right <= value.left };
+      }), copyButton);
+      return { compact, revealed, surrounding, plainValueDirection: await driver.computedPart("plain", "value", "direction") };
+    },
+    expected: {
+      compact: { onOneLine: true, physical: ["123:", "1234", "…", "9012"], treeOrder: ["123:", "1234", "…", "9012"], copy: "Copy" },
+      revealed: { onOneLine: true, physical: ["123:", "1234", "5678", "9012"], treeOrder: ["123:", "1234", "5678", "9012"], copy: "Copy" },
+      surrounding: [{ direction: "rtl", copyOnLeft: true }, { direction: "rtl", copyOnLeft: true }],
+      plainValueDirection: "rtl",
+    },
+  },
+  ...methods.map((method): CopyFieldScenario => ({
+    name: `#89 FR-003/004: ${methodName(method)} reveals and recompacts with the same named native disclosure, complete Chromium reading, next Tab stops and untouched Copy status`,
+    fixture: true,
+    run: async (driver, inPage) => {
+      await beginPresentation(driver, inPage, "compact");
+      await driver.setProperty("cf", "status", copied);
+      await inPage(saveButtons, buttons);
+      await inPage(recordRequests, null);
+      await inPage(watchClicks, buttons);
+      await inPage(watchRegion, null);
+      const stop = await driver.axUpdates("cf");
+      const names: string[] = [];
+      const state = async (): Promise<unknown> => {
+        const { actionName, ...ax } = await reading(driver, inPage);
+        names.push(actionName);
+        return { groups: await shown(inPage), ax, status: await inPage(statusOf, null), live: await inPage(regionText, null) };
+      };
+      const compact = await state();
+      const selection = { compact: await nativeSelection(driver, inPage), revealed: "" };
+      await driver.focusNode("before");
+      await driver.pressKeys("Tab");
+      const first = await inPage(buttonIdentity, buttons);
+      await activate(driver, inPage, revealButton, method);
+      await inPage(frames, undefined);
+      const active = await inPage(buttonIdentity, buttons);
+      const revealed = await state();
+      await driver.pressKeys("Tab");
+      const next = await driver.focusedElement();
+      await driver.pressKeys("Tab");
+      const nextExternal = await driver.focusedElement();
+      selection.revealed = await nativeSelection(driver, inPage);
+      await driver.focusNode("before");
+      await driver.pressKeys("Tab");
+      await activate(driver, inPage, revealButton, method);
+      await inPage(frames, undefined);
+      const restored = await state();
+      const recompact = await inPage(buttonIdentity, buttons);
+      await driver.pressKeys("Tab");
+      const nextCollapsed = await driver.focusedElement();
+      await driver.pressKeys("Tab");
+      return {
+        compact,
+        first,
+        active,
+        revealed,
+        next,
+        nextExternal,
+        restored,
+        recompact,
+        nextCollapsed,
+        externalAfterCollapse: await driver.focusedElement(),
+        actionNameChangesAndReturns: names[0] !== names[1] && names[0] === names[2],
+        selection,
+        clicks: await inPage(recordedClicks, null),
+        requests: await inPage(recordedRequests, null),
+        mutations: await inPage(regionMutations, null),
+        announcements: statusHistory(await stop()).filter((text) => text !== copied),
+      };
+    },
+    expected: {
+      compact: { groups: previewGroups, ax: identifierReading(false, copied), status: copied, live: copied },
+      first: { copy: true, reveal: true, focus: "reveal" },
+      active: { copy: true, reveal: true, focus: "reveal" },
+      revealed: { groups: fullGroups, ax: identifierReading(true, copied), status: copied, live: copied },
+      next: control,
+      nextExternal: { id: "after" },
+      restored: { groups: previewGroups, ax: identifierReading(false, copied), status: copied, live: copied },
+      recompact: { copy: true, reveal: true, focus: "reveal" },
+      nextCollapsed: control,
+      externalAfterCollapse: { id: "after" },
+      actionNameChangesAndReturns: true,
+      selection: { compact: previewGroups.join(""), revealed: identifier },
+      clicks: Array.from({ length: 2 }, () => ({ button: "reveal", trusted: true, detail: method === "pointer" ? 1 : 0 })),
+      requests: [],
+      mutations: [],
+      announcements: [],
+    },
+  })),
+  {
+    name: "#89 FR-003: host replacement preserves a same-value reveal, resets a different eligible preview, and moves or retains focus as the controls change",
+    fixture: false,
+    run: async (driver, inPage) => {
+      await beginPresentation(driver, inPage, "compact");
+      await driver.setProperty("cf", "status", copied);
+      await inPage(saveButtons, buttons);
+      await driver.focusNode("before");
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("Enter");
+      const read = async (): Promise<unknown> => ({
+        groups: await shown(inPage),
+        identity: await inPage(buttonIdentity, buttons),
+        status: await inPage(statusOf, null),
+      });
+      await driver.setProperty("cf", "value", rawIdentifier);
+      const same = await read();
+      await driver.setAttribute("cf", "value", "next:Ab123456Zz98");
+      const eligible = await read();
+      await driver.setProperty("cf", "value", "next:Ab12");
+      const enabled = await read();
+      await driver.setProperty("cf", "value", rawIdentifier);
+      await driver.focusNode("before");
+      await driver.pressKeys("Tab");
+      await driver.setProperty("cf", "value", "");
+      const fallback = await inPage(() => {
+        const field = document.getElementById("cf");
+        const target = document.activeElement === field ? field?.shadowRoot?.activeElement ?? field : null;
+        if (!(target instanceof HTMLElement)) return null;
+        (window as unknown as { __copyFallback?: HTMLElement }).__copyFallback = target;
+        const box = target.getBoundingClientRect();
+        return {
+          visible: box.width > 0 && box.height > 0 && target.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+          keyboardFocus: target.matches(":focus-visible"),
+          tabIndex: target.tabIndex,
+          attribute: target.getAttribute("tabindex"),
+        };
+      }, null);
+      const disabled = { ...(await inPage(buttonIdentity, buttons)), copyDisabled: (await driver.axState("cf", copyButton)).disabled, fallback };
+      await driver.pressKeys("Tab");
+      const afterDisabled = await driver.focusedElement();
+      const released = await inPage(() => {
+        const scope = window as unknown as { __copyFallback?: HTMLElement };
+        const target = scope.__copyFallback;
+        delete scope.__copyFallback;
+        return target === undefined ? null : { retained: target.isConnected, attribute: target.getAttribute("tabindex") };
+      }, null);
+      await driver.setProperty("cf", "value", rawIdentifier);
+      await driver.setProperty("cf", "value", "next:Ab12");
+      return { same, eligible, enabled, disabled, afterDisabled, released, external: await driver.focusedElement() };
+    },
+    expected: {
+      same: { groups: fullGroups, identity: { copy: true, reveal: true, focus: "reveal" }, status: copied },
+      eligible: { groups: ["next:", "Ab12", "…", "Zz98"], identity: { copy: true, reveal: true, focus: "reveal" }, status: "" },
+      enabled: { groups: ["next:", "Ab12"], identity: { copy: true, reveal: false, focus: "copy" }, status: "" },
+      disabled: {
+        copy: true, reveal: false, focus: "retained", copyDisabled: true,
+        fallback: { visible: true, keyboardFocus: true, tabIndex: -1, attribute: "-1" },
+      },
+      afterDisabled: { id: "after" },
+      released: { retained: true, attribute: null },
+      external: { id: "after" },
+    },
+  },
+  ...(["grouped", "compact", "revealed"] as const).flatMap((presentation) => methods.map((method): CopyFieldScenario => ({
+    name: `#89 FR-004: ${presentation} ${methodName(method)} Copy takes the raw activation value, clears the region before deferred dispatch and announces the host outcome once`,
+    fixture: presentation !== "grouped" && method === "pointer",
+    run: async (driver, inPage) => {
+      await beginPresentation(driver, inPage, presentation);
+      const initial = await shown(inPage);
+      await driver.setProperty("cf", "status", copied);
+      if (method !== "pointer") {
+        await driver.focusNode("before");
+        await driver.pressKeys("Tab");
+        if (presentation !== "grouped") await driver.pressKeys("Tab");
+      }
+      const readActivation = await driver.activationRecord("cf", activationOptions);
+      await inPage(recordRequests, null);
+      await inPage(watchClicks, buttons);
+      await inPage(watchRegion, null);
+      await inPage((selector) => {
+        const field = document.getElementById("cf") as (HTMLElement & { value: string }) | null;
+        const copy = field?.shadowRoot?.querySelector(selector);
+        const listener = (event: Event): void => {
+          if (field && copy && event.composedPath().includes(copy)) field.value = "next:Ff112233ABcd";
+        };
+        document.addEventListener("click", listener);
+        const scope = window as unknown as { __copyFieldOff?: (() => void)[] };
+        (scope.__copyFieldOff ??= []).push(() => {
+          document.removeEventListener("click", listener);
+        });
+      }, copyButton);
+      await inPage(answerWith, copied);
+      const stop = await driver.axUpdates("cf");
+      await activate(driver, inPage, copyButton, method);
+      const order = await readActivation();
+      await inPage(frames, undefined);
+      return {
+        initial,
+        order,
+        clicks: await inPage(recordedClicks, null),
+        requests: await inPage(recordedRequests, null),
+        replaced: await shown(inPage),
+        mutations: await inPage(regionMutations, null),
+        announcements: statusHistory(await stop()),
+        status: await inPage(statusOf, null),
+        live: await inPage(regionText, null),
+      };
+    },
+    expected: {
+      initial: presentedGroups(presentation),
+      order: [
+        { entry: "activation", requests: 0, text: copied, value: copied },
+        { entry: "activation end", requests: 0, text: "", value: "" },
+        { entry: "frame", requests: 0, text: "", value: "" },
+        { entry: "request", requests: 0, text: "", value: "" },
+      ],
+      clicks: [{ button: "copy", trusted: true, detail: method === "pointer" ? 1 : 0 }],
+      requests: [request(rawIdentifier)],
+      replaced: presentation === "grouped" ? ["next:", "Ff11", "2233", "ABcd"] : ["next:", "Ff11", "…", "ABcd"],
+      mutations: ["", copied],
+      announcements: ["", copied],
+      status: copied,
+      live: copied,
+    },
+  }))),
+  ...(["compact", "revealed"] as const).map((presentation): CopyFieldScenario => ({
+    name: `#89 FR-004: ${presentation} Copy receives two trusted clicks before dispatch, preserves each raw request and announces an identical host outcome once`,
+    fixture: false,
+    run: async (driver, inPage) => {
+      await beginPresentation(driver, inPage, presentation);
+      const initial = await shown(inPage);
+      await driver.setProperty("cf", "status", copied);
+      const readActivation = await driver.activationRecord("cf", activationOptions);
+      await inPage(recordRequests, null);
+      await inPage(watchClicks, buttons);
+      await inPage(watchRegion, null);
+      await inPage(({ selector, value }) => {
+        const field = document.getElementById("cf") as (HTMLElement & { value: string }) | null;
+        const copy = field?.shadowRoot?.querySelector(selector);
+        const listener = (event: MouseEvent): void => {
+          if (field && copy && event.detail === 1 && event.composedPath().includes(copy)) field.value = value;
+        };
+        document.addEventListener("click", listener);
+        const scope = window as unknown as { __copyFieldOff?: (() => void)[] };
+        (scope.__copyFieldOff ??= []).push(() => {
+          document.removeEventListener("click", listener);
+        });
+      }, { selector: copyButton, value: nextRawIdentifier });
+      await inPage(answerWith, copied);
+      const stop = await driver.axUpdates("cf");
+      await clickAt(driver, inPage, copyButton, 2);
+      const order = await readActivation();
+      await inPage(frames, undefined);
+      return {
+        initial,
+        atClick: order.filter(({ entry }) => entry === "activation end").map(({ requests, text }) => [requests, text]),
+        atRequest: order.filter(({ entry }) => entry === "request").map(({ requests, text }) => [requests, text]),
+        framesBeforeDispatch: order.some(({ entry, requests, text }) => entry === "frame" && requests === 0 && text === ""),
+        clicks: await inPage(recordedClicks, null),
+        requests: await inPage(recordedRequests, null),
+        mutations: await inPage(regionMutations, null),
+        announcements: statusHistory(await stop()),
+        final: await inPage(regionText, null),
+      };
+    },
+    expected: {
+      initial: presentedGroups(presentation),
+      atClick: [[0, ""], [0, ""]],
+      atRequest: [[0, ""], [1, copied]],
+      framesBeforeDispatch: true,
+      clicks: [{ button: "copy", trusted: true, detail: 1 }, { button: "copy", trusted: true, detail: 2 }],
+      requests: [request(rawIdentifier), request(nextRawIdentifier, copied)],
+      mutations: ["", copied],
+      announcements: ["", copied],
+      final: copied,
+    },
+  })),
+  {
+    name: "#89 FR-004: grouped Copy delivers a connected request and drops a second activation when the host disconnects it before dispatch",
+    fixture: false,
+    run: async (driver, inPage) => {
+      await beginPresentation(driver, inPage, "grouped");
+      const initial = await shown(inPage);
+      await inPage(recordRequests, null);
+      await inPage(() => {
+        const own: unknown[] = [];
+        (window as unknown as { __groupedRequests: unknown[] }).__groupedRequests = own;
+        document.getElementById("cf")?.addEventListener("ocelle-copy-field-request", (event) => own.push((event as CustomEvent<unknown>).detail));
+      }, null);
+      await clickControl(driver, inPage);
+      await inPage(frames, undefined);
+      await inPage((selector) => {
+        const field = document.getElementById("cf");
+        const copy = field?.shadowRoot?.querySelector(selector);
+        const listener = (event: Event): void => {
+          if (copy && event.composedPath().includes(copy)) field?.remove();
+        };
+        document.addEventListener("click", listener);
+        const scope = window as unknown as { __copyFieldOff?: (() => void)[] };
+        (scope.__copyFieldOff ??= []).push(() => {
+          document.removeEventListener("click", listener);
+        });
+      }, copyButton);
+      await clickControl(driver, inPage);
+      await inPage(frames, undefined);
+      return {
+        initial,
+        disconnected: await inPage(() => document.getElementById("cf") === null, null),
+        document: await inPage(recordedRequests, null),
+        field: await inPage(() => (window as unknown as { __groupedRequests: unknown[] }).__groupedRequests, null),
+      };
+    },
+    expected: { initial: fullGroups, disconnected: true, document: [request(rawIdentifier)], field: [{ text: rawIdentifier }] },
+  },
+];
+
+const reflowPrefix = "urn:ocelle:sample-fixture-record:";
+const reflowBody = ["W9zP", "A234", "B567", "C890", "De12", "F345", "G678", "H901", "J234", "K567", "Li89", "Mn01"];
+const reflowFull = [reflowPrefix, ...reflowBody];
+const reflowPreview = [reflowPrefix, "W9zP", "…", "Mn01"];
+const displayModes = ["light", "dark", "forced colours"] as const;
+type DisplayMode = (typeof displayModes)[number];
+
+async function focusedControlPaint(driver: Driver, inPage: InPage, selector: string, display: DisplayMode): Promise<unknown> {
+  const box = await driver.box("cf", selector);
+  if (box.width === 0 || box.height === 0) return null;
+  const computed = await inPage((selector) => {
+    const button = document.getElementById("cf")?.shadowRoot?.querySelector(selector);
+    if (button === null || button === undefined) return null;
+    const style = getComputedStyle(button);
+    const target = document.getElementById("target-size")?.getBoundingClientRect().width ?? Infinity;
+    const rect = button.getBoundingClientRect();
+    return {
+      native: button instanceof HTMLButtonElement,
+      active: button.matches(":focus-visible"),
+      outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineOffset}`,
+      target: target > 0 && rect.width >= target && rect.height >= target,
+    };
+  }, selector);
+  const ring = display === "forced colours" ? await driver.resolveColour("Highlight") : display === "dark" ? focusDark : focusLight;
+  const s = await shot(driver);
+  const samples = [
+    [box.x + box.width / 2, box.y - 3.5],
+    [box.x + box.width + 3.5, box.y + box.height / 2],
+    [box.x + box.width / 2, box.y + box.height + 3.5],
+    [box.x - 3.5, box.y + box.height / 2],
+  ] as const;
+  const forcedGrounds = display === "forced colours" ? await Promise.all([driver.resolveColour("Canvas"), driver.resolveColour("ButtonFace")]) : [];
+  const paints = forcedGrounds.length === 0 ? [ring] : forcedGrounds.map((ground) => over(ring, ground));
+  return {
+    ...computed,
+    paint: samples.map(([x, y]) => x >= s.x && y >= s.y && (x - s.x) * s.scale < s.image.width && (y - s.y) * s.scale < s.image.height && paints.includes(colourAt(s, x, y))),
+  };
+}
+
+const minimumFocusPaint = { native: true, active: true, outline: "solid 3px 2px", target: true, paint: [true, true, true, true] };
+
+const reflowScenarios = displayModes.flatMap((display) => (["grouped", "compact", "revealed"] as const).flatMap((presentation) => ([false, true] as const).map((enlarged): CopyFieldScenario => ({
+  name: `#89 FR-005: ${presentation} wraps intact groups and paints its keyboard focus in ${display} at ${enlarged ? "200% computed text at a fixed 420 px viewport" : "320 px with normal text"}`,
+  fixture: false,
+  run: async (driver, inPage) => {
+    const start = await inPage(() => [window.innerWidth, window.innerHeight] as const, null);
+    const width = enlarged ? 420 : 320;
+    await mount(driver, inPage, `${page(`grouped ${presentation === "grouped" ? "" : "compact"} value="${reflowFull.join("")}"`)}<div id="target-size" hidden></div>`);
+    try {
+      if (display === "dark") await driver.theme("dark");
+      if (display === "forced colours") await driver.forcedColors("active", "light");
+      await driver.setViewportSize(width, 720);
+      // Measure the current token through the layout engine so it scales with the document font.
+      await driver.rules("#target-size { position: absolute; visibility: hidden; display: block; inline-size: var(--ocelle-target-min); }");
+      if (presentation === "revealed") {
+        await driver.focusNode("before");
+        await driver.pressKeys("Tab");
+        await driver.pressKeys("Enter");
+      }
+      const fontSizes = async (): Promise<number[]> => inPage((selector) => {
+        const root = document.getElementById("cf")?.shadowRoot;
+        return [
+          root?.querySelector('[part~="value"]'),
+          root?.querySelector(selector),
+        ].filter((node) => node !== null && node !== undefined).map((node) => Number.parseFloat(getComputedStyle(node).fontSize));
+      }, revealButton);
+      const baseline = await fontSizes();
+      if (enlarged) await driver.rules("html { font-size: 200%; }");
+      const computed = await fontSizes();
+      const runs = await inPage(visibleText, "cf");
+      const layout = await inPage(() => {
+        const host = document.getElementById("cf");
+        const value = host?.shadowRoot?.querySelector('[part~="value"]');
+        const client = document.documentElement.clientWidth;
+        return {
+          viewport: window.innerWidth,
+          page: document.documentElement.scrollWidth <= client,
+          field: host !== null && host.clientWidth > 0 && host.scrollWidth <= host.clientWidth && host.getBoundingClientRect().right <= client,
+          value: value !== null && value !== undefined && value.clientWidth > 0 && value.scrollWidth <= value.clientWidth,
+        };
+      }, null);
+      await driver.focusNode("before");
+      await driver.pressKeys("Tab");
+      const reveal = presentation === "grouped" ? null : await focusedControlPaint(driver, inPage, revealButton, display);
+      if (presentation !== "grouped") await driver.pressKeys("Tab");
+      const copy = await focusedControlPaint(driver, inPage, copyButton, display);
+      return {
+        layout,
+        groups: runs.map(({ text }) => text),
+        intact: runs.length > 1 && runs.slice(1).every(({ rects }) => rects.length === 1),
+        wraps: new Set(runs.flatMap(({ rects }) => rects.map(({ top }) => Math.round(top)))).size > 1,
+        textScaling: computed.map((size, index) => size / (baseline[index] ?? 1)),
+        groupScaling: runs.length > 1 && runs.every(({ size }) => size === computed[0]),
+        reveal,
+        copy,
+      };
+    } finally {
+      if (display === "forced colours") await driver.forcedColors("none");
+      await driver.setViewportSize(...start);
+    }
+  },
+  expected: {
+    layout: { viewport: enlarged ? 420 : 320, page: true, field: true, value: true },
+    groups: presentation === "compact" ? reflowPreview : reflowFull,
+    intact: true,
+    wraps: true,
+    textScaling: presentation === "grouped" ? [enlarged ? 2 : 1] : [enlarged ? 2 : 1, enlarged ? 2 : 1],
+    groupScaling: true,
+    reveal: presentation === "grouped" ? null : minimumFocusPaint,
+    copy: minimumFocusPaint,
+  },
+}))));
+
+export const copyFieldScenarios: readonly CopyFieldScenario[] = [...plainCopyFieldScenarios, ...identifierScenarios, ...reflowScenarios];

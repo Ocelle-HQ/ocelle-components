@@ -8,10 +8,10 @@ import { inProcessDriver } from "./in-process.ts";
 import { copyFieldScenarios } from "./scenarios/copy-field.ts";
 import type { InPage } from "./scenarios/driver.ts";
 
-// User Story 4's browser scenarios for `ocelle-copy-field`, in process on the element source (014 research.md R-07,
-// R-11, T078): every shared body of scenarios/copy-field.ts on the in-process driver, each with no clipboard call by the
-// page at its end (SC-006); the same bodies run on the built browser build on the strict-CSP fixture in
-// test/browser/copy-field.test.ts. Importing src/ocelle-copy-field.ts defines the field and `ocelle-icon` (R-16). Then
+// Plain and grouped identifier scenarios run in process on the element source (014 US4, 035 T002). Each case
+// also checks for zero programmatic clipboard calls. Shared cases marked for the fixture run against the built
+// package under strict CSP in test/browser/copy-field.test.ts. Importing src/ocelle-copy-field.ts defines the
+// field and `ocelle-icon` (014 R-16). Then
 // the in-process case of two copies of the package (spec Edge Cases): a second class defined under the tag through the
 // package's guarded `define` throws nothing and leaves the first, whose field still requests. And axe-core, the version
 // the axe gate pins, run in process on a field with a status and on an empty one (research.md R-01): it reads the
@@ -24,11 +24,12 @@ afterEach(async () => {
   await commands.emulateForcedColors("none");
 });
 
-describe("ocelle-copy-field, in process (US4)", () => {
+describe("ocelle-copy-field, in process", () => {
   for (const { name, run, expected } of copyFieldScenarios) {
     it(name, async () => {
       const observed = await run(driver, inPage);
-      expect({ observed, clipboard: await driver.clipboardCalls() }).toEqual({ observed: expected, clipboard: [] });
+      expect(await driver.clipboardCalls(), "the component makes no programmatic clipboard calls").toEqual([]);
+      expect(observed, "the source copy field meets the browser scenario").toEqual(expected);
     });
   }
 

@@ -1,0 +1,28 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 2
+    title: "The planned return to compact mode has no acceptance case"
+    evidence:
+      - artifact: "plan.md:9 promises that activating the expanded button returns to compact. spec.md:27–32 and plan.md:17 only exercise activation from compact to revealed."
+      - code: "packages/elements/test/scenarios/disclosure.ts:331–362 tests closing by pointer and keyboard. Its keyboard case uses Enter to open and Space to close the same control."
+    claim: |
+      An expanded button with an action name such as “Show less” can pass the current checks even if it does nothing when activated. An implementation that collapses can also lose focus, clear the outcome, or change the accessibility reading on that path without failing the planned one-way assertions.
+    remedies:
+      - "Carry the plan's reversible disclosure into User Story 2 and Phase 1. Test a second native activation on the same button restoring the first and last groups and ellipsis, exposing its collapsed state and action name, retaining keyboard focus and the single full accessibility reading, and keeping Copy and the host outcome intact."
+
+  - id: PLAN-FRESH-1-002
+    severity: 2
+    title: "The announcement guarantee needs to account for overlapping Copy activations"
+    evidence:
+      - artifact: "spec.md:21,39,51 promises exact requests and a single outcome announcement while preserving the existing protocol. plan.md:9,17 retains the current clear and deferred dispatch."
+      - code: "packages/elements/src/ocelle-copy-field.ts:205–208,222–229 clears status synchronously on activation, suppresses writes of identical status text, and defers each request independently. packages/elements/test/scenarios/copy-field.ts:760–792 proves a trusted double click emits two requests but checks only their payloads."
+      - code: "Chromium 156.0.8078.79 probe with the current source, previous status 'Copied', a trusted double click, and a synchronous host listener setting 'Copied' for both requests: both clicks saw an empty region, the two request listeners saw '' and 'Copied', and the region mutated only 'Copied' → '' → 'Copied'."
+    claim: |
+      The clear belongs to the activation, so the first host result can refill the region before the second deferred request runs. If the new wording is applied to each overlapping request, the preserved implementation cannot deliver the promised empty region and announcement for each. A test author could inadvertently turn this feature into a change to the existing Copy scheduler.
+    remedies:
+      - "State that the clear and single announcement acceptance is for an isolated activation followed by its host outcome. Preserve exact per-activation requests for bursts and the existing identical-status no-op. Carry the existing trusted double-click payload/count case into an opted-in presentation and keep Copy scheduling unchanged for #89."
