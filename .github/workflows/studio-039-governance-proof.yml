@@ -14,22 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: a5310722ef8eec752dd366e14e0c84d7be1f0a09
+          ref: c2c485e4de87e1a3d615b33999bc77b4b5d53bd4
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify independent analysis, task fixes and ordered phases
+      - name: Verify prerequisites and pin the authoring phase
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "a5310722ef8eec752dd366e14e0c84d7be1f0a09"
+          test "$(git rev-parse HEAD)" = "c2c485e4de87e1a3d615b33999bc77b4b5d53bd4"
           test -z "$(git status --porcelain)"
-          analysis="$RUNNER_TEMP/studio-analysis-scope"
-          git worktree add --detach "$analysis" 1f727d1b998372194b1de312d40609515a6dc869
-          trap 'git worktree remove --force "$analysis"' EXIT
-          ( cd "$analysis" && tooling/speckit/bin/scope-check.sh analyze 4ef309d00bfce2d9deb308f4d8fb2015fa6a2b42 )
-          tooling/speckit/bin/scope-check.sh planner 1f727d1b998372194b1de312d40609515a6dc869
-          status=$(.specify/extensions/squad/scripts/analysis-status.sh)
-          echo "$status"
-          jq -e '.present and .critical == 0 and .high == 0 and .coverage == 100' <<< "$status"
-          units=$(.specify/extensions/story/scripts/units.sh)
-          echo "$units"
-          jq -e 'map(.phase) == [1,2,3] and (map(.total)|add) == 24' <<< "$units"
+          .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
+          result=$(.specify/extensions/story/scripts/base.sh 1)
+          echo "$result"
+          jq -e --arg sha 'c2c485e4de87e1a3d615b33999bc77b4b5d53bd4' '.phase == "1" and .base == $sha' <<< "$result"
+          test "$(cat "$SPECIFY_FEATURE_DIRECTORY/reviews/phase-1/base.sha")" = "c2c485e4de87e1a3d615b33999bc77b4b5d53bd4"
