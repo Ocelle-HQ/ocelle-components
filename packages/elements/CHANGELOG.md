@@ -405,6 +405,9 @@ An enabled interactive `ocelle-pill-tag` truncates a text that does not fit with
 
 ### Fixed
 
+- **App frame chrome (#109).** The default top bar no longer draws a lower divider. Applications can draw
+  their own pane separators through the shell's public CSS parts.
+
 - `ocelle-dialog` and `ocelle-drawer`: a link or other focusable element inside a closed `<details>` is no longer
   counted as a Tab stop, so Tab from the summary of a closed `<details>` at the end of the panel wraps to the panel's
   first stop instead of leaving the dialog (op 022, #57).

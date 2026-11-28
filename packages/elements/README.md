@@ -1924,6 +1924,9 @@ control in `skip-link`, and application actions in `actions`. The shell owns its
 The `main` part marks its content region, and `navigation` marks each rendered navigation wrapper. Set
 `flush-block-end` and `flush-inline-end` independently to remove the corresponding main padding.
 
+The top bar has no lower divider. Use host CSS to add any pane separator the app needs, for example
+by styling the shell's `main` part.
+
 ### Named regions and keyboard navigation
 
 A region with its own navigation landmark, such as a labelled `ocelle-personal-rail` or `ocelle-context-sidebar`,
