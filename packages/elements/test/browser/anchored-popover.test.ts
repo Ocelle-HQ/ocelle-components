@@ -215,3 +215,152 @@ it.each(["light", "dark"] as const)("keeps native focus visible in the %s forced
   }
   expect(recorded).toEqual(clean);
 }, 25_000);
+
+type PlacementEdge = "top" | "bottom";
+
+async function placementFixture(width: number, height: number): Promise<Visit> {
+  if (browser === undefined || server === undefined) throw new Error("the built placement fixture is unavailable");
+  const response = await fetch(`${server.origin}/${filename}`);
+  if (response.status !== 200 || response.headers.get("content-security-policy") !== policy) {
+    throw new Error("the packaged placement fixture did not serve the strict CSP header");
+  }
+  const seen = await visit(browser, server.origin, filename, ["anchored-popover.js"]);
+  await seen.page.setViewportSize({ width, height });
+  await seen.page.locator("html").evaluate((root) => { root.setAttribute("data-placement-fixture", "edges"); });
+  return seen;
+}
+
+async function openPlacement(page: Page, edge: PlacementEdge): Promise<void> {
+  const host = `placement-${edge}`;
+  await trigger(page, host).focus();
+  await page.keyboard.press("Enter");
+  expect(await openState(page, host), "the native key opens the strict-fixture popover").toBe(true);
+}
+
+function fitsPreferredSide(page: Page, edge: PlacementEdge): Promise<boolean> {
+  return page.locator(`#placement-${edge}`).evaluate((host, selected) => {
+    const button = host.shadowRoot?.querySelector("[part=trigger]");
+    const panel = host.shadowRoot?.querySelector("[part=surface]");
+    if (button == null || panel == null) return false;
+    const anchor = button.getBoundingClientRect();
+    const box = panel.getBoundingClientRect();
+    const outside = selected === "top" ? box.top >= anchor.bottom - 0.5 : box.bottom <= anchor.top + 0.5;
+    return outside && box.width > 0 && box.height > 0 && box.left >= -0.5 && box.top >= -0.5
+      && box.right <= innerWidth + 0.5 && box.bottom <= innerHeight + 0.5;
+  }, edge);
+}
+
+function pointAt(action: Locator): Promise<{ x: number; y: number }> {
+  return action.evaluate((element) => {
+    const { x, y, width, height } = element.getBoundingClientRect();
+    return { x: x + width / 2, y: y + height / 2 };
+  });
+}
+
+function pageScroll(page: Page): Promise<{ x: number; y: number; width: number; client: number }> {
+  return page.evaluate(() => ({ x: scrollX, y: scrollY, width: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+}
+
+async function scrollAndActivateLast(page: Page, edge: PlacementEdge): Promise<void> {
+  const host = `placement-${edge}`;
+  const panel = surface(page, host);
+  const scope = page.locator(`#${host}`);
+  const first = scope.locator("[data-first-action]");
+  const last = scope.locator("[data-last-action]");
+  const capacity = await panel.evaluate((element) => element.scrollHeight - element.clientHeight);
+  expect(capacity, "the last action starts past the edge of the constrained inner scroller").toBeGreaterThan(0);
+  const before = await pageScroll(page);
+  expect(before.width).toBe(before.client);
+  const start = await pointAt(first);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.wheel(0, capacity);
+  await expect.poll(() => panel.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect.poll(() => last.evaluate((element) => {
+    const panel = element.closest("ocelle-anchored-popover")?.shadowRoot?.querySelector("[part=surface]");
+    if (panel == null) return false;
+    const visible = panel.getBoundingClientRect();
+    const action = element.getBoundingClientRect();
+    return action.top >= visible.top - 0.5 && action.bottom <= visible.bottom + 0.5;
+  })).toBe(true);
+  const end = await pointAt(last);
+  await page.mouse.click(end.x, end.y);
+  expect(await last.getAttribute("data-trusted-clicks"), "a real hit reaches the last action after inner scrolling").toBe("1");
+  expect(await pageScroll(page), "scrolling the popover leaves the page width and scroll position alone").toEqual(before);
+}
+
+it.each(["top", "bottom"] as const)("anchors the %s strict fixture outside a transformed clip at 320 CSS px", async (edge) => {
+  const seen = await placementFixture(320, 440);
+  let recorded: Recorded;
+  try {
+    const { page } = seen;
+    expect(await page.evaluate(() => innerWidth)).toBe(320);
+    const clip = page.locator(`#placement-${edge}-clip`);
+    const bounds = await clip.evaluate((element) => {
+      const { top, bottom } = element.getBoundingClientRect();
+      const { transform, overflowX, overflowY } = getComputedStyle(element);
+      return { top, bottom, transform, overflowX, overflowY };
+    });
+    expect(bounds.transform).not.toBe("none");
+    expect([bounds.overflowX, bounds.overflowY]).toEqual(["hidden", "hidden"]);
+    await openPlacement(page, edge);
+    await expect.poll(() => fitsPreferredSide(page, edge), {
+      message: "the strict fixture stays on the usable preferred side inside the 320px viewport",
+    }).toBe(true);
+    const first = page.locator(`#placement-${edge} [data-first-action]`);
+    const point = await pointAt(first);
+    expect(edge === "top" ? point.y - bounds.bottom : bounds.top - point.y).toBeGreaterThan(0);
+    await page.mouse.click(point.x, point.y);
+    expect(await first.getAttribute("data-trusted-clicks"), "a physical hit outside the transformed clip reaches the action").toBe("1");
+    await scrollAndActivateLast(page, edge);
+  } finally {
+    recorded = await seen.finish();
+  }
+  expect(recorded).toEqual(clean);
+}, 25_000);
+
+it("keeps the packaged surface usable after native action text doubles at a fixed viewport", async () => {
+  const seen = await placementFixture(520, 520);
+  let recorded: Recorded;
+  try {
+    const { page } = seen;
+    await openPlacement(page, "top");
+    const action = page.locator("#placement-top [data-first-action]");
+    const originalFont = await action.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+    const viewport = await page.evaluate(() => [innerWidth, innerHeight]);
+    await page.locator("html").evaluate((root) => { root.setAttribute("data-placement-fixture", "large-text"); });
+    expect(await page.evaluate(() => [innerWidth, innerHeight])).toEqual(viewport);
+    const enlarged = await action.locator("span").evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return {
+        font: Number.parseFloat(getComputedStyle(element).fontSize),
+        lines: new Set(Array.from(range.getClientRects(), ({ top }) => top)).size,
+      };
+    });
+    expect(originalFont).toBeGreaterThan(0);
+    expect(enlarged.font).toBe(originalFont * 2);
+    expect(enlarged.lines, "the enlarged native action label is visibly broken into multiple lines").toBeGreaterThan(1);
+    await expect.poll(() => fitsPreferredSide(page, "top"), {
+      message: "the open surface follows the enlarged trigger and still fits below it",
+    }).toBe(true);
+    const beforeTabs = await pageScroll(page);
+    expect(beforeTabs.width).toBe(beforeTabs.client);
+    await page.keyboard.press("Tab");
+    expect(await focused(action)).toBe(true);
+    expect(await action.evaluate((element) => element.matches(":focus-visible"))).toBe(true);
+    expect((await paint(action)).outlineWidth).toBeGreaterThan(0);
+    const controls = await page.locator("#placement-top .placement-actions button").all();
+    const reached = [true];
+    for (const control of controls.slice(1)) {
+      await page.keyboard.press("Tab");
+      reached.push(await focused(control));
+    }
+    expect(controls.length).toBeGreaterThan(1);
+    expect(reached).toEqual(controls.map(() => true));
+    expect(await surface(page, "placement-top").evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    expect(await pageScroll(page)).toEqual(beforeTabs);
+  } finally {
+    recorded = await seen.finish();
+  }
+  expect(recorded).toEqual(clean);
+}, 25_000);
