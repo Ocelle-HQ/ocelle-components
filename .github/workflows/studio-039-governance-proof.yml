@@ -14,12 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 0255f6e1c73c7ca25b649a30af8700e2760b38a9
+          ref: f6f800c8d102b4d93c1cdc87a3df7b0c94d842cd
           fetch-depth: 0
           persist-credentials: false
-      - name: Check the complete planner fix scope
+      - name: Confirm eight fixed and open the fresh-eye round
         shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "0255f6e1c73c7ca25b649a30af8700e2760b38a9"
+          test "$(git rev-parse HEAD)" = "f6f800c8d102b4d93c1cdc87a3df7b0c94d842cd"
           test -z "$(git status --porcelain)"
-          tooling/speckit/bin/scope-check.sh planner f209b1288700d7022db5d696e9c2e7b13d8f508f
+          tooling/speckit/bin/scope-check.sh verify 0255f6e1c73c7ca25b649a30af8700e2760b38a9
+          status=$(.specify/extensions/squad/scripts/status.sh)
+          echo "$status"
+          jq -e '.round == 1 and .confirmed == 8 and .verify == 1 and .unresolved == 0' <<< "$status"
+          git config user.name "Ocelle Spec Kit proof"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          round=$(.specify/extensions/squad/scripts/round.sh)
+          echo "$round"
+          jq -e '.round == 2 and .lenses == ["fresh"]' <<< "$round"
+          test "$(cat "$SPECIFY_FEATURE_DIRECTORY/reviews/plan/round-2/base.sha")" = "f6f800c8d102b4d93c1cdc87a3df7b0c94d842cd"
