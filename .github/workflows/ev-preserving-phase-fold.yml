@@ -1,0 +1,87 @@
+name: Exact evidence-preserving phase fold
+on:
+  push:
+    branches: [ci/036-fold-1-599ec35c]
+permissions:
+  contents: read
+env:
+  SPECIFY_FEATURE_DIRECTORY: specs/036-anchored-popover
+  SPECIFY_FEATURE_NO_PERSIST: "1"
+  OLD_HEAD: 599ec35c0f0d46081ff29a053d7f9b1123acda3c
+  FOLD_BASE: 58a38e180433d2b1eb748ac321e1234acd761c4b
+  FEATURE_BRANCH: 036-anchored-popover-pilot
+  PHASE: '1'
+jobs:
+  fold:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 599ec35c0f0d46081ff29a053d7f9b1123acda3c
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run the fold and replay without changing any remote branch
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$OLD_HEAD"
+          test -z "$(git status --porcelain)"
+          git switch --create "$FEATURE_BRANCH"
+          git config user.name "Ocelle hosted phase fold"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          out="$RUNNER_TEMP/ocelle-fold"
+          mkdir "$out"
+          tooling/speckit/bin/fold-history.sh "$FOLD_BASE" "$SPECIFY_FEATURE_DIRECTORY" "phase-$PHASE" | tee "$out/fold.json"
+          jq -e --arg old "$OLD_HEAD" '.ok and .old_head == $old and .commits_before >= .commits_after and (.problems | length) == 0' "$out/fold.json" >/dev/null
+          folded="$(git rev-parse HEAD)"
+          folder="$SPECIFY_FEATURE_DIRECTORY/reviews/phase-$PHASE"
+          .specify/extensions/story/scripts/tdd-check.sh "$PHASE" > "$out/replay.json"
+          jq -e --arg folded "$folded" '.status == "pass" and .head == $folded and .head_exit == 0 and (.problems | length) == 0' "$out/replay.json" >/dev/null
+          git add -- "$folder"/tdd-check.json "$folder"/check-*.log
+          git commit -s -m "chore(phase-$PHASE): red/green check after the fold"
+          git diff --quiet "$OLD_HEAD" HEAD -- . ":(exclude)$SPECIFY_FEATURE_DIRECTORY/reviews"
+          pnpm run gate:signoff -- --range "$FOLD_BASE..HEAD"
+          test -z "$(git status --porcelain)"
+          new="$(git rev-parse HEAD)"
+          git update-ref refs/heads/ocelle-verified-fold "$new"
+          git bundle create "$out/fold.bundle" refs/heads/ocelle-verified-fold "^$FOLD_BASE"
+          git bundle verify "$out/fold.bundle"
+          jq -n --arg old "$OLD_HEAD" --arg new "$new" --arg remap "$folded" --arg base "$FOLD_BASE" --arg phase "$PHASE" '{old:$old,new:$new,remap:$remap,base:$base,phase:$phase}' | tee "$out/receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: exact-fold-result
+          path: ${{ runner.temp }}/ocelle-fold/
+          if-no-files-found: error
+  make-candidate-available:
+    needs: fold
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 599ec35c0f0d46081ff29a053d7f9b1123acda3c
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: exact-fold-result
+          path: ${{ runner.temp }}/ocelle-fold
+      - name: Verify the bundle and retain its exact objects on the scratch candidate ref
+        shell: bash
+        run: |
+          test "$GITHUB_REPOSITORY" = "Ocelle-HQ/ocelle-components"
+          test "$(git rev-parse HEAD)" = "$OLD_HEAD"
+          git config --local core.hooksPath /dev/null
+          bundle="$RUNNER_TEMP/ocelle-fold/fold.bundle"
+          receipt="$RUNNER_TEMP/ocelle-fold/receipt.json"
+          git bundle verify "$bundle"
+          git fetch --no-tags "$bundle" refs/heads/ocelle-verified-fold:refs/heads/ocelle-verified-fold
+          verified="$(git rev-parse refs/heads/ocelle-verified-fold)"
+          jq -e --arg old "$OLD_HEAD" --arg base "$FOLD_BASE" --arg new "$verified" --arg phase "$PHASE" '.old == $old and .base == $base and .new == $new and .phase == $phase' "$receipt" >/dev/null
+          git diff --quiet "$OLD_HEAD" "$verified" -- . ":(exclude)$SPECIFY_FEATURE_DIRECTORY/reviews"
+          test -z "$(git ls-remote --heads origin refs/heads/ci/036-fold-1-599ec35c-candidate)"
+          git push origin "$verified:refs/heads/ci/036-fold-1-599ec35c-candidate"
+          printf "Verified fold candidate %s\n" "$verified"
