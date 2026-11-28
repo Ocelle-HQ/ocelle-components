@@ -73,7 +73,7 @@ describe("plants: order", () => {
         "gates/plants/lint/fail-b/plant.json: plants: invalid-plant: plant.json is not valid JSON",
         "gates/plants/csp/fail-a/plant.json: plants: invalid-plant: plant.json is not valid JSON",
         "gates/plants/csp/fail-b/plant.json: plants: invalid-plant: plant.json is not valid JSON",
-        "plants: 6 problems in 63 plants",
+        "plants: 6 problems in 66 plants",
       ],
     });
   });
@@ -88,7 +88,7 @@ describe("plants: registry plants", () => {
     files.delete(`gates/plants/plants/pass-matching/${missing}`);
     expect((await job(files)).out).toEqual([
       `gates/plants/plants/pass-matching: plants: not-accepted: expected exit 0 with no finding, got exit 2 (${cause})`,
-      "plants: 1 problem in 59 plants",
+      "plants: 1 problem in 62 plants",
     ]);
   });
 
@@ -97,7 +97,7 @@ describe("plants: registry plants", () => {
     files.set("gates/plants/plants/pass-matching/gates.json", "{}");
     expect((await job(files)).out).toEqual([
       "gates/plants/plants/pass-matching: plants: not-accepted: expected exit 0 with no finding, got exit 2 (plants: could not run: gates.json is not a list of gates)",
-      "plants: 1 problem in 59 plants",
+      "plants: 1 problem in 62 plants",
     ]);
   });
 
@@ -107,13 +107,13 @@ describe("plants: registry plants", () => {
     files.set("gates/plants/plants/fail-no-job/plant.json", fail("ci.yml", "no-ci-job"));
     files.set("gates/plants/plants/fail-no-job/gates.json", registryText);
     files.set("gates/plants/plants/fail-no-job/ci.yml", withoutPins);
-    expect(await job(files)).toEqual({ code: 0, out: ["plants: 60 plants of 19 gates and the registry judged, every plant as expected"] });
+    expect(await job(files)).toEqual({ code: 0, out: ["plants: 63 plants of 20 gates and the registry judged, every plant as expected"] });
   });
 
   it("skips a directory of the registry plants without a plant.json, and needs a registry fail plant", async () => {
     const files = world();
     files.set("gates/plants/plants/notes/README.md", "x");
     for (const name of ["plant.json", "gates.json", "ci.yml"]) files.delete(`gates/plants/plants/fail-no-entry/${name}`);
-    expect((await job(files)).out).toEqual(["gates/plants/plants: plants: missing-plant: the registry check has no fail plant", "plants: 1 problem in 58 plants"]);
+    expect((await job(files)).out).toEqual(["gates/plants/plants: plants: missing-plant: the registry check has no fail plant", "plants: 1 problem in 61 plants"]);
   });
 });

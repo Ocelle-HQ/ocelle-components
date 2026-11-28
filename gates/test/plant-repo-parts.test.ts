@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   baseCommit,
   carriesConfiguration,
+  hasConfigurationBase,
   identityEnv,
   ignoreMissing,
   mutationAuthor,
@@ -188,5 +189,50 @@ describe("ignoreMissing", () => {
     expect(() => {
       ignoreMissing("ENOENT");
     }).toThrow();
+  });
+});
+
+// 030 US2 (T021; research.md R-17, R-08): a readiness plant's record may carry files:, delete: and secret: headers, and
+// the readiness plants' base commit holds the configuration set; sign-off plants keep the empty base.
+describe("parseCommits: the files, delete and secret headers (030)", () => {
+  const head = "author: A <a@example.com>";
+
+  it("reads files: once, delete: and secret: as often as given, in order", () => {
+    const text = `${head}\nfiles: one\ndelete: notes/a.txt\ndelete: gates/release\nsecret: npm-token notes/b.txt\nsecret: env-assignment .env\n\nm\n%%\n${head}\n\nn\n`;
+    expect(() => parseCommits(text)).not.toThrow();
+    expect(parseCommits(text)).toEqual([
+      {
+        author: "A <a@example.com>",
+        message: "m",
+        files: "one",
+        delete: ["notes/a.txt", "gates/release"],
+        secrets: [{ rule: "npm-token", path: "notes/b.txt" }, { rule: "env-assignment", path: ".env" }],
+      },
+      { author: "A <a@example.com>", message: "n" },
+    ]);
+  });
+
+  it.each([
+    { line: "files: ../outside", problem: "record 1: files ../outside must be a directory inside the plant" },
+    { line: "files: /abs", problem: "record 1: files /abs must be a directory inside the plant" },
+    { line: "files: one\nfiles: two", problem: "record 1: files is given twice" },
+    { line: "delete: ../x", problem: "record 1: delete ../x must be a path inside the repository" },
+    { line: "delete: /etc", problem: "record 1: delete /etc must be a path inside the repository" },
+    { line: "secret: password .env", problem: "record 1: secret password .env must name a secret-scan rule and a path" },
+    { line: "secret: npm-token", problem: "record 1: secret npm-token must name a secret-scan rule and a path" },
+    { line: "secret: npm-token a b", problem: "record 1: secret npm-token a b must name a secret-scan rule and a path" },
+    { line: "secret: npm-token ../a", problem: "record 1: secret npm-token ../a must name a secret-scan rule and a path" },
+  ])("rejects the header $line", ({ line, problem }) => {
+    expect(() => parseCommits(`${head}\n${line}\n\nm\n`)).toThrow(problem);
+  });
+});
+
+describe("hasConfigurationBase (030 research.md R-17)", () => {
+  it("is true for a plant of the release-readiness gate and false for a sign-off plant", () => {
+    expect({
+      readiness: hasConfigurationBase("/work/repo/gates/plants/release-readiness/pass-repository"),
+      signoff: hasConfigurationBase("/work/repo/gates/plants/signoff/fail-no-trailer"),
+      nested: hasConfigurationBase("/work/repo/gates/plants/release-readiness"),
+    }).toEqual({ readiness: true, signoff: false, nested: false });
   });
 });

@@ -178,8 +178,8 @@ afterEach(cleanUp);
 
 describe("contrast and brand-rules plants under neighbouring changes", () => {
   it("has the two gates' plants and the registry's", () => {
-    // 030: the pack-contents gate is one other gate more (16 before).
-    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 17, plants: 39 });
+    // 030: the pack-contents gate is one other gate more (16 before), and US2's release-readiness gate one more (17).
+    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 18, plants: 39 });
   });
 
   it.each([

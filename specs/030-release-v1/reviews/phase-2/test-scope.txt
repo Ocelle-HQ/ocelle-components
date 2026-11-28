@@ -1,0 +1,24 @@
+# 030 phase 2 (US2): the tests this phase changes. The changed support files are read only by changed tests: the
+# registry fixture (gates/test/fixtures/registry/) by plants.test.ts, plants-job.test.ts, plant-runner.test.ts and
+# registry.test.ts, and the readiness plant fixture (gates/test/fixtures/plant-repo/readiness-plant/) by
+# integration/plant-repo.test.ts.
+gates/test/ci-workflow.test.ts
+gates/test/evidence-reuse-shadow.test.ts
+gates/test/gates-readme.test.ts
+gates/test/integration/evidence-reuse-observe.test.ts
+gates/test/integration/plant-repo.test.ts
+gates/test/integration/plants-robustness.test.ts
+gates/test/integration/plants.test.ts
+gates/test/integration/release-readiness.test.ts
+gates/test/plant-judge.test.ts
+gates/test/plant-repo-parts.test.ts
+gates/test/plant-runner.test.ts
+gates/test/plants-job.test.ts
+gates/test/plants.test.ts
+gates/test/registry-parts.test.ts
+gates/test/registry.test.ts
+gates/test/release-readiness.test.ts
+packages/elements/test/node/changelog.test.ts
+packages/elements/test/node/readme.test.ts
+packages/styles/test/readme.test.ts
+packages/tokens/test/readme.test.ts

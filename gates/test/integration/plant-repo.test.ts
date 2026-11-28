@@ -482,6 +482,92 @@ describe("buildCommitRepo", () => {
   );
 });
 
+// 030 US2 (T021; research.md R-17, R-08): a record's files: lays a plant directory over the previous commit's tree,
+// delete: removes a path and secret: appends a value of the rule generated at plant time (the plant holds none); the
+// readiness plants' base commit holds the configuration set, a sign-off plant's base stays empty.
+describe("buildCommitRepo: the files, delete and secret headers (030)", () => {
+  const plant = join(fixtures, "readiness-plant");
+  // Built from fragments, so this file matches no secret-scan rule (FR-045).
+  const npmToken = new RegExp(`^${["np", "m_"].join("")}[A-Za-z0-9]{36}$`);
+  const tree = (dir: string, commit: string): string[] => git(dir, ["ls-tree", "-r", "--name-only", commit]).split("\n").filter(Boolean);
+  const show = (dir: string, commit: string, path: string): string => execFileSync("git", ["show", `${commit}:${path}`], { cwd: dir, env: baseEnv(), encoding: "utf8" });
+
+  it(
+    "commits the configuration set as the signed-off base, then each record's files, deletions and generated secret over the tree before it",
+    async () => {
+      const into = tempDir("commit-repo-readiness");
+      const built = buildCommitRepo(plant, into, repo);
+      await expect(built).resolves.toMatchObject({ commits: [expect.any(String), expect.any(String)] });
+      const { base, commits } = await built;
+      const [first = "", second = ""] = commits;
+      const baseFiles = tree(into, base);
+      expect({
+        message: git(into, ["log", "-1", "--format=%an <%ae>|%B", base]),
+        configuration: [...configuration, ...releaseConfiguration].filter((file) => existsSync(join(repo, file)) && !baseFiles.includes(file)),
+        modules: baseFiles.filter((file) => file.split("/").includes("node_modules")),
+      }).toEqual({ message: "Plant Base <base@example.com>|Plant base\n\nSigned-off-by: Plant Base <base@example.com>", configuration: [], modules: [] });
+      const firstFiles = tree(into, first);
+      const token = show(into, first, "notes/token.txt").split("\n");
+      expect({
+        added: firstFiles.filter((file) => !baseFiles.includes(file)),
+        kept: baseFiles.filter((file) => !firstFiles.includes(file)),
+        a: show(into, first, "notes/a.txt"),
+        token: [token[0], npmToken.test(token[1] ?? ""), token.slice(2)],
+      }).toEqual({ added: ["notes/a.txt", "notes/token.txt"], kept: [], a: "first\n", token: ["before", true, [""]] });
+      const secondFiles = tree(into, second);
+      expect({
+        parent: git(into, ["rev-parse", `${second}^`]),
+        removed: firstFiles.filter((file) => !secondFiles.includes(file)),
+        added: secondFiles.filter((file) => !firstFiles.includes(file)),
+        a: show(into, second, "notes/a.txt"),
+        head: git(into, ["rev-parse", "HEAD"]),
+        status: git(into, ["status", "--porcelain"]),
+      }).toEqual({ parent: first, removed: ["gates/release/pack-manifest.json", "notes/token.txt"], added: ["notes/b.txt"], a: "second\n", head: second, status: "" });
+    },
+    timeout,
+  );
+
+  it(
+    "generates the same secret value at every build of the plant, so an allow-list entry can key it",
+    async () => {
+      const values = await Promise.all([tempDir("commit-repo-one"), tempDir("commit-repo-two")].map(async (into) => {
+        const built = buildCommitRepo(plant, into, repo);
+        await expect(built).resolves.toMatchObject({ commits: [expect.any(String), expect.any(String)] });
+        const { commits } = await built;
+        return show(into, String(commits[0]), "notes/token.txt");
+      }));
+      expect({ same: values[0] === values[1], token: npmToken.test(values[0]?.split("\n")[1] ?? "") }).toEqual({ same: true, token: true });
+    },
+    timeout,
+  );
+
+  it(
+    "keeps the empty base for a plant built without the repository, as sign-off plants are, and lays the files over it",
+    async () => {
+      const into = tempDir("commit-repo-empty-base");
+      const built = buildCommitRepo(plant, into);
+      await expect(built).resolves.toMatchObject({ commits: [expect.any(String), expect.any(String)] });
+      const { base, commits } = await built;
+      expect({ base: tree(into, base), first: tree(into, String(commits[0])), second: tree(into, String(commits[1])) }).toEqual({
+        base: [],
+        first: ["notes/a.txt", "notes/token.txt"],
+        second: ["notes/a.txt", "notes/b.txt"],
+      });
+    },
+    timeout,
+  );
+
+  it(
+    "fails to build a record that deletes a path the tree does not hold, naming it",
+    async () => {
+      const broken = tempDir("commit-plant-broken");
+      writeFileSync(join(broken, "commits.txt"), "author: Ada Example <ada@example.com>\ndelete: notes/none.txt\n\nRemove nothing\n");
+      await expect(buildCommitRepo(broken, tempDir("commit-repo-broken"))).rejects.toThrow("record 1: delete notes/none.txt: the tree holds no such path");
+    },
+    timeout,
+  );
+});
+
 describe("buildMutationRepo", () => {
   it(
     "commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked",

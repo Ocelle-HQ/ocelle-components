@@ -15,7 +15,7 @@ const visual = "Visual regression";
 const jobNames = [
   "Typecheck", "Code lint", "Style lint", "Unit tests", "Test lint", "Mutation testing",
   "Content security", "Prefix", "Story config copies", "Install and pins", "Sign-off", "Sandbox paths",
-  "Contrast", "Brand rules", "Custom-elements manifest", "Storybook build", visual, "Accessibility", "Pack contents", "Plants",
+  "Contrast", "Brand rules", "Custom-elements manifest", "Storybook build", visual, "Accessibility", "Pack contents", "Release readiness", "Plants",
   "Unit test inventory", "Unit test shard (0)", "Unit tests full suite comparison",
   "Mutation plan", "Mutation shard", "Plants plan", "Plants shard (1)",
 ];

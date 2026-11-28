@@ -9,7 +9,8 @@ const requiredJobs = [
   "Typecheck", "Code lint", "Style lint", "Unit tests", "Test lint", "Mutation testing",
   "Content security", "Prefix", "Story config copies", "Install and pins", "Sign-off",
   "Contrast", "Brand rules", "Custom-elements manifest", "Storybook build", "Visual regression",
-  "Accessibility", "Sandbox paths", "Pack contents", "Plants",
+  // 030 US2 (T024): Release readiness, a required check of ci.yml since US2.
+  "Accessibility", "Sandbox paths", "Pack contents", "Release readiness", "Plants",
 ];
 const mutationJob = "Mutation shard (packages/elements/src/ocelle-pane.ts:12-18, 1)";
 const helperJobs = [
@@ -447,6 +448,19 @@ describe("evidence reuse shadow eligibility", () => {
     expect({ complete: await assess(complete), lacking: await assess(input) }).toMatchObject({
       complete: { eligible: true, reason: "matched" },
       lacking: { eligible: false, reason: "jobs" },
+    });
+  });
+
+  // 030 US2 (T024; operator decision on reviews/recheck.md item 2b, option (a)): Release readiness is a required check
+  // of ci.yml, so a run holding its job is complete and a run lacking it is not.
+  it.each(["prior", "current"] as const)("rejects a %s run without the Release readiness job, which a complete run holds", async (which) => {
+    const complete = observation();
+    const input = observation();
+    changeJobs(input[which].evidence, (rows) => rows.filter(({ name }) => name !== "Release readiness"));
+    expect({ complete: await assess(complete), lacking: await assess(input), holds: (complete[which].evidence.jobs?.rows ?? []).some(({ name }) => name === "Release readiness") }).toMatchObject({
+      complete: { eligible: true, reason: "matched" },
+      lacking: { eligible: false, reason: "jobs" },
+      holds: true,
     });
   });
 

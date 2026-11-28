@@ -84,10 +84,12 @@ describe("gates/README.md (002 FR-022)", () => {
 
   // Replaced by 030 (T008, FR-006): the pack-contents gate joins the required checks, as op 023's Sandbox paths did, so
   // the list has twenty names with Pack contents before Plants (the operator adds it to the ruleset, O6).
-  it("requires twenty checks on main: main's fifteen, Storybook build, Visual regression and Accessibility (006 FR-023, plan decision 31), Sandbox paths (op 023) and Pack contents (030) before Plants", () => {
+  // Replaced by 030 US2 (T024, FR-014): Release readiness joins them after Pack contents, twenty-one names.
+  it("requires twenty-one checks on main: main's fifteen, Storybook build, Visual regression and Accessibility (006 FR-023, plan decision 31), Sandbox paths (op 023), Pack contents and Release readiness (030) before Plants", () => {
     const required = section("Required checks on `main`");
-    expect(required).toContain("requires exactly these twenty checks");
+    expect(required).toContain("requires exactly these twenty-one checks");
     const listed = required.split("\n").filter((line) => /^\d+\. /.test(line)).map((line) => line.replace(/^\d+\. /, ""));
+    expect(listed.slice(-3)).toEqual(["Pack contents", "Release readiness", "Plants"]);
     expect(listed).toEqual([
       "Typecheck",
       "Code lint",
@@ -108,6 +110,7 @@ describe("gates/README.md (002 FR-022)", () => {
       "Accessibility",
       "Sandbox paths",
       "Pack contents",
+      "Release readiness",
       "Plants",
     ]);
   });
@@ -267,6 +270,53 @@ describe("gates/README.md (030)", () => {
         "fail-workspace-peer",
         "pass-minimal",
         "pass-star-export",
+      ],
+      unlisted: [],
+    });
+  });
+});
+
+// 030 US2 (T024, FR-014; contracts/release-readiness-gate.md): the release-readiness gate in "The gates", with its check,
+// its command and the thirty-one plants of gates/plants/release-readiness/ (fail, pass and breaking).
+describe("gates/README.md (030 US2)", () => {
+  it("lists release-readiness in The gates with its check, its command and its thirty-one plants", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`release-readiness`");
+    const dir = new URL("../plants/release-readiness/", import.meta.url);
+    const plants = existsSync(dir) ? readdirSync(dir).sort() : [];
+    expect({ cells: row?.slice(0, 3), plants, unlisted: plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``)) }).toEqual({
+      cells: ["`release-readiness`", "Release readiness", "`pnpm run gate:release-readiness`"],
+      plants: [
+        "break-gap-rows-invalid",
+        "break-shallow",
+        "fail-allowlist-no-reason",
+        "fail-allowlist-stale",
+        "fail-changelog-missing-element",
+        "fail-changelog-missing-token-group",
+        "fail-changelog-undated",
+        "fail-row-spec-only",
+        "fail-row-unmet",
+        "fail-rows-reworded",
+        "fail-secret-anthropic",
+        "fail-secret-aws",
+        "fail-secret-deleted-later",
+        "fail-secret-env-assignment",
+        "fail-secret-github",
+        "fail-secret-google",
+        "fail-secret-npm",
+        "fail-secret-npmrc",
+        "fail-secret-openai",
+        "fail-secret-private-key",
+        "fail-secret-slack",
+        "fail-tag-mismatch",
+        "fail-unreleased-not-empty",
+        "fail-version-skew",
+        "pass-allowlisted",
+        "pass-env-variable",
+        "pass-lockfile-integrity",
+        "pass-npmrc-variable",
+        "pass-repository",
+        "pass-rule-prose",
+        "pass-token-prefix",
       ],
       unlisted: [],
     });

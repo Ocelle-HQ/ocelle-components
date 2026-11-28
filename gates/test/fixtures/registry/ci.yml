@@ -102,6 +102,10 @@ jobs:
     name: Pack contents
     steps:
       - run: pnpm run gate:pack-contents
+  release-readiness:
+    name: Release readiness
+    steps:
+      - run: pnpm run gate:release-readiness
   plants:
     name: Plants
     steps:

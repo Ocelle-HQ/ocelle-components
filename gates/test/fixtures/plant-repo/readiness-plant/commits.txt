@@ -1,0 +1,14 @@
+author: Ada Example <ada@example.com>
+files: one
+secret: npm-token notes/token.txt
+
+Add the notes and a generated token
+
+Signed-off-by: Ada Example <ada@example.com>
+%%
+author: Ada Example <ada@example.com>
+files: two
+delete: notes/token.txt
+delete: gates/release/pack-manifest.json
+
+Remove the token and the pack manifest, replace the notes

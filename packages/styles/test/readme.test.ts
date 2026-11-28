@@ -183,55 +183,59 @@ describe("packages/styles/README.md", () => {
   });
 });
 
+// Replaced by 030 US2 (T025; FR-005, research.md R-09): the first release turns the Unreleased content into the dated
+// 1.0.0 entry, so the nine cases read the `## 1.0.0 - <YYYY-MM-DD>` section (its heading must exist in that form) and
+// its `### Added`, with the same statements (reviews/phase-2/replaced-tests.md).
 describe("packages/styles/CHANGELOG.md", () => {
   const changelog = read("CHANGELOG.md");
-  const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
-  const added = /^### Added\n([\s\S]*?)(?=^### |(?![\s\S]))/m.exec(unreleased)?.[1] ?? "";
+  const released = /^## 1\.0\.0 - \d{4}-\d{2}-\d{2}\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
+  const releasedAdded = /^### Added\n([\s\S]*?)(?=^### |(?![\s\S]))/m.exec(released)?.[1] ?? "";
 
-  it("names the base.css export under Unreleased / Added (constitution VII, FR-004)", () => {
-    expect(added).toMatch(/^- `base\.css`/m);
+  it("names the base.css export in the dated 1.0.0 entry / Added (constitution VII, FR-004)", () => {
+    expect(releasedAdded).toMatch(/^- `base\.css`/m);
   });
 
-  it("names the data-ocelle-density and data-ocelle-value hooks under Unreleased / Added (constitution VII, FR-004)", () => {
-    expect(added).toMatch(/^- `data-ocelle-density`/m);
-    expect(added).toMatch(/^- `data-ocelle-value`/m);
+  it("names the data-ocelle-density and data-ocelle-value hooks in the dated 1.0.0 entry / Added (constitution VII, FR-004)", () => {
+    expect(releasedAdded).toMatch(/^- `data-ocelle-density`/m);
+    expect(releasedAdded).toMatch(/^- `data-ocelle-value`/m);
   });
 
-  it("names the data-ocelle-prose hook under Unreleased / Added (constitution VII, FR-004)", () => {
-    expect(added).toMatch(/^- `data-ocelle-prose`/m);
+  it("names the data-ocelle-prose hook in the dated 1.0.0 entry / Added (constitution VII, FR-004)", () => {
+    expect(releasedAdded).toMatch(/^- `data-ocelle-prose`/m);
   });
 
-  it("names the facts value hooks and the facts rule before upgrade under Unreleased / Added (013 R-07, constitution VII)", () => {
-    expect({ hooks: /^- The `ocelle-facts` value hooks/m.test(added), upgrade: /^- `ocelle-facts` before upgrade/m.test(added) }).toEqual({ hooks: true, upgrade: true });
+  it("names the facts value hooks and the facts rule before upgrade in the dated 1.0.0 entry / Added (013 R-07, constitution VII)", () => {
+    expect({ hooks: /^- The `ocelle-facts` value hooks/m.test(releasedAdded), upgrade: /^- `ocelle-facts` before upgrade/m.test(releasedAdded) }).toEqual({ hooks: true, upgrade: true });
   });
 
-  it("names the data-ocelle-wrap hook under Unreleased / Added, so each of the four hooks is named (constitution VII, FR-004)", () => {
-    expect(added).toMatch(/^- `data-ocelle-wrap`/m);
-    expect([...added.matchAll(/^- `(data-ocelle-[a-z]+)`/gm)].map((match) => match[1])).toEqual(["data-ocelle-density", "data-ocelle-value", "data-ocelle-prose", "data-ocelle-wrap", "data-ocelle-align"]);
+  it("names the data-ocelle-wrap hook in the dated 1.0.0 entry / Added, so each of the four hooks is named (constitution VII, FR-004)", () => {
+    expect(releasedAdded).toMatch(/^- `data-ocelle-wrap`/m);
+    expect([...releasedAdded.matchAll(/^- `(data-ocelle-[a-z]+)`/gm)].map((match) => match[1])).toEqual(["data-ocelle-density", "data-ocelle-value", "data-ocelle-prose", "data-ocelle-wrap", "data-ocelle-align"]);
   });
 
   // 019 phase 2 (constitution VII; research R-08; tasks.md T035, T043).
-  it("names the timeline rules before upgrade under Unreleased / Added (019 phase 2)", () => {
-    expect(added).toMatch(/^- `ocelle-event-timeline` before upgrade/m);
+  it("names the timeline rules before upgrade in the dated 1.0.0 entry / Added (019 phase 2)", () => {
+    expect(releasedAdded).toMatch(/^- `ocelle-event-timeline` before upgrade/m);
   });
 
   // 019 phase 3 (constitution VII; research R-08; tasks.md T059, T066).
-  it("names the chain rules before upgrade under Unreleased / Added (019 phase 3)", () => {
-    expect(added).toMatch(/^- `ocelle-evidence-chain` before upgrade/m);
+  it("names the chain rules before upgrade in the dated 1.0.0 entry / Added (019 phase 3)", () => {
+    expect(releasedAdded).toMatch(/^- `ocelle-evidence-chain` before upgrade/m);
   });
 
   // 019 phase 1 (constitution VII; analysis I7 (a); IQ-3; tasks.md T011, T017).
-  it("names the data-table blocks, the base-style hook --data-table-box-size / --data-table-end-fade and the data-ocelle-align hook under Unreleased / Added (019)", () => {
-    expect({
-      blocks: /^- The `ocelle-data-table` rules/m.test(added),
-      hook: /^- The base-style hook `--data-table-box-size` and `--data-table-end-fade`/m.test(added),
-      align: /^- `data-ocelle-align`/m.test(added),
-    }).toEqual({ blocks: true, hook: true, align: true });
+  it("names the data-table blocks, the base-style hook --data-table-box-size / --data-table-end-fade and the data-ocelle-align hook in the dated 1.0.0 entry / Added (019)", () => {
+    const named = {
+      blocks: /^- The `ocelle-data-table` rules/m.test(releasedAdded),
+      hook: /^- The base-style hook `--data-table-box-size` and `--data-table-end-fade`/m.test(releasedAdded),
+      align: /^- `data-ocelle-align`/m.test(releasedAdded),
+    };
+    expect(named).toEqual({ blocks: true, hook: true, align: true });
   });
 
   // 019 phase 4 review round 1 (R1-02; constitution VII; tasks.md T075): the data records' final surface statement.
-  it("states under Unreleased that base.css's four blocks, the data-ocelle-align hook and the base-style hook are a minor change with no token (019 T075)", () => {
-    expect(flat(unreleased)).toContain(
+  it("states in the dated 1.0.0 entry that base.css's four blocks, the data-ocelle-align hook and the base-style hook are a minor change with no token (019 T075)", () => {
+    expect(flat(released)).toContain(
       "`base.css`'s four blocks for the data records (the `ocelle-data-table` rules, their prose override, the pre-upgrade rules of `ocelle-event-timeline` and `ocelle-evidence-chain`, and the numeric-cell rule), the `data-ocelle-align` hook with its value `end`, and the base-style hook `--data-table-box-size` and `--data-table-end-fade` that `ocelle-data-table` writes are additions to the public surface: a minor change. No token is added.",
     );
   });

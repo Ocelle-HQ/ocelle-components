@@ -1789,10 +1789,13 @@ describe("packages/elements/README.md: ocelle-code-block (020)", () => {
   });
 });
 
+// Replaced by 030 US2 (T025; FR-005, research.md R-09): the first release turns the Unreleased content into the dated
+// 1.0.0 entry, so these cases read the `## 1.0.0 - <YYYY-MM-DD>` section (its heading must exist in that form) and its
+// `### Added`, with the same statements (reviews/phase-2/replaced-tests.md).
 describe("packages/elements/CHANGELOG.md", () => {
   const changelog = read("CHANGELOG.md");
-  const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
-  const added = flat(/^### Added\n([\s\S]*?)(?=^### |(?![\s\S]))/m.exec(unreleased)?.[1] ?? "");
+  const released = /^## 1\.0\.0 - \d{4}-\d{2}-\d{2}\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
+  const releasedAdded = flat(/^### Added\n([\s\S]*?)(?=^### |(?![\s\S]))/m.exec(released)?.[1] ?? "");
 
   it.each([
     "`ocelle-icon`",
@@ -1994,23 +1997,23 @@ describe("packages/elements/CHANGELOG.md", () => {
     // 018 phase 5 (tasks.md T048): the interactive pill's event and states
     "`ocelle-pill-tag-activate`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
-  ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
-    expect(added).toContain(surface);
+  ])("names %s in the dated 1.0.0 entry / Added (constitution VII, FR-031, SC-008)", (surface) => {
+    expect(releasedAdded).toContain(surface);
   });
 
   // 019 phase 1 (T081): the overflow-region module's block-axis option, an internal change.
   it("records the step indicator and its standalone entry as a minor addition", () => {
-    expect(flat(unreleased)).toContain("Step indicator (#87). `ocelle-step-indicator` and its standalone entry are a MINOR addition");
+    expect(flat(released)).toContain("Step indicator (#87). `ocelle-step-indicator` and its standalone entry are a MINOR addition");
   });
 
   it("names the overflow-region module's block-axis option as an internal change with no effect on ocelle-scroller or ocelle-workflow-board", () => {
-    expect(flat(unreleased)).toContain("The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`");
+    expect(flat(released)).toContain("The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`");
   });
 
   // 014 phase 4 (plan decision 1) raised the floor to Chromium 125 for custom states; 012 raised it again to Chromium
   // 135, so since the second merge of main the entry names what the segment needs within the merged floor.
-  it("records that ocelle-segment's custom states need Chromium 125 and WebKit 17.4, within the Chromium 135 floor, under Unreleased (014 phase 4, plan decision 1)", () => {
-    expect(flat(unreleased)).toContain("`ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4: within the engine floor of Chromium 135 and WebKit 17.4 that `ocelle-button` sets (below)");
+  it("records that ocelle-segment's custom states need Chromium 125 and WebKit 17.4, within the Chromium 135 floor, in the dated 1.0.0 entry (014 phase 4, plan decision 1)", () => {
+    expect(flat(released)).toContain("`ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4: within the engine floor of Chromium 135 and WebKit 17.4 that `ocelle-button` sets (below)");
   });
 });
 
@@ -2145,20 +2148,22 @@ describe("packages/elements/README.md examples, one per consumer use (014 SC-009
  * 014 phase 7 (T111, plan.md VII): the Unreleased lead names this feature's MINOR change, the nine elements, the six
  * events and the custom states' Chromium 125 / WebKit 17.4 within the merged floor (reviews/phase-4/decision-1.md).
  */
+// Replaced by 030 US2 (T025; FR-005): the lead is the dated 1.0.0 entry's, before its first `###` heading, which holds
+// the Unreleased lead the first release moved there; "" while the heading is missing or not in its form.
 describe("packages/elements/CHANGELOG.md MINOR entry (014 T111)", () => {
-  const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("CHANGELOG.md"))?.[1] ?? "";
-  const lead = flat(unreleased.slice(0, Math.max(unreleased.indexOf("### "), 0)));
+  const released = /^## 1\.0\.0 - \d{4}-\d{2}-\d{2}\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("CHANGELOG.md"))?.[1] ?? "";
+  const releaseLead = flat(released.slice(0, Math.max(released.indexOf("### "), 0)));
 
   it("states that the selection and input elements are a MINOR change", () => {
-    expect(lead).toContain("Selection and input elements, a MINOR change");
+    expect(releaseLead).toContain("Selection and input elements, a MINOR change");
   });
 
   it.each([...selectionElements, ...selectionEvents])("names `%s`", (name) => {
-    expect(lead).toContain(`\`${name}\``);
+    expect(releaseLead).toContain(`\`${name}\``);
   });
 
   it("names the custom states' Chromium 125 and WebKit 17.4 within the release's Chromium 135 and WebKit 17.4 floor", () => {
-    expect(lead).toContain("which need Chromium 125 and WebKit 17.4, within the release's engine floor of Chromium 135 and WebKit 17.4");
+    expect(releaseLead).toContain("which need Chromium 125 and WebKit 17.4, within the release's engine floor of Chromium 135 and WebKit 17.4");
   });
 });
 

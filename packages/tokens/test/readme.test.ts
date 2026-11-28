@@ -84,20 +84,33 @@ describe("packages/tokens/README.md", () => {
   });
 });
 
+// Replaced by 030 US2 (T025; FR-005, research.md R-09, analysis K2 and F8): the first release turns the Unreleased content
+// into the dated 1.0.0 entry. The heading `## 1.0.0 - <YYYY-MM-DD>` must exist in that form, and every token must be
+// named in full as `--ocelle-<name>` under `### Added` of the 1.0.0 entry and of Unreleased together (the sections at
+// or after the first release; a token named only under another heading does not count, nor does a prefix mention),
+// so later additions under Unreleased also count (reviews/phase-2/replaced-tests.md).
 describe("packages/tokens/CHANGELOG.md", () => {
   const changelog = read("CHANGELOG.md");
-  const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
-  const added = /^### Added\n([\s\S]*?)(?=^### |(?![\s\S]))/m.exec(unreleased)?.[1] ?? "";
+  const section = (heading: RegExp): string => new RegExp(`^${heading.source}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(changelog)?.[1] ?? "";
+  const addedOf = (text: string): string => /^### Added\n([\s\S]*?)(?=^### |(?![\s\S]))/m.exec(text)?.[1] ?? "";
+  const released = section(/## 1\.0\.0 - \d{4}-\d{2}-\d{2}/);
+  const releasedAdded = addedOf(released);
+  const laterAdded = addedOf(section(/## Unreleased/));
 
-  it("names every token as added in the Unreleased section (FR-025)", () => {
-    const named = new Set([...added.matchAll(/`(--ocelle-[a-z0-9-]+)`/g)].map((match) => match[1]));
-    expect([...named].sort()).toEqual(expectedTokens.map((token) => `--ocelle-${token.name}`).sort());
+  it("has the first release's heading in the form ## 1.0.0 - <YYYY-MM-DD>, after Unreleased", () => {
+    const headings = changelog.split("\n").filter((line) => line === "## Unreleased" || line.startsWith("## 1.0.0"));
+    expect(headings).toEqual(["## Unreleased", expect.stringMatching(/^## 1\.0\.0 - \d{4}-\d{2}-\d{2}$/)]);
+  });
+
+  it("names every token in full as added in the 1.0.0 entry or under Unreleased (FR-025)", () => {
+    const named = new Set([...`${releasedAdded}\n${laterAdded}`.matchAll(/`(--ocelle-[a-z0-9-]+)`/g)].map((match) => match[1]));
+    expect({ released: releasedAdded !== "", named: [...named].sort() }).toEqual({ released: true, named: expectedTokens.map((token) => `--ocelle-${token.name}`).sort() });
   });
 
   // Since the second merge of main, 012's entry declares color-accent-strong on every main ground, so 014's entry names
   // its use of those pairs and adds none.
-  it("names the selected bars' color-accent-strong on the main grounds under Unreleased / Added (014 FR-058, research.md R-17)", () => {
-    expect(added.replace(/\s+/g, " ")).toContain(
+  it("names the selected bars' color-accent-strong on the main grounds in the dated 1.0.0 entry / Added (014 FR-058, research.md R-17)", () => {
+    expect(releasedAdded.replace(/\s+/g, " ")).toContain(
       "`@ocelle/elements`' listbox, tabs and segmented choice (mission 014) draw their selected bars in `color-accent-strong` on the main grounds, which the contrast check covers through the grounds above; no token name, value or pair is added.",
     );
   });

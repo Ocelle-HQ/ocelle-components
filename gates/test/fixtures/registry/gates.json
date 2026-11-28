@@ -154,5 +154,13 @@
     "plantCommand": "node gates/bin/pack-contents.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "release-readiness",
+    "check": "Release readiness",
+    "command": "pnpm run gate:release-readiness",
+    "plantCommand": "node gates/bin/release-readiness.ts --root {root}",
+    "plantForm": "commit-repo",
+    "scope": "files"
   }
 ]

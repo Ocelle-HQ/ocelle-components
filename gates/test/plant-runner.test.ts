@@ -115,6 +115,14 @@ describe("runPlant", () => {
     ]);
   });
 
+  // 030 US2 (T032): a plant's plant.json `args` follow the plant command, so a release-readiness plant passes `--tag`.
+  it("appends a plant's args to its plant command, after the placeholders are filled", async () => {
+    const { tools, calls } = recorder({ base: "b0", commits: ["c1"] }, { exitCode: 1, stdout: "", stderr: "" });
+    const readiness = gate("release-readiness", "commit-repo", "node gates/bin/release-readiness.ts --root {root}");
+    await runPlant(tools, "/repo", readiness, "gates/plants/release-readiness/fail-tag-mismatch", { ...fail, args: ["--tag", "v9.9.9"] });
+    expect(calls[2]).toBe("run /opt/node/bin/node gates/bin/release-readiness.ts --root /tmp/ocelle-plant-release-readiness-1 --tag v9.9.9");
+  });
+
   it("presents a mutation plant's own base as {base} (review round 1, R1-11)", async () => {
     const { tools, calls } = recorder({ base: "b0" }, { exitCode: 2, stdout: "", stderr: "mutation: could not run: x\n" });
     const mutation = gate("mutation", "mutation-repo", "node gates/bin/mutation.ts --root {root} --base {base}");
@@ -753,9 +761,11 @@ describe("plantShards and shardSize (plan decision 23)", () => {
       otherSizes: shards.slice(0, otherShards).map((shard) => shard.length <= 80 && shard.every((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/"))),
       visualAndAxe: shards.slice(otherShards),
     };
+    // Replaced by 030 US2 (T032): the thirty-one release-readiness plants join the others (271 before, with phase 1's
+    // eighteen pack-contents plants), still four shards of at most 80; the counts are asserted on their own first.
+    expect(dealt.counts).toEqual({ visual: 48, axe: 25, others: 302 });
     expect(dealt).toEqual({
-      // 030: the eighteen pack-contents plants join the others (253 before), still four shards of at most 80.
-      counts: { visual: 48, axe: 25, others: 271 },
+      counts: { visual: 48, axe: 25, others: 302 },
       shards: 4 + 48 + 25,
       otherSizes: [true, true, true, true],
       visualAndAxe: [...visualAndAxe.filter((plant) => plant.startsWith("visual/")).sort(), ...visualAndAxe.filter((plant) => plant.startsWith("axe/")).sort()].map((plant) => [plant]),

@@ -117,7 +117,9 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("sandbox-paths", []),
           // 030: the pack-contents gate, a gate of the registry whose plants this root does not hold.
           ...missing("pack-contents", []),
-          "plants: 53 problems in 6 plants",
+          // 030 US2: the release-readiness gate, likewise.
+          ...missing("release-readiness", []),
+          "plants: 56 problems in 6 plants",
         ],
         stderr: rootPlants.map((plant) => `note: plant time: ${plant}: <s> s`),
       });
@@ -208,7 +210,9 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("sandbox-paths", []),
           // 030: the pack-contents gate, a gate of the registry whose plants this root does not hold.
           ...missing("pack-contents", []),
-          "plants: 53 problems in 1 plant (affected since HEAD; not the Plants check)",
+          // 030 US2: the release-readiness gate, likewise.
+          ...missing("release-readiness", []),
+          "plants: 56 problems in 1 plant (affected since HEAD; not the Plants check)",
         ],
         stderr: [`note: affected: config-copies/pass-equal-copies, by ${plant}`, "note: plant time: config-copies/pass-equal-copies: <s> s"],
       });
@@ -259,7 +263,9 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("sandbox-paths", []),
           // 030: the pack-contents gate, a gate of the registry whose plants this root does not hold.
           ...missing("pack-contents", []),
-          "plants: 53 problems in 2 plants (affected since HEAD; not the Plants check)",
+          // 030 US2: the release-readiness gate, likewise.
+          ...missing("release-readiness", []),
+          "plants: 56 problems in 2 plants (affected since HEAD; not the Plants check)",
         ],
         notes: [`note: affected: mutation/error-unresolvable-base, by ${String(untracked[0])}`, `note: affected: signoff/fail-no-trailer, by ${String(untracked[1])}`],
         times: ["note: plant time: mutation/error-unresolvable-base: <s> s", "note: plant time: signoff/fail-no-trailer: <s> s"],

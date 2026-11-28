@@ -127,23 +127,44 @@ describe("ci.yml sandbox-paths job (op 023)", () => {
 
 // 030 T008 (FR-006; contracts/pack-contents-gate.md): the job `pack-contents`, named "Pack contents", has the shape of
 // sandbox-paths: it checks out without persisted credentials, sets up and runs the gate, which builds and packs itself.
-// The header comment counts the required check names, twenty with it (reviews/recheck.md item 2a).
+// The header comment's count of the required check names is asserted with the release-readiness job (030 US2).
 describe("ci.yml pack-contents job (030)", () => {
-  it("is named Pack contents and runs pnpm run gate:pack-contents after checkout and setup, and the header counts twenty required checks", () => {
-    expect({ job: job("pack-contents"), header: workflow.split("\n").slice(0, 4).join(" ").includes("requires the twenty check names") }).toEqual({
-      job: [
-        "  pack-contents:",
-        "    name: Pack contents",
-        "    runs-on: ubuntu-24.04",
-        "    steps:",
-        "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
-        "        with:",
-        "          persist-credentials: false",
-        "      - uses: ./.github/actions/setup",
-        "      - run: pnpm run gate:pack-contents",
-      ],
+  // Replaced by 030 US2 (T024): the header's count of required check names is twenty-one with Release readiness, asserted
+  // by the release-readiness job's test below; this test keeps the pack-contents job's lines.
+  it("is named Pack contents and runs pnpm run gate:pack-contents after checkout and setup", () => {
+    expect(job("pack-contents")).toEqual([
+      "  pack-contents:",
+      "    name: Pack contents",
+      "    runs-on: ubuntu-24.04",
+      "    steps:",
+      "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+      "        with:",
+      "          persist-credentials: false",
+      "      - uses: ./.github/actions/setup",
+      "      - run: pnpm run gate:pack-contents",
+    ]);
+  });
+});
+
+// 030 US2 (T024; FR-014; contracts/release-readiness-gate.md; operator decision PLAN-FRESH-2-004 (a)): the job
+// `release-readiness`, named "Release readiness", checks out the whole history (the secret scan reads every commit
+// reachable from HEAD) without persisted credentials, sets up and runs the gate; the header counts twenty-one required
+// check names. The unit-test shards and the full-suite comparison check out the whole history too, for the
+// gates-integration tests that read commit 183b20f and scan the history (research.md R-07, R-08).
+describe("ci.yml release-readiness job and the full-history unit-test checkouts (030)", () => {
+  const checkout = ["      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1", "        with:", "          persist-credentials: false", "          fetch-depth: 0"];
+
+  it("is named Release readiness and runs pnpm run gate:release-readiness after a full-history checkout and setup, and the header counts twenty-one required checks", () => {
+    expect({ job: job("release-readiness"), header: workflow.split("\n").slice(0, 4).join(" ").includes("requires the twenty-one check names") }).toEqual({
+      job: ["  release-readiness:", "    name: Release readiness", "    runs-on: ubuntu-24.04", "    steps:", ...checkout, "      - uses: ./.github/actions/setup", "      - run: pnpm run gate:release-readiness"],
       header: true,
     });
+  });
+
+  it.each(["unit-tests-shard", "unit-tests-full"])("checks %s out with the whole history and no persisted credentials, before setup", (id) => {
+    const lines = job(id);
+    const at = lines.indexOf(checkout[0] ?? "");
+    expect(lines.slice(at, at + 5)).toEqual([...checkout, "      - uses: ./.github/actions/setup"]);
   });
 });
 

@@ -413,3 +413,34 @@ describe("judgePlant: report lines of a mutation run (007 research R-02)", () =>
     expect(judgePlant("g", { expect: "pass", why: "w" }, run(0, ["a.ts:3: g: zero-mutants: m"]))).toBe("expected exit 0 with no finding, got exit 0 (a.ts:3 zero-mutants)");
   });
 });
+
+// 030 US2 (T032; contracts/release-readiness-gate.md): a plant may pass extra arguments to its gate in `args` (the
+// release-readiness plants' `--tag`), and a finding located at `<commit>:<path>` (the readiness gate's secret
+// finding) names its commit by record, `commit:<n>:<path>`, as a bare commit location does.
+describe("parsePlant: args (030)", () => {
+  it("reads args, a list of non-empty strings", () => {
+    expect(parsePlant(JSON.stringify({ expect: "fail", why: "w", findings: [{ location: "a", rule: "r" }], args: ["--tag", "v9.9.9"] }))).toEqual({
+      expect: "fail",
+      why: "w",
+      findings: [{ location: "a", rule: "r" }],
+      args: ["--tag", "v9.9.9"],
+    });
+  });
+
+  it.each([{ args: "--tag" }, { args: [] }, { args: ["--tag", ""] }, { args: [3] }])("rejects args $args", ({ args }) => {
+    expect(parsePlant(JSON.stringify({ expect: "pass", why: "w", args }))).toBe("args must be a non-empty list of non-empty strings");
+  });
+});
+
+describe("judgePlant: <commit>:<path> locations (030)", () => {
+  const hashes = ["a".repeat(40), "b".repeat(40)];
+
+  it("reads a location of a record's commit and a path as commit:<n>:<path>, and leaves another hash as it is", () => {
+    const plant: Plant = { expect: "fail", why: "w", findings: [{ location: "commit:2:.env", rule: "secret", message: "env-assignment" }] };
+    const found = (hash: string): PlantRun => ({ ...run(1, [`${hash}:.env: g: secret: env-assignment: an added line matches this rule`]), commits: hashes });
+    expect({ record: judgePlant("g", plant, found("b".repeat(40))), other: judgePlant("g", plant, found("c".repeat(40))) }).toEqual({
+      record: undefined,
+      other: `findings differ: missing commit:2:.env secret; unexpected ${"c".repeat(40)}:.env secret`,
+    });
+  });
+});
